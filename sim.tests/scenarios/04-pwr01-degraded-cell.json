@@ -1,0 +1,36 @@
+{
+  "name": "PWR-01 셀 열화는 전압을 깎고, 그 셀을 먼저 비우고 뜨겁게 한다",
+  "seed": 104,
+  "depth": 200,
+  "commands": [
+    {
+      "tick": 0,
+      "cmd": "switch.C3.on"
+    }
+  ],
+  "inject": [
+    {
+      "tick": 0,
+      "fault": "PWR-01",
+      "part": "cell.3"
+    }
+  ],
+  "expect": [
+    {
+      "atTick": 1,
+      "assert": "battery.voltage < start - 0.04"
+    },
+    {
+      "byTick": 12000,
+      "assert": "cell.3.temp > cell.1.temp + 8"
+    },
+    {
+      "byTick": 12000,
+      "assert": "cell.3.charge < cell.1.charge - 0.05"
+    },
+    {
+      "byTick": 24000,
+      "assert": "panel.lamp.power == 'warning'"
+    }
+  ]
+}

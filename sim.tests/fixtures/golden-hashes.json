@@ -1,0 +1,19 @@
+{
+  "01-elc01-fuse-blown-fan-circuit.json": "9CB52EE28725DE18",
+  "02-elc03-leakage-wastes-power.json": "E5687A5547AA7D83",
+  "03-elc03-leakage-blows-fuse-under-load.json": "CFEB1A2F6003D75D",
+  "04-pwr01-degraded-cell.json": "378814FACC23ABE6",
+  "05-pwr01-dead-cell-jumper.json": "32D780C4D50EC97D",
+  "06-air01-fan-stopped.json": "7D268A1B1C44E012",
+  "07-air02-saturated-canister.json": "DB58ADDDEFC606F5",
+  "08-baseline-air-stable.json": "532654CBC11EBEB9",
+  "09-hul01-pump-keeps-up-but-drains-battery.json": "0C2AD769BDEF8EA5",
+  "10-wtr01-clogged-intake-floods-battery.json": "702D5C177A8C6D17",
+  "11-wtr02-bearing-overcurrent-and-overheat.json": "0E2C441235D934A3",
+  "12-wtr03-stuck-check-valve.json": "3CDF357B4F79A7DD",
+  "13-hatch-closed-protects-battery.json": "D72F190A2E1A320B",
+  "14-hatch-closed-fore-leak-hand-pump.json": "D45127DC14578FD9",
+  "15-noise-accumulation.json": "0404F19E57F079F0",
+  "16-hydrogen-spark-explosion.json": "715E91D7562D005F",
+  "replay-log": "4C04928E208197DE"
+}

@@ -1,0 +1,25 @@
+T:System.Random;시드 고정 Core.Rng를 쓴다
+P:System.DateTime.Now;시뮬레이션은 실제 시각을 쓰지 않는다
+P:System.DateTime.UtcNow;시뮬레이션은 실제 시각을 쓰지 않는다
+P:System.DateTime.Today;시뮬레이션은 실제 시각을 쓰지 않는다
+P:System.DateTimeOffset.Now;시뮬레이션은 실제 시각을 쓰지 않는다
+P:System.DateTimeOffset.UtcNow;시뮬레이션은 실제 시각을 쓰지 않는다
+P:System.Environment.TickCount;시뮬레이션은 실제 시각을 쓰지 않는다
+P:System.Environment.TickCount64;시뮬레이션은 실제 시각을 쓰지 않는다
+T:System.Diagnostics.Stopwatch;시뮬레이션은 실제 시각을 쓰지 않는다
+M:System.Math.Pow(System.Double,System.Double);플랫폼마다 마지막 비트가 다를 수 있다. 곱셈이나 구간 선형 표를 쓴다
+M:System.Math.Exp(System.Double);플랫폼마다 마지막 비트가 다를 수 있다
+M:System.Math.Log(System.Double);플랫폼마다 마지막 비트가 다를 수 있다
+M:System.Math.Log10(System.Double);플랫폼마다 마지막 비트가 다를 수 있다
+M:System.Math.Sin(System.Double);플랫폼마다 마지막 비트가 다를 수 있다
+M:System.Math.Cos(System.Double);플랫폼마다 마지막 비트가 다를 수 있다
+M:System.Math.Tan(System.Double);플랫폼마다 마지막 비트가 다를 수 있다
+M:System.Math.Atan2(System.Double,System.Double);플랫폼마다 마지막 비트가 다를 수 있다
+M:System.Math.Tanh(System.Double);플랫폼마다 마지막 비트가 다를 수 있다
+T:System.MathF;float 초월 함수는 플랫폼마다 다를 수 있다
+M:System.String.GetHashCode;프로세스마다 달라진다. Core.StateHasher를 쓴다
+M:System.Object.GetHashCode;프로세스마다 달라질 수 있다. Core.StateHasher를 쓴다
+T:System.HashCode;프로세스마다 달라진다
+T:System.Threading.Tasks.Parallel;병렬 처리는 순서를 보장하지 않는다
+M:System.Threading.Tasks.Task.Run(System.Action);시뮬레이션은 단일 스레드다
+T:System.Threading.ThreadPool;시뮬레이션은 단일 스레드다

@@ -1,0 +1,25 @@
+{
+  "name": "AIR-02 흡수제가 포화되면 팬이 도는데도 이산화탄소가 오른다",
+  "seed": 107,
+  "depth": 200,
+  "inject": [
+    {
+      "tick": 0,
+      "fault": "AIR-02"
+    }
+  ],
+  "expect": [
+    {
+      "always": "device.vent_fan.running == 1",
+      "toTick": 25200
+    },
+    {
+      "byTick": 25200,
+      "assert": "air.co2 > 2"
+    },
+    {
+      "byTick": 25200,
+      "assert": "panel.lamp.air == 'warning'"
+    }
+  ]
+}

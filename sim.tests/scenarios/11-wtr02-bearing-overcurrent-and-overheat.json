@@ -1,0 +1,36 @@
+{
+  "name": "WTR-02 베어링 마모는 펌프 전류와 온도를 올리고, 과열 정지와 퓨즈 단선으로 이어진다",
+  "seed": 111,
+  "depth": 200,
+  "inject": [
+    {
+      "tick": 0,
+      "fault": "WTR-02"
+    }
+  ],
+  "commands": [
+    {
+      "tick": 0,
+      "cmd": "switch.C3.on"
+    }
+  ],
+  "expect": [
+    {
+      "byTick": 2,
+      "assert": "device.bilge_pump.current > 400"
+    },
+    {
+      "byTick": 9600,
+      "assert": "device.bilge_pump.temp > 60 && panel.lamp.water == 'warning'"
+    },
+    {
+      "byTick": 18000,
+      "assert": "events.DeviceCutout >= 1"
+    },
+    {
+      "byTick": 42000,
+      "assert": "circuit.C3.fuse == 'blown'"
+    }
+  ],
+  "ordered": true
+}

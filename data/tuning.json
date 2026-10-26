@@ -1,0 +1,213 @@
+{
+  "ticksPerSecond": 20,
+  "defaultDepthM": 300,
+  "battery": {
+    "cells": 6,
+    "capacityWh": 1200,
+    "initialCharge": 1.0,
+    "voltageCurve": [
+      [
+        0,
+        0
+      ],
+      [
+        0.1,
+        0.6
+      ],
+      [
+        0.2,
+        0.92
+      ],
+      [
+        1.0,
+        1.0
+      ]
+    ],
+    "healthVoltageFloor": 0.5,
+    "deadHealth": 0.05,
+    "unjumperedDeadFactor": 0.3,
+    "cellHeatFactor": 0.05,
+    "degradedHeatGain": 10,
+    "cellCoolingWPerC": 1,
+    "cellHeatCapacityJPerC": 1000
+  },
+  "switchboard": {
+    "fuseBlowSeconds": 2,
+    "minFuseMargin": 1.1,
+    "leakageMoistureThreshold": 0.6,
+    "leakageFractionOfRatingAtFull": 0.7
+  },
+  "pump": {
+    "clogLoadDrop": 0.6,
+    "dragLoadGain": 1.0
+  },
+  "water": {
+    "bilges": {
+      "bilge.aft": {
+        "capacityL": 240,
+        "zones": [
+          "aft"
+        ],
+        "initialL": 4
+      },
+      "bilge.fwd": {
+        "capacityL": 360,
+        "zones": [
+          "fore",
+          "mid"
+        ],
+        "initialL": 6
+      }
+    },
+    "hatch": {
+      "zones": [
+        "mid",
+        "aft"
+      ],
+      "bilges": [
+        "bilge.fwd",
+        "bilge.aft"
+      ],
+      "initiallyClosed": false
+    },
+    "zoneFloorAreaM2": 8,
+    "leakK": 0.02,
+    "pumpRatedLps": 2.0,
+    "pumpBilge": "bilge.aft",
+    "handPumpStrokeL": 1.5,
+    "handPumpBilge": "bilge.fwd",
+    "floorDrainLps": 5,
+    "spreadPerSecond": 0.2,
+    "bilgeEqualizePerSecond": 0.5,
+    "batteryBilge": "bilge.fwd",
+    "batterySubmergeStartL": 240,
+    "batterySubmergeFullL": 360
+  },
+  "hull": {
+    "integrityLossPerSecond": 0.002,
+    "patchWearPerSecond": 0.0005,
+    "wrapLoad": 0,
+    "currentFactor": 1,
+    "zoneAlarmInflowLps": 0.02,
+    "zoneAlarmFloorWaterL": 1
+  },
+  "air": {
+    "initialCo2": 0.04,
+    "initialO2": 20.9,
+    "co2FloorPct": 0.04,
+    "personCo2PerMin": 0.1,
+    "personO2PerMin": 0.08,
+    "scrubCo2PerMin": 0.15,
+    "canisterCapacityPct": 6,
+    "candleO2PerMin": 0.4,
+    "candleMinutes": 10,
+    "o2MaxPct": 21.5,
+    "cl2PpmPerMinPerCell": 3,
+    "fanCl2DecayPerMin": 0.2,
+    "chargingH2PerMin": 0.05,
+    "h2PerMinPerSubmergedCell": 0.1,
+    "fanH2DecayPerMin": 0.2,
+    "explosiveH2Pct": 4
+  },
+  "heat": {
+    "ambientC": 12,
+    "overheatWearMultiplier": 3
+  },
+  "noise": {
+    "accumGain": 1,
+    "accumTauSeconds": 90,
+    "actions": {
+      "switch": {
+        "level": 2,
+        "seconds": 0.5
+      },
+      "hatch": {
+        "level": 6,
+        "seconds": 1.5
+      },
+      "fuse": {
+        "level": 2,
+        "seconds": 1
+      },
+      "wrench": {
+        "level": 3,
+        "seconds": 2
+      },
+      "file": {
+        "level": 10,
+        "seconds": 3
+      },
+      "handpump": {
+        "level": 25,
+        "seconds": 1.2
+      },
+      "backflush": {
+        "level": 35,
+        "seconds": 5
+      },
+      "hammer": {
+        "level": 40,
+        "seconds": 0.5
+      },
+      "caulk": {
+        "level": 45,
+        "seconds": 3
+      }
+    }
+  },
+  "wear": {
+    "warningAt": 0.5,
+    "faultAt": 0.8,
+    "brokenAt": 1.0,
+    "properQuality": 1.0,
+    "temporaryQuality": 4.0
+  },
+  "panel": {
+    "powerWarnV": 0.88,
+    "powerFaultV": 0.7,
+    "cellHotC": 28,
+    "circuitWarnFraction": 0.9,
+    "co2Warn": 2,
+    "co2Fault": 4,
+    "o2Warn": 17,
+    "o2Fault": 14,
+    "cl2Warn": 10,
+    "cl2Fault": 30,
+    "h2Warn": 2,
+    "h2Fault": 3.5,
+    "bilgeWarnL": 60,
+    "bilgeFaultL": 300,
+    "pumpHotC": 60
+  },
+  "crew": {
+    "co2Levels": [
+      2,
+      4,
+      6,
+      8
+    ],
+    "o2Levels": [
+      17,
+      14,
+      11
+    ],
+    "cl2Levels": [
+      10,
+      30,
+      60
+    ]
+  },
+  "failure": {
+    "swampedFloorWaterL": 6000,
+    "collapseStress": 1.5
+  },
+  "inventory": {
+    "oxygenCandles": 4,
+    "spareCanisters": 2
+  },
+  "randomFaults": {
+    "rollEveryTicks": 20,
+    "depthGain": 1,
+    "wearGain": 4
+  }
+}

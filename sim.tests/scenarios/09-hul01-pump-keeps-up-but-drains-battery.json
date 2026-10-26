@@ -1,0 +1,44 @@
+{
+  "name": "HUL-01 리벳 누수는 배수 계통에 짐을 지우고 축전지를 소모시킨다",
+  "seed": 109,
+  "depth": 300,
+  "inject": [
+    {
+      "tick": 0,
+      "fault": "HUL-01",
+      "part": "leak.rivet.09"
+    }
+  ],
+  "commands": [
+    {
+      "tick": 200,
+      "cmd": "switch.C3.on"
+    }
+  ],
+  "expect": [
+    {
+      "byTick": 1,
+      "assert": "zone.aft.alarm == 1 && panel.lamp.hull == 'warning'"
+    },
+    {
+      "byTick": 1,
+      "assert": "leak.rivet.09.inflow > 0.3"
+    },
+    {
+      "byTick": 300,
+      "assert": "pump.netFlow > 0.3"
+    },
+    {
+      "always": "bilge.total < 60",
+      "fromTick": 2400,
+      "toTick": 36000,
+      "note": "펌프 2.0L/s가 0.44L/s 누수를 따라잡는다"
+    },
+    {
+      "atTick": 36000,
+      "assert": "battery.charge < start - 0.18",
+      "note": "펌프 300W가 기본 부하에 더해진다"
+    }
+  ],
+  "ordered": true
+}

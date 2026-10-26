@@ -1,0 +1,132 @@
+{
+  "partTemplate": {
+    "wearPerSecond": 0,
+    "props": {
+      "integrity": 1.0,
+      "patchFactor": 1.0,
+      "patchDurability": 0
+    }
+  },
+  "points": {
+    "leak.rivet.01": {
+      "kind": "rivet",
+      "zone": "fore",
+      "maxAreaCm2": 3,
+      "designDepthM": 600
+    },
+    "leak.rivet.02": {
+      "kind": "rivet",
+      "zone": "fore",
+      "maxAreaCm2": 3,
+      "designDepthM": 600
+    },
+    "leak.rivet.03": {
+      "kind": "rivet",
+      "zone": "fore",
+      "maxAreaCm2": 3,
+      "designDepthM": 600
+    },
+    "leak.rivet.04": {
+      "kind": "rivet",
+      "zone": "fore",
+      "maxAreaCm2": 3,
+      "designDepthM": 600
+    },
+    "leak.rivet.05": {
+      "kind": "rivet",
+      "zone": "mid",
+      "maxAreaCm2": 3,
+      "designDepthM": 600
+    },
+    "leak.rivet.06": {
+      "kind": "rivet",
+      "zone": "mid",
+      "maxAreaCm2": 3,
+      "designDepthM": 600
+    },
+    "leak.rivet.07": {
+      "kind": "rivet",
+      "zone": "mid",
+      "maxAreaCm2": 3,
+      "designDepthM": 600
+    },
+    "leak.rivet.08": {
+      "kind": "rivet",
+      "zone": "mid",
+      "maxAreaCm2": 3,
+      "designDepthM": 600
+    },
+    "leak.rivet.09": {
+      "kind": "rivet",
+      "zone": "aft",
+      "maxAreaCm2": 3,
+      "designDepthM": 600
+    },
+    "leak.rivet.10": {
+      "kind": "rivet",
+      "zone": "aft",
+      "maxAreaCm2": 3,
+      "designDepthM": 600
+    },
+    "leak.rivet.11": {
+      "kind": "rivet",
+      "zone": "aft",
+      "maxAreaCm2": 3,
+      "designDepthM": 600
+    },
+    "leak.rivet.12": {
+      "kind": "rivet",
+      "zone": "aft",
+      "maxAreaCm2": 3,
+      "designDepthM": 600
+    },
+    "leak.viewport.1": {
+      "kind": "viewport",
+      "zone": "fore",
+      "maxAreaCm2": 2,
+      "designDepthM": 600
+    },
+    "leak.viewport.2": {
+      "kind": "viewport",
+      "zone": "fore",
+      "maxAreaCm2": 2,
+      "designDepthM": 600
+    },
+    "leak.shaft_packing": {
+      "kind": "shaft_packing",
+      "zone": "aft",
+      "maxAreaCm2": 4,
+      "designDepthM": 600
+    },
+    "leak.hull_valve.1": {
+      "kind": "hull_valve",
+      "zone": "fore",
+      "maxAreaCm2": 5,
+      "designDepthM": 600
+    },
+    "leak.hull_valve.2": {
+      "kind": "hull_valve",
+      "zone": "mid",
+      "maxAreaCm2": 5,
+      "designDepthM": 600
+    },
+    "leak.hull_valve.3": {
+      "kind": "hull_valve",
+      "zone": "mid",
+      "maxAreaCm2": 5,
+      "designDepthM": 600
+    },
+    "leak.hull_valve.4": {
+      "kind": "hull_valve",
+      "zone": "aft",
+      "maxAreaCm2": 5,
+      "designDepthM": 600
+    },
+    "leak.chamber_door": {
+      "kind": "chamber_door",
+      "zone": "chamber",
+      "maxAreaCm2": 6,
+      "designDepthM": 600
+    }
+  }
+}

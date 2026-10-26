@@ -1,0 +1,31 @@
+{
+  "name": "AIR-01 팬이 멈추면 흡수통이 일하지 못해 이산화탄소가 오른다",
+  "seed": 106,
+  "depth": 200,
+  "inject": [
+    {
+      "tick": 0,
+      "fault": "AIR-01"
+    }
+  ],
+  "expect": [
+    {
+      "byTick": 1,
+      "assert": "device.vent_fan.running == 0 && circuit.C2.energized == 1"
+    },
+    {
+      "byTick": 25200,
+      "assert": "panel.lamp.air == 'warning'"
+    },
+    {
+      "byTick": 25200,
+      "assert": "crew.co2 >= 1"
+    },
+    {
+      "always": "air.co2 < 2.5",
+      "toTick": 25200,
+      "note": "사람 +0.1%/분만큼만 오른다"
+    }
+  ],
+  "ordered": true
+}

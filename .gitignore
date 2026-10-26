@@ -1,0 +1,11 @@
+bin/
+obj/
+.vs/
+.vscode/
+.idea/
+*.user
+TestResults/
+# Godot (M1부터)
+.godot/
+*.import
+out/

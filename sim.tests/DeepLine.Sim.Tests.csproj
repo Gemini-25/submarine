@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>DeepLine.Sim.Tests</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.6.0" />
+    <PackageReference Include="xunit" Version="2.4.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.5">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\sim\DeepLine.Sim.csproj" />
+  </ItemGroup>
+
+  <!-- 데이터와 시나리오를 테스트 출력 폴더로 복사한다 -->
+  <ItemGroup>
+    <None Include="..\data\**\*.json" LinkBase="data" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="scenarios\**\*.json" LinkBase="scenarios" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="fixtures\**\*" LinkBase="fixtures" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

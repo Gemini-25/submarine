@@ -1,0 +1,32 @@
+{
+  "name": "ELC-01 생명유지 회로 퓨즈 단선은 팬을 멈추고 이산화탄소를 올린다",
+  "seed": 101,
+  "depth": 200,
+  "inject": [
+    {
+      "tick": 0,
+      "fault": "ELC-01",
+      "part": "fuse.C2"
+    }
+  ],
+  "expect": [
+    {
+      "byTick": 1,
+      "assert": "circuit.C2.energized == 0 && device.vent_fan.running == 0"
+    },
+    {
+      "byTick": 1,
+      "assert": "panel.lamp.switchboard == 'fault'"
+    },
+    {
+      "byTick": 2400,
+      "assert": "air.co2 > start + 0.15"
+    },
+    {
+      "never": "circuit.C1.energized == 0 || device.cabin_lights.running == 0",
+      "toTick": 6000,
+      "note": "다른 회로는 영향을 받지 않는다"
+    }
+  ],
+  "ordered": true
+}

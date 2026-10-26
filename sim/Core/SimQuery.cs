@@ -1,0 +1,304 @@
+using System.Globalization;
+using DeepLine.Sim.Data;
+using DeepLine.Sim.Systems;
+
+namespace DeepLine.Sim.Core;
+
+/// <summary>관측값. 숫자 또는 문자열. 참/거짓은 1/0.</summary>
+public readonly record struct QueryValue(double Number, string? Text)
+{
+    public static QueryValue Of(double v) => new(v, null);
+    public static QueryValue Of(bool v) => new(v ? 1 : 0, null);
+    public static QueryValue Of(string s) => new(double.NaN, s);
+    public bool IsText => Text != null;
+    public override string ToString() => IsText ? $"'{Text}'" : Number.ToString("G6", CultureInfo.InvariantCulture);
+}
+
+/// <summary>
+/// 시나리오 assert와 디버그 도구가 쓰는 관측값 경로. 경로는 시나리오를 읽을 때 한 번 해석해서 모르는 이름이면 바로 실패한다.
+/// 이 목록이 관측 가능한 이름의 유일한 정의다 (docs/DECISIONS.md에도 정리).
+/// </summary>
+static class SimQuery
+{
+    public static Func<SimWorld, QueryValue> Compile(SimWorld w, string path)
+    {
+        var p = path.Split('.');
+        Exception Unknown() => new ArgumentException($"알 수 없는 관측값 경로 '{path}'");
+        string At(int i) => i < p.Length ? p[i] : throw Unknown();
+        void End(int n) { if (p.Length != n) throw Unknown(); }
+
+        switch (p[0])
+        {
+            case "tick": End(1); return x => QueryValue.Of(x.Tick);
+            case "time": End(1); return x => QueryValue.Of(x.TimeSeconds);
+            case "depth": End(1); return x => QueryValue.Of(x.DepthM);
+
+            case "battery":
+                End(2);
+                return At(1) switch
+                {
+                    // 6셀 charge의 평균
+                    "charge" => x => QueryValue.Of(x.Cells.Average(c => c.Charge)),
+                    "voltage" => x => QueryValue.Of(x.BusVoltage),
+                    "energyWh" => x => QueryValue.Of(EnergyWh(x)),
+                    "submerged" => x => QueryValue.Of(x.Water.SubmergedCount),
+                    "maxTemp" => x => QueryValue.Of(x.Cells.Max(c => c.TempC)),
+                    _ => throw Unknown(),
+                };
+
+            case "power":
+                End(2);
+                return At(1) == "total" ? x => QueryValue.Of(x.TotalPowerW) : throw Unknown();
+
+            case "cell":
+            {
+                End(3);
+                if (!int.TryParse(At(1), NumberStyles.None, CultureInfo.InvariantCulture, out int n) || n < 1 || n > w.Cells.Length) throw Unknown();
+                int i = n - 1;
+                return At(2) switch
+                {
+                    "charge" => x => QueryValue.Of(x.Cells[i].Charge),
+                    "health" => x => QueryValue.Of(x.CellParts[i].Get("health")),
+                    "temp" => x => QueryValue.Of(x.Cells[i].TempC),
+                    "submerged" => x => QueryValue.Of(x.Cells[i].Submerged),
+                    "jumpered" => x => QueryValue.Of(x.CellParts[i].Get("jumpered") >= 0.5),
+                    _ => throw Unknown(),
+                };
+            }
+
+            case "circuit":
+            {
+                End(3);
+                if (!w.TryCircuitIndex(At(1), out int c)) throw Unknown();
+                return At(2) switch
+                {
+                    "on" => x => QueryValue.Of(x.Circuits[c].SwitchOn),
+                    "energized" => x => QueryValue.Of(x.Circuits[c].Energized),
+                    "current" => x => QueryValue.Of(x.Circuits[c].Current),
+                    "power" => x => QueryValue.Of(x.Circuits[c].PowerW),
+                    "leak" => x => QueryValue.Of(x.Circuits[c].LeakCurrent),
+                    "rating" => x => QueryValue.Of(x.Data.Circuits[c].FuseRating),
+                    "fuse" => x => QueryValue.Of(x.Fuses[c].Get("blown") >= 0.5 ? "blown" : "ok"),
+                    _ => throw Unknown(),
+                };
+            }
+
+            case "device":
+            {
+                End(3);
+                if (!w.TryDeviceIndex(At(1), out int d)) throw Unknown();
+                return At(2) switch
+                {
+                    "enabled" => x => QueryValue.Of(x.Devices[d].Enabled),
+                    "running" => x => QueryValue.Of(x.Devices[d].Running),
+                    "temp" => x => QueryValue.Of(x.Devices[d].TempC),
+                    "current" => x => QueryValue.Of(x.Devices[d].Current),
+                    "power" => x => QueryValue.Of(x.Devices[d].PowerW),
+                    "load" => x => QueryValue.Of(x.Devices[d].LoadFactor),
+                    "cutout" => x => QueryValue.Of(x.Devices[d].CutOut),
+                    "overheated" => x => QueryValue.Of(x.Devices[d].Overheated),
+                    _ => throw Unknown(),
+                };
+            }
+
+            case "pump":
+                End(2);
+                return At(1) switch
+                {
+                    "netFlow" => x => QueryValue.Of(x.Water.PumpNetLps),
+                    "grossFlow" => x => QueryValue.Of(x.Water.PumpGrossLps),
+                    _ => throw Unknown(),
+                };
+
+            case "bilge":
+                if (p.Length == 2 && p[1] == "total") return x => QueryValue.Of(WaterSystem.BilgeTotal(x));
+                if (p.Length == 3 && p[2] == "water")
+                {
+                    int b = Array.IndexOf(w.BilgeIds, $"bilge.{p[1]}");
+                    if (b < 0) throw Unknown();
+                    return x => QueryValue.Of(x.Water.Bilge[b]);
+                }
+                throw Unknown();
+
+            case "zone":
+            {
+                End(3);
+                int z = Array.IndexOf(GameData.Zones, At(1));
+                if (z < 0) throw Unknown();
+                return At(2) switch
+                {
+                    // 바닥 위 물 (빌지 제외)
+                    "water" => x => QueryValue.Of(x.Water.Floor[z]),
+                    "level" => x => QueryValue.Of(WaterSystem.FloorLevelCm(x, z)),
+                    "alarm" => x => QueryValue.Of(x.PanelState.ZoneAlarm[z]),
+                    "inflow" => x => QueryValue.Of(HullSystem.ZoneInflow(x, z)),
+                    _ => throw Unknown(),
+                };
+            }
+
+            case "floor":
+                End(2);
+                return At(1) == "total" ? x => QueryValue.Of(WaterSystem.FloorTotal(x)) : throw Unknown();
+
+            case "chamber":
+                End(2);
+                return At(1) == "water" ? x => QueryValue.Of(x.Water.Chamber) : throw Unknown();
+
+            case "hatch":
+                End(2);
+                return At(1) == "closed" ? x => QueryValue.Of(x.Water.HatchClosed) : throw Unknown();
+
+            case "leak":
+            {
+                if (p.Length == 2 && p[1] == "total") return x => QueryValue.Of(x.Leaks.Sum(l => l.InflowLps));
+                // leak.rivet.03.inflow 처럼 ID에 점이 들어간다
+                if (p.Length < 3) throw Unknown();
+                string id = string.Join('.', p, 0, p.Length - 1);
+                int i = -1;
+                for (int k = 0; k < w.LeakParts.Length; k++) if (w.LeakParts[k].Id == id) i = k;
+                if (i < 0) throw Unknown();
+                return p[^1] switch
+                {
+                    "inflow" => x => QueryValue.Of(x.Leaks[i].InflowLps),
+                    "stress" => x => QueryValue.Of(x.Leaks[i].Stress),
+                    "integrity" => x => QueryValue.Of(x.LeakParts[i].Get("integrity")),
+                    "patchFactor" => x => QueryValue.Of(x.LeakParts[i].Get("patchFactor")),
+                    "patchDurability" => x => QueryValue.Of(x.LeakParts[i].Get("patchDurability")),
+                    _ => throw Unknown(),
+                };
+            }
+
+            case "air":
+                End(2);
+                return At(1) switch
+                {
+                    "co2" => x => QueryValue.Of(x.Air.Co2),
+                    "o2" => x => QueryValue.Of(x.Air.O2),
+                    "cl2" => x => QueryValue.Of(x.Air.Cl2),
+                    "h2" => x => QueryValue.Of(x.Air.H2),
+                    "candleSeconds" => x => QueryValue.Of(x.Air.CandleRemaining),
+                    "canister" => x => QueryValue.Of(x.Part("scrubber.canister").Get("saturation")),
+                    _ => throw Unknown(),
+                };
+
+            case "inventory":
+                End(2);
+                return At(1) switch
+                {
+                    "candles" => x => QueryValue.Of(x.Air.CandlesLeft),
+                    "canisters" => x => QueryValue.Of(x.Air.CanistersLeft),
+                    _ => throw Unknown(),
+                };
+
+            case "noise":
+                End(2);
+                return At(1) switch
+                {
+                    "current" => x => QueryValue.Of(x.Noise.Current),
+                    "accum" => x => QueryValue.Of(x.Noise.Accum),
+                    _ => throw Unknown(),
+                };
+
+            case "lights":
+                End(2);
+                return At(1) == "brightness"
+                    ? x => QueryValue.Of(x.Devices[x.Lights].Running ? x.BusVoltage : 0)
+                    : throw Unknown();
+
+            case "panel":
+                if (p.Length == 2 && p[1] == "on") return x => QueryValue.Of(x.PanelState.On);
+                if (p.Length == 3 && p[1] == "lamp")
+                {
+                    int s = Array.IndexOf(PanelSystems.Names, p[2]);
+                    if (s < 0) throw Unknown();
+                    return x => QueryValue.Of(LampName(x.PanelState.Lamps[s]));
+                }
+                if (p.Length == 3 && p[1] == "gauge")
+                {
+                    return p[2] switch
+                    {
+                        "voltage" => x => QueryValue.Of(x.PanelState.GaugeVoltage),
+                        "current" => x => QueryValue.Of(x.PanelState.GaugeCurrent),
+                        "co2" => x => QueryValue.Of(x.PanelState.GaugeCo2),
+                        "o2" => x => QueryValue.Of(x.PanelState.GaugeO2),
+                        "bilge" => x => QueryValue.Of(x.PanelState.GaugeBilge),
+                        "depth" => x => QueryValue.Of(x.PanelState.GaugeDepth),
+                        "pumpCurrent" => x => QueryValue.Of(x.PanelState.GaugePumpCurrent),
+                        _ => throw Unknown(),
+                    };
+                }
+                throw Unknown();
+
+            case "crew":
+                End(2);
+                return At(1) switch
+                {
+                    "co2" => x => QueryValue.Of(x.Crew.Co2Level),
+                    "o2" => x => QueryValue.Of(x.Crew.O2Level),
+                    "cl2" => x => QueryValue.Of(x.Crew.Cl2Level),
+                    _ => throw Unknown(),
+                };
+
+            case "mission":
+                End(2);
+                return At(1) switch
+                {
+                    "status" => x => QueryValue.Of(x.Status == MissionStatus.Running ? "running" : "failed"),
+                    "reason" => x => QueryValue.Of(x.FailReason),
+                    _ => throw Unknown(),
+                };
+
+            case "events":
+            {
+                End(2);
+                if (!Enum.TryParse<SimEventKind>(At(1), ignoreCase: false, out var kind)) throw Unknown();
+                int k = (int)kind;
+                return x => QueryValue.Of(x.EventCounts[k]);
+            }
+
+            case "part":
+            {
+                // part.<id>.state | part.<id>.wear | part.<id>.fault | part.<id>.prop.<name>
+                int propAt = Array.IndexOf(p, "prop");
+                if (propAt > 1 && propAt == p.Length - 2)
+                {
+                    var part = w.TryPart(string.Join('.', p, 1, propAt - 1), out var pp) ? pp : throw Unknown();
+                    string name = p[^1];
+                    if (!part.HasProp(name)) throw Unknown();
+                    int idx = w.PartIndex(part.Id);
+                    return x => QueryValue.Of(Parts.PartEffects.Effective(x, x.Parts[idx], name));
+                }
+                if (p.Length < 3) throw Unknown();
+                string partId = string.Join('.', p, 1, p.Length - 2);
+                int pi = w.PartIndex(partId);
+                if (pi < 0) throw Unknown();
+                return p[^1] switch
+                {
+                    "state" => x => QueryValue.Of(x.Parts[pi].State(x.T.Wear).ToString().ToLowerInvariant()),
+                    "wear" => x => QueryValue.Of(x.Parts[pi].Wear),
+                    "fault" => x => QueryValue.Of(x.Parts[pi].ActiveFault),
+                    _ => throw Unknown(),
+                };
+            }
+
+            default:
+                throw Unknown();
+        }
+    }
+
+    static string LampName(LampState s) => s switch
+    {
+        LampState.Warning => "warning",
+        LampState.Fault => "fault",
+        _ => "off",
+    };
+
+    static double EnergyWh(SimWorld w)
+    {
+        double cap = w.T.Battery.CapacityWh / w.Cells.Length;
+        double sum = 0;
+        for (int i = 0; i < w.Cells.Length; i++)
+            sum += w.Cells[i].Charge * cap * w.CellParts[i].Get("health");
+        return sum;
+    }
+}

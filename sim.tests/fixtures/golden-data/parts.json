@@ -1,0 +1,223 @@
+{
+  "cell.1": {
+    "kind": "cell",
+    "spare": true,
+    "props": {
+      "health": 1.0,
+      "jumpered": 0
+    }
+  },
+  "cell.2": {
+    "kind": "cell",
+    "spare": true,
+    "props": {
+      "health": 1.0,
+      "jumpered": 0
+    }
+  },
+  "cell.3": {
+    "kind": "cell",
+    "spare": true,
+    "props": {
+      "health": 1.0,
+      "jumpered": 0
+    }
+  },
+  "cell.4": {
+    "kind": "cell",
+    "spare": true,
+    "props": {
+      "health": 1.0,
+      "jumpered": 0
+    }
+  },
+  "cell.5": {
+    "kind": "cell",
+    "spare": true,
+    "props": {
+      "health": 1.0,
+      "jumpered": 0
+    }
+  },
+  "cell.6": {
+    "kind": "cell",
+    "spare": true,
+    "props": {
+      "health": 1.0,
+      "jumpered": 0
+    }
+  },
+  "fuse.C1": {
+    "kind": "fuse",
+    "spare": true,
+    "props": {
+      "blown": 0,
+      "wire": 0
+    }
+  },
+  "fuse.C2": {
+    "kind": "fuse",
+    "spare": true,
+    "props": {
+      "blown": 0,
+      "wire": 0
+    }
+  },
+  "fuse.C3": {
+    "kind": "fuse",
+    "spare": true,
+    "props": {
+      "blown": 0,
+      "wire": 0
+    }
+  },
+  "fuse.C4": {
+    "kind": "fuse",
+    "spare": true,
+    "props": {
+      "blown": 0,
+      "wire": 0
+    }
+  },
+  "fuse.C5": {
+    "kind": "fuse",
+    "spare": true,
+    "props": {
+      "blown": 0,
+      "wire": 0
+    }
+  },
+  "fuse.C6": {
+    "kind": "fuse",
+    "spare": true,
+    "props": {
+      "blown": 0,
+      "wire": 0
+    }
+  },
+  "fuse.C7": {
+    "kind": "fuse",
+    "spare": true,
+    "props": {
+      "blown": 0,
+      "wire": 0
+    }
+  },
+  "fuse.C8": {
+    "kind": "fuse",
+    "spare": true,
+    "props": {
+      "blown": 0,
+      "wire": 0
+    }
+  },
+  "junction.C1": {
+    "kind": "junction",
+    "props": {
+      "moisture": 0.1
+    }
+  },
+  "junction.C2": {
+    "kind": "junction",
+    "props": {
+      "moisture": 0.1
+    }
+  },
+  "junction.C3": {
+    "kind": "junction",
+    "props": {
+      "moisture": 0.1
+    }
+  },
+  "junction.C4": {
+    "kind": "junction",
+    "props": {
+      "moisture": 0.1
+    }
+  },
+  "junction.C5": {
+    "kind": "junction",
+    "props": {
+      "moisture": 0.1
+    }
+  },
+  "junction.C6": {
+    "kind": "junction",
+    "props": {
+      "moisture": 0.1
+    }
+  },
+  "junction.C7": {
+    "kind": "junction",
+    "props": {
+      "moisture": 0.1
+    }
+  },
+  "junction.C8": {
+    "kind": "junction",
+    "props": {
+      "moisture": 0.1
+    }
+  },
+  "fan.motor": {
+    "kind": "fan_motor",
+    "wearPerSecond": 2e-06,
+    "props": {
+      "stalled": 0
+    },
+    "wearFault": "AIR-01"
+  },
+  "scrubber.canister": {
+    "kind": "canister",
+    "spare": true,
+    "props": {
+      "saturation": 0
+    }
+  },
+  "pump.motor": {
+    "kind": "pump_motor",
+    "wearPerSecond": 2e-06
+  },
+  "pump.bearing": {
+    "kind": "bearing",
+    "spare": true,
+    "wearPerSecond": 2e-05,
+    "props": {
+      "drag": 0
+    },
+    "wearCurves": {
+      "drag": [
+        [
+          0.5,
+          0
+        ],
+        [
+          0.8,
+          0.4
+        ],
+        [
+          1.0,
+          1.0
+        ]
+      ]
+    },
+    "wearFault": "WTR-02"
+  },
+  "pump.seal": {
+    "kind": "seal",
+    "spare": true,
+    "wearPerSecond": 1e-06
+  },
+  "pump.intake": {
+    "kind": "intake",
+    "props": {
+      "clog": 0
+    }
+  },
+  "pump.check_valve": {
+    "kind": "check_valve",
+    "props": {
+      "stuck": 0
+    }
+  }
+}
