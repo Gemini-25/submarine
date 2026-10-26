@@ -17,23 +17,27 @@ static class HeatSystem
         {
             var def = w.Data.Devices[d];
             var ds = w.Devices[d];
+            if (def.HeatFactor <= 0) continue; // 발열이 없는 장비는 주변 온도에 머문다
+
             double heatW = ds.Running ? ds.PowerW * def.HeatFactor * (1 + PartEffects.MaxWear(w, d)) : 0;
             double coolW = (ds.TempC - ambient) * def.CoolingWPerC;
             ds.TempC += (heatW - coolW) / def.HeatCapacityJPerC * w.Dt;
 
-            bool over = ds.TempC > def.OverheatC;
+            bool over = def.OverheatC is double overheat && ds.TempC > overheat;
             if (over && !ds.Overheated)
                 w.Emit(SimEventKind.DeviceOverheat, def.Id, ds.TempC);
+            else if (!over && ds.Overheated)
+                w.Emit(SimEventKind.DeviceOverheatEnded, def.Id, ds.TempC);
             ds.Overheated = over;
 
-            if (def.CutoutC > 0)
+            if (def.CutoutC is double cutout && def.CutoutResetC is double reset)
             {
-                if (!ds.CutOut && ds.TempC >= def.CutoutC)
+                if (!ds.CutOut && ds.TempC >= cutout)
                 {
                     ds.CutOut = true;
                     w.Emit(SimEventKind.DeviceCutout, def.Id, ds.TempC);
                 }
-                else if (ds.CutOut && ds.TempC <= def.CutoutResetC)
+                else if (ds.CutOut && ds.TempC <= reset)
                 {
                     ds.CutOut = false;
                     w.Emit(SimEventKind.DeviceCutoutReset, def.Id, ds.TempC);

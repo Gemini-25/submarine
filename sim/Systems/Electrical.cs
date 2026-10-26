@@ -37,7 +37,7 @@ static class Electrical
 
     public static bool IsDead(SimWorld w, int cell) =>
         w.CellParts[cell].Get("health") < w.T.Battery.DeadHealth
-        || w.CellParts[cell].State(w.T.Wear) == PartState.Broken;
+        || w.CellParts[cell].State(w.T.Wear) >= PartState.Broken;
 
     public static bool IsActiveCell(SimWorld w, int cell) =>
         w.CellParts[cell].Get("jumpered") < 0.5 && !IsDead(w, cell);
@@ -51,7 +51,15 @@ static class Electrical
         for (int c = 0; c < w.Circuits.Length; c++)
         {
             var cs = w.Circuits[c];
-            cs.Energized = v > 0 && cs.SwitchOn && w.Fuses[c].Get("blown") < 0.5;
+            bool blown = w.Fuses[c].Get("blown") >= 0.5;
+            // 퓨즈가 어떤 경로로든(과전류, 주입, 무작위) 통전 중에 끊기면 같은 증상(사건, 불꽃)이 난다.
+            if (!settle && blown && !cs.FuseBlownSeen && cs.Energized)
+            {
+                w.Emit(SimEventKind.FuseBlown, w.Data.Circuits[c].Id, cs.Current);
+                w.Spark($"fuse.{w.Data.Circuits[c].Id}");
+            }
+            cs.FuseBlownSeen = blown;
+            cs.Energized = v > 0 && cs.SwitchOn && !blown;
             cs.Current = 0;
             cs.PowerW = 0;
             cs.LeakCurrent = 0;
@@ -61,17 +69,16 @@ static class Electrical
         {
             var def = w.Data.Devices[d];
             var ds = w.Devices[d];
-            if (ds.PulseRemaining > 0 && !settle)
-                ds.PulseRemaining = Math.Max(0, ds.PulseRemaining - w.Dt);
-
             bool wants = def.Kind switch
             {
-                DeviceKind.Pulse => ds.PulseRemaining > 0,
+                DeviceKind.Pulse => ds.PulseTicks > 0,
                 DeviceKind.Throttle => ds.Enabled && ds.Throttle > 0,
                 _ => ds.Enabled,
             };
             var circuit = w.Circuits[w.DeviceCircuit[d]];
             ds.Running = wants && circuit.Energized && v >= def.MinVoltage && !ds.CutOut && DeviceRules.CanRun(w, d);
+            // 펄스는 정해진 틱 수만큼 돈다 (전기가 없어도 시간은 흐른다).
+            if (!settle && ds.PulseTicks > 0) ds.PulseTicks--;
             if (!ds.Running)
             {
                 ds.LoadFactor = 0;
@@ -139,6 +146,7 @@ static class Electrical
         FaultInjector.Inject(w, "ELC-01", w.Fuses[c].Id);
         w.Emit(SimEventKind.FuseBlown, id, cs.Current);
         w.Spark($"fuse.{id}");
+        cs.FuseBlownSeen = true;
 
         // 끊긴 틱부터 회로와 장비가 멈춘 것으로 보이게 한다.
         cs.OverTimer = 0;
@@ -158,28 +166,54 @@ static class Electrical
     }
 
     /// <summary>
-    /// 축전지 방전. 직렬이라 활성 셀마다 같은 에너지가 빠지고, health가 낮아 용량이 작은 셀의 charge가 먼저 떨어진다.
-    /// 셀 발열은 health가 낮을수록 크다.
+    /// 축전지 방전. 직렬이라 활성 셀마다 같은 에너지를 나눠 내고, health가 낮아 용량이 작은 셀의 charge가 먼저 떨어진다.
+    /// 비어 있는 셀(charge 0)은 에너지를 내지 못하므로 그 몫을 다른 활성 셀이 진다. 소비 전력과 방전량은 언제나 같다
+    /// (모든 셀이 비면 공급하지 못한 몫은 사라지고, 그때는 전압이 0이라 장비가 멈춘다).
+    /// 셀 발열은 그 셀이 낸 전력에 비례하고 health가 낮을수록 크다.
     /// </summary>
     public static void Discharge(SimWorld w)
     {
         var b = w.T.Battery;
-        int active = 0;
-        for (int i = 0; i < w.Cells.Length; i++)
-            if (IsActiveCell(w, i)) active++;
+        int n = w.Cells.Length;
+        double cellCapacityWh = b.CapacityWh / n;
+        Span<double> taken = stackalloc double[n];
+        Span<bool> supplying = stackalloc bool[n];
+        int open = 0;
+        for (int i = 0; i < n; i++)
+        {
+            supplying[i] = IsActiveCell(w, i) && w.Cells[i].Charge > 0;
+            if (supplying[i]) open++;
+        }
 
-        double cellCapacityWh = b.CapacityWh / w.Cells.Length;
-        double perCellW = active > 0 ? w.TotalPowerW / active : 0;
-        for (int i = 0; i < w.Cells.Length; i++)
+        double remaining = w.TotalPowerW * w.Dt / 3600.0;
+        while (remaining > 0 && open > 0)
+        {
+            double share = remaining / open;
+            double given = 0;
+            for (int i = 0; i < n; i++)
+            {
+                if (!supplying[i]) continue;
+                double capacity = cellCapacityWh * w.CellParts[i].Get("health");
+                double available = w.Cells[i].Charge * capacity - taken[i];
+                double take = Math.Min(share, available);
+                taken[i] += take;
+                given += take;
+                if (take < share) { supplying[i] = false; open--; }
+            }
+            remaining -= given;
+            if (given <= 0) break;
+        }
+
+        for (int i = 0; i < n; i++)
         {
             var cell = w.Cells[i];
             double heatW = 0;
-            if (IsActiveCell(w, i) && perCellW > 0)
+            if (taken[i] > 0)
             {
                 double health = w.CellParts[i].Get("health");
-                double wh = perCellW * w.Dt / 3600.0;
-                cell.Charge = Math.Max(0, cell.Charge - wh / (cellCapacityWh * health));
-                heatW = perCellW * b.CellHeatFactor * (1 + (1 - health) * b.DegradedHeatGain);
+                cell.Charge = Math.Max(0, cell.Charge - taken[i] / (cellCapacityWh * health));
+                double cellW = taken[i] * 3600.0 / w.Dt;
+                heatW = cellW * b.CellHeatFactor * (1 + (1 - health) * b.DegradedHeatGain);
             }
             double coolW = (cell.TempC - w.T.Heat.AmbientC) * b.CellCoolingWPerC;
             cell.TempC += (heatW - coolW) / b.CellHeatCapacityJPerC * w.Dt;
@@ -193,7 +227,7 @@ static class DeviceRules
     public static bool CanRun(SimWorld w, int d)
     {
         foreach (var p in w.DeviceParts[d])
-            if (p.State(w.T.Wear) == PartState.Broken)
+            if (p.State(w.T.Wear) >= PartState.Broken)
                 return false;
         if (d == w.Fan)
             return w.Part("fan.motor").Get("stalled") < 0.5;

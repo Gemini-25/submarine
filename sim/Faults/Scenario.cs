@@ -96,6 +96,7 @@ public static class ScenarioRunner
         public long To;
         public long? FirstTrue;
         public bool Failed;
+        public int Evaluations;
         public string Message = "";
     }
 
@@ -127,6 +128,16 @@ public static class ScenarioRunner
         }
 
         long duration = s.DurationTicks ?? (live.Count > 0 ? live.Max(l => l.To) : 0);
+        // 평가되지 않는 기대값이나 실행되지 않는 명령은 틀린 시나리오다. 조용히 통과시키지 않는다.
+        foreach (var l in live)
+        {
+            if (l.From > l.To) throw new InvalidDataException($"{s.Name}: '{l.Text}'의 fromTick {l.From}이 toTick {l.To}보다 크다");
+            if (l.To > duration) throw new InvalidDataException($"{s.Name}: '{l.Text}'의 틱 {l.To}가 실행 길이 {duration}을 넘는다");
+        }
+        foreach (var x in s.Inject)
+            if (x.Tick < 0 || x.Tick >= Math.Max(duration, 1)) throw new InvalidDataException($"{s.Name}: 고장 {x.Fault}의 틱 {x.Tick}이 실행 범위 밖이다");
+        foreach (var x in s.Commands)
+            if (x.Tick < 0 || x.Tick >= Math.Max(duration, 1)) throw new InvalidDataException($"{s.Name}: 명령 {x.Cmd}의 틱 {x.Tick}이 실행 범위 밖이다");
         var injects = s.Inject.OrderBy(x => x.Tick).ToList();
         var commands = s.Commands.OrderBy(x => x.Tick).ToList();
         int ni = 0, nc = 0;
@@ -138,6 +149,7 @@ public static class ScenarioRunner
             foreach (var l in live)
             {
                 if (t < l.From || t > l.To || l.Failed) continue;
+                l.Evaluations++;
                 bool ok = l.Check.Eval(w);
                 if (ok && l.FirstTrue == null) l.FirstTrue = t;
                 switch (l.Mode)
@@ -183,8 +195,8 @@ public static class ScenarioRunner
         for (int i = 0; i < live.Count; i++)
         {
             var l = live[i];
-            bool passed = !l.Failed && (l.Mode != "eventually" || l.FirstTrue != null);
-            string msg = l.Message;
+            bool passed = !l.Failed && l.Evaluations > 0 && (l.Mode != "eventually" || l.FirstTrue != null);
+            string msg = l.Evaluations == 0 ? "한 번도 평가되지 않음" : l.Message;
             if (passed && s.Ordered && l.Mode == "eventually")
             {
                 if (l.FirstTrue < lastOrdered)

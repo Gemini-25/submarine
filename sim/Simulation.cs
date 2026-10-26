@@ -23,7 +23,7 @@ public interface ISimulation
 
 public sealed class Simulation : ISimulation
 {
-    const int SaveFormatVersion = 1;
+    const int SaveFormatVersion = 2;
 
     SimWorld? _world;
     GameData? _data;
@@ -46,9 +46,18 @@ public sealed class Simulation : ISimulation
     {
         _data = data;
         _seed = seed;
-        _setup = setup;
-        _world = new SimWorld(data, seed, setup);
+        // 호출자가 나중에 setup을 고쳐도 Reset()이 바뀌지 않게 복사해 둔다.
+        _setup = setup == null ? null : CopySetup(setup);
+        _world = new SimWorld(data, seed, _setup);
     }
+
+    static string SetupJson(MissionSetup? setup) =>
+        setup == null ? "" : System.Text.Json.JsonSerializer.Serialize(setup);
+
+    static MissionSetup? SetupFromJson(string json) =>
+        json.Length == 0 ? null : System.Text.Json.JsonSerializer.Deserialize<MissionSetup>(json);
+
+    static MissionSetup CopySetup(MissionSetup setup) => SetupFromJson(SetupJson(setup))!;
 
     /// <summary>임무를 시작 상태로 되돌린다 (같은 데이터, 시드, 시작 설정).</summary>
     public void Reset() => Load(Data, _seed, _setup);
@@ -79,7 +88,10 @@ public sealed class Simulation : ISimulation
     /// <summary>점(.)으로 이어진 관측값 경로를 읽는다. 시나리오 assert와 디버그 도구가 쓴다. 경로 목록은 SimQuery.</summary>
     public QueryValue Query(string path) => SimQuery.Compile(W, path)(W);
 
-    /// <summary>상태 전체를 저장한다. 같은 데이터와 시드로 RestoreState()하면 끊김 없이 이어진다.</summary>
+    /// <summary>
+    /// 상태 전체를 저장한다. 같은 데이터로 RestoreState()하면 끊김 없이 이어지고, 그 뒤 Reset()은 저장한 임무의 시작으로 돌아간다.
+    /// 시드와 시작 설정, 아직 꺼내지 않은 사건도 저장한다.
+    /// </summary>
     public byte[] SaveState()
     {
         using var ms = new MemoryStream();
@@ -87,6 +99,7 @@ public sealed class Simulation : ISimulation
         {
             bw.Write(SaveFormatVersion);
             bw.Write(_seed);
+            bw.Write(SetupJson(_setup));
             W.Io(StateIO.ForWrite(bw));
         }
         return ms.ToArray();
@@ -99,9 +112,11 @@ public sealed class Simulation : ISimulation
         if (version != SaveFormatVersion)
             throw new InvalidDataException($"저장 형식 {version}은 지원하지 않습니다 (현재 {SaveFormatVersion}).");
         int seed = br.ReadInt32();
-        var world = new SimWorld(Data, seed, _setup);
+        var setup = SetupFromJson(br.ReadString());
+        var world = new SimWorld(Data, seed, setup);
         world.Io(StateIO.ForRead(br));
         _seed = seed;
+        _setup = setup;
         _world = world;
     }
 }

@@ -26,6 +26,8 @@ public sealed class StateIO
     public static StateIO ForRead(BinaryReader reader) => new(Mode.Read, null, null, reader);
 
     public bool IsReading => _mode == Mode.Read;
+    /// <summary>해시할 때는 표현 층용 값(아직 꺼내지 않은 사건)을 빼고, 저장할 때만 넣는다.</summary>
+    public bool IsHashing => _mode == Mode.Hash;
 
     public void D(ref double v)
     {

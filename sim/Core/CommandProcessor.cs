@@ -11,6 +11,7 @@ static class CommandProcessor
     {
         var parts = c.Cmd.Split('.');
         ArgumentException Bad(string why) => new($"명령 '{c.Cmd}': {why}");
+        if (!double.IsFinite(c.Value) || !double.IsFinite(c.Value2)) throw Bad("값은 유한한 수여야 한다");
 
         switch (parts[0])
         {
@@ -36,7 +37,7 @@ static class CommandProcessor
                 return new ParsedCommand(CommandKind.Jumper, n - 1, OnOff(parts[2], "jumper", "unjumper", Bad), 0, 0);
 
             case "propulsion" when parts.Length == 2 && parts[1] == "set":
-                if (c.Value < 0 || c.Value > 1) throw Bad("스로틀은 0~1");
+                if (!(c.Value >= 0 && c.Value <= 1)) throw Bad("스로틀은 0~1");
                 return new ParsedCommand(CommandKind.Propulsion, w.Propulsion, false, c.Value, 0);
 
             case "sonar" when parts.Length == 2 && parts[1] == "ping":
@@ -46,7 +47,8 @@ static class CommandProcessor
                 return new ParsedCommand(CommandKind.CandleLight, 0, false, 0, 0);
 
             case "noise" when parts.Length == 2 && parts[1] == "emit":
-                if (c.Value < 0 || c.Value > 100 || c.Value2 <= 0) throw Bad("소음 크기는 0~100, 시간은 0보다 커야 한다");
+                if (!(c.Value >= 0 && c.Value <= 100)) throw Bad("소음 크기는 0~100");
+                if (!(c.Value2 > 0 && c.Value2 <= w.T.Noise.MaxEmitSeconds)) throw Bad($"시간은 0초보다 크고 {w.T.Noise.MaxEmitSeconds}초 이하");
                 return new ParsedCommand(CommandKind.NoiseEmit, 0, false, c.Value, c.Value2);
 
             default:
@@ -82,8 +84,11 @@ static class CommandProcessor
                 break;
 
             case CommandKind.HandPumpStroke:
-                WaterSystem.HandPumpStroke(w);
-                w.AddActionNoise("handpump");
+                // 한 번 펌질하는 데 시간이 걸린다. 그 사이에 들어온 펌질은 거부한다.
+                if (!WaterSystem.HandPumpStroke(w))
+                    w.Emit(SimEventKind.CommandRejected, "handpump.stroke");
+                else
+                    w.AddActionNoise("handpump");
                 break;
 
             case CommandKind.Jumper:
@@ -97,7 +102,7 @@ static class CommandProcessor
                 break;
 
             case CommandKind.SonarPing:
-                w.Devices[c.Index].PulseRemaining = w.Data.Devices[c.Index].PulseSeconds;
+                w.Devices[c.Index].PulseTicks = Math.Max(1, (int)Math.Round(w.Data.Devices[c.Index].PulseSeconds * w.T.TicksPerSecond));
                 break;
 
             case CommandKind.CandleLight:

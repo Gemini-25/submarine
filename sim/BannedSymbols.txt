@@ -21,5 +21,40 @@ M:System.String.GetHashCode;프로세스마다 달라진다. Core.StateHasher를
 M:System.Object.GetHashCode;프로세스마다 달라질 수 있다. Core.StateHasher를 쓴다
 T:System.HashCode;프로세스마다 달라진다
 T:System.Threading.Tasks.Parallel;병렬 처리는 순서를 보장하지 않는다
-M:System.Threading.Tasks.Task.Run(System.Action);시뮬레이션은 단일 스레드다
 T:System.Threading.ThreadPool;시뮬레이션은 단일 스레드다
+M:System.Math.Log(System.Double,System.Double);플랫폼마다 마지막 비트가 다를 수 있다
+M:System.Math.Log2(System.Double);플랫폼마다 마지막 비트가 다를 수 있다
+M:System.Math.Asin(System.Double);플랫폼마다 마지막 비트가 다를 수 있다
+M:System.Math.Acos(System.Double);플랫폼마다 마지막 비트가 다를 수 있다
+M:System.Math.Atan(System.Double);플랫폼마다 마지막 비트가 다를 수 있다
+M:System.Math.Sinh(System.Double);플랫폼마다 마지막 비트가 다를 수 있다
+M:System.Math.Cosh(System.Double);플랫폼마다 마지막 비트가 다를 수 있다
+M:System.Math.Asinh(System.Double);플랫폼마다 마지막 비트가 다를 수 있다
+M:System.Math.Acosh(System.Double);플랫폼마다 마지막 비트가 다를 수 있다
+M:System.Math.Atanh(System.Double);플랫폼마다 마지막 비트가 다를 수 있다
+M:System.Math.Cbrt(System.Double);플랫폼마다 마지막 비트가 다를 수 있다
+M:System.Math.ReciprocalEstimate(System.Double);CPU마다 결과가 다르다
+M:System.Math.ReciprocalSqrtEstimate(System.Double);CPU마다 결과가 다르다
+M:System.Double.Pow(System.Double,System.Double);플랫폼마다 마지막 비트가 다를 수 있다
+M:System.Double.Exp(System.Double);플랫폼마다 마지막 비트가 다를 수 있다
+M:System.Double.Log(System.Double);플랫폼마다 마지막 비트가 다를 수 있다
+M:System.Double.Log(System.Double,System.Double);플랫폼마다 마지막 비트가 다를 수 있다
+M:System.Double.Log2(System.Double);플랫폼마다 마지막 비트가 다를 수 있다
+M:System.Double.Log10(System.Double);플랫폼마다 마지막 비트가 다를 수 있다
+M:System.Double.Sin(System.Double);플랫폼마다 마지막 비트가 다를 수 있다
+M:System.Double.Cos(System.Double);플랫폼마다 마지막 비트가 다를 수 있다
+M:System.Double.Tan(System.Double);플랫폼마다 마지막 비트가 다를 수 있다
+M:System.Double.Atan2(System.Double,System.Double);플랫폼마다 마지막 비트가 다를 수 있다
+M:System.Double.Sinh(System.Double);플랫폼마다 마지막 비트가 다를 수 있다
+M:System.Double.Cosh(System.Double);플랫폼마다 마지막 비트가 다를 수 있다
+M:System.Double.Tanh(System.Double);플랫폼마다 마지막 비트가 다를 수 있다
+M:System.Double.Cbrt(System.Double);플랫폼마다 마지막 비트가 다를 수 있다
+M:System.Double.ReciprocalEstimate(System.Double);CPU마다 결과가 다르다
+M:System.Double.ReciprocalSqrtEstimate(System.Double);CPU마다 결과가 다르다
+T:System.TimeProvider;시뮬레이션은 실제 시각을 쓰지 않는다
+M:System.Guid.NewGuid;시드 없는 난수다
+T:System.Threading.Tasks.Task;시뮬레이션은 단일 스레드다
+T:System.Threading.Tasks.Task`1;시뮬레이션은 단일 스레드다
+T:System.Threading.Tasks.TaskFactory;시뮬레이션은 단일 스레드다
+T:System.Threading.Thread;시뮬레이션은 단일 스레드다
+T:System.Numerics.Vector`1;SIMD 폭이 CPU마다 달라 합산 순서가 바뀐다

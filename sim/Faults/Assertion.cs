@@ -42,9 +42,9 @@ sealed class Assertion
                 var s = QueryValue.Of(t[1..^1]);
                 return (_ => s, null, t);
             }
-            if (IsNumber(t))
+            if (TryNumber(t, out double number))
             {
-                var n = QueryValue.Of(double.Parse(t, NumberStyles.Float, CultureInfo.InvariantCulture));
+                var n = QueryValue.Of(number);
                 return (_ => n, null, t);
             }
             if (t == "start")
@@ -67,12 +67,13 @@ sealed class Assertion
         (Func<SimWorld, QueryValue> f, string? path, string label) Operand(string? lhsPath)
         {
             var (f, path, label) = Term(lhsPath);
+            bool isText = f(w).IsText;
             while (Peek() is "+" or "-" or "*" or "/")
             {
                 string op = Next();
+                if (isText) throw Err($"문자열 값에는 '{op}' 산술을 쓸 수 없다");
                 string numText = Next();
-                if (!IsNumber(numText)) throw Err($"'{op}' 뒤에는 숫자만 올 수 있다");
-                double n = double.Parse(numText, NumberStyles.Float, CultureInfo.InvariantCulture);
+                if (!TryNumber(numText, out double n)) throw Err($"'{op}' 뒤에는 숫자만 올 수 있다");
                 var inner = f;
                 f = op switch
                 {
@@ -123,8 +124,8 @@ sealed class Assertion
         return new Assertion(eval, explain);
     }
 
-    static bool IsNumber(string t) =>
-        t.Length > 0 && (char.IsDigit(t[0]) || (t.Length > 1 && t[0] == '-' && (char.IsDigit(t[1]) || t[1] == '.')) || (t[0] == '.' && t.Length > 1));
+    static bool TryNumber(string t, out double value) =>
+        double.TryParse(t, NumberStyles.Float, CultureInfo.InvariantCulture, out value) && double.IsFinite(value);
 
     static List<string> Tokenize(string s)
     {
@@ -164,7 +165,27 @@ sealed class Assertion
             }
             int start = i;
             if (unaryMinus) i++;
-            while (i < s.Length && (char.IsLetterOrDigit(s[i]) || s[i] is '.' or '_')) i++;
+            if (i < s.Length && (char.IsDigit(s[i]) || s[i] == '.'))
+            {
+                // 숫자: 1, 0.5, .5, 1e-3, 2.5E+2
+                while (i < s.Length && (char.IsDigit(s[i]) || s[i] == '.')) i++;
+                if (i < s.Length && s[i] is 'e' or 'E')
+                {
+                    int e = i + 1;
+                    if (e < s.Length && s[e] is '+' or '-') e++;
+                    if (e < s.Length && char.IsDigit(s[e]))
+                    {
+                        i = e;
+                        while (i < s.Length && char.IsDigit(s[i])) i++;
+                    }
+                }
+                if (i < s.Length && (char.IsLetter(s[i]) || s[i] == '_'))
+                    throw new FormatException($"assert '{s}': 숫자 '{s[start..(i + 1)]}'를 읽을 수 없다");
+            }
+            else
+            {
+                while (i < s.Length && (char.IsLetterOrDigit(s[i]) || s[i] is '.' or '_')) i++;
+            }
             if (i == start || (unaryMinus && i == start + 1)) throw new FormatException($"assert '{s}': 읽을 수 없는 글자 '{c}'");
             tokens.Add(s[start..i]);
         }

@@ -118,8 +118,16 @@ public class NoiseTests
     {
         var n = TestData.T.Noise;
         var sim = TestData.NewSim(setup: TestData.Setup(s => { foreach (var d in TestData.Data.Devices) s.Devices[d.Id] = false; }));
-        sim.Cmd("noise.emit", 40, n.AccumTauSeconds * 10);
-        sim.Run(n.AccumTauSeconds);
+        // noise.emit 한 번은 최대 maxEmitSeconds까지라서 이어 붙인다.
+        double chunk = n.MaxEmitSeconds;
+        double elapsed = 0;
+        while (elapsed < n.AccumTauSeconds)
+        {
+            sim.Cmd("noise.emit", 40, chunk);
+            double run = Math.Min(chunk, n.AccumTauSeconds - elapsed);
+            sim.Run(run);
+            elapsed += run;
+        }
         double expected = n.AccumGain * 40 * (1 - Math.Exp(-1)); // 테스트 쪽에서는 Exp를 써도 된다
         Assert.Equal(expected, sim.Q("noise.accum"), 1);
     }

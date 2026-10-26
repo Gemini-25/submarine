@@ -54,6 +54,33 @@ static class DataValidator
             Check(w.BatterySubmergeStartL < w.BatterySubmergeFullL && w.BatterySubmergeFullL <= bb.CapacityL,
                 "batterySubmergeStartL < batterySubmergeFullL ≤ 축전지 빌지 용량");
         Check(w.Hatch.Zones.Count == 2 && w.Hatch.Zones.All(z => GameData.Zones.Contains(z)), "tuning.water.hatch.zones는 구역 둘");
+        if (w.Hatch.Zones.Count == 2)
+            Check(Math.Abs(GameData.ZoneIndex(w.Hatch.Zones[0]) - GameData.ZoneIndex(w.Hatch.Zones[1])) == 1, "tuning.water.hatch.zones는 이웃한 구역이어야 한다");
+        // 빌지 칸은 이어진 구역을 덮고, 칸 순서(BilgeOrder)대로 앞에서 뒤로 이어져야 한다. 해치 빌지는 이웃한 두 칸이다.
+        var order = d.BilgeOrder;
+        int expectedZone = 0;
+        foreach (var id in order)
+        {
+            if (!w.Bilges.TryGetValue(id, out var b)) continue;
+            var idx = b.Zones.Select(GameData.ZoneIndex).OrderBy(i => i).ToList();
+            bool contiguous = idx.Count > 0 && idx[0] == expectedZone && idx.Zip(idx.Skip(1), (a, c) => c == a + 1).All(x => x);
+            Check(contiguous, $"tuning.water.bilges.{id}.zones는 앞에서부터 이어진 구역이어야 한다");
+            if (idx.Count > 0) expectedZone = idx[^1] + 1;
+        }
+        if (w.Hatch.Bilges.Count == 2 && w.Hatch.Bilges.All(w.Bilges.ContainsKey))
+        {
+            int a = order.ToList().IndexOf(w.Hatch.Bilges[0]), c = order.ToList().IndexOf(w.Hatch.Bilges[1]);
+            Check(Math.Abs(a - c) == 1, "tuning.water.hatch.bilges는 이웃한 두 빌지 칸이어야 한다");
+        }
+        Check(w.HandPumpStrokeL > 0 && w.HandPumpStrokeSeconds > 0, "tuning.water.handPumpStrokeL, handPumpStrokeSeconds > 0");
+        Check(t.Noise.MaxEmitSeconds > 0, "tuning.noise.maxEmitSeconds > 0");
+        Check(t.RandomFaults.DepthReferenceM > 0, "tuning.randomFaults.depthReferenceM > 0");
+        foreach (var (lamp, circuit) in t.Panel.CircuitLamps)
+        {
+            Check(Bindings.PanelLamps.Contains(lamp), $"tuning.panel.circuitLamps: 알 수 없는 표시등 '{lamp}'");
+            Check(d.Circuits.Any(x => x.Id == circuit), $"tuning.panel.circuitLamps.{lamp}: 회로 '{circuit}' 없음");
+        }
+        Check(t.Crew.Co2Levels.Length > 0 && t.Crew.O2Levels.Length > 0 && t.Crew.Cl2Levels.Length > 0, "tuning.crew 임계값 목록이 비어 있음");
         Check(w.Hatch.Bilges.Count is 0 or 2 && w.Hatch.Bilges.All(w.Bilges.ContainsKey), "tuning.water.hatch.bilges는 비우거나 빌지 칸 둘");
         Check(t.Noise.AccumTauSeconds > 0, "tuning.noise.accumTauSeconds > 0");
         Check(t.RandomFaults.RollEveryTicks > 0, "tuning.randomFaults.rollEveryTicks > 0");
@@ -86,8 +113,12 @@ static class DataValidator
             Check(dev.MinVoltage is >= 0 and <= 1, $"devices.{dev.Id}.minVoltage는 0~1");
             Check(dev.Noise is >= 0 and <= 100, $"devices.{dev.Id}.noise는 0~100");
             Check(dev.Kind != DeviceKind.Pulse || dev.PulseSeconds > 0, $"devices.{dev.Id}: pulse 장비는 pulseSeconds > 0");
-            Check(dev.CoolingWPerC > 0 && dev.HeatCapacityJPerC > 0, $"devices.{dev.Id}: 냉각과 열용량 > 0");
-            Check(dev.CutoutC == 0 || dev.CutoutResetC < dev.CutoutC, $"devices.{dev.Id}: cutoutResetC < cutoutC");
+            Check(dev.HeatFactor >= 0, $"devices.{dev.Id}.heatFactor >= 0");
+            if (dev.HeatFactor > 0)
+                Check(dev.CoolingWPerC > 0 && dev.HeatCapacityJPerC > 0, $"devices.{dev.Id}: 발열이 있으면 coolingWPerC와 heatCapacityJPerC > 0");
+            Check((dev.CutoutC == null) == (dev.CutoutResetC == null), $"devices.{dev.Id}: cutoutC와 cutoutResetC는 함께 있어야 한다");
+            if (dev.CutoutC != null && dev.CutoutResetC != null)
+                Check(dev.CutoutResetC < dev.CutoutC, $"devices.{dev.Id}: cutoutResetC < cutoutC");
             Check(dev.Zone.Length == 0 || GameData.Zones.Contains(dev.Zone), $"devices.{dev.Id}.zone '{dev.Zone}' 알 수 없음");
             foreach (var p in dev.Parts)
                 Check(partById.ContainsKey(p), $"devices.{dev.Id}.parts: '{p}' 없음");
@@ -122,6 +153,28 @@ static class DataValidator
             foreach (var key in f.Set.Keys)
                 Check(kindParts.All(p => p.Props.ContainsKey(key)), $"faults.{f.Id}.set.{key}: 대상 부품에 없는 상태 값");
         }
+        foreach (var id in Bindings.Devices)
+            Check(d.Devices.Any(x => x.Id == id), $"devices.json에 규칙이 붙는 장비 '{id}'가 없다");
+        foreach (var (id, props) in Bindings.Parts)
+        {
+            Check(partById.TryGetValue(id, out var bp), $"parts.json에 규칙이 붙는 부품 '{id}'가 없다");
+            if (bp != null)
+                foreach (var prop in props)
+                    Check(bp.Props.ContainsKey(prop), $"parts.{id}.props에 규칙이 읽는 '{prop}'가 없다");
+        }
+        foreach (var (kind, props) in Bindings.PartKinds)
+            foreach (var p in d.Parts.Where(x => x.Kind == kind))
+                foreach (var prop in props)
+                    Check(p.Props.ContainsKey(prop), $"parts.{p.Id}.props에 규칙이 읽는 '{prop}'가 없다");
+        foreach (var (id, (kind, prop, value)) in Bindings.Faults)
+        {
+            var f = d.Faults.FirstOrDefault(x => x.Id == id);
+            Check(f != null, $"faults.json에 코드가 주입하는 고장 '{id}'가 없다");
+            if (f != null)
+                Check(f.PartKind == kind && f.Set.TryGetValue(prop, out var v) && v == value,
+                    $"faults.{id}는 {kind} 부품에 set.{prop} = {value}여야 한다");
+        }
+
         foreach (var p in d.Parts)
             if (p.WearFault != null)
                 Check(faultIds.Contains(p.WearFault) && d.Faults.First(f => f.Id == p.WearFault).PartKind == p.Kind,

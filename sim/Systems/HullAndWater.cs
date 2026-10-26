@@ -77,14 +77,17 @@ static class WaterSystem
     {
         var wt = w.T.Water;
         var water = w.Water;
-        int zones = GameData.Zones.Length;
+        int zones = GameData.Zones.Count;
         double dt = w.Dt;
+
+        if (water.HandPumpBusy > 0) water.HandPumpBusy = Math.Max(0, water.HandPumpBusy - dt);
 
         // 1. 누수 유입
         for (int i = 0; i < w.Leaks.Length; i++)
         {
             double liters = w.Leaks[i].InflowLps * dt;
             if (liters <= 0) continue;
+            water.InflowL += liters;
             int z = w.LeakZone[i];
             if (z >= zones) { water.Chamber += liters; continue; } // 케이블 챔버는 실내와 따로 찬다
             int b = w.ZoneBilge[z];
@@ -103,6 +106,7 @@ static class WaterSystem
             double net = water.PumpGrossLps * Curve.Clamp01(1 - stuck);
             double removed = Math.Min(water.Bilge[w.PumpBilge], net * dt);
             water.Bilge[w.PumpBilge] -= removed;
+            water.PumpedOutL += removed;
             water.PumpNetLps = removed / dt;
         }
         else
@@ -111,7 +115,7 @@ static class WaterSystem
             water.PumpNetLps = 0;
         }
 
-        // 3. 연결된 빌지 칸 사이 물이 같은 비율로 맞춰진다
+        // 3. 이웃한 빌지 칸(BilgeOrder 순서) 사이 물이 같은 비율로 맞춰진다
         double eq = Math.Min(1, wt.BilgeEqualizePerSecond * dt);
         for (int b = 0; b + 1 < water.Bilge.Length; b++)
         {
@@ -194,9 +198,15 @@ static class WaterSystem
     public static double FloorLevelCm(SimWorld w, int zone) =>
         w.Water.Floor[zone] / 1000.0 / w.T.Water.ZoneFloorAreaM2 * 100.0;
 
-    public static void HandPumpStroke(SimWorld w)
+    /// <summary>수동 펌프 한 번. 아직 앞 펌질이 끝나지 않았으면 false.</summary>
+    public static bool HandPumpStroke(SimWorld w)
     {
+        if (w.Water.HandPumpBusy > 1e-9) return false;
         int b = w.HandPumpBilge;
-        w.Water.Bilge[b] = Math.Max(0, w.Water.Bilge[b] - w.T.Water.HandPumpStrokeL);
+        double removed = Math.Min(w.Water.Bilge[b], w.T.Water.HandPumpStrokeL);
+        w.Water.Bilge[b] -= removed;
+        w.Water.HandPumpedL += removed;
+        w.Water.HandPumpBusy = w.T.Water.HandPumpStrokeSeconds;
+        return true;
     }
 }

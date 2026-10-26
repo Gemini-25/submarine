@@ -30,6 +30,11 @@
       "fromTick": 201
     },
     {
+      "byTick": 201,
+      "fromTick": 201,
+      "assert": "panel.gauge.pumpFlow == 0 && panel.gauge.pumpCurrent < 150"
+    },
+    {
       "byTick": 4800,
       "assert": "panel.lamp.water == 'warning'"
     },

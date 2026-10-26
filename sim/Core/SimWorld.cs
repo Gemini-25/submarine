@@ -10,17 +10,6 @@ namespace DeepLine.Sim.Core;
 /// </summary>
 sealed class SimWorld
 {
-    // 코드가 규칙을 붙이는 장비 ID. 데이터 검증에서 존재를 확인한다.
-    public const string FanId = "vent_fan";
-    public const string PumpId = "bilge_pump";
-    public const string PropulsionId = "propulsion";
-    public const string SonarId = "sonar";
-    public const string IgniterId = "o2_igniter";
-    public const string PanelId = "status_panel";
-    public const string LightsId = "cabin_lights";
-    public static readonly string[] RequiredDevices = { FanId, PumpId, PropulsionId, SonarId, IgniterId, PanelId, LightsId };
-    public static readonly string[] RequiredParts = { "fan.motor", "pump.intake", "pump.bearing", "pump.check_valve", "scrubber.canister" };
-
     public readonly GameData Data;
     public readonly Tuning T;
     public readonly double Dt;
@@ -74,6 +63,8 @@ sealed class SimWorld
     readonly List<SimEvent> _events = new();
     /// <summary>이번 틱에 튄 불꽃의 원인. 틱이 끝나면 비운다 (상태 아님).</summary>
     public readonly List<string> SparksThisTick = new();
+    /// <summary>상황판 센서 값을 담는 계산용 버퍼 (상태 아님. 매 틱 다시 채운다).</summary>
+    public readonly SensorReadings Sensors;
 
     public SimWorld(GameData data, int seed, MissionSetup? setup = null)
     {
@@ -112,6 +103,7 @@ sealed class SimWorld
             Junctions[i] = Part($"junction.{c.Id}");
         }
 
+        Sensors = new SensorReadings(data.Circuits.Count, data.Devices.Count);
         _deviceIndex = new Dictionary<string, int>(StringComparer.Ordinal);
         Devices = new DeviceState[data.Devices.Count];
         DeviceCircuit = new int[Devices.Length];
@@ -124,19 +116,14 @@ sealed class SimWorld
             DeviceCircuit[i] = _circuitIndex[d.Circuit];
             DeviceParts[i] = d.Parts.Select(Part).ToArray();
         }
-        foreach (var id in RequiredDevices)
-            if (!_deviceIndex.ContainsKey(id))
-                throw new DataValidationException(new[] { $"devices.json에 규칙이 붙는 장비 '{id}'가 없다" });
-        foreach (var id in RequiredParts)
-            if (!_partIndex.ContainsKey(id))
-                throw new DataValidationException(new[] { $"parts.json에 규칙이 붙는 부품 '{id}'가 없다" });
-        Fan = _deviceIndex[FanId];
-        Pump = _deviceIndex[PumpId];
-        Propulsion = _deviceIndex[PropulsionId];
-        Sonar = _deviceIndex[SonarId];
-        Igniter = _deviceIndex[IgniterId];
-        Panel = _deviceIndex[PanelId];
-        Lights = _deviceIndex[LightsId];
+        // 규칙이 붙는 장비와 부품은 데이터 검증(Bindings)에서 이미 확인했다.
+        Fan = _deviceIndex[Bindings.Fan];
+        Pump = _deviceIndex[Bindings.Pump];
+        Propulsion = _deviceIndex[Bindings.Propulsion];
+        Sonar = _deviceIndex[Bindings.Sonar];
+        Igniter = _deviceIndex[Bindings.Igniter];
+        Panel = _deviceIndex[Bindings.Panel];
+        Lights = _deviceIndex[Bindings.Lights];
 
         Leaks = new LeakState[data.LeakPoints.Count];
         LeakParts = new Part[Leaks.Length];
@@ -145,25 +132,25 @@ sealed class SimWorld
         {
             Leaks[i] = new LeakState();
             LeakParts[i] = Part(data.LeakPoints[i].Id);
-            LeakZone[i] = Array.IndexOf(GameData.LeakZones, data.LeakPoints[i].Zone);
+            LeakZone[i] = GameData.LeakZoneIndex(data.LeakPoints[i].Zone);
         }
 
         var w = T.Water;
-        BilgeIds = w.Bilges.Keys.ToArray();
+        BilgeIds = data.BilgeOrder.ToArray();
         Water.Bilge = new double[BilgeIds.Length];
-        ZoneBilge = new int[GameData.Zones.Length];
+        ZoneBilge = new int[GameData.Zones.Count];
         for (int b = 0; b < BilgeIds.Length; b++)
         {
             var def = w.Bilges[BilgeIds[b]];
             Water.Bilge[b] = def.InitialL;
             foreach (var z in def.Zones)
-                ZoneBilge[Array.IndexOf(GameData.Zones, z)] = b;
+                ZoneBilge[GameData.ZoneIndex(z)] = b;
         }
         PumpBilge = Array.IndexOf(BilgeIds, w.PumpBilge);
         HandPumpBilge = Array.IndexOf(BilgeIds, w.HandPumpBilge);
         BatteryBilge = Array.IndexOf(BilgeIds, w.BatteryBilge);
-        HatchZoneA = Array.IndexOf(GameData.Zones, w.Hatch.Zones[0]);
-        HatchZoneB = Array.IndexOf(GameData.Zones, w.Hatch.Zones[1]);
+        HatchZoneA = GameData.ZoneIndex(w.Hatch.Zones[0]);
+        HatchZoneB = GameData.ZoneIndex(w.Hatch.Zones[1]);
         HatchBilgeA = w.Hatch.Bilges.Count == 2 ? Array.IndexOf(BilgeIds, w.Hatch.Bilges[0]) : -1;
         HatchBilgeB = w.Hatch.Bilges.Count == 2 ? Array.IndexOf(BilgeIds, w.Hatch.Bilges[1]) : -1;
         Water.HatchClosed = setup.HatchClosed ?? w.Hatch.InitiallyClosed;
@@ -296,7 +283,7 @@ sealed class SimWorld
         AirSystem.Update(this);
         NoiseSystem.Update(this);
 
-        if (SparksThisTick.Count > 0 && Air.H2 >= T.Air.ExplosiveH2Pct)
+        if (Status == MissionStatus.Running && SparksThisTick.Count > 0 && Air.H2 >= T.Air.ExplosiveH2Pct)
         {
             Emit(SimEventKind.Explosion, SparksThisTick[0], Air.H2);
             Fail("explosion");
@@ -354,6 +341,28 @@ sealed class SimWorld
             io.D(ref value);
             io.D(ref value2);
             if (io.IsReading) _pending.Add(new ParsedCommand(kind, index, flag, value, value2));
+        }
+
+        // 아직 꺼내지 않은 사건은 저장본에만 넣는다. 결과에 영향을 주지 않으므로 해시에서는 뺀다.
+        if (!io.IsHashing)
+        {
+            int count = _events.Count;
+            io.I(ref count);
+            if (io.IsReading) _events.Clear();
+            for (int i = 0; i < count; i++)
+            {
+                var e = io.IsReading ? default : _events[i];
+                long tick = e.Tick;
+                var kind = e.Kind;
+                string subject = e.Subject ?? "", detail = e.Detail ?? "";
+                double value = e.Value;
+                io.L(ref tick);
+                io.E(ref kind);
+                io.S(ref subject);
+                io.D(ref value);
+                io.S(ref detail);
+                if (io.IsReading) _events.Add(new SimEvent(tick, kind, subject, value, detail));
+            }
         }
     }
 }

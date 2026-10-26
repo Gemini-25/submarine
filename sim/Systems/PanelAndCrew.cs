@@ -4,22 +4,88 @@ using DeepLine.Sim.Data;
 namespace DeepLine.Sim.Systems;
 
 /// <summary>
-/// 계통 상황판과 구역 경고등. 상황판은 C4 감각 회로의 상황판 장비가 돌 때만 켜지고,
-/// '센서가 읽은 값'으로 판단한다. M0의 센서는 진짜 값을 그대로 통과시키는 이상적인 센서다 (센서 고장은 M2).
+/// 센서가 읽은 값. 상황판과 구역 경고등은 진짜 상태가 아니라 이것만 읽는다 (SPEC 3절, 7절).
+/// M0의 센서는 진짜 값을 그대로 통과시키는 이상적인 센서다. 센서 고장(SNS-01, 02, 05)은 M2에서 Sense()에 들어간다.
+/// 배열은 SimWorld가 한 번 만들어 매 틱 다시 채운다 (상태가 아니라 계산용 버퍼).
+/// </summary>
+sealed class SensorReadings
+{
+    public double Voltage, TotalCurrent, MaxCellTemp, Co2, O2, Cl2, H2, BilgeTotal, Depth, PumpCurrent, PumpTemp, PumpFlow;
+    public readonly bool[] CircuitSwitchOn, CircuitFuseBlown, CircuitEnergized;
+    public readonly double[] CircuitCurrent;
+    /// <summary>구역별 침수 감지 (누수 유입 감지기와 바닥 수위 감지기).</summary>
+    public readonly double[] ZoneInflow, ZoneFloorWater;
+    public readonly bool[] DeviceEnabled, DeviceRunning;
+
+    public SensorReadings(int circuits, int devices)
+    {
+        CircuitSwitchOn = new bool[circuits];
+        CircuitFuseBlown = new bool[circuits];
+        CircuitEnergized = new bool[circuits];
+        CircuitCurrent = new double[circuits];
+        ZoneInflow = new double[GameData.Zones.Count];
+        ZoneFloorWater = new double[GameData.Zones.Count];
+        DeviceEnabled = new bool[devices];
+        DeviceRunning = new bool[devices];
+    }
+}
+
+/// <summary>
+/// 계통 상황판과 구역 경고등. 상황판은 C4 감각 회로의 상황판 장비가 돌 때만 켜진다.
 /// 구역 경고등은 축전지에 직결된 비상 급전으로 동작해서 전압이 조금이라도 있으면 켜진다.
 /// </summary>
 static class PanelSystem
 {
+    public static void Sense(SimWorld w, SensorReadings r)
+    {
+        r.Voltage = w.BusVoltage;
+        double total = 0;
+        for (int c = 0; c < w.Circuits.Length; c++)
+        {
+            var cs = w.Circuits[c];
+            r.CircuitSwitchOn[c] = cs.SwitchOn;
+            r.CircuitFuseBlown[c] = w.Fuses[c].Get("blown") >= 0.5;
+            r.CircuitEnergized[c] = cs.Energized;
+            r.CircuitCurrent[c] = cs.Current;
+            total += cs.Current;
+        }
+        r.TotalCurrent = total;
+        double maxCell = double.MinValue;
+        foreach (var c in w.Cells) maxCell = Math.Max(maxCell, c.TempC);
+        r.MaxCellTemp = maxCell;
+        r.Co2 = w.Air.Co2;
+        r.O2 = w.Air.O2;
+        r.Cl2 = w.Air.Cl2;
+        r.H2 = w.Air.H2;
+        r.BilgeTotal = WaterSystem.BilgeTotal(w);
+        r.Depth = w.DepthM;
+        var pump = w.Devices[w.Pump];
+        r.PumpCurrent = pump.Current;
+        r.PumpTemp = pump.TempC;
+        r.PumpFlow = w.Water.PumpNetLps;
+        for (int z = 0; z < GameData.Zones.Count; z++)
+        {
+            r.ZoneInflow[z] = HullSystem.ZoneInflow(w, z);
+            r.ZoneFloorWater[z] = w.Water.Floor[z];
+        }
+        for (int d = 0; d < w.Devices.Length; d++)
+        {
+            r.DeviceEnabled[d] = w.Devices[d].Enabled;
+            r.DeviceRunning[d] = w.Devices[d].Running;
+        }
+    }
+
     public static void Update(SimWorld w, bool emitEvents)
     {
         var p = w.PanelState;
         var pt = w.T.Panel;
-        p.On = w.Devices[w.Panel].Running;
+        var s = w.Sensors;
+        Sense(w, s);
+        p.On = s.DeviceRunning[w.Panel];
 
-        var lamps = new LampState[PanelSystems.Names.Length];
+        Span<LampState> lamps = stackalloc LampState[PanelSystems.Names.Count];
         if (p.On)
         {
-            Sensed s = Sense(w);
             p.GaugeVoltage = s.Voltage;
             p.GaugeCurrent = s.TotalCurrent;
             p.GaugeCo2 = s.Co2;
@@ -27,6 +93,7 @@ static class PanelSystem
             p.GaugeBilge = s.BilgeTotal;
             p.GaugeDepth = s.Depth;
             p.GaugePumpCurrent = s.PumpCurrent;
+            p.GaugePumpFlow = s.PumpFlow;
 
             lamps[PanelSystems.Power] = Max(
                 s.Voltage < pt.PowerFaultV ? LampState.Fault : s.Voltage < pt.PowerWarnV ? LampState.Warning : LampState.Off,
@@ -35,9 +102,8 @@ static class PanelSystem
             var sb = LampState.Off;
             for (int c = 0; c < w.Circuits.Length; c++)
             {
-                var cs = w.Circuits[c];
-                if (cs.SwitchOn && w.Fuses[c].Get("blown") >= 0.5) sb = Max(sb, LampState.Fault);
-                else if (cs.Current > pt.CircuitWarnFraction * w.Data.Circuits[c].FuseRating) sb = Max(sb, LampState.Warning);
+                if (s.CircuitSwitchOn[c] && s.CircuitFuseBlown[c]) sb = Max(sb, LampState.Fault);
+                else if (s.CircuitCurrent[c] > pt.CircuitWarnFraction * w.Data.Circuits[c].FuseRating) sb = Max(sb, LampState.Warning);
             }
             lamps[PanelSystems.Switchboard] = sb;
 
@@ -50,20 +116,23 @@ static class PanelSystem
                 s.PumpTemp > pt.PumpHotC ? LampState.Warning : LampState.Off);
 
             var hull = LampState.Off;
-            for (int z = 0; z < GameData.Zones.Length; z++)
+            for (int z = 0; z < GameData.Zones.Count; z++)
             {
-                if (w.Water.Floor[z] > w.T.Hull.ZoneAlarmFloorWaterL) hull = Max(hull, LampState.Fault);
-                else if (ZoneAlarm(w, z)) hull = Max(hull, LampState.Warning);
+                if (s.ZoneFloorWater[z] > w.T.Hull.ZoneAlarmFloorWaterL) hull = Max(hull, LampState.Fault);
+                else if (s.ZoneInflow[z] >= w.T.Hull.ZoneAlarmInflowLps) hull = Max(hull, LampState.Warning);
             }
             lamps[PanelSystems.Hull] = hull;
 
-            lamps[PanelSystems.Senses] = CircuitDevicesLamp(w, "C4");
-            lamps[PanelSystems.Nav] = CircuitDevicesLamp(w, "C5");
-            lamps[PanelSystems.Cable] = CircuitDevicesLamp(w, "C6");
+            foreach (var (lamp, circuit) in pt.CircuitLamps)
+            {
+                int i = IndexOf(PanelSystems.Names, lamp);
+                if (i >= 0 && w.TryCircuitIndex(circuit, out int c))
+                    lamps[i] = Max(lamps[i], CircuitDevicesLamp(w, s, c));
+            }
         }
         else
         {
-            p.GaugeVoltage = p.GaugeCurrent = p.GaugeCo2 = p.GaugeO2 = p.GaugeBilge = p.GaugeDepth = p.GaugePumpCurrent = 0;
+            p.GaugeVoltage = p.GaugeCurrent = p.GaugeCo2 = p.GaugeO2 = p.GaugeBilge = p.GaugeDepth = p.GaugePumpCurrent = p.GaugePumpFlow = 0;
         }
 
         for (int i = 0; i < lamps.Length; i++)
@@ -73,32 +142,34 @@ static class PanelSystem
             p.Lamps[i] = lamps[i];
         }
 
-        bool emergencyFeed = w.BusVoltage > 0;
-        for (int z = 0; z < GameData.Zones.Length; z++)
+        bool emergencyFeed = s.Voltage > 0;
+        for (int z = 0; z < GameData.Zones.Count; z++)
         {
-            bool on = emergencyFeed && (ZoneAlarm(w, z) || w.Water.Floor[z] > w.T.Hull.ZoneAlarmFloorWaterL);
+            bool on = emergencyFeed && (s.ZoneInflow[z] >= w.T.Hull.ZoneAlarmInflowLps || s.ZoneFloorWater[z] > w.T.Hull.ZoneAlarmFloorWaterL);
             if (emitEvents && on != p.ZoneAlarm[z])
                 w.Emit(on ? SimEventKind.ZoneAlarmOn : SimEventKind.ZoneAlarmOff, GameData.Zones[z]);
             p.ZoneAlarm[z] = on;
         }
     }
 
-    static bool ZoneAlarm(SimWorld w, int zone) =>
-        HullSystem.ZoneInflow(w, zone) >= w.T.Hull.ZoneAlarmInflowLps;
-
-    static LampState CircuitDevicesLamp(SimWorld w, string circuitId)
+    /// <summary>그 회로에서 켜 둔 연속 장비가 안 돌면 주의, 회로가 죽었으면 고장.</summary>
+    static LampState CircuitDevicesLamp(SimWorld w, SensorReadings s, int c)
     {
-        if (!w.TryCircuitIndex(circuitId, out int c)) return LampState.Off;
         var lamp = LampState.Off;
         for (int d = 0; d < w.Devices.Length; d++)
         {
             if (w.DeviceCircuit[d] != c || d == w.Panel) continue;
-            var ds = w.Devices[d];
-            var kind = w.Data.Devices[d].Kind;
-            bool wants = kind == DeviceKind.Continuous && ds.Enabled;
-            if (wants && !ds.Running) lamp = Max(lamp, w.Circuits[c].Energized ? LampState.Warning : LampState.Fault);
+            bool wants = w.Data.Devices[d].Kind == DeviceKind.Continuous && s.DeviceEnabled[d];
+            if (wants && !s.DeviceRunning[d]) lamp = Max(lamp, s.CircuitEnergized[c] ? LampState.Warning : LampState.Fault);
         }
         return lamp;
+    }
+
+    static int IndexOf(IReadOnlyList<string> list, string value)
+    {
+        for (int i = 0; i < list.Count; i++)
+            if (string.Equals(list[i], value, StringComparison.Ordinal)) return i;
+        return -1;
     }
 
     static LampState Level(double v, double warn, double fault) =>
@@ -108,23 +179,6 @@ static class PanelSystem
         v <= fault ? LampState.Fault : v <= warn ? LampState.Warning : LampState.Off;
 
     static LampState Max(LampState a, LampState b) => a > b ? a : b;
-
-    /// <summary>센서가 읽은 값. 센서 고장(SNS-01, 02, 05)은 M2에서 이 함수에 들어간다.</summary>
-    readonly record struct Sensed(
-        double Voltage, double TotalCurrent, double MaxCellTemp, double Co2, double O2, double Cl2, double H2,
-        double BilgeTotal, double Depth, double PumpCurrent, double PumpTemp);
-
-    static Sensed Sense(SimWorld w)
-    {
-        double current = 0;
-        foreach (var c in w.Circuits) current += c.Current;
-        double maxCell = double.MinValue;
-        foreach (var c in w.Cells) maxCell = Math.Max(maxCell, c.TempC);
-        var pump = w.Devices[w.Pump];
-        return new Sensed(
-            w.BusVoltage, current, maxCell, w.Air.Co2, w.Air.O2, w.Air.Cl2, w.Air.H2,
-            WaterSystem.BilgeTotal(w), w.DepthM, pump.Current, pump.TempC);
-    }
 }
 
 /// <summary>몸의 상태. 숫자 UI 없이 화면 효과로 표현할 단계값이다. 의식 상실은 임무 실패다.</summary>

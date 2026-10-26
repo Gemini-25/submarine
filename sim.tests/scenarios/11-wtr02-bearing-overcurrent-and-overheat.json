@@ -30,6 +30,10 @@
     {
       "byTick": 42000,
       "assert": "circuit.C3.fuse == 'blown'"
+    },
+    {
+      "never": "events.Explosion >= 1",
+      "toTick": 42000
     }
   ],
   "ordered": true

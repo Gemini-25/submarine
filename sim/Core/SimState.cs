@@ -11,7 +11,7 @@ public enum LampState { Off = 0, Warning = 1, Fault = 2 }
 /// <summary>상황판의 계통 표시등 순서.</summary>
 public static class PanelSystems
 {
-    public static readonly string[] Names = { "power", "switchboard", "air", "water", "hull", "senses", "nav", "cable" };
+    public static IReadOnlyList<string> Names => Bindings.PanelLamps;
     public const int Power = 0, Switchboard = 1, Air = 2, Water = 3, Hull = 4, Senses = 5, Nav = 6, Cable = 7;
 }
 
@@ -37,10 +37,13 @@ sealed class CircuitState
     public double Current;
     public double PowerW;
     public double LeakCurrent;
+    /// <summary>지난 틱에 본 퓨즈 상태. 퓨즈가 새로 끊긴 것을 알아채는 데 쓴다.</summary>
+    public bool FuseBlownSeen;
 
     public void Io(StateIO io)
     {
         io.B(ref SwitchOn);
+        io.B(ref FuseBlownSeen);
         io.D(ref OverTimer);
         io.B(ref Energized);
         io.D(ref Current);
@@ -53,7 +56,8 @@ sealed class DeviceState
 {
     public bool Enabled;
     public double Throttle;
-    public double PulseRemaining;
+    /// <summary>펄스 장비가 앞으로 돌 틱 수.</summary>
+    public int PulseTicks;
     public bool Running;
     public double TempC;
     public double LoadFactor;
@@ -66,7 +70,7 @@ sealed class DeviceState
     {
         io.B(ref Enabled);
         io.D(ref Throttle);
-        io.D(ref PulseRemaining);
+        io.I(ref PulseTicks);
         io.B(ref Running);
         io.D(ref TempC);
         io.D(ref LoadFactor);
@@ -104,7 +108,7 @@ sealed class ActiveNoise
 sealed class WaterState
 {
     /// <summary>구역별 바닥 위 물 (L). GameData.Zones 순서.</summary>
-    public double[] Floor = new double[GameData.Zones.Length];
+    public double[] Floor = new double[GameData.Zones.Count];
     /// <summary>빌지 칸별 물 (L). tuning.water.bilges의 서수 순서.</summary>
     public double[] Bilge = Array.Empty<double>();
     public double Chamber;
@@ -114,9 +118,17 @@ sealed class WaterState
     /// <summary>잠긴 셀 수 (연속값). 기체 발생에 쓴다.</summary>
     public double SubmergedCells;
     public int SubmergedCount;
+    /// <summary>수동 펌프의 앞 펌질이 끝나기까지 남은 초.</summary>
+    public double HandPumpBusy;
+    /// <summary>누적량 (L). 물 보존 검사와 디버그용.</summary>
+    public double InflowL, PumpedOutL, HandPumpedL;
 
     public void Io(StateIO io)
     {
+        io.D(ref HandPumpBusy);
+        io.D(ref InflowL);
+        io.D(ref PumpedOutL);
+        io.D(ref HandPumpedL);
         io.Doubles(Floor);
         io.Doubles(Bilge);
         io.D(ref Chamber);
@@ -169,10 +181,10 @@ sealed class NoiseState
 sealed class PanelState
 {
     public bool On;
-    public LampState[] Lamps = new LampState[PanelSystems.Names.Length];
-    public bool[] ZoneAlarm = new bool[GameData.Zones.Length];
+    public LampState[] Lamps = new LampState[PanelSystems.Names.Count];
+    public bool[] ZoneAlarm = new bool[GameData.Zones.Count];
     /// <summary>상황판 계기가 읽은 값 (센서를 거친 값). 꺼져 있으면 0.</summary>
-    public double GaugeVoltage, GaugeCurrent, GaugeCo2, GaugeO2, GaugeBilge, GaugeDepth, GaugePumpCurrent;
+    public double GaugeVoltage, GaugeCurrent, GaugeCo2, GaugeO2, GaugeBilge, GaugeDepth, GaugePumpCurrent, GaugePumpFlow;
 
     public void Io(StateIO io)
     {
@@ -186,6 +198,7 @@ sealed class PanelState
         io.D(ref GaugeBilge);
         io.D(ref GaugeDepth);
         io.D(ref GaugePumpCurrent);
+        io.D(ref GaugePumpFlow);
     }
 }
 

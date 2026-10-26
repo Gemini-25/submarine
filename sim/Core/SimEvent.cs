@@ -12,6 +12,7 @@ public enum SimEventKind
     CellSubmerged,
     PatchFailed,
     DeviceOverheat,
+    DeviceOverheatEnded,
     DeviceCutout,
     DeviceCutoutReset,
     PartStateChanged,

@@ -32,6 +32,11 @@
     {
       "byTick": 146,
       "assert": "panel.lamp.switchboard == 'fault'"
+    },
+    {
+      "never": "events.Explosion >= 1 || mission.status == 'failed'",
+      "toTick": 146,
+      "note": "수소가 없으면 퓨즈 불꽃은 폭발하지 않는다"
     }
   ],
   "ordered": true

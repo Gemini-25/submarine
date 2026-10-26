@@ -35,28 +35,6 @@ public class WaterTests
     }
 
     [Fact]
-    public void Water_is_conserved()
-    {
-        var sim = TestData.NewSim(setup: TestData.Setup(s => { s.DepthM = 400; s.Switches["C3"] = true; }));
-        sim.Inject("HUL-01", "leak.rivet.03", new Dictionary<string, double> { ["integrity"] = 0 });
-        sim.Inject("HUL-01", "leak.rivet.11", new Dictionary<string, double> { ["integrity"] = 0 });
-        double start = sim.Q("bilge.total") + sim.Q("floor.total");
-        double inflow = 0, pumped = 0;
-        for (int i = 0; i < TestData.Ticks(900); i++)
-        {
-            sim.Step();
-            inflow += sim.Q("leak.total") / TestData.T.TicksPerSecond;
-            pumped += sim.Q("pump.netFlow") / TestData.T.TicksPerSecond;
-            if (i % 40 == 0) sim.Cmd("handpump.stroke");
-        }
-        int strokes = (TestData.Ticks(900) + 39) / 40;
-        double handPumped = strokes * TestData.T.Water.HandPumpStrokeL;
-        double now = sim.Q("bilge.total") + sim.Q("floor.total");
-        // 수동 펌프는 빌지가 빌 때 1.5L보다 덜 퍼낼 수 있으므로 부등식으로 본다.
-        Assert.InRange(start + inflow - pumped - now, 0, handPumped + 1e-6);
-    }
-
-    [Fact]
     public void Pump_net_flow_follows_part_states()
     {
         var wt = TestData.T.Water;

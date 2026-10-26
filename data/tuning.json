@@ -81,7 +81,8 @@
     "bilgeEqualizePerSecond": 0.5,
     "batteryBilge": "bilge.fwd",
     "batterySubmergeStartL": 240,
-    "batterySubmergeFullL": 360
+    "batterySubmergeFullL": 360,
+    "handPumpStrokeSeconds": 1.2
   },
   "hull": {
     "integrityLossPerSecond": 0.002,
@@ -153,7 +154,8 @@
         "level": 45,
         "seconds": 3
       }
-    }
+    },
+    "maxEmitSeconds": 60
   },
   "wear": {
     "warningAt": 0.5,
@@ -177,7 +179,12 @@
     "h2Fault": 3.5,
     "bilgeWarnL": 60,
     "bilgeFaultL": 300,
-    "pumpHotC": 60
+    "pumpHotC": 60,
+    "circuitLamps": {
+      "senses": "C4",
+      "nav": "C5",
+      "cable": "C6"
+    }
   },
   "crew": {
     "co2Levels": [
@@ -208,6 +215,7 @@
   "randomFaults": {
     "rollEveryTicks": 20,
     "depthGain": 1,
-    "wearGain": 4
+    "wearGain": 4,
+    "depthReferenceM": 1000
   }
 }

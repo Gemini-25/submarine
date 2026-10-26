@@ -79,6 +79,7 @@ static class SimQuery
                     "leak" => x => QueryValue.Of(x.Circuits[c].LeakCurrent),
                     "rating" => x => QueryValue.Of(x.Data.Circuits[c].FuseRating),
                     "fuse" => x => QueryValue.Of(x.Fuses[c].Get("blown") >= 0.5 ? "blown" : "ok"),
+                    "moisture" => x => QueryValue.Of(x.Junctions[c].Get("moisture")),
                     _ => throw Unknown(),
                 };
             }
@@ -107,6 +108,26 @@ static class SimQuery
                 {
                     "netFlow" => x => QueryValue.Of(x.Water.PumpNetLps),
                     "grossFlow" => x => QueryValue.Of(x.Water.PumpGrossLps),
+                    "totalL" => x => QueryValue.Of(x.Water.PumpedOutL),
+                    _ => throw Unknown(),
+                };
+
+            case "handpump":
+                End(2);
+                return At(1) switch
+                {
+                    "totalL" => x => QueryValue.Of(x.Water.HandPumpedL),
+                    "busy" => x => QueryValue.Of(x.Water.HandPumpBusy > 1e-9),
+                    _ => throw Unknown(),
+                };
+
+            case "water":
+                End(2);
+                return At(1) switch
+                {
+                    // 실내(빌지 + 바닥 위)에 있는 물과 지금까지 들어온 물
+                    "inside" => x => QueryValue.Of(WaterSystem.BilgeTotal(x) + WaterSystem.FloorTotal(x)),
+                    "inflowTotalL" => x => QueryValue.Of(x.Water.InflowL),
                     _ => throw Unknown(),
                 };
 
@@ -123,7 +144,7 @@ static class SimQuery
             case "zone":
             {
                 End(3);
-                int z = Array.IndexOf(GameData.Zones, At(1));
+                int z = GameData.ZoneIndex(At(1));
                 if (z < 0) throw Unknown();
                 return At(2) switch
                 {
@@ -201,15 +222,14 @@ static class SimQuery
 
             case "lights":
                 End(2);
-                return At(1) == "brightness"
-                    ? x => QueryValue.Of(x.Devices[x.Lights].Running ? x.BusVoltage : 0)
-                    : throw Unknown();
+                return At(1) == "brightness" ? x => QueryValue.Of(Presentation.LightsBrightness(x)) : throw Unknown();
 
             case "panel":
                 if (p.Length == 2 && p[1] == "on") return x => QueryValue.Of(x.PanelState.On);
                 if (p.Length == 3 && p[1] == "lamp")
                 {
-                    int s = Array.IndexOf(PanelSystems.Names, p[2]);
+                    int s = -1;
+                    for (int k = 0; k < PanelSystems.Names.Count; k++) if (PanelSystems.Names[k] == p[2]) s = k;
                     if (s < 0) throw Unknown();
                     return x => QueryValue.Of(LampName(x.PanelState.Lamps[s]));
                 }
@@ -224,6 +244,7 @@ static class SimQuery
                         "bilge" => x => QueryValue.Of(x.PanelState.GaugeBilge),
                         "depth" => x => QueryValue.Of(x.PanelState.GaugeDepth),
                         "pumpCurrent" => x => QueryValue.Of(x.PanelState.GaugePumpCurrent),
+                        "pumpFlow" => x => QueryValue.Of(x.PanelState.GaugePumpFlow),
                         _ => throw Unknown(),
                     };
                 }
@@ -251,8 +272,10 @@ static class SimQuery
             case "events":
             {
                 End(2);
-                if (!Enum.TryParse<SimEventKind>(At(1), ignoreCase: false, out var kind)) throw Unknown();
-                int k = (int)kind;
+                int k = -1;
+                foreach (var kind in Enum.GetValues<SimEventKind>())
+                    if (kind.ToString() == At(1)) k = (int)kind; // 숫자나 쉼표 조합은 받지 않는다
+                if (k < 0) throw Unknown();
                 return x => QueryValue.Of(x.EventCounts[k]);
             }
 

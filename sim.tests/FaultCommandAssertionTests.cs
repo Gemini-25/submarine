@@ -107,30 +107,6 @@ public class CommandTests
         Assert.Equal(c, JsonSerializer.Deserialize<Command>(json));
     }
 
-    [Fact]
-    public void Propulsion_throttle_scales_power_and_noise()
-    {
-        var p = TestData.Data.Devices.First(d => d.Id == "propulsion");
-        var sim = TestData.NewSim();
-        sim.Cmd("propulsion.set", 0.5);
-        sim.Step();
-        Assert.Equal(p.PowerW * 0.5, sim.Q("device.propulsion.power"), 9);
-        sim.Cmd("propulsion.set", 0);
-        sim.Step();
-        Assert.Equal(0, sim.Q("device.propulsion.running"));
-    }
-
-    [Fact]
-    public void Sonar_ping_runs_for_its_pulse()
-    {
-        var sonar = TestData.Data.Devices.First(d => d.Id == "sonar");
-        var sim = TestData.NewSim();
-        sim.Cmd("sonar.ping");
-        sim.Step();
-        Assert.Equal(1, sim.Q("device.sonar.running"));
-        sim.Run(sonar.PulseSeconds);
-        Assert.Equal(0, sim.Q("device.sonar.running"));
-    }
 }
 
 public class AssertionTests

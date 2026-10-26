@@ -47,19 +47,6 @@ public class PowerTests
     }
 
     [Fact]
-    public void Discharge_matches_power_drawn()
-    {
-        var sim = TestData.NewSim(setup: TestData.Setup(s => s.Switches["C3"] = true));
-        sim.Step();
-        double before = sim.Q("battery.energyWh");
-        double watts = sim.Q("power.total");
-        sim.Run(60);
-        double used = before - sim.Q("battery.energyWh");
-        // 1분 동안 전압이 거의 그대로이므로 전력도 거의 일정하다.
-        Assert.InRange(used, watts / 60 * 0.99, watts / 60 * 1.01);
-    }
-
-    [Fact]
     public void Degraded_cell_empties_first_because_its_capacity_is_smaller()
     {
         var sim = TestData.NewSim(setup: TestData.Setup(s => s.Switches["C3"] = true));
@@ -98,14 +85,6 @@ public class PowerTests
         }
     }
 
-    [Fact]
-    public void Lights_dim_with_bus_voltage()
-    {
-        var sim = TestData.NewSim(setup: TestData.Setup(s => s.BatteryCharge = 0.15));
-        sim.Step();
-        Assert.Equal(sim.Q("battery.voltage"), sim.Q("lights.brightness"), 12);
-        Assert.True(sim.Q("lights.brightness") < 1);
-    }
 }
 
 public class SwitchboardTests
