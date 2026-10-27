@@ -16,6 +16,8 @@ public partial class DebugTools : CanvasLayer
 
     SimRunner _runner = null!;
     InteractionController _hands = null!;
+    Action _restart = null!;
+    Action _resume = null!;
     Label _values = null!;
     LineEdit _console = null!;
     Label _log = null!;
@@ -24,10 +26,13 @@ public partial class DebugTools : CanvasLayer
 
     public bool ConsoleOpen => _console.Visible;
 
-    public void Setup(SimRunner runner, InteractionController hands)
+    /// <summary>restart와 resume은 Main의 것을 쓴다(결과 화면, 창, 마우스 상태를 함께 정리한다).</summary>
+    public void Setup(SimRunner runner, InteractionController hands, Action restart, Action resume)
     {
         _runner = runner;
         _hands = hands;
+        _restart = restart;
+        _resume = resume;
         Layer = 30;
         _values = UiKit.Text("", 15, new Color(0.7f, 1f, 0.7f));
         _values.Position = new Vector2(12, 10);
@@ -85,7 +90,7 @@ public partial class DebugTools : CanvasLayer
                 else
                 {
                     _console.ReleaseFocus();
-                    Input.MouseMode = Input.MouseModeEnum.Captured;
+                    _resume();
                 }
                 break;
             case Key.F5:
@@ -135,7 +140,7 @@ public partial class DebugTools : CanvasLayer
                     Log("불러옴");
                     break;
                 case "restart":
-                    _runner.Restart();
+                    _restart();
                     Log("다시 시작");
                     break;
                 default:

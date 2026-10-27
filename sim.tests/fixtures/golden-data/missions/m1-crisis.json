@@ -29,7 +29,7 @@
     }
   ],
   "success": {
-    "assert": "circuit.C3.fuse == 'ok' && circuit.C3.energized == 1 && device.bilge_pump.running == 1 && part.pump.intake.prop.clog < 0.05 && part.pump.intake.prop.coverOpen == 0 && leak.rivet.09.inflow < 0.05 && bilge.total < 60",
+    "assert": "circuit.C3.fuse == 'ok' && part.pump.intake.prop.clog < 0.05 && part.pump.intake.prop.basketOut == 0 && part.pump.intake.prop.coverOpen == 0 && leak.rivet.09.inflow < 0.05 && bilge.total < 60",
     "holdSeconds": 60,
     "objectives": [
       "경보가 울린 계통을 모두 정상으로 되돌린다",

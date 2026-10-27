@@ -248,9 +248,10 @@ sealed class SimWorld
         Emit(SimEventKind.Spark, source);
     }
 
+    /// <summary>임무 실패. 이미 끝난 임무(성공 포함)는 바뀌지 않는다.</summary>
     public void Fail(string reason)
     {
-        if (Status == MissionStatus.Failed) return;
+        if (Status != MissionStatus.Running) return;
         Status = MissionStatus.Failed;
         FailReason = reason;
         Emit(SimEventKind.MissionFailed, reason);

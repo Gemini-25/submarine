@@ -89,7 +89,11 @@ public partial class SimRunner : Node
             }
         }
         Sim.Step();
-        foreach (var e in Sim.DrainEvents())
+        var events = Sim.DrainEvents();
+        // 사건을 듣는 쪽(결과 화면, 소리)이 그 틱의 상태를 보도록 스냅숏을 먼저 새로 만든다.
+        // 사건이 없는 틱은 만들지 않는다(시간 배율이 크면 한 프레임에 수백 틱이 돈다).
+        if (events.Count > 0) Snapshot = Sim.Snapshot;
+        foreach (var e in events)
             EventRaised?.Invoke(e);
         Ticked?.Invoke();
     }

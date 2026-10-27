@@ -17,24 +17,49 @@ public class DataValidationTests
         Assert.Equal(20, d.LeakPoints.Count);
     }
 
-    /// <summary>data/를 임시 폴더에 복사하고 한 파일을 고쳐서 읽는다.</summary>
-    static DataValidationException LoadBroken(string file, Action<JsonNode> mutate)
+    /// <summary>data/를 임시 폴더에 복사하고 한 파일을 고쳐서 읽는다. file은 data/ 기준 상대 경로.</summary>
+    internal static GameData LoadModified(string file, Action<JsonNode> mutate)
     {
         var dir = Directory.CreateTempSubdirectory("deepline-data-");
         try
         {
-            foreach (var f in Directory.GetFiles(TestData.DataDir, "*.json"))
-                File.Copy(f, Path.Combine(dir.FullName, Path.GetFileName(f)));
+            foreach (var f in Directory.GetFiles(TestData.DataDir, "*.json", SearchOption.AllDirectories))
+            {
+                var to = Path.Combine(dir.FullName, Path.GetRelativePath(TestData.DataDir, f));
+                Directory.CreateDirectory(Path.GetDirectoryName(to)!);
+                File.Copy(f, to);
+            }
             var path = Path.Combine(dir.FullName, file);
             var node = JsonNode.Parse(File.ReadAllText(path))!;
             mutate(node);
             File.WriteAllText(path, node.ToJsonString());
-            return Assert.Throws<DataValidationException>(() => GameData.LoadFromDirectory(dir.FullName));
+            return GameData.LoadFromDirectory(dir.FullName);
         }
         finally
         {
             dir.Delete(recursive: true);
         }
+    }
+
+    static DataValidationException LoadBroken(string file, Action<JsonNode> mutate) =>
+        Assert.Throws<DataValidationException>(() => LoadModified(file, mutate));
+
+    [Fact]
+    public void Mission_hold_time_must_be_positive()
+    {
+        var e = LoadBroken(Path.Combine("missions", "m1-crisis.json"), n => n["success"]!["holdSeconds"] = 0);
+        Assert.Contains(e.Errors, x => x.Contains("holdSeconds"));
+    }
+
+    [Fact]
+    public void Restoring_a_save_made_with_a_different_locker_is_a_clear_error()
+    {
+        var sim = TestData.NewSim();
+        sim.Run(1);
+        var saved = sim.SaveState();
+        var other = LoadModified("tuning.json", n => n["inventory"]!["locker"]!["spare_gasket"] = 2);
+        var restored = new Simulation(other, 1);
+        Assert.Throws<InvalidDataException>(() => restored.RestoreState(saved));
     }
 
     [Fact]
@@ -296,12 +321,25 @@ public class DeterminismTests
 
     public static IEnumerable<object[]> GoldenCases() =>
         Directory.GetFiles(TestData.ScenarioDir, "*.json").OrderBy(f => f, StringComparer.Ordinal)
-            .Select(f => Path.GetFileName(f)).Append("replay-log").Append("replay-random")
+            .Select(f => Path.GetFileName(f)).Append("replay-log").Append("replay-random").Append("mission-m1-crisis")
             .Select(k => new object[] { k });
 
     static List<string> GoldenRun(string key)
     {
         var hashes = new List<string>();
+        if (key == "mission-m1-crisis")
+        {
+            // 임무 스크립트와 손 수리 명령을 지나는 한 판 (규칙 기반 자동 플레이어).
+            var data = GoldenData();
+            var sim = new Simulation();
+            sim.StartMission(data, "m1-crisis");
+            CrisisPlayer.Run(sim, data, s =>
+            {
+                if (s.Tick % GoldenEvery == 0) hashes.Add(s.StateHash().ToString("X16"));
+            });
+            hashes.Add(sim.StateHash().ToString("X16"));
+            return hashes;
+        }
         if (key == "replay-log" || key == "replay-random")
         {
             var data = GoldenData();

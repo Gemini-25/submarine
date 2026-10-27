@@ -80,6 +80,9 @@ public partial class Hud : CanvasLayer
 
     public bool BriefingOpen => _briefing.Visible;
     public bool ResultOpen => _result.Visible;
+    /// <summary>결과 화면의 제목과 첫 줄 (자동 테스트가 확인한다).</summary>
+    public string ResultTitle => _resultTitle.Text;
+    public string ResultBody => _resultBody.Text;
     public string LastFelt { get; private set; } = "";
 
     public void Setup(SimRunner runner, InteractionController hands, PlayerController player)

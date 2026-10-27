@@ -227,7 +227,7 @@ sealed class CrewState
         io.S(ref Hand);
         io.D(ref Vitality);
         io.I(ref StunTicks);
-        for (int i = 0; i < Locker.Length; i++) io.I(ref Locker[i]);
+        io.Ints(Locker);
     }
 }
 

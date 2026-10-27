@@ -216,6 +216,12 @@ public partial class Submarine
             term.MeasureTarget = $"circuit.{c.Id}";
             term.GestureFor = h => h.Tool == "voltmeter" ? GestureKind.Probe : GestureKind.Click;
 
+            // 회로 표시등: 부하 쪽에 물린 작은 전구. 회로에 전기가 가면 전압에 비례해 켜진다(센서가 아닌 전구 자체).
+            Geo.Cyl(root, 0.022f, 0.015f, new Vector3(x, 0.95f, 0.05f), Geo.Brass).RotationDegrees = new Vector3(90, 0, 0);
+            var pilotMat = Geo.Glow(new Color(1f, 0.85f, 0.55f), 0);
+            pilotMat.AlbedoColor = new Color(0.3f, 0.27f, 0.2f);
+            Geo.Sphere(root, 0.016f, new Vector3(x, 0.95f, 0.062f), pilotMat);
+
             float angle = 0;
             OnUpdate((s, dt) =>
             {
@@ -228,6 +234,7 @@ public partial class Submarine
                 fuse.Visible = cv.FusePresent;
                 wire.Visible = !cv.FuseBlown;
                 soot.Visible = cv.FuseBlown;
+                pilotMat.EmissionEnergyMultiplier = cv.Energized ? 2.5f * (float)s.BusVoltage : 0;
             });
             SoundSpots[$"fuse.{c.Id}"] = GlobalOf(root, new Vector3(x, 1.24f, 0.08f));
         }
@@ -330,7 +337,7 @@ public partial class Submarine
             pivot.RotationDegrees = new Vector3(0, 0, angle);
         });
         SoundSpots["handpump"] = new Vector3(5.0f, 0.6f, -HalfWidth + 0.22f);
-        SightGlass(this, _data.Tuning.Water.HandPumpBilge, "전방 빌지", new Vector3(5.25f, 0.15f, -HalfWidth + 0.01f), Vector3.Back);
+        SightGlass(this, _data.Tuning.Water.HandPumpBilge, "전중 빌지", new Vector3(5.25f, 0.15f, -HalfWidth + 0.01f), Vector3.Back);
     }
 
     // ── 전동 배수 펌프와 흡입 거름망 (후방 좌현) ─────────
@@ -422,7 +429,8 @@ public partial class Submarine
         {
             var st = s.Strainer;
             float target = st.CoverOpen ? 100 : 0;
-            if (!float.IsNaN(coverDrag)) target = st.CoverOpen ? 100 - Math.Clamp(-coverDrag, 0, 1) * 30 : Math.Clamp(coverDrag, 0, 1) * 30;
+            // 끌어내리면(음수) 열리는 쪽, 밀어 올리면(양수) 닫히는 쪽으로 손을 따라간다.
+            if (!float.IsNaN(coverDrag)) target = st.CoverOpen ? 100 - Math.Clamp(coverDrag, 0, 1) * 30 : Math.Clamp(-coverDrag, 0, 1) * 30;
             coverAngle = Approach(coverAngle, target, 8, dt);
             hinge.RotationDegrees = new Vector3(coverAngle, 0, 0);
             basket.Visible = !st.BasketOut;
@@ -511,12 +519,16 @@ public partial class Submarine
                 _ = beam;
 
                 var it = Add(Interactable.Create(node, lp.Id, $"리벳 이음 {lp.Id["leak.rivet.".Length..]}", new Vector3(0.24f, 0.14f, 0.1f), new Vector3(0, 0, 0.04f)));
-                it.GestureFor = h => h.Tool is "mallet" or "caulking_set" ? GestureKind.Strike : GestureKind.Click;
+                // 쥔 물건이 먼저다: 버팀목을 쥐었으면 무엇을 들었든 버팀목을 댄다.
+                it.GestureFor = h => h.Hand == "timber_shore" ? GestureKind.Click
+                    : h.Tool is "mallet" or "caulking_set" ? GestureKind.Strike : GestureKind.Click;
+                // 맞는 명령이 없는 조합도 가장 가까운 명령을 보내고 판정은 시뮬레이션에 맡긴다(거부 사유가 손의 느낌으로 돌아온다).
                 it.CommandFor = (h, m) => (m, h.Tool, h.Hand) switch
                 {
-                    (Motion.Strike, "mallet", _) => $"{lp.Id}.wedge",
-                    (Motion.Strike, "caulking_set", _) => $"{lp.Id}.caulk",
                     (Motion.Click, _, "timber_shore") => $"{lp.Id}.shore",
+                    (Motion.Strike, "caulking_set", _) => $"{lp.Id}.caulk",
+                    (Motion.Strike, _, _) => $"{lp.Id}.wedge",
+                    (Motion.Click, _, "wood_wedge") => $"{lp.Id}.wedge",
                     _ => null,
                 };
             }

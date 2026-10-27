@@ -114,7 +114,10 @@ public partial class InteractionController : Node
         {
             if (mb.Pressed)
             {
-                if (Hovered != null) PointerDown(Hovered);
+                // 이동 시점에서 마우스가 풀려 있을 때(Esc 뒤)의 클릭은 시선을 다시 잡을 뿐, 조준선 위 물체를 건드리지 않는다.
+                if (!_player.InWorkView && Input.MouseMode != Input.MouseModeEnum.Captured)
+                    Input.MouseMode = Input.MouseModeEnum.Captured;
+                else if (Hovered != null) PointerDown(Hovered);
             }
             else PointerUp();
             GetViewport().SetInputAsHandled();

@@ -267,6 +267,6 @@
     "shorePatchFactor": 0.1,
     "shorePatchDurability": 1.0,
     "caulkStrikes": 8,
-    "caulkIntegrity": 0.9
+    "caulkIntegrity": 1.0
   }
 }

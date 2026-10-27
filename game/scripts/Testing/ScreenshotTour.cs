@@ -44,12 +44,21 @@ public partial class ScreenshotTour : Node
                 _main.Player.LookAt3D(target);
                 await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
             }
-            await ToSignal(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
-            var img = GetViewport().GetTexture().GetImage();
-            var path = Path.Combine(_dir, name + ".png");
-            img.SavePng(path);
-            GD.Print($"SCREENSHOT {path}");
+            await Capture(name);
         }
+        // 교범을 편 화면
+        _main.OpenManual("퓨즈 교체");
+        for (int i = 0; i < 10; i++) await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+        await Capture("07-manual");
         GetTree().Quit(0);
+    }
+
+    async Task Capture(string name)
+    {
+        await ToSignal(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
+        var img = GetViewport().GetTexture().GetImage();
+        var path = Path.Combine(_dir, name + ".jpg");
+        img.SaveJpg(path, 0.85f);
+        GD.Print($"SCREENSHOT {path}");
     }
 }

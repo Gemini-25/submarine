@@ -45,7 +45,7 @@ static class MissionScript
         // 아직 주입하지 않은 고장이 남아 있으면 성공일 수 없다.
         bool done = w.Mission.NextEvent >= m.Events.Count && w.MissionGoal.Eval(w);
         w.Mission.HoldTicks = done ? w.Mission.HoldTicks + 1 : 0;
-        if (w.Mission.HoldTicks >= TickOf(w, m.Success.HoldSeconds))
+        if (done && w.Mission.HoldTicks >= Math.Max(1, TickOf(w, m.Success.HoldSeconds)))
         {
             w.Status = MissionStatus.Succeeded;
             w.Emit(SimEventKind.MissionSucceeded, m.Id, w.TimeSeconds);

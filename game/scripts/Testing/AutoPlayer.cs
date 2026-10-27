@@ -96,9 +96,14 @@ public partial class AutoPlayer : Node
             Check(s.Water.SubmergedCells == 0, "축전지가 잠겼다");
             await Frame(5);
             Check(_main.Hud.ResultOpen, "결과 화면이 뜨지 않았다");
+            Check(_main.Hud.ResultTitle == "훈련 완료", $"성공했는데 결과 화면 제목이 '{_main.Hud.ResultTitle}'");
+            Check(_main.Runner.Paused, "임무가 끝났는데 시간이 계속 흐른다");
             await CheckRestart();
+            await CheckShoreWithMalletHeld();
             await CheckHatchAndHandPump();
             await CheckShock();
+            await CheckCaulking();
+            await CheckPinch();
             await CheckWorkView();
         }
         catch (Exception e)
@@ -152,6 +157,21 @@ public partial class AutoPlayer : Node
         Check(Snap.Tick == 0 && Snap.Status == MissionStatus.Running, "다시 시작했는데 처음 상태가 아니다");
     }
 
+    /// <summary>나무망치를 든 채로 버팀목을 쥐고 이음새를 누르면 버팀목을 댄다(쥔 물건이 먼저).</summary>
+    async Task CheckShoreWithMalletHeld()
+    {
+        const string rivet = "leak.rivet.01";
+        foreach (var c in new[] { "tool.hand", "locker.take.wood_wedge", "tool.mallet", $"{rivet}.wedge", $"{rivet}.wedge", $"{rivet}.wedge", "locker.take.timber_shore" })
+        {
+            await Perform(c);
+            Step(HandSeconds);
+        }
+        Check(Snap.Crew.Tool == "mallet" && Snap.Crew.Hand == "timber_shore", $"나무망치를 들고 버팀목을 쥔 상태가 아니다: {Snap.Crew.Tool}, {Snap.Crew.Hand}");
+        await Perform($"{rivet}.shore");
+        Step(HandSeconds);
+        Check(Snap.Leaks.First(l => l.Id == rivet).Shore, "나무망치를 든 채로 버팀목을 댈 수 없다");
+    }
+
     /// <summary>해치는 닫히면 지나갈 수 없고, 수동 펌프 손잡이는 한 번 퍼낸 뒤 돌아올 때까지 움직이지 않는다.</summary>
     async Task CheckHatchAndHandPump()
     {
@@ -163,9 +183,11 @@ public partial class AutoPlayer : Node
         var space = _main.Player.GetWorld3D().DirectSpaceState;
         var q = PhysicsRayQueryParameters3D.Create(from, from + Vector3.Left * 1.2f, World.Geo.WallLayer);
         Check(space.IntersectRay(q).Count > 0, "닫힌 해치가 길을 막지 않는다");
+        Check(!await WalkAcrossHatch(), "닫힌 해치를 걸어서 지나갔다");
         await Perform("hatch.open");
         Step(HandSeconds);
         Check(!Snap.Water.HatchClosed, "해치가 열리지 않았다");
+        Check(await WalkAcrossHatch(), "열린 해치를 걸어서 지나갈 수 없다");
 
         await Perform("handpump.stroke");
         Step(0.2);
@@ -178,6 +200,58 @@ public partial class AutoPlayer : Node
         Check(_issued.Count == before, "펌프 손잡이가 돌아오는 중인데 또 퍼졌다");
         Step(1.2);
         await Perform("handpump.stroke");
+    }
+
+    /// <summary>중앙에서 후방으로 걸어 본다. 해치 문턱을 넘어 후방 거름망 앞까지 가면 참.</summary>
+    async Task<bool> WalkAcrossHatch()
+    {
+        var player = _main.Player;
+        player.PlaceAt(new Vector3(World.Submarine.HatchX + 0.8f, 0.05f, 0), new Vector3(0, 1.6f, 0));
+        await Frame(2);
+        player.AutoMove = new Vector2(0, -1); // 앞으로(후방 쪽)
+        ulong start = Time.GetTicksMsec();
+        while (Time.GetTicksMsec() - start < 2500 && player.GlobalPosition.X > World.Submarine.HatchX - 0.8f)
+            await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
+        player.AutoMove = null;
+        return player.GlobalPosition.X <= World.Submarine.HatchX - 0.8f;
+    }
+
+    /// <summary>코킹 세트를 들고 이음새를 여덟 번 치면 정식 수리가 된다 (교범 07, 손동작으로).</summary>
+    async Task CheckCaulking()
+    {
+        // 임무 스크립트의 HUL-01(리벳 09)이 들어온 뒤에 친다.
+        var hul = Data.Mission(Snap.Mission.Id).Events.First(e => e.Fault == "HUL-01");
+        if (Snap.TimeSeconds < hul.AtSeconds + 1) Step(hul.AtSeconds + 1 - Snap.TimeSeconds);
+        Check(Snap.Leaks.First(l => l.Id == hul.Part).InflowLps > 0, "코킹을 확인하려는데 리벳 09가 새지 않는다");
+        var bind = new Dictionary<string, string>(StringComparer.Ordinal) { ["point"] = "leak.rivet.09" };
+        await Follow("proc.rivet.caulk", bind);
+        var lv = Snap.Leaks.First(l => l.Id == "leak.rivet.09");
+        Check(lv.InflowLps == 0 && lv.Integrity >= 0.999, $"코킹을 마쳤는데 유입 {lv.InflowLps:F4}L/s, integrity {lv.Integrity:F3}");
+    }
+
+    /// <summary>펌프가 도는 채로 거름망 바구니를 빼면 손이 끼인다. Godot이 이 위험한 동작을 막지 않아야 한다.</summary>
+    async Task CheckPinch()
+    {
+        int pinches = _main.Pinches;
+        foreach (var c in new[] { "tool.hand", "switch.C3.on", "tool.wrench", "strainer.bolt.1.loosen", "strainer.bolt.2.loosen",
+                     "strainer.bolt.3.loosen", "strainer.bolt.4.loosen", "tool.hand", "strainer.cover.open" })
+        {
+            await Perform(c);
+            Step(HandSeconds);
+        }
+        Check(Snap.Devices.First(d => d.Id == "bilge_pump").Running, "펌프가 돌고 있지 않아 끼임을 확인할 수 없다");
+        await Perform("strainer.basket.remove");
+        Step(0.1);
+        await Frame(2);
+        Check(_main.Pinches == pinches + 1, $"도는 펌프에서 바구니를 뺐는데 끼임 {_main.Pinches - pinches}번");
+        Check(Snap.Crew.Stunned, "끼인 뒤에 손을 쓸 수 있다");
+        // 끝: 스위치를 내리고 바구니를 넣고 닫는다.
+        Step(_main.Runner.Data.Tuning.Crew.PinchStunSeconds + 0.5);
+        foreach (var c in new[] { "switch.C3.off", "strainer.basket.insert", "strainer.cover.close" })
+        {
+            await Perform(c);
+            Step(HandSeconds);
+        }
     }
 
     /// <summary>살아 있는 회로의 성한 퓨즈를 빈손으로 뽑으면 감전되고, 잠시 손을 못 쓴다.</summary>

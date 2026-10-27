@@ -154,6 +154,9 @@ public partial class ProceduralAudio : Node3D
     BreathSynth _breath = null!;
     Source _breathSrc = null!;
     int _pumpIndex = -1, _fanIndex = -1;
+    // 손동작 소리는 명령이 다음 틱에 받아들여졌을 때만 낸다(거부된 동작이 된 것처럼 들리지 않게).
+    readonly List<string> _pendingShots = new();
+    readonly HashSet<string> _rejected = new(StringComparer.Ordinal);
 
     public bool Enabled { get; private set; }
 
@@ -182,7 +185,8 @@ public partial class ProceduralAudio : Node3D
         _breathSrc = Add(_breath, Vector3.Zero, -6, 2);
 
         runner.EventRaised += OnEvent;
-        hands.CommandIssued += OnCommand;
+        runner.Ticked += FlushShots;
+        hands.CommandIssued += cmd => _pendingShots.Add(cmd);
     }
 
     Source Add(Synth synth, Vector3 pos, float db, float range, bool shot = false)
@@ -229,6 +233,14 @@ public partial class ProceduralAudio : Node3D
     Vector3 Spot(string id, Vector3 fallback) =>
         _sub.Interactables.TryGetValue(id, out var it) ? it.GlobalPosition : fallback;
 
+    void FlushShots()
+    {
+        foreach (var cmd in _pendingShots)
+            if (!_rejected.Contains(cmd)) OnCommand(cmd);
+        _pendingShots.Clear();
+        _rejected.Clear();
+    }
+
     void OnCommand(string cmd)
     {
         var p = cmd.Split('.');
@@ -259,6 +271,9 @@ public partial class ProceduralAudio : Node3D
     {
         switch (e.Kind)
         {
+            case SimEventKind.CommandRejected:
+                _rejected.Add(e.Subject);
+                break;
             case SimEventKind.AlarmBell when e.Value >= 1:
                 _bell.Remaining = 2.5f;
                 break;

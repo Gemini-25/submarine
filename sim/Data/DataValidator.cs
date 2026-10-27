@@ -227,7 +227,7 @@ static class DataValidator
         foreach (var m in d.Missions)
         {
             Check(m.TimeLimitSeconds > 0, $"missions.{m.Id}.timeLimitSeconds > 0");
-            Check(m.Success.Assert.Length > 0 && m.Success.HoldSeconds >= 0, $"missions.{m.Id}.success");
+            Check(m.Success.Assert.Length > 0 && m.Success.HoldSeconds > 0, $"missions.{m.Id}.success: assert가 있고 holdSeconds > 0");
             foreach (var e in m.Events)
             {
                 var f = d.Faults.FirstOrDefault(x => x.Id == e.Fault);

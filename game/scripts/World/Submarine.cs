@@ -162,7 +162,7 @@ public partial class Submarine : Node3D
                 float b = (float)s.LightsBrightness;
                 // 전압이 낮으면 깜빡인다. 밝기 자체는 시뮬레이션 값.
                 if (b > 0 && b < 0.85f && _fx.Randf() < (0.85f - b) * 0.6f) b *= 0.35f + 0.5f * _fx.Randf();
-                light.LightEnergy = 1.4f * b * b;
+                light.LightEnergy = 1.4f * b;
                 bulbMat.EmissionEnergyMultiplier = 3f * b;
                 bool on = zone < s.Panel.ZoneAlarms.Count && s.Panel.ZoneAlarms[zone];
                 // 경고등은 회전등처럼 천천히 맥동한다.

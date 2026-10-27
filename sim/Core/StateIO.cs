@@ -131,6 +131,16 @@ public sealed class StateIO
             io(this, item);
     }
 
+    public void Ints(int[] values)
+    {
+        int n = values.Length;
+        I(ref n);
+        if (n != values.Length)
+            throw new InvalidDataException($"저장된 상태의 길이 {n}가 데이터 길이 {values.Length}와 다릅니다.");
+        for (int i = 0; i < values.Length; i++)
+            I(ref values[i]);
+    }
+
     public void Doubles(double[] values)
     {
         int n = values.Length;

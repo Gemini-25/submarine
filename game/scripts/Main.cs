@@ -96,7 +96,7 @@ public partial class Main : Node3D
         {
             Debug = new DebugTools { Name = "Debug" };
             AddChild(Debug);
-            Debug.Setup(Runner, Hands);
+            Debug.Setup(Runner, Hands, Restart, Resume);
         }
         Runner.EventRaised += OnEvent;
         Sub.Apply(Runner.Snapshot, 0);
@@ -154,12 +154,21 @@ public partial class Main : Node3D
             case SimEventKind.Pinch: Pinches++; break;
             case SimEventKind.MissionSucceeded:
             case SimEventKind.MissionFailed:
+                // 임무가 끝나면 시간을 멈춘다(결과 화면을 띄워 둔 채 공기가 나빠지지 않게). 다시 시작이 풀어 준다.
+                Runner.Paused = true;
                 Hands.PointerUp();
                 if (Player.InWorkView) Player.LeaveWorkView();
+                CloseOverlays();
                 Hud.ShowResult(Runner.Snapshot, Shocks, Pinches);
                 if (!_automated) Input.MouseMode = Input.MouseModeEnum.Visible;
                 break;
         }
+    }
+
+    void CloseOverlays()
+    {
+        if (Manual.IsOpen) Manual.Close();
+        if (Notepad.IsOpen) Notepad.Close();
     }
 
     public void Restart()
@@ -167,6 +176,8 @@ public partial class Main : Node3D
         Runner.Restart();
         Shocks = Pinches = 0;
         Hands.PointerUp();
+        CloseOverlays();
+        if (Player.InWorkView) Player.LeaveWorkView();
         Player.PlaceAt(Sub.SpawnPoint, Sub.SpawnLookAt);
         Hud.HideResult();
         Sub.Apply(Runner.Snapshot, 0);
@@ -174,6 +185,7 @@ public partial class Main : Node3D
         {
             Runner.Paused = true;
             Hud.ShowBriefing(true);
+            Input.MouseMode = Input.MouseModeEnum.Visible;
         }
     }
 
@@ -209,8 +221,8 @@ public partial class Main : Node3D
         switch (k.PhysicalKeycode)
         {
             case Key.Tab:
-                if (Hud.ResultOpen) break;
                 if (Manual.IsOpen) { Manual.Close(); Resume(); }
+                else if (Hud.ResultOpen) break;
                 else OpenManual(null);
                 GetViewport().SetInputAsHandled();
                 break;
@@ -249,7 +261,8 @@ public partial class Main : Node3D
         Input.MouseMode = Input.MouseModeEnum.Visible;
     }
 
-    void Resume()
+    /// <summary>창을 닫은 뒤 마우스를 원래대로: 이동 시점이면 시선에 묶고, 작업 시점이나 다른 창이 남아 있으면 포인터를 보인다.</summary>
+    public void Resume()
     {
         if (!_automated && !Modal) Input.MouseMode = Player.InWorkView ? Input.MouseModeEnum.Visible : Input.MouseModeEnum.Captured;
     }

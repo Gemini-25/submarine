@@ -63,6 +63,61 @@ public class HandRepairTests
     }
 
     [Fact]
+    public void Pulling_the_blown_fuse_with_the_switch_still_up_shocks_without_a_spark()
+    {
+        // 교범 04의 굵은 경고: 스위치를 올린 소켓은 퓨즈가 끊겼어도 전원 쪽이 살아 있다.
+        var sim = TestData.NewSim(setup: TestData.Setup(s => s.Switches["C3"] = true));
+        sim.Inject("ELC-01", "fuse.C3");
+        sim.Step();
+        double sparks = sim.Q("events.Spark"); // 퓨즈가 끊길 때의 불꽃
+        Do(sim, "fuse.C3.pull");
+        Assert.Equal(1, sim.Q("events.Shock"));
+        Assert.Equal(1, sim.Q("crew.stunned"));
+        Assert.Equal(sparks, sim.Q("events.Spark")); // 끊긴 퓨즈에는 전류가 없어 뺄 때 아크가 튀지 않는다
+        Assert.Equal("fuse_blown", sim.QS("crew.hand"));
+    }
+
+    [Fact]
+    public void Putting_the_blown_fuse_back_does_not_repair_the_circuit()
+    {
+        var sim = TestData.NewSim(setup: TestData.Setup(s => s.Switches["C3"] = true));
+        sim.Inject("ELC-01", "fuse.C3");
+        sim.Step();
+        Do(sim, "switch.C3.off", "fuse.C3.pull", "fuse.C3.insert", "switch.C3.on");
+        Assert.Empty(Rejections(sim));
+        Assert.Equal("blown", sim.QS("circuit.C3.fuse"));
+        Assert.Equal(0, sim.Q("circuit.C3.energized"));
+        Assert.NotEqual("normal", sim.QS("part.fuse.C3.state"));
+        Assert.Equal(0, sim.Q("events.PartRepaired"));
+    }
+
+    [Fact]
+    public void A_new_fuse_cannot_go_into_a_socket_that_still_holds_the_blown_one()
+    {
+        var sim = TestData.NewSim(setup: TestData.Setup(s => s.Switches["C3"] = true));
+        sim.Inject("ELC-01", "fuse.C3");
+        sim.Step();
+        Do(sim, "switch.C3.off", "locker.take.fuse", "fuse.C3.insert");
+        Assert.Contains(Rejections(sim), e => e.Detail == "socket_full");
+        Assert.Equal("blown", sim.QS("circuit.C3.fuse"));
+        Assert.Equal("fuse", sim.QS("crew.hand"));
+    }
+
+    [Fact]
+    public void Stun_lasts_its_full_duration()
+    {
+        var c = TestData.T.Crew;
+        var sim = TestData.NewSim();
+        Do(sim, "fuse.C1.pull");
+        sim.RunTicks(TestData.Ticks(c.ShockStunSeconds) - 3);
+        Do(sim, "hand.drop");
+        Assert.Contains(Rejections(sim), e => e.Detail == "stunned");
+        sim.RunTicks(4);
+        Do(sim, "hand.drop");
+        Assert.Empty(Rejections(sim));
+    }
+
+    [Fact]
     public void Inserting_into_a_live_socket_sparks_and_can_explode_hydrogen()
     {
         var sim = TestData.NewSim(setup: TestData.Setup(s => { s.Air["h2"] = 5; s.Devices["vent_fan"] = false; }));
@@ -149,6 +204,104 @@ public class HandRepairTests
         Assert.Empty(Rejections(sim));
         Assert.Equal("normal", sim.QS("part.pump.intake.state"));
         Assert.Equal(TestData.T.Water.PumpRatedLps, sim.Q("pump.netFlow"), 9);
+    }
+
+    [Fact]
+    public void A_partly_cleaned_basket_leaves_the_intake_faulted()
+    {
+        var r = TestData.T.Repair;
+        var sim = CloggedPump();
+        Do(sim, OpenStrainer);
+        Do(sim, "tool.scrub_brush");
+        int strokes = (int)Math.Ceiling(1 / r.ScrubCleanPerStroke) - 1;
+        for (int i = 0; i < strokes; i++) Do(sim, "strainer.basket.scrub");
+        Do(sim, "tool.hand", "strainer.basket.insert", "strainer.cover.close", "tool.wrench",
+            "strainer.bolt.1.tighten", "strainer.bolt.2.tighten", "strainer.bolt.3.tighten", "strainer.bolt.4.tighten",
+            "tool.hand", "switch.C3.on");
+        Assert.Empty(Rejections(sim));
+        Assert.Equal(1 - strokes * r.ScrubCleanPerStroke, sim.Q("part.pump.intake.prop.clog"), 9);
+        Assert.NotEqual("normal", sim.QS("part.pump.intake.state"));
+        Assert.Equal(0, sim.Q("events.PartRepaired"));
+        Assert.True(sim.Q("pump.netFlow") < TestData.T.Water.PumpRatedLps);
+    }
+
+    [Fact]
+    public void Putting_the_basket_back_into_a_running_pump_pinches_too()
+    {
+        var sim = CloggedPump();
+        Do(sim, "tool.wrench", "strainer.bolt.1.loosen", "strainer.bolt.2.loosen", "strainer.bolt.3.loosen", "strainer.bolt.4.loosen",
+            "tool.hand", "strainer.cover.open", "strainer.basket.remove");
+        sim.Run(TestData.T.Crew.PinchStunSeconds + 0.5);
+        Do(sim, "strainer.basket.insert");
+        Assert.Equal(2, sim.Q("events.Pinch"));
+        Assert.Equal("in", sim.QS("strainer.basket"));
+    }
+
+    /// <summary>교범의 '지킬 것' 표 가운데 거부되는 줄. 거부되면 상태가 바뀌지 않아야 한다.</summary>
+    [Theory]
+    [InlineData("pull_with_tool", "fuse.C7.pull", "need_bare_hand")]
+    [InlineData("basket_through_closed_cover", "strainer.basket.remove", "cover_closed")]
+    [InlineData("scrub_without_brush", "strainer.basket.scrub", "need_brush")]
+    [InlineData("caulk_bare_handed", "leak.rivet.09.caulk", "need_caulking_set")]
+    [InlineData("shore_without_wedge", "leak.rivet.09.shore", "need_wedge_first")]
+    [InlineData("drop_empty_hand", "hand.drop", "hand_empty")]
+    [InlineData("cover_needs_bare_hand", "strainer.cover.open", "need_bare_hand")]
+    public void Manual_preconditions_reject_and_leave_state_unchanged(string setup, string cmd, string reason)
+    {
+        var sim = setup switch
+        {
+            "pull_with_tool" => Prepared(TestData.NewSim(), "tool.wrench"),
+            "basket_through_closed_cover" => CloggedPump(),
+            "scrub_without_brush" => Prepared(CloggedPump(), OpenStrainer),
+            "caulk_bare_handed" => Leaking(),
+            "shore_without_wedge" => Prepared(Leaking(), "locker.take.timber_shore"),
+            "drop_empty_hand" => TestData.NewSim(),
+            "cover_needs_bare_hand" => Prepared(CloggedPump(), "tool.wrench", "strainer.bolt.1.loosen", "strainer.bolt.2.loosen",
+                "strainer.bolt.3.loosen", "strainer.bolt.4.loosen"),
+            _ => throw new ArgumentException(setup),
+        };
+        sim.DrainEvents();
+        ulong before = Fingerprint(sim);
+        sim.Cmd(cmd);
+        sim.Step();
+        Assert.Contains(Rejections(sim), e => e.Detail == reason);
+        Assert.Equal(before, Fingerprint(sim));
+    }
+
+    static Simulation Prepared(Simulation sim, params string[] cmds)
+    {
+        Do(sim, cmds);
+        return sim;
+    }
+
+    /// <summary>손 수리가 바꾸는 상태만 모은 지문 (시간이 흐르며 바뀌는 수위, 공기는 뺀다).</summary>
+    static ulong Fingerprint(Simulation sim)
+    {
+        var paths = new[]
+        {
+            "crew.hand", "crew.tool", "inventory.fuse", "inventory.wood_wedge", "inventory.timber_shore",
+            "circuit.C7.fuse", "circuit.C7.fusePresent", "strainer.cover", "strainer.basket", "part.pump.intake.prop.clog",
+            "leak.rivet.09.wedge", "leak.rivet.09.shore", "leak.rivet.09.caulk", "leak.rivet.09.patchFactor",
+        };
+        ulong h = 1469598103934665603UL;
+        foreach (var p in paths)
+            foreach (char ch in p + "=" + sim.Query(p) + ";") h = (h ^ ch) * 1099511628211UL;
+        return h;
+    }
+
+    [Fact]
+    public void Seven_caulk_strikes_are_not_enough_and_the_eighth_seals()
+    {
+        var r = TestData.T.Repair;
+        var sim = Leaking();
+        Do(sim, "tool.caulking_set");
+        for (int i = 0; i < r.CaulkStrikes - 1; i++) Do(sim, "leak.rivet.09.caulk");
+        Assert.Equal(r.CaulkStrikes - 1, sim.Q("leak.rivet.09.caulk"));
+        Assert.NotEqual("normal", sim.QS("part.leak.rivet.09.state"));
+        Assert.True(sim.Q("leak.rivet.09.inflow") > 0);
+        Do(sim, "leak.rivet.09.caulk");
+        Assert.Equal("normal", sim.QS("part.leak.rivet.09.state"));
+        Assert.Equal(0, sim.Q("leak.rivet.09.inflow"));
     }
 
     [Fact]
@@ -279,7 +432,8 @@ public class HandRepairTests
         Assert.Equal(1, sim.Q("leak.rivet.09.patchFactor"));
         Assert.Equal(0, sim.Q("leak.rivet.09.wedge"));
         Assert.Equal("normal", sim.QS("part.leak.rivet.09.state"));
-        Assert.True(sim.Q("leak.rivet.09.inflow") < TestData.T.Hull.ZoneAlarmInflowLps);
+        // 정식 수리는 새것처럼 메운다: 쉿 소리와 물줄기가 멎는다(교범 07 '끝난 뒤 확인').
+        Assert.Equal(0, sim.Q("leak.rivet.09.inflow"));
     }
 
     [Fact]
