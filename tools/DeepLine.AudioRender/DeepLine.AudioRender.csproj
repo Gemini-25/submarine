@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- 목소리마다 데모와 매개변수 쓸기를 WAV로 뽑는 개발 도구. 사람이 들을 데모는 docs/reports/audio/에 둔다. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>DeepLine.AudioRender</RootNamespace>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\audio\DeepLine.Audio\DeepLine.Audio.csproj" />
+  </ItemGroup>
+
+</Project>

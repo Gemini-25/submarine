@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- 상태 기반 절차적 소리 합성 (SPEC 11절 '사운드'). Godot을 참조하지 않는다. Godot 층이 AudioStreamGenerator로 부른다. -->
+  <PropertyGroup>
+    <RootNamespace>DeepLine.Audio</RootNamespace>
+    <Deterministic>true</Deterministic>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <!-- 소리는 실시간이라 디버그 빌드(Godot 편집기에서 실행)에서도 최적화한다. -->
+    <Optimize>true</Optimize>
+  </PropertyGroup>
+
+</Project>
