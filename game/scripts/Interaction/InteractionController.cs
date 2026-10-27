@@ -98,11 +98,19 @@ public partial class InteractionController : Node
         return RayPick(from, to);
     }
 
+    /// <summary>
+    /// 조준선 질의는 하나를 두고 다시 쓴다. 매 프레임 새로 만들면 C# 껍데기 수천 개가 쌓여
+    /// 종료할 때 Godot .NET이 FATAL로 멈춘다 (WP6 보고서 '종료 FATAL').
+    /// </summary>
+    PhysicsRayQueryParameters3D? _ray;
+
     public Interactable? RayPick(Vector3 from, Vector3 to)
     {
         var space = _player.GetWorld3D().DirectSpaceState;
-        var q = PhysicsRayQueryParameters3D.Create(from, to, Geo.WallLayer | Geo.InteractLayer);
-        var hit = space.IntersectRay(q);
+        _ray ??= new PhysicsRayQueryParameters3D { CollisionMask = Geo.WallLayer | Geo.InteractLayer };
+        _ray.From = from;
+        _ray.To = to;
+        using var hit = space.IntersectRay(_ray);
         if (hit.Count == 0) return null;
         return hit["collider"].AsGodotObject() as Interactable;
     }
