@@ -205,6 +205,7 @@ static class SimQuery
                     "h2" => x => QueryValue.Of(x.Air.H2),
                     "candleSeconds" => x => QueryValue.Of(x.Air.CandleRemaining),
                     "canister" => x => QueryValue.Of(x.Part("scrubber.canister").Get("saturation")),
+                    "scrubberFlow" => x => QueryValue.Of(Systems.AirSystem.ScrubberFlow(x)),
                     _ => throw Unknown(),
                 };
 

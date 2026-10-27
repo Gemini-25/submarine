@@ -26,6 +26,15 @@ public sealed class Tuning
     public List<string> Tools { get; set; } = new();
     /// <summary>공구판과 공구띠 (M2). 없으면 M1처럼 모든 도구를 바로 쥘 수 있다.</summary>
     [Optional] public ToolBoardTuning? ToolBoard { get; set; }
+    /// <summary>흡수통의 죔쇠와 뚜껑 (M2 WP9, data/tuning/air.json). 없으면 죔쇠를 열어 둔 흡수통도 다 흡수한다.</summary>
+    [Optional] public ScrubberTuning? Scrubber { get; set; }
+}
+
+/// <summary>흡수통 (AIR-02). 상태는 부품 scrubber.canister의 상태 값 clamp1Open, clamp2Open, lidOpen, present.</summary>
+public sealed class ScrubberTuning
+{
+    /// <summary>죔쇠가 하나라도 열려 있으면 공기가 흡수제를 비켜 가서 흡수가 이 배율로 준다.</summary>
+    public double BypassAbsorption { get; set; }
 }
 
 /// <summary>손 수리 동작의 수치 (M1). 손동작 하나가 명령 하나다.</summary>

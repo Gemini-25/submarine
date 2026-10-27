@@ -1,5 +1,6 @@
 using DeepLine.Sim.Core;
 using DeepLine.Sim.Faults;
+using DeepLine.Sim.Parts;
 
 namespace DeepLine.Sim.Systems;
 
@@ -22,9 +23,10 @@ static class AirSystem
         air.Co2 += a.PersonCo2PerMin * min;
         var canister = w.Part("scrubber.canister");
         double saturation = canister.Get("saturation");
-        if (fan && saturation < 1)
+        double flow = ScrubberFlow(w);
+        if (fan && saturation < 1 && flow > 0)
         {
-            double absorb = Math.Min(a.ScrubCo2PerMin * min, Math.Max(0, air.Co2 - a.Co2FloorPct));
+            double absorb = Math.Min(a.ScrubCo2PerMin * flow * min, Math.Max(0, air.Co2 - a.Co2FloorPct));
             absorb = Math.Min(absorb, (1 - saturation) * a.CanisterCapacityPct);
             air.Co2 -= absorb;
             saturation += absorb / a.CanisterCapacityPct;
@@ -59,6 +61,18 @@ static class AirSystem
         air.Co2 = Math.Max(0, air.Co2);
         air.Cl2 = Math.Max(0, air.Cl2);
         air.H2 = Math.Max(0, air.H2);
+    }
+
+    /// <summary>
+    /// 흡수제를 지나는 공기의 몫 (M2 WP9). 통이 빠졌거나 뚜껑이 열려 있으면 0, 죔쇠가 하나라도 열려 있으면
+    /// tuning.scrubber.bypassAbsorption, 아니면 1. 흡수통의 상태 값이 없는 데이터(M0·M1)에서는 늘 1이다.
+    /// </summary>
+    public static double ScrubberFlow(SimWorld w)
+    {
+        var canister = w.Part("scrubber.canister");
+        if (PropRef.Resolve(canister, "present").Get(1) < 0.5 || PropRef.Resolve(canister, "lidOpen").Get(0) >= 0.5) return 0;
+        bool bypass = PropRef.Resolve(canister, "clamp1Open").Get(0) >= 0.5 || PropRef.Resolve(canister, "clamp2Open").Get(0) >= 0.5;
+        return bypass ? w.T.Scrubber?.BypassAbsorption ?? 1 : 1;
     }
 
     public static bool LightCandle(SimWorld w)
