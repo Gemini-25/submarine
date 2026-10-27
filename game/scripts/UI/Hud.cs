@@ -26,6 +26,7 @@ public partial class Hud : CanvasLayer
         ["explosion"] = "불꽃이 튀어 수소가 폭발했다.",
         ["hull_collapse"] = "선체가 수압을 견디지 못하고 찌그러졌다.",
         ["swamped"] = "물이 차올라 모스호가 가라앉았다.",
+        ["load_lost"] = "줄 끝이 드럼에서 빠져 시험 하중을 잃었다.",
     };
 
     SimRunner _runner = null!;

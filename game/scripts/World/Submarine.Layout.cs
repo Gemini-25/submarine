@@ -339,14 +339,12 @@ public partial class Submarine
         var mb = new MeshBuilder();
         mb.Box(ArtMat.Machinery, c, new Vector3(0.45f, 0.7f, 0.35f), 0.015f);
         float f = 0.8f; // 통로 쪽 면
-        mb.Box(ArtMat.Machinery, new Vector3(1.38f, 0.35f, f - 0.007f), new Vector3(0.22f, 0.16f, 0.014f), 0.004f);
+        // 띠 덮개 판, 멈춤쇠, 조작 레버는 움직이는 부품이라 WP15(Submarine.Cable.cs)가 짓는다.
         Bolt(mb, new Vector3(1.25f, 0.35f, f - 0.01f), Vector3.Forward, 0.02f);
         Bolt(mb, new Vector3(1.51f, 0.35f, f - 0.01f), Vector3.Forward, 0.02f);
         mb.Cylinder(ArtMat.BareSteel, Kit.AlongAxis(Vector3.Right, new Vector3(1.38f, 0.17f, f - 0.02f)), 0.01f, 0.13f, 8);
         mb.Box(ArtMat.Bronze, new Vector3(1.38f, 0.17f, f - 0.02f), new Vector3(0.05f, 0.025f, 0.025f), 0.006f);
-        mb.Box(ArtMat.BareSteel, new Vector3(1.25f, 0.6f, f - 0.008f), new Vector3(0.03f, 0.07f, 0.012f), 0.003f);
         Lever(mb, new Vector3(1.3f, 0.7f, 0.82f), new Vector3(1.3f, 0.95f, 0.82f));
-        Lever(mb, new Vector3(1.55f, 0.7f, 0.82f), new Vector3(1.55f, 0.95f, 0.82f));
         mb.Box(ArtMat.Brass, new Vector3(1.55f, 0.79f, 0.805f), new Vector3(0.12f, 0.08f, 0.006f), 0.002f);
         mb.Box(ArtMat.BlackEnamel, new Vector3(1.425f, 0.78f, 0.84f), new Vector3(0.1f, 0.16f, 0.06f), 0.008f);
         mb.Cylinder(ArtMat.Brass, Kit.AlongAxis(Vector3.Forward, new Vector3(1.55f, 0.55f, f - 0.004f)), 0.032f, 0.008f, 16);
@@ -355,7 +353,7 @@ public partial class Submarine
         glass.Cylinder(ArtMat.Glass, Kit.AlongAxis(Vector3.Forward, new Vector3(1.55f, 0.55f, f - 0.009f)), 0.025f, 0.004f, 16);
         glass.Instance(n, "Window", NoShadow);
         Geo.Blocker(n, new Vector3(0.45f, 0.7f, 0.35f), c);
-        Dial(n, new Vector3(1.425f, 0.82f, 0.808f), Vector3.Forward, 0.03f, "t");
+        Dial(n, new Vector3(1.425f, 0.82f, 0.808f), Vector3.Forward, 0.03f, "kg");
         Geo.Text(n, "0042", new Vector3(1.425f, 0.745f, 0.809f), 0.018f, Chalk, Vector3.Forward);
         Geo.Text(n, "감기\n멈춤\n풀기", new Vector3(1.55f, 0.79f, 0.801f), 0.014f, PlateInk, Vector3.Forward);
         NamePlate(n, "케이블 윈치 구동부", new Vector3(1.4f, 0.48f, f - 0.002f), Vector3.Forward, 0.014f);
@@ -985,7 +983,7 @@ public partial class Submarine
         // 사이펀 기록기: 몸통, 테이프 창, 펜 팔, 잉크 병, 마중 고무공, 시험 단추, 증폭 진공관
         mb.Box(ArtMat.BlackEnamel, new Vector3(6.25f, 0.88f, 1.05f), new Vector3(0.25f, 0.2f, 0.25f), 0.01f);
         mb.Box(ArtMat.Porcelain, new Vector3(6.25f, 0.88f, 0.924f), new Vector3(0.16f, 0.05f, 0.003f), 0);
-        mb.Box(ArtMat.BareSteel, new Vector3(6.22f, 0.985f, 1.0f), new Vector3(0.1f, 0.006f, 0.01f), 0.001f);
+        // 펜 팔은 움직이는 부품이라 WP15(Submarine.Cable.cs)가 짓는다.
         mb.Cylinder(ArtMat.Copper, new Transform3D(Basis.Identity, new Vector3(6.33f, 0.985f, 0.96f)), 0.004f, 0.02f, 6);
         mb.Box(ArtMat.Rubber, new Vector3(6.25f, 0.8f, 0.78f), new Vector3(0.045f, 0.035f, 0.045f), 0.017f);
         mb.Box(ArtMat.Brass, new Vector3(6.35f, 0.79f, 0.84f), new Vector3(0.05f, 0.012f, 0.02f), 0.003f);

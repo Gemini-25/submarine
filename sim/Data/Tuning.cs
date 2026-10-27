@@ -28,6 +28,10 @@ public sealed class Tuning
     [Optional] public ToolBoardTuning? ToolBoard { get; set; }
     /// <summary>축전지 셀 손 수리와 추진 전동기 브러시 (M2 WP11, data/tuning/power.json). 없으면 그 규칙이 돌지 않는다.</summary>
     [Optional] public PowerTuning? Power { get; set; }
+    /// <summary>항법 모듈 (M2 WP14). 자이로와 항법 계산기 상태 부품이 있으면 필요하다.</summary>
+    [Optional] public NavTuning? Nav { get; set; }
+    /// <summary>케이블 장비: 윈치와 사이펀 기록기 (M2 WP15, data/tuning/cable.json). 상태 부품이 없으면 쓰지 않는다.</summary>
+    [Optional] public CableTuning? Cable { get; set; }
     /// <summary>흡수통의 죔쇠와 뚜껑 (M2 WP9, data/tuning/air.json). 없으면 죔쇠를 열어 둔 흡수통도 다 흡수한다.</summary>
     [Optional] public ScrubberTuning? Scrubber { get; set; }
     /// <summary>송풍 팬 (M2 WP9, data/tuning/air.json). 없으면 멎은 팬은 데워지지 않는다.</summary>

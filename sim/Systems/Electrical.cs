@@ -245,11 +245,21 @@ static class Electrical
 /// <summary>장비별 규칙. 부품 상태 값을 읽어 가동 가능 여부와 부하율을 정한다.</summary>
 static class DeviceRules
 {
+    /// <summary>
+    /// 장비에 전기가 오는가: 켜져 있고, 회로가 살아 있고, 버스 전압이 최소 전압 이상이고, 과열 정지가 아니다.
+    /// Running에서 부품 조건(CanRun)만 뺀 것이다. 부품 때문에 서 있는 장비(빠진 진공관)와 전기가 없는 장비를 가른다.
+    /// 조회 device.&lt;id&gt;.powered와 사이펀 기록기의 테이프 구동이 함께 쓴다.
+    /// </summary>
+    public static bool Powered(SimWorld w, int d) =>
+        w.Devices[d].Enabled && w.Circuits[w.DeviceCircuit[d]].Energized && w.BusVoltage >= w.Data.Devices[d].MinVoltage && !w.Devices[d].CutOut;
+
     public static bool CanRun(SimWorld w, int d)
     {
         foreach (var p in w.DeviceParts[d])
             if (p.State(w.T.Wear) >= PartState.Broken)
                 return false;
+        // 항법 모듈: 자이로 전원 스위치와 베어링, 항법 계산기 전원 레버 (모듈이 없으면 늘 참).
+        if (!Navigation.CanRun(w, d)) return false;
         if (d == w.Propulsion && !BrushGear.CanRun(w))
             return false;
         if (d == w.Fan)

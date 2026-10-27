@@ -54,7 +54,7 @@ public class ProcedureTests
         Assert.DoesNotContain(sim.DrainEvents(), e => e.Kind == SimEventKind.CommandRejected);
     }
 
-    static readonly Dictionary<int, string> KoreanCount = new() { [2] = "두", [3] = "세", [4] = "네", [5] = "다섯", [6] = "여섯", [7] = "일곱", [8] = "여덟" };
+    static readonly Dictionary<int, string> KoreanCount = new() { [2] = "두", [3] = "세", [4] = "네", [5] = "다섯", [6] = "여섯", [7] = "일곱", [8] = "여덟", [9] = "아홉", [10] = "열" };
 
     /// <summary>되풀이 횟수는 튜닝 값과 같고, 그 절차의 교범 장에 같은 횟수가 적혀 있다 (튜닝을 바꾸면 교범도 바꿔야 한다).</summary>
     [Fact]
