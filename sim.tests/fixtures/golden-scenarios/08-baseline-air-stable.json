@@ -1,0 +1,24 @@
+{
+  "name": "고장이 없으면 공기와 물과 경보가 조용하다 (대조군)",
+  "seed": 108,
+  "depth": 200,
+  "expect": [
+    {
+      "always": "air.co2 < 0.1",
+      "toTick": 24000
+    },
+    {
+      "always": "panel.lamp.air == 'off' && panel.lamp.water == 'off' && panel.lamp.hull == 'off' && panel.lamp.switchboard == 'off'",
+      "toTick": 24000
+    },
+    {
+      "always": "bilge.total < 11 && floor.total == 0",
+      "toTick": 24000
+    },
+    {
+      "atTick": 24000,
+      "assert": "battery.charge > start - 0.1 && battery.charge < start - 0.05",
+      "note": "기본 부하 약 245W"
+    }
+  ]
+}

@@ -1,0 +1,115 @@
+{
+  "name": "M1 거름망 청소, 볼트 하나를 풀어 둔 숨은 결함",
+  "seed": 203,
+  "depth": 300,
+  "setup": {
+    "switches": {
+      "C3": true
+    },
+    "bilges": {
+      "bilge.aft": 200
+    }
+  },
+  "inject": [
+    {
+      "tick": 0,
+      "fault": "WTR-01"
+    }
+  ],
+  "commands": [
+    {
+      "tick": 10,
+      "cmd": "switch.C3.off"
+    },
+    {
+      "tick": 22,
+      "cmd": "tool.wrench"
+    },
+    {
+      "tick": 34,
+      "cmd": "strainer.bolt.1.loosen"
+    },
+    {
+      "tick": 46,
+      "cmd": "strainer.bolt.2.loosen"
+    },
+    {
+      "tick": 58,
+      "cmd": "strainer.bolt.3.loosen"
+    },
+    {
+      "tick": 70,
+      "cmd": "strainer.bolt.4.loosen"
+    },
+    {
+      "tick": 82,
+      "cmd": "tool.hand"
+    },
+    {
+      "tick": 94,
+      "cmd": "strainer.cover.open"
+    },
+    {
+      "tick": 106,
+      "cmd": "strainer.basket.remove"
+    },
+    {
+      "tick": 118,
+      "cmd": "tool.scrub_brush"
+    },
+    {
+      "tick": 130,
+      "cmd": "strainer.basket.scrub"
+    },
+    {
+      "tick": 142,
+      "cmd": "strainer.basket.scrub"
+    },
+    {
+      "tick": 154,
+      "cmd": "strainer.basket.scrub"
+    },
+    {
+      "tick": 166,
+      "cmd": "strainer.basket.scrub"
+    },
+    {
+      "tick": 178,
+      "cmd": "tool.hand"
+    },
+    {
+      "tick": 190,
+      "cmd": "strainer.basket.insert"
+    },
+    {
+      "tick": 202,
+      "cmd": "strainer.cover.close"
+    },
+    {
+      "tick": 214,
+      "cmd": "tool.wrench"
+    },
+    {
+      "tick": 226,
+      "cmd": "strainer.bolt.1.tighten"
+    },
+    {
+      "tick": 238,
+      "cmd": "strainer.bolt.2.tighten"
+    },
+    {
+      "tick": 250,
+      "cmd": "strainer.bolt.3.tighten"
+    },
+    {
+      "tick": 262,
+      "cmd": "tool.hand"
+    },
+    {
+      "tick": 274,
+      "cmd": "switch.C3.on"
+    }
+  ],
+  "durationTicks": 900,
+  "expect": []
+}

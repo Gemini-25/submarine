@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Godot 쪽 확인 (SPEC 13절 'Godot 쪽 확인'): 빌드, 가져오기, 헤드리스 스모크, 종단 자동 플레이.
-# 쓰는 법: GODOT=/경로/Godot_v4.7.2-stable_mono_linux.x86_64 tools/godot-check.sh [--screenshots 폴더]
+# 쓰는 법: GODOT=/경로/Godot_v4.7.2-stable_mono_linux.x86_64 tools/godot-check.sh [묶음...] [--screenshots 폴더]
+#   묶음: crisis(위기 한 판), hands(위험과 손의 느낌), workviews(작업 시점). 주지 않으면 전부.
 # 스크린샷은 화면(또는 xvfb-run)이 필요하다.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -22,11 +23,21 @@ run() {
   grep -E "SMOKE|AUTOTEST" "$LOG/$name.log" || true
 }
 
-run smoke --smoke=300
-run autotest --autotest
+suites=()
+shots=""
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --screenshots) shots="${2:-$LOG/shots}"; shift 2 ;;
+    *) suites+=("$1"); shift ;;
+  esac
+done
+joined="$(IFS=,; echo "${suites[*]:-}")"
 
-if [[ "${1:-}" == "--screenshots" ]]; then
-  out="$(realpath -m "${2:-$LOG/shots}")"
+run smoke --smoke=300
+run autotest "--autotest=$joined"
+
+if [[ -n "$shots" ]]; then
+  out="$(realpath -m "$shots")"
   xvfb-run -a -s "-screen 0 1600x900x24" "$GODOT" --path game --rendering-driver opengl3 --audio-driver Dummy \
     --resolution 1600x900 -- --screenshot="$out" > "$LOG/shots.log" 2>&1
   grep SCREENSHOT "$LOG/shots.log"

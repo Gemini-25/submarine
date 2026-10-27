@@ -49,11 +49,47 @@ public partial class AutoPlayer : Node
         GD.PushError("AUTOTEST: " + what);
     }
 
+    /// <summary>
+    /// 묶음(suite) 이름 → 확인. --autotest=crisis,hands 처럼 고르고, 비우면 전부 돈다.
+    /// 새 묶음은 여기에 더하고 tools/godot-check.sh의 기본 목록에도 적는다.
+    /// </summary>
+    Dictionary<string, Func<Task>> Suites() => new(StringComparer.Ordinal)
+    {
+        ["crisis"] = CrisisSuite,
+        ["hands"] = HandsSuite,
+        ["workviews"] = CheckWorkView,
+    };
+
     async Task Run()
     {
         try
         {
             await Frame(3);
+            var all = Suites();
+            var args = DeepLine.Game.Sim.DataPaths.UserArgs();
+            var names = args.TryGetValue("autotest", out var list) && list.Length > 0
+                ? list.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                : all.Keys.ToArray();
+            foreach (var name in names)
+            {
+                if (!all.TryGetValue(name, out var suite)) { Check(false, $"모르는 확인 묶음 '{name}' (있는 것: {string.Join(", ", all.Keys)})"); continue; }
+                GD.Print($"AUTOTEST 묶음 {name}");
+                await suite();
+                if (_failures.Count > 0) break;
+            }
+        }
+        catch (Exception e)
+        {
+            _failures.Add(e.ToString());
+            GD.PushError("AUTOTEST 예외: " + e);
+        }
+        Finish();
+    }
+
+    /// <summary>위기 한 판: 교범 오버레이, 손동작으로 위기 넘기기, 결과 화면, 다시 시작.</summary>
+    async Task CrisisSuite()
+    {
+        {
             await CheckOverlays();
 
             var bind = new Dictionary<string, string>(StringComparer.Ordinal) { ["circuit"] = "C3", ["point"] = "leak.rivet.09" };
@@ -99,19 +135,18 @@ public partial class AutoPlayer : Node
             Check(_main.Hud.ResultTitle == "훈련 완료", $"성공했는데 결과 화면 제목이 '{_main.Hud.ResultTitle}'");
             Check(_main.Runner.Paused, "임무가 끝났는데 시간이 계속 흐른다");
             await CheckRestart();
-            await CheckShoreWithMalletHeld();
-            await CheckHatchAndHandPump();
-            await CheckShock();
-            await CheckCaulking();
-            await CheckPinch();
-            await CheckWorkView();
         }
-        catch (Exception e)
-        {
-            _failures.Add(e.ToString());
-            GD.PushError("AUTOTEST 예외: " + e);
-        }
-        Finish();
+    }
+
+    /// <summary>위험과 손의 느낌: 버팀목, 해치와 수동 펌프, 감전, 코킹, 끼임. 임무 처음 상태에서 시작한다.</summary>
+    async Task HandsSuite()
+    {
+        if (Snap.Tick != 0) _main.Restart();
+        await CheckShoreWithMalletHeld();
+        await CheckHatchAndHandPump();
+        await CheckShock();
+        await CheckCaulking();
+        await CheckPinch();
     }
 
     void Finish()

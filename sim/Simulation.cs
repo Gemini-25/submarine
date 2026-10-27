@@ -23,7 +23,7 @@ public interface ISimulation
 
 public sealed class Simulation : ISimulation
 {
-    const int SaveFormatVersion = 3;
+    const int SaveFormatVersion = 4;
 
     SimWorld? _world;
     GameData? _data;

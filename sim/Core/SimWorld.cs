@@ -336,7 +336,25 @@ sealed class SimWorld
         PanelState.Io(io);
         Crew.Io(io);
         Mission.Io(io);
-        for (int i = 0; i < EventCounts.Length; i++) io.I(ref EventCounts[i]);
+        // 사건 수는 0이 아닌 것만 (순번, 수)로 쓴다. 사건 종류가 끝에 더해져도 기존 해시와 저장본이 그대로다(불변 조건 I4).
+        int nonzero = 0;
+        if (!io.IsReading) foreach (var n in EventCounts) if (n != 0) nonzero++;
+        io.I(ref nonzero);
+        if (io.IsReading) Array.Clear(EventCounts);
+        for (int i = 0, k = 0; k < nonzero; i++)
+        {
+            if (!io.IsReading && EventCounts[i] == 0) continue;
+            int ordinal = i, count = io.IsReading ? 0 : EventCounts[i];
+            io.I(ref ordinal);
+            io.I(ref count);
+            if (io.IsReading)
+            {
+                if (ordinal < 0 || ordinal >= EventCounts.Length)
+                    throw new InvalidDataException($"저장된 사건 종류 {ordinal}을 모릅니다.");
+                EventCounts[ordinal] = count;
+            }
+            k++;
+        }
         int pending = _pending.Count;
         io.I(ref pending);
         if (io.IsReading) _pending.Clear();

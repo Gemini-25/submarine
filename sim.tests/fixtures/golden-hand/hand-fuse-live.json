@@ -1,0 +1,23 @@
+{
+  "name": "M1 살아 있는 소켓: 성한 퓨즈 뽑기(불꽃, 감전), 기절 중 거부, 살아 있는 소켓에 꽂기(불꽃, 감전)",
+  "seed": 202,
+  "depth": 300,
+  "commands": [
+    {
+      "tick": 10,
+      "cmd": "fuse.C1.pull"
+    },
+    {
+      "tick": 20,
+      "cmd": "hand.drop"
+    },
+    {
+      "tick": 120,
+      "cmd": "fuse.C1.insert"
+    }
+  ],
+  "durationTicks": 300,
+  "setup": {},
+  "inject": [],
+  "expect": []
+}

@@ -1,0 +1,53 @@
+{
+  "name": "M1 리벳 코킹 여덟 번",
+  "seed": 206,
+  "depth": 300,
+  "inject": [
+    {
+      "tick": 0,
+      "fault": "HUL-01",
+      "part": "leak.rivet.09"
+    }
+  ],
+  "commands": [
+    {
+      "tick": 10,
+      "cmd": "tool.caulking_set"
+    },
+    {
+      "tick": 22,
+      "cmd": "leak.rivet.09.caulk"
+    },
+    {
+      "tick": 34,
+      "cmd": "leak.rivet.09.caulk"
+    },
+    {
+      "tick": 46,
+      "cmd": "leak.rivet.09.caulk"
+    },
+    {
+      "tick": 58,
+      "cmd": "leak.rivet.09.caulk"
+    },
+    {
+      "tick": 70,
+      "cmd": "leak.rivet.09.caulk"
+    },
+    {
+      "tick": 82,
+      "cmd": "leak.rivet.09.caulk"
+    },
+    {
+      "tick": 94,
+      "cmd": "leak.rivet.09.caulk"
+    },
+    {
+      "tick": 106,
+      "cmd": "leak.rivet.09.caulk"
+    }
+  ],
+  "durationTicks": 400,
+  "setup": {},
+  "expect": []
+}

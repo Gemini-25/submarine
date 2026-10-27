@@ -1,0 +1,45 @@
+{
+  "name": "M1 퓨즈 교체 (스위치 내리고 뽑기, 버리기, 새 퓨즈 꽂기)",
+  "seed": 201,
+  "depth": 300,
+  "setup": {
+    "switches": {
+      "C3": true
+    }
+  },
+  "inject": [
+    {
+      "tick": 0,
+      "fault": "ELC-01",
+      "part": "fuse.C3"
+    }
+  ],
+  "commands": [
+    {
+      "tick": 10,
+      "cmd": "switch.C3.off"
+    },
+    {
+      "tick": 22,
+      "cmd": "fuse.C3.pull"
+    },
+    {
+      "tick": 34,
+      "cmd": "hand.drop"
+    },
+    {
+      "tick": 46,
+      "cmd": "locker.take.fuse"
+    },
+    {
+      "tick": 58,
+      "cmd": "fuse.C3.insert"
+    },
+    {
+      "tick": 70,
+      "cmd": "switch.C3.on"
+    }
+  ],
+  "durationTicks": 200,
+  "expect": []
+}

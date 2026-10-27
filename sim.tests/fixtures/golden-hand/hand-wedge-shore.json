@@ -1,0 +1,49 @@
+{
+  "name": "M1 리벳 응급 막기 (쐐기 세 번, 버팀목)",
+  "seed": 205,
+  "depth": 300,
+  "inject": [
+    {
+      "tick": 0,
+      "fault": "HUL-01",
+      "part": "leak.rivet.09"
+    }
+  ],
+  "commands": [
+    {
+      "tick": 10,
+      "cmd": "locker.take.wood_wedge"
+    },
+    {
+      "tick": 22,
+      "cmd": "tool.mallet"
+    },
+    {
+      "tick": 34,
+      "cmd": "leak.rivet.09.wedge"
+    },
+    {
+      "tick": 46,
+      "cmd": "leak.rivet.09.wedge"
+    },
+    {
+      "tick": 58,
+      "cmd": "leak.rivet.09.wedge"
+    },
+    {
+      "tick": 70,
+      "cmd": "tool.hand"
+    },
+    {
+      "tick": 82,
+      "cmd": "locker.take.timber_shore"
+    },
+    {
+      "tick": 94,
+      "cmd": "leak.rivet.09.shore"
+    }
+  ],
+  "durationTicks": 600,
+  "setup": {},
+  "expect": []
+}

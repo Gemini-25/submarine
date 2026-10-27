@@ -1,0 +1,45 @@
+{
+  "name": "후방 해치를 닫으면 후방 침수가 축전지 쪽으로 넘어가지 않는다",
+  "seed": 113,
+  "depth": 300,
+  "inject": [
+    {
+      "tick": 0,
+      "fault": "HUL-01",
+      "part": "leak.rivet.09"
+    },
+    {
+      "tick": 0,
+      "fault": "WTR-01"
+    }
+  ],
+  "commands": [
+    {
+      "tick": 0,
+      "cmd": "hatch.close"
+    },
+    {
+      "tick": 200,
+      "cmd": "switch.C3.on"
+    }
+  ],
+  "expect": [
+    {
+      "byTick": 14400,
+      "assert": "bilge.aft.water >= 239.9"
+    },
+    {
+      "byTick": 18000,
+      "assert": "zone.aft.water > 50"
+    },
+    {
+      "always": "bilge.fwd.water <= 6 && zone.mid.water == 0 && zone.fore.water == 0",
+      "toTick": 36000
+    },
+    {
+      "never": "battery.submerged >= 1",
+      "toTick": 36000
+    }
+  ],
+  "ordered": true
+}

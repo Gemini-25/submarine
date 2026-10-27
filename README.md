@@ -46,6 +46,8 @@ Godot 4.7.2 **.NET** 판과 .NET 8 SDK가 필요하다.
 명령줄 확인(헤드리스):
 
 ```sh
-GODOT=/경로/Godot_v4.7.2-stable_mono_linux.x86_64 tools/godot-check.sh          # 빌드, 스모크, 종단 자동 플레이
-GODOT=... tools/godot-check.sh --screenshots shots/                                 # 화면 찍기 (xvfb-run 필요)
+tools/fetch-godot.sh                                                     # Godot 4.7.2 .NET 받기 (경로를 알려 줌)
+GODOT=/경로/Godot_v4.7.2-stable_mono_linux.x86_64 tools/check-all.sh   # dotnet test + Godot 확인 전부 (커밋 전에)
+GODOT=... tools/godot-check.sh crisis hands workviews                  # Godot 확인 묶음만 골라서
+GODOT=... tools/godot-check.sh --screenshots shots/                      # 화면 찍기 (xvfb-run 필요)
 ```

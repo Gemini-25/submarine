@@ -1,0 +1,53 @@
+{
+  "name": "가동 장비와 행동 소음이 누적 소음을 올리고, 조용해지면 내려간다",
+  "seed": 115,
+  "depth": 200,
+  "commands": [
+    {
+      "tick": 9000,
+      "cmd": "switch.C3.on"
+    },
+    {
+      "tick": 18000,
+      "cmd": "noise.emit",
+      "value": 45,
+      "value2": 20
+    },
+    {
+      "tick": 18400,
+      "cmd": "switch.C3.off"
+    },
+    {
+      "tick": 18400,
+      "cmd": "device.gyrocompass.off"
+    },
+    {
+      "tick": 18400,
+      "cmd": "device.nav_computer.off"
+    }
+  ],
+  "expect": [
+    {
+      "atTick": 8999,
+      "assert": "noise.current == 15 && noise.accum > 14.5 && noise.accum < 15"
+    },
+    {
+      "atTick": 17999,
+      "assert": "noise.current == 30 && noise.accum > 29"
+    },
+    {
+      "atTick": 18010,
+      "assert": "noise.current >= 75"
+    },
+    {
+      "byTick": 18400,
+      "assert": "noise.accum > 37"
+    },
+    {
+      "byTick": 30000,
+      "assert": "noise.accum < 9",
+      "fromTick": 18400
+    }
+  ],
+  "ordered": true
+}

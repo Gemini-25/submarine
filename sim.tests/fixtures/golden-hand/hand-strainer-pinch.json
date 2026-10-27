@@ -1,0 +1,59 @@
+{
+  "name": "M1 도는 펌프에서 바구니 빼기와 넣기 (끼임 두 번)",
+  "seed": 204,
+  "depth": 300,
+  "setup": {
+    "switches": {
+      "C3": true
+    },
+    "bilges": {
+      "bilge.aft": 200
+    }
+  },
+  "inject": [
+    {
+      "tick": 0,
+      "fault": "WTR-01"
+    }
+  ],
+  "commands": [
+    {
+      "tick": 10,
+      "cmd": "tool.wrench"
+    },
+    {
+      "tick": 22,
+      "cmd": "strainer.bolt.1.loosen"
+    },
+    {
+      "tick": 34,
+      "cmd": "strainer.bolt.2.loosen"
+    },
+    {
+      "tick": 46,
+      "cmd": "strainer.bolt.3.loosen"
+    },
+    {
+      "tick": 58,
+      "cmd": "strainer.bolt.4.loosen"
+    },
+    {
+      "tick": 70,
+      "cmd": "tool.hand"
+    },
+    {
+      "tick": 82,
+      "cmd": "strainer.cover.open"
+    },
+    {
+      "tick": 94,
+      "cmd": "strainer.basket.remove"
+    },
+    {
+      "tick": 200,
+      "cmd": "strainer.basket.insert"
+    }
+  ],
+  "durationTicks": 400,
+  "expect": []
+}

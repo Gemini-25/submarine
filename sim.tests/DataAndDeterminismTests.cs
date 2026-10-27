@@ -310,19 +310,60 @@ public class DeterminismTests
     // ── 기준 해시 ─────────────────────────────────────────────
     // 다른 프로세스와 다른 OS에서도 해시가 같은지 저장소의 기준값(sim.tests/fixtures/golden-hashes.json)과 비교한다.
     // 실행마다 1분(1200틱) 간격의 해시를 저장해서, 갈리면 몇 번째 구간에서 갈렸는지 보여 준다.
-    // 기준값은 고정 데이터 사본(sim.tests/fixtures/golden-data/)으로 만들어서 data/ 튜닝과 무관하다.
+    // 기준값은 고정 데이터 사본(sim.tests/fixtures/golden-data/)과 얼린 시나리오 사본(golden-scenarios/, M0의 16개)과
+    // M1 손 수리 기록(golden-hand/)으로 만들어서, data/ 튜닝이나 새 시나리오와 무관하다(DECISIONS M2 불변 조건 I1).
     // 규칙을 일부러 바꿨다면 DEEPLINE_REGEN_GOLDEN=1 dotnet test 로 다시 만들고, 바뀐 키를 커밋 메시지에 적는다.
     // 의미 테스트가 따로 지키지 않는 규칙은 기준 해시로만 지키지 말 것.
 
     const int GoldenEvery = 1200;
+    /// <summary>손 수리 기록은 짧아서 1초마다 해시를 남긴다.</summary>
+    const int GoldenHandEvery = 20;
+
+    static string GoldenScenarioDir => Path.Combine(TestData.FixtureDir, "golden-scenarios");
+    static string GoldenHandDir => Path.Combine(TestData.FixtureDir, "golden-hand");
     static bool Regenerating => Environment.GetEnvironmentVariable("DEEPLINE_REGEN_GOLDEN") == "1";
 
     static GameData GoldenData() => GameData.LoadFromDirectory(Path.Combine(TestData.FixtureDir, "golden-data"));
 
     public static IEnumerable<object[]> GoldenCases() =>
-        Directory.GetFiles(TestData.ScenarioDir, "*.json").OrderBy(f => f, StringComparer.Ordinal)
-            .Select(f => Path.GetFileName(f)).Append("replay-log").Append("replay-random").Append("mission-m1-crisis")
+        Directory.GetFiles(GoldenScenarioDir, "*.json")
+            .Concat(Directory.GetFiles(GoldenHandDir, "*.json"))
+            .Select(f => Path.GetFileName(f)).OrderBy(f => f, StringComparer.Ordinal)
+            .Append("replay-log").Append("replay-random").Append("mission-m1-crisis")
             .Select(k => new object[] { k });
+
+    /// <summary>손 수리 기록이 이름대로 한다. 명령이 거부되어 아무것도 안 하는 기록이 기준이 되는 것을 막는다.</summary>
+    [Theory]
+    [InlineData("hand-fuse-replace.json", "circuit.C3.fuse == 'ok' && circuit.C3.energized == 1 && events.Shock == 0", 0)]
+    [InlineData("hand-fuse-live.json", "events.Shock == 2 && events.Spark >= 2 && circuit.C1.fuse == 'ok'", 1)]
+    [InlineData("hand-strainer-loose-bolt.json", "strainer.looseBolts == 1 && part.pump.intake.state == 'normal' && device.bilge_pump.running == 1", 0)]
+    [InlineData("hand-strainer-pinch.json", "events.Pinch == 2 && strainer.basket == 'in'", 0)]
+    [InlineData("hand-wedge-shore.json", "leak.rivet.09.shore == 1 && leak.rivet.09.wedge == 3 && events.Shock == 0", 0)]
+    [InlineData("hand-caulk.json", "part.leak.rivet.09.state == 'normal' && leak.rivet.09.inflow == 0", 0)]
+    public void Golden_hand_scripts_do_what_their_names_say(string key, string finalAssert, int stunnedRejections)
+    {
+        var s = ScenarioFile.Load(Path.Combine(GoldenHandDir, key));
+        Assertion? check = null;
+        bool ok = false;
+        var result = ScenarioRunner.Run(GoldenData(), s, sim =>
+        {
+            check ??= Assertion.Compile(sim.World, finalAssert);
+            if (sim.Tick == s.DurationTicks) ok = check.Eval(sim.World);
+        });
+        Assert.True(ok, $"{key}: 끝에서 '{finalAssert}'가 참이 아니다");
+        var rejected = result.Events.Where(e => e.Kind == SimEventKind.CommandRejected).ToList();
+        Assert.Equal(stunnedRejections, rejected.Count(e => e.Detail == "stunned"));
+        Assert.DoesNotContain(rejected, e => e.Detail != "stunned");
+    }
+
+    [Fact]
+    public void Golden_data_still_loads_with_the_current_validator()
+    {
+        // 새 필드는 [Optional]이고 새 파일은 없어도 된다(불변 조건 I6). 얼린 데이터가 못 읽히면 기준 해시가 무의미해진다.
+        var data = GoldenData();
+        Assert.NotEmpty(data.Procedures);
+        Assert.Contains(data.Missions, m => m.Id == "m1-crisis");
+    }
 
     static List<string> GoldenRun(string key)
     {
@@ -350,9 +391,12 @@ public class DeterminismTests
             hashes.Add(all[^1].ToString("X16"));
             return hashes;
         }
-        var result = ScenarioRunner.Run(GoldenData(), ScenarioFile.Load(Path.Combine(TestData.ScenarioDir, key)), sim =>
+        bool hand = key.StartsWith("hand-", StringComparison.Ordinal);
+        int every = hand ? GoldenHandEvery : GoldenEvery;
+        var file = Path.Combine(hand ? GoldenHandDir : GoldenScenarioDir, key);
+        var result = ScenarioRunner.Run(GoldenData(), ScenarioFile.Load(file), sim =>
         {
-            if (sim.Tick % GoldenEvery == 0) hashes.Add(sim.StateHash().ToString("X16"));
+            if (sim.Tick % every == 0) hashes.Add(sim.StateHash().ToString("X16"));
         });
         hashes.Add(result.FinalHash.ToString("X16"));
         return hashes;

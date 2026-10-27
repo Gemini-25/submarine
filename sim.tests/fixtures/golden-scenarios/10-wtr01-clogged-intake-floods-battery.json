@@ -1,0 +1,55 @@
+{
+  "name": "WTR-01 흡입구가 막히면 펌프 전류가 낮고 배수가 0이며, 결국 축전지가 잠겨 염소가 생긴다",
+  "seed": 110,
+  "depth": 300,
+  "inject": [
+    {
+      "tick": 0,
+      "fault": "HUL-01",
+      "part": "leak.rivet.09"
+    },
+    {
+      "tick": 0,
+      "fault": "WTR-01"
+    }
+  ],
+  "commands": [
+    {
+      "tick": 200,
+      "cmd": "switch.C3.on"
+    }
+  ],
+  "expect": [
+    {
+      "byTick": 201,
+      "assert": "device.bilge_pump.running == 1 && device.bilge_pump.current < 150"
+    },
+    {
+      "byTick": 201,
+      "assert": "pump.netFlow == 0",
+      "fromTick": 201
+    },
+    {
+      "byTick": 201,
+      "fromTick": 201,
+      "assert": "panel.gauge.pumpFlow == 0 && panel.gauge.pumpCurrent < 150"
+    },
+    {
+      "byTick": 4800,
+      "assert": "panel.lamp.water == 'warning'"
+    },
+    {
+      "byTick": 24000,
+      "assert": "battery.submerged >= 1"
+    },
+    {
+      "byTick": 30000,
+      "assert": "air.cl2 > 10"
+    },
+    {
+      "byTick": 36000,
+      "assert": "mission.status == 'failed' && mission.reason == 'unconscious'"
+    }
+  ],
+  "ordered": true
+}
