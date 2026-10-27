@@ -124,7 +124,9 @@
     "kind": "Continuous",
     "defaultOn": true,
     "zone": "fore",
-    "parts": []
+    "parts": [
+      "gyro.bearing"
+    ]
   },
   "nav_computer": {
     "name": "기계식 항법 계산기",

@@ -398,6 +398,11 @@ static class SimQuery
                 return x => QueryValue.Of(m(x));
             }
 
+            // 항법 (M2 WP14): 자이로와 항법 계산기의 파생 값. 상태 부품이 없으면 모르는 경로다.
+            case "nav":
+                End(2);
+                return Navigation.Compile(w, At(1)) ?? throw Unknown();
+
             default:
                 throw Unknown();
         }
