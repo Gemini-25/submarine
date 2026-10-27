@@ -54,7 +54,8 @@ static class DiagnosisHarness
         foreach (var r in d.Instruments)
         {
             if (r.Unit == "s") continue; // 시계는 고장을 알려 주지 않는다
-            Num($"reading.{r.Id}", r.Unit switch { "A" => 0.4, "V" => 5, "L" => 20, "Lpm" => 6, _ => 0.3 });
+            // 항법(WP14): 침로 0.5도, 계수기 0.05km(영점 손잡이 한 눈금), 회전 속도 5rpm, 속력 0.2노트.
+            Num($"reading.{r.Id}", r.Unit switch { "A" => 0.4, "V" => 5, "L" => 20, "Lpm" => 6, "deg" => 0.5, "km" => 0.05, "rpm" => 5, "kn" => 0.2, _ => 0.3 });
         }
 
         Num("measure.voltmeter.bus", 5 * Volt);
@@ -195,5 +196,66 @@ public class Diagnosability
         var again = Run("WTR-02", null);
         Assert.Empty(DiagnosisHarness.Separating(again, _vectors.Value["WTR-02"]));
         Assert.All(again.Keys, k => Assert.True(ObservableQuery.IsObservable(k), k));
+    }
+}
+
+/// <summary>
+/// 항법 고장 (WP14). 항법 고장은 배가 나아갈 때만 드러나므로 노출 설정이 다르다: 수심 유지, 반속 항진, 3분.
+/// 같은 노출에서 M0 고장 9종과 견주어도 구별되고, 고장 없는 기준과도 구별된다.
+/// </summary>
+public class NavDiagnosability
+{
+    readonly ITestOutputHelper _out;
+    public NavDiagnosability(ITestOutputHelper output) => _out = output;
+
+    static readonly (string Fault, string? Part)[] NavFaults = { ("NAV-01", null), ("NAV-02", null) };
+
+    static SortedDictionary<string, DiagnosisHarness.Element> Run(string? fault, string? part)
+    {
+        var sim = TestData.NewSim(setup: TestData.Setup(s =>
+        {
+            s.DepthM = 120;
+            s.Throttle = 0.5;
+        }));
+        if (fault != null) sim.Inject(fault, part);
+        sim.Run(180);
+        return DiagnosisHarness.Observe(new ObservableQuery(sim), TestData.Data);
+    }
+
+    static readonly Lazy<Dictionary<string, SortedDictionary<string, DiagnosisHarness.Element>>> _vectors = new(() =>
+        Diagnosability.M0Faults.Concat(NavFaults).Append((Fault: "", Part: (string?)null))
+            .ToDictionary(f => f.Fault, f => Run(f.Fault.Length == 0 ? null : f.Fault, f.Part)));
+
+    [Fact]
+    public void Nav_faults_are_noticeable_distinct_from_each_other_and_from_the_M0_faults_and_documented()
+    {
+        var v = _vectors.Value;
+        foreach (var (fault, _) in NavFaults)
+        {
+            var sep = DiagnosisHarness.Separating(v[fault], v[""]);
+            _out.WriteLine($"{fault}: {string.Join(", ", sep.Select(k => $"{k}={v[fault][k]} (기준 {v[""][k]})"))}");
+            Assert.True(sep.Count > 0, $"{fault}는 고장 없는 상태와 구별되지 않는다");
+            foreach (var k in sep) Assert.True(DiagnosisHarness.Documented(k, TestData.Data), $"{fault}를 드러내는 '{k}'에 문구가 없다");
+            foreach (var (other, _) in Diagnosability.M0Faults.Concat(NavFaults).Where(o => o.Fault != fault))
+                Assert.True(DiagnosisHarness.Separating(v[fault], v[other]).Count > 0, $"{fault}와 {other}의 관찰 벡터가 같다");
+        }
+        // 상황판에는 나오지 않는다 (침묵하는 고장).
+        foreach (var (fault, _) in NavFaults) Assert.Equal("off", v[fault]["panel.lamp.nav"].Text);
+    }
+
+    /// <summary>교범 05쪽 '자이로컴퍼스와 항법 계산기'의 가르기: 침로는 중계기와 청진기로, 거리는 계수기와 딸깍 소리로 갈린다.</summary>
+    [Fact]
+    public void Heading_and_distance_faults_split_on_the_checks_the_manual_names()
+    {
+        var v = _vectors.Value;
+        void Splits(string a, string b, string path) =>
+            Assert.True(v[a][path].Differs(v[b][path]), $"{a}/{b}가 {path}로 갈리지 않는다 ({v[a][path]} / {v[b][path]})");
+        Splits("NAV-01", "NAV-02", "reading.gyro.repeater");
+        Splits("NAV-01", "NAV-02", "measure.stethoscope.gyro.case");
+        Splits("NAV-01", "NAV-02", "reading.navcomp.counter");
+        Splits("NAV-02", "", "measure.stethoscope.navcomp.unit");
+        Splits("NAV-01", "", "cue.gyro.warble");
+        // 축 회전 속도계는 NAV-02에서도 그대로다 (전동기 고장과 가른다).
+        Assert.False(v["NAV-02"]["reading.tachometer"].Differs(v[""]["reading.tachometer"]));
     }
 }

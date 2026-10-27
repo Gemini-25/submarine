@@ -519,7 +519,9 @@ public class PartMechanicsTests
     public void Modules_are_off_without_their_state_parts()
     {
         var m = NewSim(TestData.Data).World.Mechanics;
-        Assert.False(m.Steam || m.Attitude || m.Senses || m.Nav || m.Cable);
+        // 항법 모듈은 data/parts/nav.json의 상태 부품으로 켜진다 (WP14). 나머지는 아직 상태 부품이 없다.
+        Assert.False(m.Steam || m.Attitude || m.Senses || m.Cable);
+        Assert.True(m.Nav);
         Assert.False(m.HasSeaPaths);
         Assert.False(m.HasTimers);
     }

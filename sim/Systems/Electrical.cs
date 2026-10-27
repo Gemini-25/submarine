@@ -230,6 +230,8 @@ static class DeviceRules
         foreach (var p in w.DeviceParts[d])
             if (p.State(w.T.Wear) >= PartState.Broken)
                 return false;
+        // 항법 모듈: 자이로 전원 스위치와 베어링, 항법 계산기 전원 레버 (모듈이 없으면 늘 참).
+        if (!Navigation.CanRun(w, d)) return false;
         if (d == w.Fan)
             return w.Part("fan.motor").Get("stalled") < 0.5;
         return true;

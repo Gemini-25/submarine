@@ -1,0 +1,22 @@
+{
+  "cues": {
+    "gyro.hum": { "sense": "Sound", "anchor": "gyro.case", "q": "nav.gyroSpin", "map": [[0, 0], [1, 1]], "caption": "cue.gyro.hum" },
+    "gyro.warble": { "sense": "Sound", "anchor": "gyro.case", "q": "part.gyro.bearing.prop.drag", "while": "nav.gyroSpin", "map": [[0.1, 0], [0.5, 0.6], [1, 1]], "caption": "cue.gyro.warble" },
+    "gyro.settleLamp": { "sense": "Sight", "anchor": "gyro.case", "q": "nav.settled", "map": [[0, 0], [1, 1]], "caption": "cue.gyro.settleLamp" },
+    "navcomp.stall": { "sense": "Sight", "anchor": "navcomp.unit", "q": "nav.counterStalled", "map": [[0, 0], [1, 1]], "caption": "cue.navcomp.stall" },
+    "navcomp.click": { "sense": "Sound", "anchor": "navcomp.unit", "q": "nav.counterClick", "map": [[0, 0], [1, 1]], "caption": "cue.navcomp.click" }
+  },
+  "instruments": {
+    "gyro.repeater": { "anchor": "gyrocompass", "q": "nav.gyroHeading", "unit": "deg", "label": "reading.gyro.repeater" },
+    "compass": { "anchor": "fore", "q": "nav.compassHeading", "unit": "deg", "label": "reading.compass" },
+    "navcomp.counter": { "anchor": "navcomp.unit", "q": "nav.counterKm", "unit": "km", "label": "reading.navcomp.counter" },
+    "shaft.revs": { "anchor": "navcomp.unit", "q": "nav.revs", "unit": "none", "label": "reading.shaft.revs" },
+    "tachometer": { "anchor": "navcomp.unit", "q": "nav.rpm", "unit": "rpm", "label": "reading.tachometer" },
+    "speedlog": { "anchor": "navcomp.unit", "q": "nav.speedKn", "unit": "kn", "label": "reading.speedlog" },
+    "depth.reference": { "anchor": "fore", "q": "depth", "unit": "m", "label": "reading.depth.reference" }
+  },
+  "stethoscope": {
+    "gyro.case": { "q": "part.gyro.bearing.prop.drag", "while": "nav.gyroSpin", "map": [[0, 0.1], [0.5, 0.6], [1, 1]] },
+    "navcomp.unit": { "q": "part.navcomp.gear.prop.slip", "while": "device.nav_computer.running", "map": [[0, 0.1], [0.6, 0.8], [1, 1]] }
+  }
+}

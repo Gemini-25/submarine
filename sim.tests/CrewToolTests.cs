@@ -325,7 +325,8 @@ public class CrewToolTests
     {
         var sim = TestData.NewSim();
         var bind = new Dictionary<string, string> { ["circuit"] = "C3", ["point"] = "leak.rivet.09" };
-        foreach (var p in TestData.Data.Procedures)
+        // M1 절차만 (procedures.json). M2 계통의 절차는 공구판에 다녀온다.
+        foreach (var p in TestData.Data.Procedures.Where(p => p.Id is "proc.fuse.replace" or "proc.strainer.clean" or "proc.rivet.wedge" or "proc.rivet.caulk"))
         {
             var b = p.Bind.ToDictionary(n => n, n => bind[n]);
             Assert.Equal(ProcedureRunner.Expand(p, b).Select(c => c.Cmd), ProcedureRunner.ExpandWithBelt(sim, p, b).Select(c => c.Cmd));
