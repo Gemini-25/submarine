@@ -254,9 +254,14 @@ public partial class Submarine : Node3D
         {
             float cx = x0 + 0.3f + (i % 3) * 0.5f, cz = i < 3 ? -0.25f : 0.25f;
             _cellBodies[i] = Geo.Box(well, new Vector3(0.36f, 0.4f, 0.4f), new Vector3(cx, -0.3f, cz), cellMat); // 셀을 들어내면 감춘다 (Submarine.Power)
-            Geo.Cyl(well, 0.025f, 0.05f, new Vector3(cx - 0.1f, -0.07f, cz), Geo.Mat(new Color(0.6f, 0.15f, 0.1f)));
-            Geo.Cyl(well, 0.025f, 0.05f, new Vector3(cx + 0.1f, -0.07f, cz), Geo.Mat(new Color(0.1f, 0.1f, 0.1f)));
-            Geo.Text(well, $"{i + 1}", new Vector3(cx, -0.095f, cz + 0.12f), 0.05f, facing: Vector3.Up).RotationDegrees = new Vector3(-90, 0, 0);
+            // 단자 기둥과 번호도 셀과 함께 들린다 (Submarine.Power가 셀이 빠지면 감춘다).
+            _cellTops[i] = new Node3D[]
+            {
+                Geo.Cyl(well, 0.025f, 0.05f, new Vector3(cx - 0.1f, -0.07f, cz), Geo.Mat(new Color(0.6f, 0.15f, 0.1f))),
+                Geo.Cyl(well, 0.025f, 0.05f, new Vector3(cx + 0.1f, -0.07f, cz), Geo.Mat(new Color(0.1f, 0.1f, 0.1f))),
+                Geo.Text(well, $"{i + 1}", new Vector3(cx, -0.095f, cz + 0.12f), 0.05f, facing: Vector3.Up),
+            };
+            _cellTops[i][2].RotationDegrees = new Vector3(-90, 0, 0);
         }
 
         var water = new StandardMaterial3D { AlbedoColor = new Color(0.10f, 0.20f, 0.20f, 0.8f), Transparency = BaseMaterial3D.TransparencyEnum.Alpha, Roughness = 0.05f };

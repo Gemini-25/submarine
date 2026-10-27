@@ -90,6 +90,7 @@ public static class CueAudio
         R("propulsion.hum", s => new MotorVoice(s), (v, c) =>
         {
             v.Running = c.V > 0.02f;
+            // 축 회전계는 버스 전압을 이미 따른다(셀이 열화해 전압이 떨어지면 음이 낮아진다).
             v.ShaftHz = 10f + 0.12f * (float)c.S.Readings.FirstOrDefault(r => r.Id == "tachometer").Value;
         }, spot: "motor", db: -4, range: 10),
         // 정류자 불꽃 (PWR-02): 브러시 불꽃 세기만큼 탁탁 튄다. 회전음 위에 겹친다.

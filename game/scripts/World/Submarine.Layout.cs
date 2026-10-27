@@ -253,12 +253,8 @@ public partial class Submarine
         var m = Mount(root, "MotorBrushEnd", new Vector3(MotorX1, 0.45f, 0.45f), Vector3.Right);
         var mb = new MeshBuilder();
         mb.Cylinder(ArtMat.Machinery, Kit.AlongAxis(Vector3.Back, new Vector3(0, 0, 0.015f)), 0.3f, 0.03f, 28, 0.006f);
-        mb.Box(ArtMat.Brass, new Vector3(0, 0.07f, 0.033f), new Vector3(0.2f, 0.07f, 0.008f), 0.002f);
-        mb.Box(ArtMat.BlackEnamel, new Vector3(0, 0.07f, 0.036f), new Vector3(0.17f, 0.045f, 0.006f), 0.001f);
-        Bolt(mb, new Vector3(0, 0.21f, 0.03f), Vector3.Back);
-        Bolt(mb, new Vector3(0, -0.21f, 0.03f), Vector3.Back);
         mb.Instance(m, "EndCover");
-        NamePlate(m, "정류자 쪽 덮개", new Vector3(0, -0.07f, 0.031f), Vector3.Back, 0.016f);
+        // 띠 창, 볼트, 명판은 경첩으로 열리는 덮개에 있다 (Submarine.Power).
         Marker(m, "motor.cover", "전동기 끝 덮개", new Vector3(0, 0, 0.045f), new Vector3(0.24f, 0.24f, 0.03f), "motor");
         Marker(m, "motor.cover.bolt.1", "끝 덮개 볼트 1", new Vector3(0, 0.21f, 0.045f), new Vector3(0.05f, 0.05f, 0.04f), "motor");
         Marker(m, "motor.cover.bolt.2", "끝 덮개 볼트 2", new Vector3(0, -0.21f, 0.045f), new Vector3(0.05f, 0.05f, 0.04f), "motor");
@@ -737,7 +733,7 @@ public partial class Submarine
         foreach (var (gi, _) in DriftGauges)
             glass.Cylinder(ArtMat.Glass, Kit.AlongAxis(Vector3.Back, new Vector3(-0.77f + gi * 0.22f, 1.33f, 0.075f)), 0.08f, 0.004f, 24);
         glass.Instance(m, "GaugeGlass", NoShadow);
-        Dial(m, new Vector3(lx, 1.1f, 0.025f), Vector3.Back, 0.058f, "", new[] { "정지", "미속", "저속", "반속", "전속" });
+        _telegraphGauge = Dial(m, new Vector3(lx, 1.1f, 0.025f), Vector3.Back, 0.058f, "", new[] { "정지", "미속", "저속", "반속", "전속" }); // 바늘은 Submarine.Power가 움직인다
         NamePlate(m, "램프 시험", new Vector3(0.8f, 1.055f, 0.051f), Vector3.Back, 0.014f);
         NamePlate(m, "기관 전령기", new Vector3(lx, 1.2f, 0.021f), Vector3.Back, 0.012f);
         NamePlate(m, "탐조등", new Vector3(lx, 1.5f, 0.021f), Vector3.Back, 0.012f);
@@ -849,14 +845,11 @@ public partial class Submarine
         staples.Instance(n, "Staples", NoShadow);
         NamePlate(n, "축전지 갑판 판", new Vector3(cx, 0.003f, h.End.Y + 0.09f), Vector3.Up, 0.016f);
 
-        // 셀 위의 것: M1 셀 자리(Submarine.BuildBatteryWell)와 같은 배치.
+        // 셀 위의 것: M1 셀 자리(Submarine.BuildBatteryWell)와 같은 배치. 마개, 연결판, 너트 머리는 셀과 함께 들리므로 Submarine.Power가 셀마다 짓는다.
         var cells = new MeshBuilder();
         for (int i = 0; i < 6; i++)
         {
             float x = WellX0 + 0.3f + (i % 3) * 0.5f, z = i < 3 ? -0.25f : 0.25f, inward = -Mathf.Sign(z);
-            cells.Cylinder(ArtMat.BlackEnamel, new Transform3D(Basis.Identity, new Vector3(x, -0.09f, z + inward * 0.07f)), 0.022f, 0.02f, 10);
-            cells.Box(ArtMat.Copper, new Vector3(x, -0.096f, z + inward * 0.165f), new Vector3(0.06f, 0.008f, 0.03f), 0.002f);
-            foreach (float dx in new[] { -0.1f, 0.1f }) Bolt(cells, new Vector3(x + dx, -0.045f, z), Vector3.Up, 0.03f);
             string cell = $"battery.cell.{i + 1}";
             Marker(n, $"{cell}.nut.1", $"{i + 1}번 셀 단자 너트 1", new Vector3(x - 0.1f, -0.04f, z), new Vector3(0.05f, 0.03f, 0.05f), "battery");
             Marker(n, $"{cell}.nut.2", $"{i + 1}번 셀 단자 너트 2", new Vector3(x + 0.1f, -0.04f, z), new Vector3(0.05f, 0.03f, 0.05f), "battery");
@@ -866,8 +859,7 @@ public partial class Submarine
         // 점퍼 걸이
         var rack = new Vector3(6.1f, -0.2f, WellHalfZ);
         cells.Box(ArtMat.BareSteel, rack + new Vector3(0, 0.05f, -0.015f), new Vector3(0.12f, 0.02f, 0.03f), 0.003f);
-        cells.Tube(ArtMat.ClothWire(new Color(0.5f, 0.1f, 0.08f)), Transform3D.Identity, new[] { rack + new Vector3(-0.03f, 0.05f, -0.03f), rack + new Vector3(-0.04f, -0.08f, -0.035f), rack + new Vector3(-0.02f, -0.12f, -0.03f) }, 0.008f, 6);
-        cells.Tube(ArtMat.ClothWire(new Color(0.08f, 0.08f, 0.08f)), Transform3D.Identity, new[] { rack + new Vector3(0.03f, 0.05f, -0.03f), rack + new Vector3(0.04f, -0.08f, -0.035f), rack + new Vector3(0.02f, -0.12f, -0.03f) }, 0.008f, 6);
+        // 걸이에 걸린 점퍼 막대는 재고를 따라 Submarine.Power가 보인다.
         cells.Instance(n, "CellTops", NoShadow);
         Marker(n, "battery.jumper", "점퍼 걸이", rack + new Vector3(0, 0, -0.03f), new Vector3(0.12f, 0.12f, 0.04f), "battery");
     }

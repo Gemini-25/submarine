@@ -212,7 +212,15 @@ public partial class ProceduralAudio : Node3D
             case "hatch": Hatch(at, close: p.Length < 2 || p[1] != "open", 2); break;
             case "handpump": HandPump(at); break;
             case "locker": Locker(Spot($"locker.{cmd["locker.take.".Length..]}", at), open: true, -6); break;
-            case "hand": Mallet(Spot("discard", at), 0.3f, -4); break;
+            case "hand":
+            {
+                // 버린 곳은 몸에서 가장 가까운 폐기 자리다(중앙 폐기함, 후방 폐기함, 셀 상자의 다 쓴 셀 칸). 셀 상자에는 무거운 셀이 떨어진다.
+                string bin = new[] { "discard", "discard.aft", "discard.crate" }.Where(_sub.Interactables.ContainsKey)
+                    .OrderBy(b => _sub.Interactables[b].GlobalPosition.DistanceTo(Camera)).FirstOrDefault() ?? "discard";
+                bool heavy = bin == "discard.crate";
+                Mallet(Spot(bin, at), heavy ? 0.9f : 0.3f, heavy ? 0 : -4);
+                break;
+            }
             case "strainer" when p[1] == "bolt": Ratchet(Spot($"strainer.bolt.{p[2]}", at), -2); break;
             case "strainer" when p[1] == "cover": Locker(Spot("strainer.cover", at), open: false, -4); break;
             case "strainer" when p[1] == "basket" && p[2] == "scrub": Brush(Spot("wash_bucket", at), -2); break;

@@ -68,6 +68,25 @@ public partial class AutoPlayer
         await Frame(2);
     }
 
+    /// <summary>
+    /// fixtures 묶음의 도우미: 작업 자리 표(StandPoints)에 있는 장치는 그 자리에서, 가리는 덮개를 열고(Prepare) 겨냥한다
+    /// (갑판 판 아래의 셀, 덮개 안의 브러시). 겨냥한 것은 pending에서 뺀다. 나머지는 부르는 쪽이 공용 Approach로 겨냥한다.
+    /// </summary>
+    async Task AimFromStandPoints(List<string> pending)
+    {
+        foreach (var st in StandPoints.All)
+        {
+            var mine = pending.Where(id => st.Targets.Contains(id)).ToList();
+            if (mine.Count == 0) continue;
+            await Prepare(st, true);
+            if (await StandAt(st))
+                foreach (var id in mine) await AimFrom(st, id);
+            await Crouch(false);
+            await Prepare(st, false);
+            pending.RemoveAll(mine.Contains);
+        }
+    }
+
     double PowerCue(string id)
     {
         foreach (var c in Snap.Cues)
@@ -110,6 +129,11 @@ public partial class AutoPlayer
         }
         await Crouch(false);
         Check(low > 0, "셀 전압을 하나도 재지 못했다");
+        // 판을 연 채 상황판 작업 자리(열린 우물 위)에 서도 떨어지지 않는다.
+        var panel = StandPoints.All.First(st => st.Name == "panel");
+        _main.Player.PlaceAt(panel.Feet, new Vector3(Submarine.Length, 1.4f, panel.Feet.Z));
+        for (int k = 0; k < 30; k++) await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
+        Check(_main.Player.GlobalPosition.Y > -0.05f, $"판을 연 우물 위 상황판 자리에서 떨어졌다 (높이 {_main.Player.GlobalPosition.Y:F2})");
         foreach (var c in new[] { "tool.hand", "battery.deck.close" })
         {
             await PowerPerform(c);

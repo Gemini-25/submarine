@@ -13,8 +13,15 @@ namespace DeepLine.Game.World;
 /// </summary>
 public partial class Submarine
 {
-    /// <summary>M1 축전지 우물의 셀 몸통 (BuildBatteryWell). 셀을 들어내면 감춘다.</summary>
+    /// <summary>기관 전령기 눈금판 (배치가 짓는다). 바늘이 지금 눈금을 가리킨다.</summary>
+    KitGauge? _telegraphGauge;
+
+    /// <summary>M1 축전지 우물의 셀 몸통과 셀 위의 단자 기둥, 번호 (BuildBatteryWell). 셀을 들어내면 감춘다.</summary>
     readonly Node3D?[] _cellBodies = new Node3D?[6];
+    readonly Node3D[][] _cellTops = new Node3D[6][];
+
+    /// <summary>판을 열어 둔 우물 위를 사람만 밟는 층 (조준선은 지나간다). Geo의 층과 겹치지 않는다.</summary>
+    public const uint PlayerOnlyLayer = 8;
 
     /// <summary>기관 전령기의 눈금 (정지, 미속, 저속, 반속, 전속)과 스로틀 값. 시뮬레이션의 propulsion.set 값이다.</summary>
     public static readonly double[] TelegraphNotches = { 0, 0.25, 0.5, 0.75, 1 };
@@ -72,6 +79,20 @@ public partial class Submarine
         // 갑판 판: 표지가 경첩 노드에 붙어 있다. 판의 열림은 시뮬레이션의 battery.deck.open을 따른다.
         // 값이 바뀔 때만 덮개를 움직인다(배치 확인 묶음이 표현만으로 연 덮개를 매 프레임 되돌리지 않게).
         Rebind("battery.deck");
+        // 판을 열면 바닥에 1.4×1.1m 구멍이 난다. 사람만 막는 판(조준선 층이 아니다)을 바닥 높이에 두어,
+        // 판을 연 채로도 통로를 지나 상황판까지 갈 수 있고 우물 안의 셀은 그대로 겨냥된다. 우물 벽과 바닥도 막는다.
+        var guard = new StaticBody3D { Name = "WellWalkway", CollisionLayer = PlayerOnlyLayer, CollisionMask = 0, Position = new Vector3(DeckHole.GetCenter().X, -0.05f, DeckHole.GetCenter().Y) };
+        guard.AddChild(new CollisionShape3D { Shape = new BoxShape3D { Size = new Vector3(DeckHole.Size.X, 0.1f, DeckHole.Size.Y) } });
+        AddChild(guard);
+        var well = new Node3D { Name = "WellWalls" };
+        AddChild(well);
+        float wx = (WellX0 + WellX1) / 2, wl = WellX1 - WellX0;
+        Geo.Blocker(well, new Vector3(wl, 0.1f, WellHalfZ * 2), new Vector3(wx, -0.75f, 0));
+        foreach (float side in new[] { -1f, 1f })
+        {
+            Geo.Blocker(well, new Vector3(wl, 0.7f, 0.05f), new Vector3(wx, -0.35f, side * (WellHalfZ + 0.025f)));
+            Geo.Blocker(well, new Vector3(0.05f, 0.7f, WellHalfZ * 2), new Vector3(side < 0 ? WellX0 - 0.025f : WellX1 + 0.025f, -0.35f, 0));
+        }
         bool? deckOpen = null;
         OnUpdate((s, _) =>
         {
@@ -88,28 +109,31 @@ public partial class Submarine
             var cell = Rebind($"battery.cell.{n}");
             cell.MeasureTarget = part; // 전압계를 대면 그 셀의 단자 전압 (30V 눈금)
             var parent = (Node3D)cell.GetParent();
-            if (_cellBodies[i] is { } body)
-            {
-                var b = body;
-                OnUpdate((s, _) => b.Visible = PartProp(s, part, "present", 1) >= 0.5);
-            }
-            // 셀이 빠지면 통기 마개도 함께 빠진다.
-            var cap = new Node3D { Name = $"Cap{n}", Position = cell.Position };
-            parent.AddChild(cap);
-            var cb = new MeshBuilder();
-            cb.Cylinder(ArtMat.BlackEnamel, Transform3D.Identity, 0.024f, 0.022f, 10);
-            cb.Instance(cap, "Cap", NoShadow);
-            OnUpdate((s, _) => cap.Visible = PartProp(s, part, "present", 1) >= 0.5);
+            float x = WellX0 + 0.3f + (i % 3) * 0.5f, z = i < 3 ? -0.25f : 0.25f, inward = -Mathf.Sign(z);
+            // 셀과 함께 들리는 것: 몸통, 단자 기둥, 번호, 통기 마개, 연결판, 너트 머리.
+            var top = new Node3D { Name = $"CellTop{n}" };
+            parent.AddChild(top);
+            var tb = new MeshBuilder();
+            tb.Cylinder(ArtMat.BlackEnamel, new Transform3D(Basis.Identity, new Vector3(x, -0.09f, z + inward * 0.07f)), 0.022f, 0.02f, 10);
+            tb.Box(ArtMat.Copper, new Vector3(x, -0.096f, z + inward * 0.165f), new Vector3(0.06f, 0.008f, 0.03f), 0.002f);
+            tb.Instance(top, "CapAndLink", NoShadow);
+            var lifted = new List<Node3D> { top };
+            if (_cellBodies[i] is { } body) lifted.Add(body);
+            if (_cellTops[i] is { } m1) lifted.AddRange(m1);
 
             for (int k = 1; k <= 2; k++)
             {
                 var nut = Rebind($"battery.cell.{n}.nut.{k}");
+                nut.MeasureTarget = part; // 교범대로 두 단자 너트에 탐침을 대도 그 셀의 전압
                 var head = BoltHead(parent, nut.Position + new Vector3(0, 0.004f, 0), Vector3.Up, 0.034f);
                 BoltVisual(nut, head, 0.012f);
-                string prop = $"nut{k}";
-                OnUpdate((s, _) => head.GetParent<Node3D>().Visible = PartProp(s, part, "present", 1) >= 0.5);
-                _ = prop;
+                lifted.Add(head.GetParent<Node3D>());
             }
+            OnUpdate((s, _) =>
+            {
+                bool present = PartProp(s, part, "present", 1) >= 0.5;
+                foreach (var node in lifted) node.Visible = present;
+            });
 
             // 점퍼 막대: 연결 자리에 걸치면 보인다.
             var link = Rebind($"battery.link.{n}");
@@ -153,10 +177,12 @@ public partial class Submarine
         // 셀 상자: 예비 셀 칸(꺼내기, 되돌리기)과 다 쓴 셀 칸(버리기).
         var spare = Replace("locker.spare_cell", "예비 셀",
             (h, m) => m != Motion.Click ? null : h.Hand == "spare_cell" ? "locker.return.spare_cell" : "locker.take.spare_cell");
-        var spareCell = new Node3D { Name = "SpareCell", Position = spare.Position + new Vector3(0, -0.13f, 0) };
+        // 예비 셀은 상자 칸에서 윗부분이 보이게 놓는다 (재고가 없으면 빈 칸).
+        var spareCell = new Node3D { Name = "SpareCell", Position = spare.Position + new Vector3(0, 0.02f, 0) };
         ((Node3D)spare.GetParent()).AddChild(spareCell);
         var sb = new MeshBuilder();
-        sb.Box(ArtMat.BlackEnamel, Vector3.Zero, new Vector3(0.16f, 0.24f, 0.3f), 0.006f);
+        sb.Box(ArtMat.BlackEnamel, Vector3.Zero, new Vector3(0.16f, 0.04f, 0.3f), 0.006f);
+        foreach (float dz in new[] { -0.08f, 0.08f }) sb.Cylinder(ArtMat.Copper, new Transform3D(Basis.Identity, new Vector3(0, 0.03f, dz)), 0.018f, 0.025f, 10);
         sb.Instance(spareCell, "Cell", NoShadow);
         OnUpdate((s, _) => spareCell.Visible = s.Crew.Locker.TryGetValue("spare_cell", out int c) && c > 0);
         Replace("discard.crate", "다 쓴 셀 칸", (_, m) => m == Motion.Click ? "hand.drop" : null);
@@ -166,7 +192,7 @@ public partial class Submarine
 
     /// <summary>
     /// 전동기 앞쪽 끝(배치의 MotorBrushEnd, +x를 본다). 배치가 지은 끝판은 전동기 몸통의 끝으로 남기고,
-    /// 그 앞에 경첩으로 열리는 덮개(띠 창, 볼트 둘)를 단다. 덮개 안에 정류자와 브러시 홀더, 끝판 아래 점검 구멍에 스프링 조절 나사.
+    /// 그 앞에 짧은 테와 경첩으로 열리는 덮개(띠 창, 볼트 둘, 명판)를 단다. 덮개 안에 정류자와 브러시 홀더, 덮개 위 끝판의 점검 구멍에 스프링 조절 나사.
     /// </summary>
     void BuildMotorBrushes()
     {
@@ -221,6 +247,12 @@ public partial class Submarine
         lb.Box(ArtMat.Brass, new Vector3(0, 0.07f, 0.012f), new Vector3(0.16f, 0.05f, 0.006f), 0.002f);
         lb.Box(ArtMat.Glass, new Vector3(0, 0.07f, 0.016f), new Vector3(0.13f, 0.03f, 0.003f), 0.001f);
         lb.Instance(lid, "Lid");
+        NamePlate(lid, "정류자 쪽 덮개", new Vector3(0, -0.07f, 0.011f), Vector3.Back, 0.016f);
+        // 끝판과 덮개 사이의 짧은 테: 덮개를 닫으면 옆에서도 정류자와 브러시가 보이지 않는다.
+        var rim = new MeshBuilder();
+        rim.Lathe(ArtMat.Machinery, Kit.AlongAxis(Vector3.Back, new Vector3(0, 0, 0.03f)),
+            new[] { new Vector2(r, 0), new Vector2(r, coverZ - 0.04f), new Vector2(r - 0.012f, coverZ - 0.04f), new Vector2(r - 0.012f, 0) }, 28);
+        rim.Instance(mount, "Rim", NoShadow);
         var spark = ArtMat.Glow(new Color(0.55f, 0.7f, 1.0f), 0, new Color(0.02f, 0.02f, 0.03f));
         var flash = new MeshInstance3D { Name = "SparkWindow", Mesh = new BoxMesh { Size = new Vector3(0.12f, 0.024f, 0.002f) }, MaterialOverride = spark, Position = new Vector3(0, 0.07f, 0.0125f), CastShadow = NoShadow };
         lid.AddChild(flash);
@@ -292,14 +324,14 @@ public partial class Submarine
         it.CommandFor = (_, m) => m is Motion.Up or Motion.Down ? "propulsion.set" : null;
         it.ValueFor = (_, m) => TelegraphNotches[Next(m)];
 
-        // 손잡이: 축에서 비스듬히 나온 막대. 눈금마다 30도씩 (정지가 맨 아래).
+        // 손잡이: 축에서 비스듬히 나온 막대. 눈금판 글씨와 같은 각도로 돈다(정지가 왼쪽 아래 135도, 전속이 오른쪽 아래 -135도, 한 눈금 67.5도).
         var pivot = new Node3D { Name = "TelegraphHandle", Position = new Vector3(at.X, at.Y, 0.06f) };
         mount.AddChild(pivot);
         var hb = new MeshBuilder();
         hb.Tube(ArtMat.BareSteel, Transform3D.Identity, new[] { Vector3.Zero, new Vector3(0, 0.075f, 0.02f) }, 0.007f, 8);
         hb.Box(ArtMat.Bakelite, new Vector3(0, 0.075f, 0.02f), new Vector3(0.024f, 0.024f, 0.024f), 0.011f, 0.01f);
         hb.Instance(pivot, "Handle", NoShadow);
-        float drag = float.NaN, angle = 60;
+        float drag = float.NaN, angle = 135;
         it.Preview = v => drag = v;
         OnUpdate((s, dt) =>
         {
@@ -308,8 +340,9 @@ public partial class Submarine
             notch = 0;
             for (int k = 1; k < TelegraphNotches.Length; k++)
                 if (Math.Abs(TelegraphNotches[k] - throttle) < Math.Abs(TelegraphNotches[notch] - throttle)) notch = k;
-            float target = 60 - notch * 30;
-            if (!float.IsNaN(drag)) target -= 30 * Math.Clamp(drag, -1, 1);
+            float target = 135 - notch * 67.5f;
+            if (!float.IsNaN(drag)) target -= 67.5f * Math.Clamp(drag, -1, 1);
+            _telegraphGauge?.SetFraction(notch / (float)(TelegraphNotches.Length - 1));
             angle = Approach(angle, target, 240, dt);
             pivot.RotationDegrees = new Vector3(0, 0, angle);
         });
