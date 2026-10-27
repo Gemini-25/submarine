@@ -455,9 +455,10 @@ public class PartMechanicsTests
         var data = Load(new Mut
         {
             NoMech = true,
-            Hull = h => h["kindTemplates"] = JsonNode.Parse("""
-                { "viewport": { "props": { "deadlight": 1, "integrity": 0.9 },
-                                "seaPaths": [ { "areaCm2": 0.4, "when": "self.deadlight < 0.5" } ] } }
+            // 실제 데이터의 다른 종류 틀(축 패킹 등)은 그대로 두고 현창 틀만 더한다.
+            Hull = h => (h["kindTemplates"] ??= new JsonObject())["viewport"] = JsonNode.Parse("""
+                { "props": { "deadlight": 1, "integrity": 0.9 },
+                  "seaPaths": [ { "areaCm2": 0.4, "when": "self.deadlight < 0.5" } ] }
                 """),
         });
         var vp = data.Parts.Single(p => p.Id == "leak.viewport.1");
@@ -520,8 +521,10 @@ public class PartMechanicsTests
     {
         var m = NewSim(TestData.Data).World.Mechanics;
         Assert.False(m.Steam || m.Attitude || m.Senses || m.Nav || m.Cable);
-        Assert.False(m.HasSeaPaths);
-        Assert.False(m.HasTimers);
+        // 바다 경로와 타이머는 계통 데이터(축 패킹 등)에 생긴다. 얼린 기준 데이터에는 없다.
+        var frozen = NewSim(GameData.LoadFromDirectory(Path.Combine(TestData.FixtureDir, "golden-data"))).World.Mechanics;
+        Assert.False(frozen.HasSeaPaths);
+        Assert.False(frozen.HasTimers);
     }
 
     [Fact]

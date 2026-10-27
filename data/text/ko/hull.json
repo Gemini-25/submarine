@@ -1,0 +1,18 @@
+{
+  "cue.shaft.smoke": "축 패킹 상자에서 연기가 오른다",
+  "cue.shaft.spray": "축 고리 쪽에서 물이 튀는 소리",
+  "cue.shaft.squeal": "축 패킹 상자에서 끽끽 긁히는 소리",
+  "cue.shaft.stream": "축 고리 둘레로 물이 줄줄 흐른다",
+  "fixture.shaft.collar": "축 고리",
+  "fixture.shaft.follower": "패킹 누름판",
+  "fixture.shaft.nut.A": "누름판 너트 A",
+  "fixture.shaft.nut.B": "누름판 너트 B",
+  "fixture.shaft.packing": "축 패킹",
+  "reason.follower_back": "누름판이 물러나 있어 너트가 걸리지 않는다.",
+  "reason.follower_in": "누름판이 패킹을 덮고 있다.",
+  "reason.need_packing_cord": "감을 패킹 끈을 쥐고 있지 않다.",
+  "reason.need_packing_hook": "손에 패킹 갈고리가 없다.",
+  "reason.nuts_tight": "너트가 누름판을 누르고 있어 움직이지 않는다.",
+  "reason.packing_empty": "패킹 자리가 비어 있다.",
+  "reason.packing_full": "패킹 자리가 이미 차 있다."
+}

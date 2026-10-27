@@ -161,7 +161,7 @@ public sealed class HullFile
     public PartDef PartTemplate { get; set; } = new();
     public SortedDictionary<string, LeakPointDef> Points { get; set; } = new(StringComparer.Ordinal);
     /// <summary>
-    /// 지점 종류별 부품 정의. partTemplate 위에 얹는다: props, wearCurves는 종류 쪽이 이기고, 타이머와 바다 경로는 이어 붙이고,
+    /// 지점 종류별 부품 정의. partTemplate 위에 얹는다: props, wearCurves는 종류 쪽이 이기고, 타이머, 바다 경로, visible은 이어 붙이고,
     /// wearPerSecond는 종류 쪽이 0이 아니면, wearFault는 종류 쪽이 있으면 종류 쪽. kind는 비워 둔다(지점의 kind를 쓴다).
     /// </summary>
     [Optional] public SortedDictionary<string, PartDef> KindTemplates { get; set; } = new(StringComparer.Ordinal);
@@ -204,6 +204,11 @@ public sealed class ProcedureStep
     /// <summary>매뉴얼용: 지켜야 할 전제 조건과 어겼을 때의 위험.</summary>
     [Optional] public string? Requires { get; set; }
     [Optional] public string? Hazard { get; set; }
+    /// <summary>
+    /// 낡은 교범 (SPEC 7절 '틀린 교범'): 1928년판에 인쇄된 원래 글. 있으면 text는 앞 기관사가 연필로 고쳐 쓴 글이고,
+    /// 교범은 둘을 함께 보인다. 시뮬레이션은 연필 쪽(text)과 맞는다.
+    /// </summary>
+    [Optional] public string? Revision { get; set; }
 }
 
 /// <summary>미리 짠 임무 (data/missions/*.json). M1은 위기 훈련 하나.</summary>

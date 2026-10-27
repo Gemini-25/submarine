@@ -1,0 +1,12 @@
+{
+  "HUL-03": {
+    "name": "프로펠러 축 패킹 누수",
+    "system": "hull",
+    "partKind": "shaft_packing",
+    "defaultPart": "leak.shaft_packing",
+    "state": "Fault",
+    "set": { "integrity": 0.4, "goodRings": 0 },
+    "clearedWhen": "self.goodRings >= 3 && self.ringsOut <= 0 && self.followerBack < 0.5 && self.nutA >= 2 && self.nutB >= 2",
+    "baseRatePerHour": 0
+  }
+}

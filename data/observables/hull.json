@@ -1,0 +1,11 @@
+{
+  "cues": {
+    "shaft.smoke": { "sense": "Sight", "anchor": "shaft.collar", "q": "part.leak.shaft_packing.prop.heat", "map": [[60, 0], [90, 1]], "caption": "cue.shaft.smoke" },
+    "shaft.spray": { "sense": "Sound", "anchor": "shaft.collar", "q": "leak.shaft_packing.totalInflow", "map": [[0, 0], [0.02, 0.2], [1, 1]], "caption": "cue.shaft.spray" },
+    "shaft.squeal": { "sense": "Sound", "anchor": "shaft.collar", "q": "part.leak.shaft_packing.prop.heat", "while": "device.propulsion.running", "map": [[45, 0], [60, 0.5], [90, 1]], "caption": "cue.shaft.squeal" },
+    "shaft.stream": { "sense": "Sight", "anchor": "shaft.collar", "q": "leak.shaft_packing.totalInflow", "map": [[0, 0], [0.02, 0.2], [1, 1]], "caption": "cue.shaft.stream" }
+  },
+  "stethoscope": {
+    "shaft.collar": { "q": "part.leak.shaft_packing.prop.heat", "while": "device.propulsion.running", "map": [[12, 0.1], [45, 0.3], [90, 1]] }
+  }
+}

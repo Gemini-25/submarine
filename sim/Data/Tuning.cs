@@ -26,6 +26,8 @@ public sealed class Tuning
     public List<string> Tools { get; set; } = new();
     /// <summary>공구판과 공구띠 (M2). 없으면 M1처럼 모든 도구를 바로 쥘 수 있다.</summary>
     [Optional] public ToolBoardTuning? ToolBoard { get; set; }
+    /// <summary>축 패킹 누름판 (M2 HUL-03). 없으면 축 패킹 지점도 다른 누수 지점처럼 integrity로만 샌다.</summary>
+    [Optional] public ShaftGlandTuning? ShaftGland { get; set; }
 }
 
 /// <summary>손 수리 동작의 수치 (M1). 손동작 하나가 명령 하나다.</summary>
@@ -301,4 +303,28 @@ public sealed class RandomFaultTuning
     public double DepthReferenceM { get; set; }
     /// <summary>발생률 배율에 더하는 wear 가중 = 1 + wearGain × wear.</summary>
     public double WearGain { get; set; }
+}
+
+/// <summary>
+/// 축 패킹 누름판 (HUL-03, data/tuning/hull.json). 누름판 너트 A, B의 칸 수가 새는 양과 마찰열을 정한다.
+/// 누수 배율 g = clamp(1 − leakPerNotch × (A + B − nominalNotches), minFactor, maxFactor).
+/// 열의 목표 = ambientC + 축 속도 × (riseC + overTightRiseC × max(0, A + B − overTightFrom)²) × (1 + |A − B| ÷ 2) × (누름판이 비뚤면 cockedFactor).
+/// 열은 목표를 향해 초당 relaxPerSecond의 비율로 다가가고, burnC를 넘으면 패킹이 타서 integrity가 준다.
+/// </summary>
+public sealed class ShaftGlandTuning
+{
+    public double NominalNotches { get; set; }
+    public double LeakPerNotch { get; set; }
+    public double MinFactor { get; set; }
+    public double MaxFactor { get; set; }
+    /// <summary>축이 서 있을 때의 패킹 상자 온도 (°C). 축 패킹 부품의 heat 초기값과 같아야 한다.</summary>
+    public double AmbientC { get; set; }
+    /// <summary>제대로 조인 패킹이 전속(스로틀 1)으로 돌 때 오르는 온도.</summary>
+    public double RiseC { get; set; }
+    public double OverTightFrom { get; set; }
+    public double OverTightRiseC { get; set; }
+    public double CockedFactor { get; set; }
+    public double RelaxPerSecond { get; set; }
+    public double BurnC { get; set; }
+    public double BurnIntegrityPerSecond { get; set; }
 }

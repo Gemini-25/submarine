@@ -1,0 +1,142 @@
+{
+  "params": {
+    "glandLifeS": 900,
+    "repackIntegrity": 0.95
+  },
+  "fixtures": [
+    {
+      "id": "shaft.nut.A",
+      "part": "leak.shaft_packing",
+      "kind": "adjuster",
+      "zone": "aft",
+      "prop": "nutA",
+      "min": 0,
+      "max": 5,
+      "step": 1,
+      "verbs": {
+        "up": {
+          "tool": "wrench",
+          "noise": "wrench",
+          "rejectIf": [ { "if": "self.followerBack >= 0.5", "reason": "follower_back" } ],
+          "effects": [
+            { "if": "self.nutA >= self.nutB + 2", "set": "cocked", "to": 1 },
+            { "if": "self.nutA >= 3 && self.goodRings < 3", "quality": "temporary" },
+            { "if": "self.nutA >= 3 && self.goodRings < 3", "arm": "glandLife", "to": "$glandLifeS" }
+          ]
+        },
+        "down": {
+          "tool": "wrench",
+          "noise": "wrench",
+          "effects": [
+            { "if": "self.nutB >= self.nutA + 2", "set": "cocked", "to": 1 },
+            { "if": "self.nutA <= 0 && self.nutB <= 0", "set": "cocked", "to": 0 }
+          ]
+        }
+      }
+    },
+    {
+      "id": "shaft.nut.B",
+      "part": "leak.shaft_packing",
+      "kind": "adjuster",
+      "zone": "aft",
+      "prop": "nutB",
+      "min": 0,
+      "max": 5,
+      "step": 1,
+      "verbs": {
+        "up": {
+          "tool": "wrench",
+          "noise": "wrench",
+          "rejectIf": [ { "if": "self.followerBack >= 0.5", "reason": "follower_back" } ],
+          "effects": [
+            { "if": "self.nutB >= self.nutA + 2", "set": "cocked", "to": 1 },
+            { "if": "self.nutB >= 3 && self.goodRings < 3", "quality": "temporary" },
+            { "if": "self.nutB >= 3 && self.goodRings < 3", "arm": "glandLife", "to": "$glandLifeS" }
+          ]
+        },
+        "down": {
+          "tool": "wrench",
+          "noise": "wrench",
+          "effects": [
+            { "if": "self.nutA >= self.nutB + 2", "set": "cocked", "to": 1 },
+            { "if": "self.nutA <= 0 && self.nutB <= 0", "set": "cocked", "to": 0 }
+          ]
+        }
+      }
+    },
+    {
+      "id": "shaft.follower",
+      "part": "leak.shaft_packing",
+      "kind": "lever",
+      "zone": "aft",
+      "prop": "followerBack",
+      "positions": [ "in", "back" ],
+      "verbs": {
+        "back": {
+          "tool": "hand",
+          "noise": "lever",
+          "rejectIf": [ { "if": "self.nutA >= 0.5 || self.nutB >= 0.5", "reason": "nuts_tight" } ],
+          "hazards": [ { "if": "device.propulsion.running == 1", "hazard": "pinch" } ]
+        },
+        "in": {
+          "tool": "hand",
+          "noise": "lever",
+          "hazards": [ { "if": "device.propulsion.running == 1", "hazard": "pinch" } ]
+        }
+      }
+    },
+    {
+      "id": "shaft.packing",
+      "part": "leak.shaft_packing",
+      "kind": "work",
+      "zone": "aft",
+      "verbs": {
+        "hook": {
+          "gesture": "stroke",
+          "tool": "packing_hook",
+          "noise": "hook",
+          "rejectIf": [
+            { "if": "self.followerBack < 0.5", "reason": "follower_in" },
+            { "if": "self.ringsOut >= 3", "reason": "packing_empty" },
+            { "if": "crew.hand != ''", "reason": "hand_full" }
+          ],
+          "hazards": [ { "if": "device.propulsion.running == 1", "hazard": "pinch" } ],
+          "effects": [
+            { "add": "ringsOut", "by": 1, "max": 3 },
+            { "add": "goodRings", "by": -1, "min": 0 },
+            { "if": "self.ringsOut >= 3", "give": "packing_old" }
+          ]
+        },
+        "wrap": {
+          "gesture": "rotate",
+          "tool": "hand",
+          "hold": "packing_cord",
+          "noise": "wrap",
+          "rejectIf": [
+            { "if": "self.followerBack < 0.5", "reason": "follower_in" },
+            { "if": "self.ringsOut <= 0", "reason": "packing_full" }
+          ],
+          "hazards": [ { "if": "device.propulsion.running == 1", "hazard": "pinch" } ],
+          "effects": [
+            { "add": "ringsOut", "by": -1, "min": 0 },
+            { "add": "goodRings", "by": 1, "max": 3 },
+            { "if": "self.goodRings >= 3", "set": "integrity", "to": "$repackIntegrity" },
+            { "if": "self.goodRings >= 3", "set": "glandArmed", "to": 0 },
+            { "if": "self.ringsOut <= 0", "consume": true }
+          ]
+        }
+      }
+    },
+    {
+      "id": "shaft.collar",
+      "part": "leak.shaft_packing",
+      "kind": "work",
+      "zone": "aft",
+      "touch": {
+        "temp": "self.heat",
+        "wet": "leak.shaft_packing.totalInflow > 0.02",
+        "vibrating": "device.propulsion.running == 1"
+      }
+    }
+  ]
+}

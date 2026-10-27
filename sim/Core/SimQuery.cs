@@ -191,6 +191,9 @@ static class SimQuery
                     "wedge" => x => QueryValue.Of(x.LeakParts[i].Get("wedge")),
                     "shore" => x => QueryValue.Of(x.LeakParts[i].Get("shore")),
                     "caulk" => x => QueryValue.Of(x.LeakParts[i].Get("caulk")),
+                    // 그 지점 부품의 바다 경로(축 패킹을 뽑은 자리 등)로 드는 물, 그리고 누수와의 합 (M2)
+                    "seaInflow" => x => QueryValue.Of(LeakSeaInflow(x, i)),
+                    "totalInflow" => x => QueryValue.Of(x.Leaks[i].InflowLps + LeakSeaInflow(x, i)),
                     _ => throw Unknown(),
                 };
             }
@@ -417,6 +420,17 @@ static class SimQuery
         double sum = 0;
         for (int i = 0; i < w.Cells.Length; i++)
             sum += w.Cells[i].Charge * cap * w.CellParts[i].Get("health");
+        return sum;
+    }
+
+    /// <summary>누수 지점 i의 부품에 달린 바다 경로로 지금 드는 물 (L/s).</summary>
+    static double LeakSeaInflow(SimWorld w, int leak)
+    {
+        if (!w.Mechanics.HasSeaPaths) return 0;
+        double sum = 0;
+        var part = w.LeakParts[leak];
+        foreach (var p in w.Mechanics.SeaPaths)
+            if (ReferenceEquals(p.Part, part)) sum += SeaPaths.Lps(w, p);
         return sum;
     }
 }
