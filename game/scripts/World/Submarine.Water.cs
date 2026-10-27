@@ -16,6 +16,9 @@ public partial class Submarine
 {
     const string PumpStation = "pump";
 
+    /// <summary>베어링 덮개의 기름 자국(단서 pump.oilweep). 확인 묶음이 화면에 보이는지 본다.</summary>
+    public MeshInstance3D? PumpWeepMark { get; private set; }
+
     /// <summary>배치의 표지를 지우고, 그 자리(부모와 위치)를 돌려준다.</summary>
     (Node3D Parent, Vector3 Pos) TakeMarker(string id)
     {
@@ -80,10 +83,12 @@ public partial class Submarine
             OnUpdate((s, _) => head.Visible = PartProp(s, "pump.bearing", prop, 1) >= 0.5 || !CapMoving());
         }
 
-        // 배어 나온 기름: 덮개 판 아래 가장자리에서 하우징 아랫면을 따라 흐른다 (볼트가 풀린 채 펌프가 돌 때, 단서 pump.oilweep).
-        var weep = Geo.Box(root, new Vector3(0.025f, 0.006f, 0.04f), new Vector3(cx, cy - 0.058f, face - 0.02f),
+        // 배어 나온 기름: 덮개 판 앞면의 아래쪽 가장자리를 따라 흐른 자국 (볼트가 풀린 채 펌프가 돌 때, 단서 pump.oilweep).
+        // 덮개 판(앞면 z 0.005, 경첩 기준)보다 1.5mm 앞에 붙여 서 있는 자리와 작업 시점에서 보이게 한다. 덮개와 함께 움직인다.
+        var weep = Geo.Box(hinge, new Vector3(0.02f, 0.04f, 0.002f), new Vector3(0.064f, -0.045f, 0.0065f),
             Geo.Mat(new Color(0.12f, 0.09f, 0.03f), 0.15f, 0.1f));
         weep.Visible = false;
+        PumpWeepMark = weep;
         OnUpdate((s, _) =>
         {
             double v = 0;

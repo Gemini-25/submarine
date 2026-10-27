@@ -333,8 +333,26 @@ public class PumpBearingTests
         string at = $"part.pump.bearing.wear >= {TestData.T.Wear.FaultAt.ToString(CultureInfo.InvariantCulture)}";
         var oil = TestData.Data.Fixtures.Instances.Single(f => f.Id == "pump.oilcup").Def.Verbs["oil"];
         Assert.Contains(oil.Effects, e => e.Quality == "temporary" && e.If == $"self.oil >= 3 && {at}");
+        Assert.Contains(oil.Effects, e => e.Set == "lubePatch" && e.If == $"self.oil >= 3 && {at}");
+        // 실패는 '응급으로 기름칠했는가'(lubePatch)로 판정한다. 마를 때의 wear가 아니다.
         var timer = TestData.Data.Parts.Single(p => p.Id == Bearing).Timers.Single();
-        Assert.Contains(timer.OnExpire, e => e.Event == "TempRepairFailed" && e.If == at);
+        Assert.Contains(timer.OnExpire, e => e.Event == "TempRepairFailed" && e.If == "self.lubePatch >= 0.5");
+    }
+
+    [Fact]
+    public void Oiling_just_below_the_fault_line_never_reports_a_failed_patch_even_if_the_fault_arrives_meanwhile()
+    {
+        var sim = Exposed(fault: null, warmSeconds: 10);
+        sim.World.Part(Bearing).Wear = 0.79;
+        var run = Follow(sim, "proc.bearing.oil");
+        AssertNoRejections(run);
+        var events = new List<SimEvent>(run.Events);
+        sim.Run(620);
+        events.AddRange(sim.DrainEvents());
+        Assert.DoesNotContain(events, e => e.Kind == SimEventKind.PartPatched);
+        Assert.DoesNotContain(events, e => e.Kind == SimEventKind.TempRepairFailed);
+        Assert.Equal(0, sim.Q($"part.{Bearing}.prop.lube"));
+        _out.WriteLine($"620초 뒤 wear {sim.Q($"part.{Bearing}.wear"):F3}, 고장 '{sim.QS($"part.{Bearing}.fault")}'");
     }
 
     [Fact]

@@ -121,5 +121,52 @@ public partial class AutoPlayer
         }
         _main.Hands.ToggleWorkView();
         Check(!_main.Player.InWorkView, "F로 펌프 작업 시점에서 나오지 않았다");
+        await CheckOilWeepVisible();
+    }
+
+    /// <summary>
+    /// 숨은 결함의 단서: 덮개 볼트 하나를 푼 채 펌프가 돌면 덮개 앞면에 기름 자국이 보인다. 서 있는 자리와 작업 시점에서
+    /// 자국이 화면 안에 있고, 덮개 판 앞에 붙어 있으며(덮개와 하우징에 가리지 않음), 카메라에서 자국까지 벽에 막히지 않는다. 끝나면 볼트를 다시 조인다.
+    /// </summary>
+    async Task CheckOilWeepVisible()
+    {
+        var mark = _main.Sub.PumpWeepMark;
+        if (mark == null) { Check(false, "베어링 덮개의 기름 자국이 없다"); return; }
+        Check(!mark.Visible, "볼트가 다 조여져 있는데 기름 자국이 보인다");
+        await Perform("tool.wrench");
+        Step(HandSeconds);
+        await Perform("pump.cap.bolt.1.loosen");
+        Step(3);
+        await Frame(3);
+        Check(Snap.Devices.First(d => d.Id == "bilge_pump").Running, "기름 자국을 보려는데 펌프가 서 있다");
+        Check(mark.Visible, "볼트 하나를 푼 채 펌프가 도는데 기름 자국이 보이지 않는다");
+        // 덮개 판 앞면(경첩 기준 z 0.005)보다 앞에 붙어 있다: 덮개와 하우징이 가리지 않는다.
+        var box = (BoxMesh)mark.Mesh;
+        Check(mark.Position.Z - box.Size.Z / 2 >= 0.005f, "기름 자국이 덮개 판 앞면 뒤에 묻혀 있다");
+
+        async Task Seen(string where)
+        {
+            await Frame(2);
+            var cam = _main.Player.Camera;
+            var size = cam.GetViewport().GetVisibleRect().Size;
+            var p = mark.GlobalPosition;
+            var screen = cam.UnprojectPosition(p);
+            bool onScreen = !cam.IsPositionBehind(p) && screen.X >= 0 && screen.Y >= 0 && screen.X <= size.X && screen.Y <= size.Y;
+            var from = cam.GlobalPosition;
+            var q = PhysicsRayQueryParameters3D.Create(from, from + (p - from) * 0.98f, World.Geo.WallLayer);
+            bool clear = _main.Player.GetWorld3D().DirectSpaceState.IntersectRay(q).Count == 0;
+            Check(onScreen && clear, $"{where}에서 기름 자국이 보이지 않는다 (화면 {screen} / {size}, 벽에 막힘 {!clear})");
+        }
+        await Approach("pump.cap");
+        await Seen("서 있는 자리");
+        Check(_main.Hands.ToggleWorkView(), "베어링 뚜껑을 보고 F를 눌렀는데 작업 시점이 아니다");
+        await ToSignal(GetTree().CreateTimer(0.8), SceneTreeTimer.SignalName.Timeout);
+        await Seen("펌프 작업 시점");
+        _main.Hands.ToggleWorkView();
+
+        await Perform("pump.cap.bolt.1.tighten");
+        Step(HandSeconds);
+        await Frame(3);
+        Check(!mark.Visible, "볼트를 다시 조였는데 기름 자국이 남아 있다");
     }
 }

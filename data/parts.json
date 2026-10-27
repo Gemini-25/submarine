@@ -242,6 +242,7 @@
       "lube": 0,
       "lubeArmed": 0,
       "lubeLife": 0,
+      "lubePatch": 0,
       "oil": 0,
       "present": 1
     },
@@ -253,7 +254,8 @@
         "armed": "lubeArmed",
         "onExpire": [
           { "set": "lube", "to": 0 },
-          { "if": "part.pump.bearing.wear >= 0.8", "event": "TempRepairFailed", "detail": "WTR-02" }
+          { "if": "self.lubePatch >= 0.5", "event": "TempRepairFailed", "detail": "WTR-02" },
+          { "set": "lubePatch", "to": 0 }
         ]
       }
     ],
