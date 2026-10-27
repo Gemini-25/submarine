@@ -88,7 +88,7 @@ public class FixtureEngineTests
                 n["RIG-01"] = fault;
             });
             // 시험용 거부 사유의 한국어 글 (data/text가 있으면 데이터가 내는 사유마다 글이 있어야 한다).
-            File.WriteAllText(Path.Combine(dir.FullName, "text", "rig.json"),
+            File.WriteAllText(Path.Combine(dir.FullName, "text", "ko", "rig.json"),
                 """{ "reason.lever_off": "레버가 내려가 있다.", "reason.knob_zero": "손잡이가 0이다.", "reason.x": "시험" }""");
             var fixtures = RigFixtures();
             mutate?.Invoke(fixtures);

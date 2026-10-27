@@ -169,6 +169,8 @@ public partial class AutoPlayer : Node
         Check(titles.Count >= 12, $"교범 장 수가 모자란다: {titles.Count}");
         foreach (var proc in Data.Procedures)
             Check(titles.Contains(proc.Title), $"교범에 '{proc.Title}' 장이 없다");
+        foreach (var body in _main.Manual.PageBodies)
+            Check(!body.Contains("{{"), "교범에 채우지 않은 자리표시자가 보인다");
         await Key(Godot.Key.Tab);
         Check(_main.Manual.IsOpen, "Tab으로 교범이 펴지지 않았다");
         Check(_main.Hands.Blocked, "교범을 펴 둔 동안 손이 막히지 않았다");

@@ -110,6 +110,8 @@ static class SimQuery
                     "netFlow" => x => QueryValue.Of(x.Water.PumpNetLps),
                     "grossFlow" => x => QueryValue.Of(x.Water.PumpGrossLps),
                     "totalL" => x => QueryValue.Of(x.Water.PumpedOutL),
+                    // 펌프가 밀어냈는데 배관에서 되돌아온 양 (역류 소리)
+                    "backflow" => x => QueryValue.Of(x.Water.PumpGrossLps - x.Water.PumpNetLps),
                     _ => throw Unknown(),
                 };
 
@@ -357,6 +359,37 @@ static class SimQuery
                     "fault" => x => QueryValue.Of(x.Parts[pi].ActiveFault),
                     _ => throw Unknown(),
                 };
+            }
+
+            // 관찰 (M2): 현장 단서, 제자리 계기, 도구로 잰 값. 상태가 아니라 계산값이다 (Systems/Observables).
+            case "cue":
+            {
+                int i = p.Length >= 2 ? w.Data.Observation.CueIndex(string.Join('.', p, 1, p.Length - 1)) : -1;
+                if (i < 0) throw Unknown();
+                return x => QueryValue.Of(x.Data.Observation.Cue(x, i));
+            }
+
+            case "reading":
+            {
+                int i = p.Length >= 2 ? w.Data.Observation.InstrumentIndex(string.Join('.', p, 1, p.Length - 1)) : -1;
+                if (i < 0) throw Unknown();
+                return x => QueryValue.Of(x.Data.Observation.Reading(x, i));
+            }
+
+            case "measure":
+            {
+                // measure.<도구>.<대상>: 대상에도 점이 들어간다 (measure.voltmeter.fuse.C3)
+                if (p.Length < 3) throw Unknown();
+                Func<SimWorld, double> m;
+                try
+                {
+                    m = Measurement.Compile(w, p[1], string.Join('.', p, 2, p.Length - 2));
+                }
+                catch (ArgumentException e)
+                {
+                    throw new ArgumentException($"알 수 없는 관측값 경로 '{path}': {e.Message}");
+                }
+                return x => QueryValue.Of(m(x));
             }
 
             default:

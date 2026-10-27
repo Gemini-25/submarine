@@ -79,25 +79,13 @@ public sealed class Simulation : ISimulation
     public MissionDef? Mission => W.MissionDef;
 
     /// <summary>
-    /// 도구로 잰 값. 상태를 바꾸지 않는다. 지금은 전압계(voltmeter)만:
-    ///   bus — 버스 전압, circuit.C3 — 그 회로 부하 쪽 전압, fuse.C3 — 퓨즈 양단 전압(끊긴 퓨즈나 빈 소켓이면 전원 전압이 걸린다).
-    /// 표현 층은 이 값으로 전압계 바늘을 움직인다.
+    /// 도구로 잰 값. 상태를 바꾸지 않는다. 잴 수 없는 때는 NaN, 모르는 도구나 대상은 ArgumentException. 목록은 Systems/Observables.cs의 Measurement:
+    ///   voltmeter — bus, circuit.C3(부하 단자), fuse.C3(퓨즈 양단; 끊겼거나 비었으면 전원 전압), switch.C3(접점 양단), cell.3(셀 하나, 30V 눈금).
+    ///     값은 정규화 전압이다 (× 120 = V). 표현 층은 이 값으로 전압계 바늘을 움직인다.
+    ///   hydrometer — cell.3 (비중), stethoscope — 청진기 대상 ID (거칠기 0~1),
+    ///   bridge — insulation.C3 (MΩ, 스위치를 내려야), cell.3 (Ω), panel.wiring, tube.&lt;부품&gt;, cable.*,  lamptest — panel (켜지는 전구 비트).
     /// </summary>
-    public double Measure(string tool, string target)
-    {
-        var w = W;
-        if (tool != "voltmeter") throw new ArgumentException($"잴 수 없는 도구 '{tool}'");
-        if (target == "bus") return w.BusVoltage;
-        var p = target.Split('.');
-        if (p.Length == 2 && w.TryCircuitIndex(p[1], out int c))
-        {
-            var cs = w.Circuits[c];
-            bool live = cs.SwitchOn && w.BusVoltage > 0;
-            if (p[0] == "circuit") return cs.Energized ? w.BusVoltage : 0;
-            if (p[0] == "fuse") return live && !cs.Energized ? w.BusVoltage : 0;
-        }
-        throw new ArgumentException($"전압계로 잴 수 없는 대상 '{target}'");
-    }
+    public double Measure(string tool, string target) => Systems.Measurement.Compile(W, tool, target)(W);
 
     public void Apply(Command command) => W.Enqueue(CommandProcessor.Parse(W, command));
 

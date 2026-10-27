@@ -5,7 +5,7 @@ using System.Text.Json.Serialization;
 namespace DeepLine.Sim.Data;
 
 /// <summary>data/에서 읽은 전체 게임 데이터. 모든 목록은 ID의 서수 정렬 순서다.</summary>
-public sealed class GameData
+public sealed partial class GameData
 {
     /// <summary>실내 구역. 앞에서 뒤 순서이고 이웃한 구역끼리 이어진다.</summary>
     public static readonly IReadOnlyList<string> Zones = Array.AsReadOnly(new[] { "fore", "mid", "aft" });
@@ -255,10 +255,11 @@ public sealed class GameData
             foreach (var file in Directory.GetFiles(fixtureDir, "*.json").OrderBy(f => f, StringComparer.Ordinal))
                 fixtureFiles.Add((Path.Combine("fixtures", Path.GetFileName(file)), Read<FixtureFile>(Path.Combine("fixtures", Path.GetFileName(file)))));
 
-        var text = ReadMerged<SortedDictionary<string, string>>("text");
-        return new GameData(tuning, circuits, devices, allParts, faults, leaks, procedures, missions, items, fixtureFiles, text);
+        var text = ReadText(dataDir);
+        var data = new GameData(tuning, circuits, devices, allParts, faults, leaks, procedures, missions, items, fixtureFiles, text);
+        data.LoadObservation(dataDir);
+        return data;
     }
-
     /// <summary>
     /// 누수 지점의 부품 정의: partTemplate 위에 kindTemplates[kind]를 얹는다. props와 wearCurves는 종류 쪽이 이기고,
     /// 타이머와 바다 경로는 이어 붙이고, wearPerSecond는 종류 쪽이 0이 아닐 때, wearFault는 종류 쪽이 있을 때 종류 쪽이다.
