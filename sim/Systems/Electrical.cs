@@ -230,6 +230,8 @@ static class DeviceRules
         foreach (var p in w.DeviceParts[d])
             if (p.State(w.T.Wear) >= PartState.Broken)
                 return false;
+        foreach (var p in w.DeviceParts[d])
+            if (!Tubes.Alive(p)) return false; // 빠졌거나 필라멘트가 끊긴 진공관 (SNS-03)
         if (d == w.Fan)
             return w.Part("fan.motor").Get("stalled") < 0.5;
         return true;

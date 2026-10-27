@@ -85,7 +85,7 @@ public sealed record SimSnapshot
             Panel = new PanelView
             {
                 On = w.PanelState.On,
-                Lamps = w.PanelState.Lamps.ToArray(),
+                Lamps = ShownLamps(w), // 보이는 표시등 (전구 마스크를 씌운 것, SNS-01)
                 ZoneAlarms = w.PanelState.ZoneAlarm.ToArray(),
                 Voltage = w.PanelState.GaugeVoltage,
                 Current = w.PanelState.GaugeCurrent,
@@ -139,6 +139,14 @@ public sealed record SimSnapshot
             list[i] = new ReadingView(d.Id, d.Anchor, d.Unit, o.Reading(w, i), d.Label);
         }
         return list;
+    }
+
+    /// <summary>보이는 표시등. 논리 표시등(벨이 울리는 쪽)은 상태에 있고, 보이는 쪽은 매번 계산한다.</summary>
+    static LampState[] ShownLamps(SimWorld w)
+    {
+        var lamps = new LampState[w.PanelState.Lamps.Length];
+        for (int i = 0; i < lamps.Length; i++) lamps[i] = Systems.PanelDisplay.Shown(w, i);
+        return lamps;
     }
 
     static PartView[] PartsOf(SimWorld w)

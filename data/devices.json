@@ -87,7 +87,13 @@
     "kind": "Continuous",
     "defaultOn": true,
     "zone": "fore",
-    "parts": []
+    "parts": [
+      "hydrophone.tube.1",
+      "hydrophone.tube.2"
+    ],
+    "heatFactor": 0.81,
+    "coolingWPerC": 0.3,
+    "heatCapacityJPerC": 24
   },
   "searchlight": {
     "name": "탄소 아크 탐조등",
@@ -111,7 +117,9 @@
     "kind": "Pulse",
     "defaultOn": false,
     "zone": "fore",
-    "parts": [],
+    "parts": [
+      "sonar.tube.1"
+    ],
     "pulseSeconds": 1
   },
   "gyrocompass": {
@@ -160,7 +168,9 @@
     "kind": "Continuous",
     "defaultOn": true,
     "zone": "mid",
-    "parts": []
+    "parts": [
+      "siphon.tube.1"
+    ]
   },
   "soldering_iron": {
     "name": "납땜인두",

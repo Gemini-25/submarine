@@ -294,7 +294,7 @@ static class Measurement
 
     /// <summary>
     /// 상황판 램프 시험: 켜지는 전구의 비트 (PanelSystems.Names 순서). 상황판 전원이 있어야 하고,
-    /// 탄 전구(panel.bulb.&lt;표시등&gt;의 burnt, SNS-01)는 켜지지 않는다.
+    /// 빠졌거나 탄 전구(panel.bulb.&lt;표시등&gt;, SNS-01)는 켜지지 않고 테가 헐거운 전구는 깜박인다 (PanelDisplay.BulbLights).
     /// </summary>
     public static double LampTestMask(SimWorld w)
     {
@@ -302,8 +302,7 @@ static class Measurement
         int mask = 0;
         for (int i = 0; i < PanelSystems.Names.Count; i++)
         {
-            bool burnt = w.TryPart($"panel.bulb.{PanelSystems.Names[i]}", out var bulb) && bulb.HasProp("burnt") && bulb.Get("burnt") >= 0.5;
-            if (!burnt) mask |= 1 << i;
+            if (PanelDisplay.BulbLights(w, i)) mask |= 1 << i;
         }
         return mask;
     }

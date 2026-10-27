@@ -1,0 +1,24 @@
+{
+  "SNS-01": {
+    "name": "상황판 전구 소손",
+    "system": "senses",
+    "partKind": "panel_bulb",
+    "defaultPart": "panel.bulb.water",
+    "state": "Fault",
+    "set": {
+      "burnt": 1
+    },
+    "baseRatePerHour": 0
+  },
+  "SNS-03": {
+    "name": "청음기 진공관 소손",
+    "system": "senses",
+    "partKind": "vacuum_tube",
+    "defaultPart": "hydrophone.tube.1",
+    "state": "Fault",
+    "set": {
+      "filament": 0.3
+    },
+    "baseRatePerHour": 0
+  }
+}

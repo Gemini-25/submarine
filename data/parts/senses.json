@@ -1,0 +1,163 @@
+{
+  "panel.bulb.power": {
+    "kind": "panel_bulb",
+    "visible": [
+      "bezel",
+      "burnt",
+      "present"
+    ],
+    "props": {
+      "bezel": 1,
+      "burnt": 0,
+      "present": 1
+    }
+  },
+  "panel.bulb.switchboard": {
+    "kind": "panel_bulb",
+    "visible": [
+      "bezel",
+      "burnt",
+      "present"
+    ],
+    "props": {
+      "bezel": 1,
+      "burnt": 0,
+      "present": 1
+    }
+  },
+  "panel.bulb.air": {
+    "kind": "panel_bulb",
+    "visible": [
+      "bezel",
+      "burnt",
+      "present"
+    ],
+    "props": {
+      "bezel": 1,
+      "burnt": 0,
+      "present": 1
+    }
+  },
+  "panel.bulb.water": {
+    "kind": "panel_bulb",
+    "visible": [
+      "bezel",
+      "burnt",
+      "present"
+    ],
+    "props": {
+      "bezel": 1,
+      "burnt": 0,
+      "present": 1
+    }
+  },
+  "panel.bulb.hull": {
+    "kind": "panel_bulb",
+    "visible": [
+      "bezel",
+      "burnt",
+      "present"
+    ],
+    "props": {
+      "bezel": 1,
+      "burnt": 0,
+      "present": 1
+    }
+  },
+  "panel.bulb.senses": {
+    "kind": "panel_bulb",
+    "visible": [
+      "bezel",
+      "burnt",
+      "present"
+    ],
+    "props": {
+      "bezel": 1,
+      "burnt": 0,
+      "present": 1
+    }
+  },
+  "panel.bulb.nav": {
+    "kind": "panel_bulb",
+    "visible": [
+      "bezel",
+      "burnt",
+      "present"
+    ],
+    "props": {
+      "bezel": 1,
+      "burnt": 0,
+      "present": 1
+    }
+  },
+  "panel.bulb.cable": {
+    "kind": "panel_bulb",
+    "visible": [
+      "bezel",
+      "burnt",
+      "present"
+    ],
+    "props": {
+      "bezel": 1,
+      "burnt": 0,
+      "present": 1
+    }
+  },
+  "hydrophone.case": {
+    "kind": "chassis",
+    "visible": [
+      "doorOpen",
+      "screw1",
+      "screw2"
+    ],
+    "props": {
+      "doorOpen": 0,
+      "screw1": 1,
+      "screw2": 1
+    }
+  },
+  "hydrophone.tube.1": {
+    "kind": "vacuum_tube",
+    "visible": [
+      "filament",
+      "present"
+    ],
+    "props": {
+      "filament": 1,
+      "present": 1
+    }
+  },
+  "hydrophone.tube.2": {
+    "kind": "vacuum_tube",
+    "visible": [
+      "filament",
+      "present"
+    ],
+    "props": {
+      "filament": 1,
+      "present": 1
+    }
+  },
+  "sonar.tube.1": {
+    "kind": "vacuum_tube",
+    "visible": [
+      "filament",
+      "present"
+    ],
+    "props": {
+      "filament": 1,
+      "present": 1
+    }
+  },
+  "siphon.tube.1": {
+    "kind": "vacuum_tube",
+    "visible": [
+      "filament",
+      "present"
+    ],
+    "props": {
+      "filament": 1,
+      "present": 1
+    }
+  }
+}

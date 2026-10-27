@@ -1,0 +1,166 @@
+{
+  "params": {
+    "burnC": 50,
+    "goodTube": 0.5
+  },
+  "fixtures": [
+    {
+      "id": "panel.bezel.{l}",
+      "bind": { "l": "power,switchboard,air,water,hull,senses,nav,cable" },
+      "part": "panel.bulb.{l}",
+      "kind": "fastener",
+      "zone": "fore",
+      "prop": "bezel",
+      "group": "bezel",
+      "verbs": {
+        "loosen": { "tool": "hand", "noise": "tap" },
+        "tighten": { "tool": "hand", "noise": "tap" }
+      }
+    },
+    {
+      "id": "panel.bulb.{l}",
+      "bind": { "l": "power,switchboard,air,water,hull,senses,nav,cable" },
+      "part": "panel.bulb.{l}",
+      "kind": "socket",
+      "zone": "fore",
+      "needReason": "need_bulb",
+      "verbs": {
+        "pull": {
+          "tool": "hand",
+          "noise": "tap",
+          "rejectIf": [ { "if": "self.bezel >= 0.5", "reason": "bezel_on" } ],
+          "gives": [
+            { "if": "self.burnt >= 0.5", "item": "bulb_burnt" },
+            { "item": "panel_bulb" }
+          ]
+        },
+        "insert": {
+          "noise": "tap",
+          "rejectIf": [ { "if": "self.bezel >= 0.5", "reason": "bezel_on" } ],
+          "accepts": {
+            "panel_bulb": { "set": { "burnt": 0 }, "renew": true },
+            "bulb_burnt": { "set": { "burnt": 1 } }
+          }
+        }
+      }
+    },
+    {
+      "id": "hydrophone.door.screw.{n}",
+      "bind": { "n": "1..2" },
+      "part": "hydrophone.case",
+      "kind": "fastener",
+      "zone": "fore",
+      "prop": "screw{n}",
+      "group": "door",
+      "verbs": {
+        "loosen": { "tool": "screwdriver", "noise": "screwdriver" },
+        "tighten": { "tool": "screwdriver", "noise": "screwdriver" }
+      }
+    },
+    {
+      "id": "hydrophone.door",
+      "part": "hydrophone.case",
+      "kind": "cover",
+      "zone": "fore",
+      "prop": "doorOpen",
+      "heldBy": "door",
+      "verbs": {
+        "open": { "tool": "hand", "noise": "cover" },
+        "close": { "tool": "hand", "noise": "cover" }
+      }
+    },
+    {
+      "id": "hydrophone",
+      "part": "hydrophone.case",
+      "kind": "work",
+      "zone": "fore",
+      "touch": { "temp": "device.hydrophone.temp" }
+    },
+    {
+      "id": "hydrophone.tube.{n}",
+      "bind": { "n": "1..2" },
+      "part": "hydrophone.tube.{n}",
+      "kind": "socket",
+      "zone": "fore",
+      "needReason": "need_tube",
+      "verbs": {
+        "pull": {
+          "tool": "hand",
+          "noise": "fuse",
+          "rejectIf": [ { "if": "part.hydrophone.case.prop.doorOpen < 0.5", "reason": "door_closed" } ],
+          "hazards": [
+            { "if": "device.hydrophone.temp >= $burnC", "hazard": "burn" },
+            { "if": "device.hydrophone.enabled == 1 && circuit.C4.energized == 1", "hazard": "shock" }
+          ],
+          "gives": [
+            { "if": "self.filament >= $goodTube", "item": "vacuum_tube" },
+            { "item": "tube_dead" }
+          ]
+        },
+        "insert": {
+          "noise": "fuse",
+          "rejectIf": [ { "if": "part.hydrophone.case.prop.doorOpen < 0.5", "reason": "door_closed" } ],
+          "hazards": [
+            { "if": "device.hydrophone.enabled == 1 && circuit.C4.energized == 1", "hazard": "shock" }
+          ],
+          "accepts": {
+            "vacuum_tube": { "set": { "filament": 1 }, "renew": true },
+            "tube_dead": { "set": { "filament": 0 } }
+          }
+        }
+      }
+    },
+    {
+      "id": "sonarset.tube.1",
+      "part": "sonar.tube.1",
+      "kind": "socket",
+      "zone": "fore",
+      "needReason": "need_tube",
+      "verbs": {
+        "pull": {
+          "tool": "hand",
+          "noise": "fuse",
+          "hazards": [ { "if": "device.sonar.running == 1", "hazard": "shock" } ],
+          "gives": [
+            { "if": "self.filament >= $goodTube", "item": "vacuum_tube" },
+            { "item": "tube_dead" }
+          ]
+        },
+        "insert": {
+          "noise": "fuse",
+          "hazards": [ { "if": "device.sonar.running == 1", "hazard": "shock" } ],
+          "accepts": {
+            "vacuum_tube": { "set": { "filament": 1 }, "renew": true },
+            "tube_dead": { "set": { "filament": 0 } }
+          }
+        }
+      }
+    },
+    {
+      "id": "siphon.tube.1",
+      "part": "siphon.tube.1",
+      "kind": "socket",
+      "zone": "fore",
+      "needReason": "need_tube",
+      "verbs": {
+        "pull": {
+          "tool": "hand",
+          "noise": "fuse",
+          "hazards": [ { "if": "device.siphon_recorder.enabled == 1 && circuit.C6.energized == 1", "hazard": "shock" } ],
+          "gives": [
+            { "if": "self.filament >= $goodTube", "item": "vacuum_tube" },
+            { "item": "tube_dead" }
+          ]
+        },
+        "insert": {
+          "noise": "fuse",
+          "hazards": [ { "if": "device.siphon_recorder.enabled == 1 && circuit.C6.energized == 1", "hazard": "shock" } ],
+          "accepts": {
+            "vacuum_tube": { "set": { "filament": 1 }, "renew": true },
+            "tube_dead": { "set": { "filament": 0 } }
+          }
+        }
+      }
+    }
+  ]
+}

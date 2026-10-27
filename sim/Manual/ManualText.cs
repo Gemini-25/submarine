@@ -196,6 +196,11 @@ public static partial class ManualText
             ["items"] = Map(d.Items.Values, x => x.Id),
         };
         if (d.Measure != null) root["measure"] = JsonSerializer.SerializeToNode(d.Measure, o);
+        // 장치 파일의 params: fixtures.<파일 이름>.<이름> (예: fixtures.senses.burnC)
+        var fixtures = new JsonObject();
+        foreach (var f in d.Fixtures.Instances.DistinctBy(f => f.File))
+            fixtures[Path.GetFileNameWithoutExtension(f.File)] = JsonSerializer.SerializeToNode(f.Params, o);
+        root["fixtures"] = fixtures;
         return root;
     });
 

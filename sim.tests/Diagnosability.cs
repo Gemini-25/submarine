@@ -197,3 +197,52 @@ public class Diagnosability
         Assert.All(again.Keys, k => Assert.True(ObservableQuery.IsObservable(k), k));
     }
 }
+
+/// <summary>
+/// 감각 Tier A (WP13): SNS-01(배수 전구)과 SNS-03(청음기 진공관 1). 노출 설정: 펌프를 끄고 후방 빌지에 150L (배수 표시등의 신호가 올라가 있다).
+/// 두 고장은 기준과 구별되고, 서로 구별되고, M0 고장 9종과도 구별된다. 가르기는 교범이 말하는 확인(램프 시험, 필라멘트 불빛, 헤드폰 잡음)으로 한다.
+/// </summary>
+public class SensesDiagnosability
+{
+    static readonly (string Fault, string? Part)[] Faults = { ("SNS-01", null), ("SNS-03", null) };
+
+    static SortedDictionary<string, DiagnosisHarness.Element> Run(string? fault, string? part)
+    {
+        var sim = TestData.NewSim(setup: TestData.Setup(s => s.Bilges["bilge.aft"] = 150));
+        if (fault != null) sim.Inject(fault, part);
+        sim.Run(60);
+        return DiagnosisHarness.Observe(new ObservableQuery(sim), TestData.Data);
+    }
+
+    static readonly Lazy<SortedDictionary<string, DiagnosisHarness.Element>> _baseline = new(() => Run(null, null));
+    static readonly Lazy<Dictionary<string, SortedDictionary<string, DiagnosisHarness.Element>>> _vectors =
+        new(() => Faults.Concat(Diagnosability.M0Faults).ToDictionary(f => f.Fault, f => Run(f.Fault, f.Part)));
+
+    [Fact]
+    public void Senses_faults_are_noticeable_documented_and_distinct_from_every_M0_fault()
+    {
+        foreach (var (fault, _) in Faults)
+        {
+            var sep = DiagnosisHarness.Separating(_vectors.Value[fault], _baseline.Value);
+            Assert.True(sep.Count > 0, $"{fault}는 고장 없는 상태와 구별되지 않는다");
+            foreach (var k in sep) Assert.True(DiagnosisHarness.Documented(k, TestData.Data), $"{fault}를 드러내는 '{k}'에 문구가 없다");
+            foreach (var other in _vectors.Value.Keys.Where(k => k != fault))
+                Assert.True(DiagnosisHarness.Separating(_vectors.Value[fault], _vectors.Value[other]).Count > 0, $"{fault}와 {other}가 같다");
+        }
+    }
+
+    [Fact]
+    public void Senses_faults_split_on_the_checks_the_manual_names()
+    {
+        var v = _vectors.Value;
+        var b = _baseline.Value;
+        // 벨은 울렸는데 새 표시등이 없다: 램프 시험에서 한 전구가 켜지지 않는다 (교범 02, 38)
+        Assert.True(v["SNS-01"]["measure.lamptest.panel"].Differs(b["measure.lamptest.panel"]), $"SNS-01 measure.lamptest.panel: {v["SNS-01"]["measure.lamptest.panel"]} / {b["measure.lamptest.panel"]}");
+        Assert.True(v["SNS-01"]["panel.lamp.water"].Differs(b["panel.lamp.water"]), $"SNS-01 panel.lamp.water: {v["SNS-01"]["panel.lamp.water"]} / {b["panel.lamp.water"]}");
+        Assert.True(v["SNS-01"]["cue.panel.bulb.water.black"].Differs(b["cue.panel.bulb.water.black"]), $"SNS-01 cue.panel.bulb.water.black: {v["SNS-01"]["cue.panel.bulb.water.black"]} / {b["cue.panel.bulb.water.black"]}");
+        // 청음기 잡음: 한 필라멘트만 흐리다 (교범 05, 39). C4 퓨즈라면 상황판도 꺼진다.
+        Assert.True(v["SNS-03"]["cue.hydrophone.hiss"].Differs(b["cue.hydrophone.hiss"]), $"SNS-03 cue.hydrophone.hiss: {v["SNS-03"]["cue.hydrophone.hiss"]} / {b["cue.hydrophone.hiss"]}");
+        Assert.True(v["SNS-03"]["cue.hydrophone.tube.1.glow"].Differs(v["SNS-03"]["cue.hydrophone.tube.2.glow"]), $"SNS-03 cue.hydrophone.tube.1.glow: {v["SNS-03"]["cue.hydrophone.tube.1.glow"]} / {v["SNS-03"]["cue.hydrophone.tube.2.glow"]}");
+        Assert.False(v["SNS-03"]["panel.on"].Differs(b["panel.on"]), $"SNS-03 panel.on: {v["SNS-03"]["panel.on"]} / {b["panel.on"]}");
+    }
+}

@@ -26,6 +26,20 @@ public sealed class Tuning
     public List<string> Tools { get; set; } = new();
     /// <summary>공구판과 공구띠 (M2). 없으면 M1처럼 모든 도구를 바로 쥘 수 있다.</summary>
     [Optional] public ToolBoardTuning? ToolBoard { get; set; }
+    /// <summary>감각 계통: 진공관 필라멘트와 상황판 전구 (M2 WP13). 없으면 필라멘트가 약해지지 않는다.</summary>
+    [Optional] public SensesTuning? Senses { get; set; }
+}
+
+/// <summary>진공관과 상황판 전구의 수치 (data/tuning/senses.json).</summary>
+public sealed class SensesTuning
+{
+    /// <summary>필라멘트가 이 값 아래로 약해진 진공관은 장비가 도는 동안 계속 약해진다 (성한 관은 1).</summary>
+    public double TubeWeakFilament { get; set; }
+    /// <summary>약해진 필라멘트가 장비가 도는 동안 초당 줄어드는 양. 0이 되면 끊겨 장비가 멎는다.</summary>
+    public double FilamentDecayPerSecond { get; set; }
+    /// <summary>테가 헐거운 전구가 깜박이는 주기(초)와 그 가운데 꺼져 있는 몫.</summary>
+    public double BulbFlickerSeconds { get; set; }
+    public double BulbFlickerOffFraction { get; set; }
 }
 
 /// <summary>손 수리 동작의 수치 (M1). 손동작 하나가 명령 하나다.</summary>

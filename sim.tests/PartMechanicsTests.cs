@@ -518,7 +518,8 @@ public class PartMechanicsTests
     [Fact]
     public void Modules_are_off_without_their_state_parts()
     {
-        var m = NewSim(TestData.Data).World.Mechanics;
+        // 얼린 golden-data에는 계통 모듈의 상태 부품이 없다 (실제 data는 계통 작업이 하나씩 켠다: 감각은 WP13의 진공관).
+        var m = NewSim(GameData.LoadFromDirectory(Path.Combine(TestData.FixtureDir, "golden-data"))).World.Mechanics;
         Assert.False(m.Steam || m.Attitude || m.Senses || m.Nav || m.Cable);
         Assert.False(m.HasSeaPaths);
         Assert.False(m.HasTimers);

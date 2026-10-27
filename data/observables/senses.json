@@ -1,0 +1,42 @@
+{
+  "cues": {
+    "panel.bulb.{l}.black": {
+      "bind": { "l": "power,switchboard,air,water,hull,senses,nav,cable" },
+      "sense": "Sight",
+      "anchor": "panel.bulb.{l}",
+      "q": "part.panel.bulb.{l}.prop.burnt",
+      "map": [[0, 0], [1, 1]],
+      "caption": "cue.bulb.black"
+    },
+    "hydrophone.tube.{n}.glow": {
+      "bind": { "n": "1..2" },
+      "sense": "Sight",
+      "anchor": "hydrophone.tube.{n}",
+      "q": "tubes.glow.hydrophone.tube.{n}",
+      "map": [[0, 0], [0.02, 0.25], [1, 1]],
+      "caption": "cue.tube.glow"
+    },
+    "sonarset.tube.1.glow": {
+      "sense": "Sight",
+      "anchor": "sonarset.tube.1",
+      "q": "tubes.glow.sonar.tube.1",
+      "map": [[0, 0], [0.02, 0.25], [1, 1]],
+      "caption": "cue.tube.glow"
+    },
+    "siphon.tube.1.glow": {
+      "sense": "Sight",
+      "anchor": "siphon.tube.1",
+      "q": "tubes.glow.siphon.tube.1",
+      "map": [[0, 0], [0.02, 0.25], [1, 1]],
+      "caption": "cue.tube.glow"
+    },
+    "hydrophone.hiss": {
+      "sense": "Sound",
+      "anchor": "hydrophone",
+      "q": "tubes.health.hydrophone",
+      "while": "device.hydrophone.running",
+      "map": [[0, 1], [0.3, 0.8], [0.5, 0.3], [1, 0]],
+      "caption": "cue.hydrophone.hiss"
+    }
+  }
+}
