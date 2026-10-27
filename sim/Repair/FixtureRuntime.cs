@@ -32,6 +32,15 @@ static class FixtureHooks
             w.Cells[i].Charge = w.T.Power!.Cells.InstalledCharge;
             w.Cells[i].TempC = w.T.Heat.AmbientC;
         },
+        // 걸레로 분기함을 한 번 닦는다 (WP8): 습기가 tuning.junctions.ragDry만큼 준다. 습도 모듈이 있으면 공기의 목표 아래로는
+        // 내리지 못하지만, 닦기 전보다 젖게 하지는 않는다(목표가 닦기 전보다 높으면 닦기 전 그대로).
+        ["ragDry"] = (w, v) =>
+        {
+            if (w.T.Junctions is not { } jt || !v.Part.HasProp("moisture")) return;
+            double m0 = v.Part.Get("moisture");
+            double floor = w.Humidity is { } h ? Math.Min(m0, h.Target(w, v.Part)) : 0;
+            v.Part.Set("moisture", Math.Max(Math.Max(0, m0 - jt.RagDry), floor));
+        },
     };
 }
 

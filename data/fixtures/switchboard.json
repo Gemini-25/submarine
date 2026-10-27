@@ -1,8 +1,15 @@
 {
+  "params": {
+    "strokes": 2,
+    "wraps": 3,
+    "trapAbove": 0.4
+  },
   "fixtures": [
     {
       "id": "fuse.{c}",
-      "bind": { "c": "circuits" },
+      "bind": {
+        "c": "circuits"
+      },
       "part": "fuse.{c}",
       "kind": "socket",
       "zone": "mid",
@@ -13,24 +20,1030 @@
           "noise": "fuse",
           "hook": "fuseRemoved",
           "hazards": [
-            { "if": "circuit.{c}.on == 1 && battery.voltage > 0 && circuit.{c}.current > 0 && self.blown < 0.5", "hazard": "spark" },
-            { "if": "circuit.{c}.on == 1 && battery.voltage > 0", "hazard": "shock" }
+            {
+              "if": "circuit.{c}.on == 1 && battery.voltage > 0 && circuit.{c}.current > 0 && self.blown < 0.5",
+              "hazard": "spark"
+            },
+            {
+              "if": "circuit.{c}.on == 1 && battery.voltage > 0",
+              "hazard": "shock"
+            }
           ],
           "gives": [
-            { "if": "self.blown >= 0.5", "item": "fuse_blown" },
-            { "item": "fuse" }
-          ]
+            {
+              "if": "self.wire >= 0.5",
+              "item": "fuse_wire_used"
+            },
+            {
+              "if": "self.blown >= 0.5",
+              "item": "fuse_blown"
+            },
+            {
+              "item": "fuse"
+            }
+          ],
+          "set": {
+            "wire": 0
+          }
         },
         "insert": {
           "noise": "fuse",
           "hazards": [
-            { "if": "circuit.{c}.on == 1 && battery.voltage > 0", "hazard": "spark" },
-            { "if": "circuit.{c}.on == 1 && battery.voltage > 0", "hazard": "shock" }
+            {
+              "if": "circuit.{c}.on == 1 && battery.voltage > 0",
+              "hazard": "spark"
+            },
+            {
+              "if": "circuit.{c}.on == 1 && battery.voltage > 0",
+              "hazard": "shock"
+            }
           ],
           "accepts": {
-            "fuse": { "set": { "blown": 0 }, "renew": true },
-            "fuse_blown": { "set": { "blown": 1 } }
+            "fuse": {
+              "set": {
+                "blown": 0
+              },
+              "renew": true
+            },
+            "fuse_blown": {
+              "set": {
+                "blown": 1
+              }
+            },
+            "fuse_wire": {
+              "set": {
+                "blown": 0,
+                "wire": 1
+              },
+              "quality": "temporary"
+            }
           }
+        }
+      }
+    },
+    {
+      "id": "junction.{c}.screw.{n}",
+      "bind": {
+        "c": "C1,C2,C6,C7",
+        "n": "1..2"
+      },
+      "part": "junction.{c}",
+      "kind": "fastener",
+      "zone": "mid",
+      "prop": "screw{n}",
+      "group": "screws",
+      "verbs": {
+        "loosen": {
+          "tool": "screwdriver",
+          "noise": "screwdriver"
+        },
+        "tighten": {
+          "tool": "screwdriver",
+          "noise": "screwdriver",
+          "rejectIf": [
+            {
+              "if": "self.coverOpen >= 0.5",
+              "reason": "screw_cover_open"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "junction.{c}.cover",
+      "bind": {
+        "c": "C1,C2,C6,C7"
+      },
+      "part": "junction.{c}",
+      "kind": "cover",
+      "zone": "mid",
+      "prop": "coverOpen",
+      "heldBy": "screws",
+      "verbs": {
+        "open": {
+          "tool": "hand",
+          "hazards": [
+            {
+              "if": "circuit.{c}.on == 1 && battery.voltage > 0 && part.fuse.{c}.prop.blown < 0.5 && part.fuse.{c}.prop.present >= 0.5 && self.moisture > 0.6",
+              "hazard": "shock"
+            }
+          ]
+        },
+        "close": {
+          "tool": "hand"
+        }
+      }
+    },
+    {
+      "id": "junction.{c}.box",
+      "bind": {
+        "c": "C1,C2,C6,C7"
+      },
+      "part": "junction.{c}",
+      "kind": "work",
+      "zone": "mid",
+      "verbs": {
+        "dry": {
+          "gesture": "scrub",
+          "tool": "rag",
+          "noise": "rag",
+          "hook": "ragDry",
+          "rejectIf": [
+            {
+              "if": "self.coverOpen < 0.5",
+              "reason": "cover_closed"
+            }
+          ],
+          "hazards": [
+            {
+              "if": "circuit.{c}.on == 1 && battery.voltage > 0 && part.fuse.{c}.prop.blown < 0.5 && part.fuse.{c}.prop.present >= 0.5 && self.moisture > 0.6",
+              "hazard": "shock"
+            }
+          ],
+          "effects": [
+            {
+              "if": "self.taped >= 0.5 && self.spliced >= 0.5",
+              "set": "insulated",
+              "to": 0
+            },
+            {
+              "set": "wrap",
+              "to": 0
+            },
+            {
+              "set": "taped",
+              "to": 0
+            },
+            {
+              "set": "trapped",
+              "to": 0
+            }
+          ]
+        }
+      },
+      "touch": {
+        "wet": "self.moisture > 0.4",
+        "hazards": [
+          {
+            "if": "circuit.{c}.on == 1 && battery.voltage > 0 && part.fuse.{c}.prop.blown < 0.5 && part.fuse.{c}.prop.present >= 0.5 && self.moisture > 0.6",
+            "hazard": "shock"
+          }
+        ]
+      }
+    },
+    {
+      "id": "junction.{c}.cable",
+      "bind": {
+        "c": "C1,C2,C6,C7"
+      },
+      "part": "junction.{c}",
+      "kind": "work",
+      "zone": "mid",
+      "verbs": {
+        "strip": {
+          "gesture": "scrub",
+          "tool": "knife",
+          "noise": "rag",
+          "rejectIf": [
+            {
+              "if": "self.coverOpen < 0.5",
+              "reason": "cover_closed"
+            },
+            {
+              "if": "self.stripped >= $strokes",
+              "reason": "done"
+            }
+          ],
+          "hazards": [
+            {
+              "if": "circuit.{c}.on == 1 && battery.voltage > 0 && part.fuse.{c}.prop.blown < 0.5 && part.fuse.{c}.prop.present >= 0.5",
+              "hazard": "shock"
+            }
+          ],
+          "effects": [
+            {
+              "add": "stripped",
+              "by": 1,
+              "max": 2
+            },
+            {
+              "set": "insulated",
+              "to": 0
+            },
+            {
+              "set": "taped",
+              "to": 0
+            },
+            {
+              "set": "wrap",
+              "to": 0
+            },
+            {
+              "set": "trapped",
+              "to": 0
+            },
+            {
+              "set": "soldered",
+              "to": 0
+            }
+          ]
+        },
+        "solder": {
+          "gesture": "scrub",
+          "tool": "soldering_iron",
+          "rejectIf": [
+            {
+              "if": "self.coverOpen < 0.5",
+              "reason": "cover_closed"
+            },
+            {
+              "if": "device.soldering_iron.running < 0.5",
+              "reason": "iron_cold"
+            },
+            {
+              "if": "self.stripped < $strokes",
+              "reason": "not_stripped"
+            },
+            {
+              "if": "self.soldered >= $strokes",
+              "reason": "done"
+            }
+          ],
+          "hazards": [
+            {
+              "hazard": "spark"
+            },
+            {
+              "if": "circuit.{c}.on == 1 && battery.voltage > 0 && part.fuse.{c}.prop.blown < 0.5 && part.fuse.{c}.prop.present >= 0.5",
+              "hazard": "shock"
+            }
+          ],
+          "effects": [
+            {
+              "add": "soldered",
+              "by": 1,
+              "max": 2
+            },
+            {
+              "if": "self.soldered >= $strokes",
+              "set": "burnt",
+              "to": 0
+            },
+            {
+              "if": "self.soldered >= $strokes",
+              "set": "twisted",
+              "to": 0
+            },
+            {
+              "if": "self.soldered >= $strokes",
+              "set": "spliced",
+              "to": 1
+            }
+          ]
+        },
+        "twist": {
+          "gesture": "rotate",
+          "tool": "hand",
+          "rejectIf": [
+            {
+              "if": "self.coverOpen < 0.5",
+              "reason": "cover_closed"
+            },
+            {
+              "if": "self.burnt < 0.5",
+              "reason": "done"
+            },
+            {
+              "if": "self.stripped < $strokes",
+              "reason": "twist_not_stripped"
+            }
+          ],
+          "hazards": [
+            {
+              "if": "circuit.{c}.on == 1 && battery.voltage > 0 && part.fuse.{c}.prop.blown < 0.5 && part.fuse.{c}.prop.present >= 0.5",
+              "hazard": "shock"
+            }
+          ],
+          "effects": [
+            {
+              "set": "burnt",
+              "to": 0
+            },
+            {
+              "set": "insulated",
+              "to": 0
+            },
+            {
+              "set": "twisted",
+              "to": 1
+            },
+            {
+              "set": "spliced",
+              "to": 1
+            }
+          ]
+        },
+        "wrap": {
+          "gesture": "rotate",
+          "tool": "hand",
+          "hold": "insulating_tape",
+          "noise": "wrap",
+          "rejectIf": [
+            {
+              "if": "self.coverOpen < 0.5",
+              "reason": "cover_closed"
+            },
+            {
+              "if": "self.wrap >= $wraps",
+              "reason": "done"
+            }
+          ],
+          "hazards": [
+            {
+              "if": "circuit.{c}.on == 1 && battery.voltage > 0 && part.fuse.{c}.prop.blown < 0.5 && part.fuse.{c}.prop.present >= 0.5 && self.insulated < 0.5",
+              "hazard": "shock"
+            }
+          ],
+          "effects": [
+            {
+              "add": "wrap",
+              "by": 1,
+              "max": 3
+            },
+            {
+              "if": "self.wrap >= $wraps && self.moisture > $trapAbove",
+              "set": "trapped",
+              "to": 1
+            },
+            {
+              "if": "self.wrap >= $wraps",
+              "set": "insulated",
+              "to": 1
+            },
+            {
+              "if": "self.wrap >= $wraps",
+              "set": "taped",
+              "to": 1
+            },
+            {
+              "if": "self.wrap >= $wraps",
+              "set": "stripped",
+              "to": 0
+            },
+            {
+              "if": "self.wrap >= $wraps",
+              "set": "soldered",
+              "to": 0
+            },
+            {
+              "if": "self.wrap >= $wraps",
+              "consume": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "junction.{c}.screw.{n}",
+      "bind": {
+        "c": "C3,C8",
+        "n": "1..2"
+      },
+      "part": "junction.{c}",
+      "kind": "fastener",
+      "zone": "aft",
+      "prop": "screw{n}",
+      "group": "screws",
+      "verbs": {
+        "loosen": {
+          "tool": "screwdriver",
+          "noise": "screwdriver"
+        },
+        "tighten": {
+          "tool": "screwdriver",
+          "noise": "screwdriver",
+          "rejectIf": [
+            {
+              "if": "self.coverOpen >= 0.5",
+              "reason": "screw_cover_open"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "junction.{c}.cover",
+      "bind": {
+        "c": "C3,C8"
+      },
+      "part": "junction.{c}",
+      "kind": "cover",
+      "zone": "aft",
+      "prop": "coverOpen",
+      "heldBy": "screws",
+      "verbs": {
+        "open": {
+          "tool": "hand",
+          "hazards": [
+            {
+              "if": "circuit.{c}.on == 1 && battery.voltage > 0 && part.fuse.{c}.prop.blown < 0.5 && part.fuse.{c}.prop.present >= 0.5 && self.moisture > 0.6",
+              "hazard": "shock"
+            }
+          ]
+        },
+        "close": {
+          "tool": "hand"
+        }
+      }
+    },
+    {
+      "id": "junction.{c}.box",
+      "bind": {
+        "c": "C3,C8"
+      },
+      "part": "junction.{c}",
+      "kind": "work",
+      "zone": "aft",
+      "verbs": {
+        "dry": {
+          "gesture": "scrub",
+          "tool": "rag",
+          "noise": "rag",
+          "hook": "ragDry",
+          "rejectIf": [
+            {
+              "if": "self.coverOpen < 0.5",
+              "reason": "cover_closed"
+            }
+          ],
+          "hazards": [
+            {
+              "if": "circuit.{c}.on == 1 && battery.voltage > 0 && part.fuse.{c}.prop.blown < 0.5 && part.fuse.{c}.prop.present >= 0.5 && self.moisture > 0.6",
+              "hazard": "shock"
+            }
+          ],
+          "effects": [
+            {
+              "if": "self.taped >= 0.5 && self.spliced >= 0.5",
+              "set": "insulated",
+              "to": 0
+            },
+            {
+              "set": "wrap",
+              "to": 0
+            },
+            {
+              "set": "taped",
+              "to": 0
+            },
+            {
+              "set": "trapped",
+              "to": 0
+            }
+          ]
+        }
+      },
+      "touch": {
+        "wet": "self.moisture > 0.4",
+        "hazards": [
+          {
+            "if": "circuit.{c}.on == 1 && battery.voltage > 0 && part.fuse.{c}.prop.blown < 0.5 && part.fuse.{c}.prop.present >= 0.5 && self.moisture > 0.6",
+            "hazard": "shock"
+          }
+        ]
+      }
+    },
+    {
+      "id": "junction.{c}.cable",
+      "bind": {
+        "c": "C3,C8"
+      },
+      "part": "junction.{c}",
+      "kind": "work",
+      "zone": "aft",
+      "verbs": {
+        "strip": {
+          "gesture": "scrub",
+          "tool": "knife",
+          "noise": "rag",
+          "rejectIf": [
+            {
+              "if": "self.coverOpen < 0.5",
+              "reason": "cover_closed"
+            },
+            {
+              "if": "self.stripped >= $strokes",
+              "reason": "done"
+            }
+          ],
+          "hazards": [
+            {
+              "if": "circuit.{c}.on == 1 && battery.voltage > 0 && part.fuse.{c}.prop.blown < 0.5 && part.fuse.{c}.prop.present >= 0.5",
+              "hazard": "shock"
+            }
+          ],
+          "effects": [
+            {
+              "add": "stripped",
+              "by": 1,
+              "max": 2
+            },
+            {
+              "set": "insulated",
+              "to": 0
+            },
+            {
+              "set": "taped",
+              "to": 0
+            },
+            {
+              "set": "wrap",
+              "to": 0
+            },
+            {
+              "set": "trapped",
+              "to": 0
+            },
+            {
+              "set": "soldered",
+              "to": 0
+            }
+          ]
+        },
+        "solder": {
+          "gesture": "scrub",
+          "tool": "soldering_iron",
+          "rejectIf": [
+            {
+              "if": "self.coverOpen < 0.5",
+              "reason": "cover_closed"
+            },
+            {
+              "if": "device.soldering_iron.running < 0.5",
+              "reason": "iron_cold"
+            },
+            {
+              "if": "self.stripped < $strokes",
+              "reason": "not_stripped"
+            },
+            {
+              "if": "self.soldered >= $strokes",
+              "reason": "done"
+            }
+          ],
+          "hazards": [
+            {
+              "hazard": "spark"
+            },
+            {
+              "if": "circuit.{c}.on == 1 && battery.voltage > 0 && part.fuse.{c}.prop.blown < 0.5 && part.fuse.{c}.prop.present >= 0.5",
+              "hazard": "shock"
+            }
+          ],
+          "effects": [
+            {
+              "add": "soldered",
+              "by": 1,
+              "max": 2
+            },
+            {
+              "if": "self.soldered >= $strokes",
+              "set": "burnt",
+              "to": 0
+            },
+            {
+              "if": "self.soldered >= $strokes",
+              "set": "twisted",
+              "to": 0
+            },
+            {
+              "if": "self.soldered >= $strokes",
+              "set": "spliced",
+              "to": 1
+            }
+          ]
+        },
+        "twist": {
+          "gesture": "rotate",
+          "tool": "hand",
+          "rejectIf": [
+            {
+              "if": "self.coverOpen < 0.5",
+              "reason": "cover_closed"
+            },
+            {
+              "if": "self.burnt < 0.5",
+              "reason": "done"
+            },
+            {
+              "if": "self.stripped < $strokes",
+              "reason": "twist_not_stripped"
+            }
+          ],
+          "hazards": [
+            {
+              "if": "circuit.{c}.on == 1 && battery.voltage > 0 && part.fuse.{c}.prop.blown < 0.5 && part.fuse.{c}.prop.present >= 0.5",
+              "hazard": "shock"
+            }
+          ],
+          "effects": [
+            {
+              "set": "burnt",
+              "to": 0
+            },
+            {
+              "set": "insulated",
+              "to": 0
+            },
+            {
+              "set": "twisted",
+              "to": 1
+            },
+            {
+              "set": "spliced",
+              "to": 1
+            }
+          ]
+        },
+        "wrap": {
+          "gesture": "rotate",
+          "tool": "hand",
+          "hold": "insulating_tape",
+          "noise": "wrap",
+          "rejectIf": [
+            {
+              "if": "self.coverOpen < 0.5",
+              "reason": "cover_closed"
+            },
+            {
+              "if": "self.wrap >= $wraps",
+              "reason": "done"
+            }
+          ],
+          "hazards": [
+            {
+              "if": "circuit.{c}.on == 1 && battery.voltage > 0 && part.fuse.{c}.prop.blown < 0.5 && part.fuse.{c}.prop.present >= 0.5 && self.insulated < 0.5",
+              "hazard": "shock"
+            }
+          ],
+          "effects": [
+            {
+              "add": "wrap",
+              "by": 1,
+              "max": 3
+            },
+            {
+              "if": "self.wrap >= $wraps && self.moisture > $trapAbove",
+              "set": "trapped",
+              "to": 1
+            },
+            {
+              "if": "self.wrap >= $wraps",
+              "set": "insulated",
+              "to": 1
+            },
+            {
+              "if": "self.wrap >= $wraps",
+              "set": "taped",
+              "to": 1
+            },
+            {
+              "if": "self.wrap >= $wraps",
+              "set": "stripped",
+              "to": 0
+            },
+            {
+              "if": "self.wrap >= $wraps",
+              "set": "soldered",
+              "to": 0
+            },
+            {
+              "if": "self.wrap >= $wraps",
+              "consume": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "junction.{c}.screw.{n}",
+      "bind": {
+        "c": "C4,C5",
+        "n": "1..2"
+      },
+      "part": "junction.{c}",
+      "kind": "fastener",
+      "zone": "fore",
+      "prop": "screw{n}",
+      "group": "screws",
+      "verbs": {
+        "loosen": {
+          "tool": "screwdriver",
+          "noise": "screwdriver"
+        },
+        "tighten": {
+          "tool": "screwdriver",
+          "noise": "screwdriver",
+          "rejectIf": [
+            {
+              "if": "self.coverOpen >= 0.5",
+              "reason": "screw_cover_open"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "junction.{c}.cover",
+      "bind": {
+        "c": "C4,C5"
+      },
+      "part": "junction.{c}",
+      "kind": "cover",
+      "zone": "fore",
+      "prop": "coverOpen",
+      "heldBy": "screws",
+      "verbs": {
+        "open": {
+          "tool": "hand",
+          "hazards": [
+            {
+              "if": "circuit.{c}.on == 1 && battery.voltage > 0 && part.fuse.{c}.prop.blown < 0.5 && part.fuse.{c}.prop.present >= 0.5 && self.moisture > 0.6",
+              "hazard": "shock"
+            }
+          ]
+        },
+        "close": {
+          "tool": "hand"
+        }
+      }
+    },
+    {
+      "id": "junction.{c}.box",
+      "bind": {
+        "c": "C4,C5"
+      },
+      "part": "junction.{c}",
+      "kind": "work",
+      "zone": "fore",
+      "verbs": {
+        "dry": {
+          "gesture": "scrub",
+          "tool": "rag",
+          "noise": "rag",
+          "hook": "ragDry",
+          "rejectIf": [
+            {
+              "if": "self.coverOpen < 0.5",
+              "reason": "cover_closed"
+            }
+          ],
+          "hazards": [
+            {
+              "if": "circuit.{c}.on == 1 && battery.voltage > 0 && part.fuse.{c}.prop.blown < 0.5 && part.fuse.{c}.prop.present >= 0.5 && self.moisture > 0.6",
+              "hazard": "shock"
+            }
+          ],
+          "effects": [
+            {
+              "if": "self.taped >= 0.5 && self.spliced >= 0.5",
+              "set": "insulated",
+              "to": 0
+            },
+            {
+              "set": "wrap",
+              "to": 0
+            },
+            {
+              "set": "taped",
+              "to": 0
+            },
+            {
+              "set": "trapped",
+              "to": 0
+            }
+          ]
+        }
+      },
+      "touch": {
+        "wet": "self.moisture > 0.4",
+        "hazards": [
+          {
+            "if": "circuit.{c}.on == 1 && battery.voltage > 0 && part.fuse.{c}.prop.blown < 0.5 && part.fuse.{c}.prop.present >= 0.5 && self.moisture > 0.6",
+            "hazard": "shock"
+          }
+        ]
+      }
+    },
+    {
+      "id": "junction.{c}.cable",
+      "bind": {
+        "c": "C4,C5"
+      },
+      "part": "junction.{c}",
+      "kind": "work",
+      "zone": "fore",
+      "verbs": {
+        "strip": {
+          "gesture": "scrub",
+          "tool": "knife",
+          "noise": "rag",
+          "rejectIf": [
+            {
+              "if": "self.coverOpen < 0.5",
+              "reason": "cover_closed"
+            },
+            {
+              "if": "self.stripped >= $strokes",
+              "reason": "done"
+            }
+          ],
+          "hazards": [
+            {
+              "if": "circuit.{c}.on == 1 && battery.voltage > 0 && part.fuse.{c}.prop.blown < 0.5 && part.fuse.{c}.prop.present >= 0.5",
+              "hazard": "shock"
+            }
+          ],
+          "effects": [
+            {
+              "add": "stripped",
+              "by": 1,
+              "max": 2
+            },
+            {
+              "set": "insulated",
+              "to": 0
+            },
+            {
+              "set": "taped",
+              "to": 0
+            },
+            {
+              "set": "wrap",
+              "to": 0
+            },
+            {
+              "set": "trapped",
+              "to": 0
+            },
+            {
+              "set": "soldered",
+              "to": 0
+            }
+          ]
+        },
+        "solder": {
+          "gesture": "scrub",
+          "tool": "soldering_iron",
+          "rejectIf": [
+            {
+              "if": "self.coverOpen < 0.5",
+              "reason": "cover_closed"
+            },
+            {
+              "if": "device.soldering_iron.running < 0.5",
+              "reason": "iron_cold"
+            },
+            {
+              "if": "self.stripped < $strokes",
+              "reason": "not_stripped"
+            },
+            {
+              "if": "self.soldered >= $strokes",
+              "reason": "done"
+            }
+          ],
+          "hazards": [
+            {
+              "hazard": "spark"
+            },
+            {
+              "if": "circuit.{c}.on == 1 && battery.voltage > 0 && part.fuse.{c}.prop.blown < 0.5 && part.fuse.{c}.prop.present >= 0.5",
+              "hazard": "shock"
+            }
+          ],
+          "effects": [
+            {
+              "add": "soldered",
+              "by": 1,
+              "max": 2
+            },
+            {
+              "if": "self.soldered >= $strokes",
+              "set": "burnt",
+              "to": 0
+            },
+            {
+              "if": "self.soldered >= $strokes",
+              "set": "twisted",
+              "to": 0
+            },
+            {
+              "if": "self.soldered >= $strokes",
+              "set": "spliced",
+              "to": 1
+            }
+          ]
+        },
+        "twist": {
+          "gesture": "rotate",
+          "tool": "hand",
+          "rejectIf": [
+            {
+              "if": "self.coverOpen < 0.5",
+              "reason": "cover_closed"
+            },
+            {
+              "if": "self.burnt < 0.5",
+              "reason": "done"
+            },
+            {
+              "if": "self.stripped < $strokes",
+              "reason": "twist_not_stripped"
+            }
+          ],
+          "hazards": [
+            {
+              "if": "circuit.{c}.on == 1 && battery.voltage > 0 && part.fuse.{c}.prop.blown < 0.5 && part.fuse.{c}.prop.present >= 0.5",
+              "hazard": "shock"
+            }
+          ],
+          "effects": [
+            {
+              "set": "burnt",
+              "to": 0
+            },
+            {
+              "set": "insulated",
+              "to": 0
+            },
+            {
+              "set": "twisted",
+              "to": 1
+            },
+            {
+              "set": "spliced",
+              "to": 1
+            }
+          ]
+        },
+        "wrap": {
+          "gesture": "rotate",
+          "tool": "hand",
+          "hold": "insulating_tape",
+          "noise": "wrap",
+          "rejectIf": [
+            {
+              "if": "self.coverOpen < 0.5",
+              "reason": "cover_closed"
+            },
+            {
+              "if": "self.wrap >= $wraps",
+              "reason": "done"
+            }
+          ],
+          "hazards": [
+            {
+              "if": "circuit.{c}.on == 1 && battery.voltage > 0 && part.fuse.{c}.prop.blown < 0.5 && part.fuse.{c}.prop.present >= 0.5 && self.insulated < 0.5",
+              "hazard": "shock"
+            }
+          ],
+          "effects": [
+            {
+              "add": "wrap",
+              "by": 1,
+              "max": 3
+            },
+            {
+              "if": "self.wrap >= $wraps && self.moisture > $trapAbove",
+              "set": "trapped",
+              "to": 1
+            },
+            {
+              "if": "self.wrap >= $wraps",
+              "set": "insulated",
+              "to": 1
+            },
+            {
+              "if": "self.wrap >= $wraps",
+              "set": "taped",
+              "to": 1
+            },
+            {
+              "if": "self.wrap >= $wraps",
+              "set": "stripped",
+              "to": 0
+            },
+            {
+              "if": "self.wrap >= $wraps",
+              "set": "soldered",
+              "to": 0
+            },
+            {
+              "if": "self.wrap >= $wraps",
+              "consume": true
+            }
+          ]
         }
       }
     }

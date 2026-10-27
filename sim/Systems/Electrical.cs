@@ -72,7 +72,8 @@ static class Electrical
                 w.Spark($"fuse.{w.Data.Circuits[c].Id}");
             }
             cs.FuseBlownSeen = blown;
-            cs.Energized = v > 0 && cs.SwitchOn && !blown;
+            // 분기함 배선이 탔으면(퓨즈 대용 철사의 대가, WP8) 퓨즈는 멀쩡해도 회로가 죽는다.
+            cs.Energized = v > 0 && cs.SwitchOn && !blown && w.JunctionBurnt[c].Get() < 0.5;
             cs.Current = 0;
             cs.PowerW = 0;
             cs.LeakCurrent = 0;
@@ -126,7 +127,7 @@ static class Electrical
             if (!cs.Energized) { cs.OverTimer = 0; continue; }
 
             // 누전: 분기함 습기가 임계를 넘으면 누설 전류가 흐른다. 정격의 일정 비율로 둔다.
-            double moisture = w.Junctions[c].Get("moisture");
+            double moisture = InsulationMoisture(w, c);
             double over = (moisture - sb.LeakageMoistureThreshold) / (1 - sb.LeakageMoistureThreshold);
             if (over > 0)
             {
@@ -141,7 +142,11 @@ static class Electrical
             {
                 cs.OverTimer += w.Dt;
                 if (cs.OverTimer >= sb.FuseBlowSeconds - 1e-9)
-                    BlowFuse(w, c);
+                {
+                    // 퓨즈 대신 철사를 감았으면 끊기지 않고 분기함 배선이 탄다.
+                    if (w.FuseWire[c].Get() >= 0.5) BurnWiring(w, c);
+                    else BlowFuse(w, c);
+                }
             }
             else
             {
@@ -159,6 +164,17 @@ static class Electrical
         BrushGear.Update(w);
     }
 
+    /// <summary>
+    /// 누전을 재는 습기: 분기함의 습기, 그리고 피복을 벗긴 채 둔 맨 이음(insulated 0)은 tuning.junctions.bareJointMoisture.
+    /// 브리지 절연 측정도 이 값을 쓴다.
+    /// </summary>
+    public static double InsulationMoisture(SimWorld w, int c)
+    {
+        double m = w.Junctions[c].Get("moisture");
+        if (w.T.Junctions is { } jt && w.JunctionInsulated[c].Get(1) < 0.5) m = Math.Max(m, jt.BareJointMoisture);
+        return m;
+    }
+
     static void BlowFuse(SimWorld w, int c)
     {
         var id = w.Data.Circuits[c].Id;
@@ -167,7 +183,26 @@ static class Electrical
         w.Emit(SimEventKind.FuseBlown, id, cs.Current);
         w.Spark($"fuse.{id}");
         cs.FuseBlownSeen = true;
+        Deenergize(w, c);
+    }
 
+    /// <summary>
+    /// 철사를 감은 퓨즈는 끊기지 않는다. 정격을 넘긴 전류가 퓨즈 끊김 시간 동안 흐르면 그 회로의 분기함 배선이 탄다:
+    /// burnt 1(회로가 죽는다), 불꽃, WiringBurnt. 연기와 타는 냄새는 burnt를 읽는 단서다.
+    /// </summary>
+    static void BurnWiring(SimWorld w, int c)
+    {
+        var cs = w.Circuits[c];
+        var junction = w.Junctions[c];
+        w.JunctionBurnt[c].Set(1);
+        w.Emit(SimEventKind.WiringBurnt, junction.Id, cs.Current);
+        w.Spark(junction.Id);
+        Deenergize(w, c);
+    }
+
+    static void Deenergize(SimWorld w, int c)
+    {
+        var cs = w.Circuits[c];
         // 끊긴 틱부터 회로와 장비가 멈춘 것으로 보이게 한다.
         cs.OverTimer = 0;
         cs.Energized = false;

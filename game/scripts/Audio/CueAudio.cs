@@ -83,6 +83,18 @@ public static class CueAudio
             v.DepthM = (float)c.S.DepthM;
         }, range: 3),
 
+        // 축 패킹 (HUL-03). 물이 튀는 소리는 전용 목소리가 없어 역류 목소리의 물방울과 출렁임으로,
+        // 과조임의 끽끽 소리는 전동기 목소리의 베어링 고음(3.1kHz)으로 자리를 채운다. 회전음은 추진 스로틀을 따른다.
+        R("shaft.spray", s => new BackflowVoice(s), (v, c) => v.Amount = Math.Min(1f, 0.85f * c.V), range: 4),
+        R("shaft.squeal", s => new MotorVoice(s), (v, c) =>
+        {
+            var d = Device(c.S, DeepLine.Sim.Data.Bindings.Propulsion);
+            v.Running = c.V > 0;
+            v.ShaftHz = 12f + 18f * (d is { } dv ? (float)dv.LoadFactor : 0);
+            v.Load = 0.4f;
+            v.BearingWear = 0.5f + 0.5f * c.V;
+        }, db: -10, range: 5),
+
         // 축전지 셀이 끓는 소리 (PWR-01 자리표시: 키트에 전용 목소리가 없어 물방울 섞인 낮은 쉿 소리로).
         R("cell.{n}.fizz", s => new LeakHissVoice(s), (v, c) =>
         {
@@ -156,6 +168,18 @@ public static class CueAudio
             v.ShaftHz = 10f + 36f * (float)c.S.Cues.FirstOrDefault(x => x.Id == "propulsion.hum").Value;
             v.BrushWear = 0.4f + 0.6f * c.V;
         }, spot: "motor", range: 6),
+        // 젖은 분기함의 누설 (ELC-03): 희미한 지직거림. 키트에 전용 목소리가 없어 칼날 스위치 지직거림을 작게 쓴다.
+        R("junction.{c}.sizzle", s => new KnifeSwitchCrackleVoice(s), (v, c) =>
+        {
+            v.Corrosion = c.V;
+            v.Current = c.V > 0 ? 0.6f : 0;
+        }, db: -10, range: 3),
+        // 탄 배선 (ELC-01 철사의 대가): 연기가 나는 동안 그을린 이음이 가끔 튄다.
+        R("junction.{c}.smoke", s => new KnifeSwitchCrackleVoice(s), (v, c) =>
+        {
+            v.Corrosion = 0.35f * c.V;
+            v.Current = c.V > 0 ? 0.3f : 0;
+        }, db: -14, range: 2),
     };
 
     /// <summary>Submarine.SoundSpots에 없는 소리 자리. vent_fan은 공기 장치가 없는 데이터(M1)에서만 쓰는 송풍 팬 대체 자리다.</summary>

@@ -26,6 +26,8 @@ static class HullSystem
             ls.Stress = s;
             if (s >= w.T.Failure.CollapseStress) collapse = true;
 
+            // 축 패킹 누름판: 마찰열과 누수 배율 (HUL-03). 다른 지점은 정확히 1.
+            double gland = ShaftGland.Update(w, part);
             double integrity = part.Get("integrity");
             if (s > 1)
             {
@@ -53,7 +55,7 @@ static class HullSystem
             }
 
             double open = 1 - integrity;
-            double area = def.MaxAreaCm2 * open * open * part.Get("patchFactor");
+            double area = def.MaxAreaCm2 * open * open * part.Get("patchFactor") * gland;
             ls.InflowLps = w.T.Water.LeakK * area * sqrtDepth;
         }
         if (collapse) w.Fail("hull_collapse");

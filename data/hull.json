@@ -10,6 +10,36 @@
       "wedge": 0
     }
   },
+  "kindTemplates": {
+    "shaft_packing": {
+      "props": {
+        "cocked": 0,
+        "followerBack": 0,
+        "glandArmed": 0,
+        "glandLife": 0,
+        "goodRings": 3,
+        "heat": 12,
+        "nutA": 2,
+        "nutB": 2,
+        "ringsOut": 0
+      },
+      "visible": ["nutA", "nutB", "followerBack", "ringsOut"],
+      "timers": [
+        {
+          "prop": "glandLife",
+          "perSecond": 1,
+          "armed": "glandArmed",
+          "onExpire": [
+            { "add": "integrity", "by": -0.15, "min": 0 },
+            { "event": "TempRepairFailed" }
+          ]
+        }
+      ],
+      "seaPaths": [
+        { "areaCm2": 0.58, "times": "self.ringsOut" }
+      ]
+    }
+  },
   "points": {
     "leak.rivet.01": {
       "kind": "rivet",
