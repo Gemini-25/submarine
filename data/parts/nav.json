@@ -1,0 +1,93 @@
+{
+  "gyro.unit": {
+    "kind": "gyro_unit",
+    "visible": [
+      "power",
+      "spin"
+    ],
+    "props": {
+      "error": 0,
+      "power": 1,
+      "settle": 1,
+      "spin": 1,
+      "swing": 0,
+      "swingRate": 0
+    }
+  },
+  "gyro.case": {
+    "kind": "gyro_case",
+    "visible": [
+      "capOff",
+      "screw1",
+      "screw2",
+      "screw3",
+      "screw4"
+    ],
+    "props": {
+      "capOff": 0,
+      "screw1": 1,
+      "screw2": 1,
+      "screw3": 1,
+      "screw4": 1
+    }
+  },
+  "gyro.bearing": {
+    "kind": "gyro_bearing",
+    "wearPerSecond": 0.000001,
+    "wearFault": "NAV-01",
+    "spare": true,
+    "visible": [
+      "present"
+    ],
+    "props": {
+      "drag": 0,
+      "present": 1
+    },
+    "wearCurves": {
+      "drag": [
+        [0, 0],
+        [0.5, 0.05],
+        [0.8, 0.8],
+        [0.85, 1.0],
+        [1, 1.5]
+      ]
+    }
+  },
+  "navcomp.unit": {
+    "kind": "navcomp_unit",
+    "visible": [
+      "counterKm",
+      "power"
+    ],
+    "props": {
+      "counterKm": 0,
+      "power": 1,
+      "revs": 0,
+      "trueKm": 0
+    }
+  },
+  "navcomp.case": {
+    "kind": "navcomp_case",
+    "visible": [
+      "coverOpen",
+      "screw1",
+      "screw2"
+    ],
+    "props": {
+      "coverOpen": 0,
+      "screw1": 1,
+      "screw2": 1
+    }
+  },
+  "navcomp.gear": {
+    "kind": "nav_gear",
+    "spare": true,
+    "visible": [
+      "present"
+    ],
+    "props": {
+      "present": 1,
+      "slip": 0
+    }
+  }
+}

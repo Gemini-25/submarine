@@ -133,6 +133,13 @@ static class PanelSystem
                 if (i >= 0 && w.TryCircuitIndex(circuit, out int c))
                     lamps[i] = Max(lamps[i], CircuitDevicesLamp(w, s, c));
             }
+            // 항법: 자이로 자리 잡기 접점이 열려 있으면 주의 (WP14, 모듈이 없으면 그대로).
+            if (Navigation.Unsettled(w))
+            {
+                int nav = IndexOf(PanelSystems.Names, "nav");
+                if (nav >= 0) lamps[nav] = Max(lamps[nav], LampState.Warning);
+            }
+            lamps[PanelSystems.Cable] = Max(lamps[PanelSystems.Cable], CableGear.PanelLamp(w)); // 윈치 미끄럼 스위치 (WP15)
         }
         else
         {

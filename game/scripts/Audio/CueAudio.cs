@@ -32,6 +32,10 @@ public static class CueAudio
         string? shared = null, string? spot = null, float db = 0, float range = 6) where T : Voice =>
         new(frame, seed => make(seed), (v, c) => drive((T)v, c), shared, spot, db, range);
 
+    /// <summary>항법 계산기 튐 소리를 붙잡아 둘 때까지의 시각과, 지금 펄스가 이어지는 중인가 (navcomp.click 줄).</summary>
+    static double _navClickUntil, _navClickLast;
+    static bool _navClickHeld;
+
     public static readonly Row[] Rows =
     {
         // 배수 펌프 묶음 (WTR-01/02/03): 한 자리에서 나는 소리 하나. 회전음 높이와 부하는 단서에 없어 스냅숏에서 읽는다.
@@ -86,6 +90,58 @@ public static class CueAudio
             v.DepthM = 0;
         }, spot: "battery", db: -6, range: 3),
 
+        // 자이로컴퍼스 (NAV-01, WP14): 회전자 윙 소리(서면 목소리가 스스로 천천히 내려간다)와 닳은 베어링의 떨림.
+        // 세기는 회전을 따르되, 끼임 문턱(회전 0.05) 위에서는 또렷이 들리게 바닥을 둔다. 음높이는 목소리의 켜짐과 꺼짐만 따른다.
+        R("gyro.hum", s => new GyroVoice(s), (v, c) =>
+        {
+            v.Running = c.V > 0.05f;
+            v.Gain = 0.35f + 0.65f * c.V;
+        }, shared: "gyro", spot: "gyro", db: -6, range: 5),
+        R("gyro.warble", s => new GyroVoice(s), (v, c) => v.BearingWear = c.V, shared: "gyro", spot: "gyro", db: -6, range: 5),
+        // 항법 계산기 (NAV-02, WP14): 탈진기 째깍 소리(빠르기 = 축 회전), 톱니가 튈 때 미끄러지는 소리.
+        R("navcomp.tick", s => new NavComputerVoice(s), (v, c) =>
+        {
+            v.Running = c.V > 0;
+            v.Speed = c.V;
+        }, shared: "navcomp", spot: "navcomp", db: -8, range: 4),
+        // 튐 펄스(0.5초)가 시작되는 순간 미끄러짐을 1초 붙잡는다. 목소리는 틱마다 Slip 확률로 미끄러지므로 짧은 펄스로는 자주 빠진다.
+        R("navcomp.click", s => new NavComputerVoice(s), (v, c) =>
+        {
+            double now = c.S.TimeSeconds;
+            // 다시 시작해 시각이 뒤로 가면 지난 판의 상태를 지운다.
+            if (now < _navClickLast) { _navClickUntil = 0; _navClickHeld = false; }
+            _navClickLast = now;
+            if (c.V > 0 && !_navClickHeld && now >= _navClickUntil) _navClickUntil = now + 1.0;
+            _navClickHeld = c.V > 0;
+            v.Slip = now < _navClickUntil ? 1 : 0;
+        }, shared: "navcomp", spot: "navcomp", db: -8, range: 4),
+        // 갈고리 윈치 (CBL-01, WP15): 전동기 웅웅거림은 전동기 상태를, 드럼 소리는 줄 속도(감기 +, 풀기 −)를 따른다.
+        // 브레이크 미끄럼(와이어가 쉭 하고 풀리고 브레이크가 끽 한다)은 미끄럼이 빨라질수록 커진다.
+        R("winch.motor", s => new WinchVoice(s), (v, c) =>
+        {
+            v.Running = c.V >= 0.5f;
+            v.Load = WinchLoad(c.S);
+        }, shared: "winch", spot: "winch", range: 10),
+        R("winch.hauling", s => new WinchVoice(s), (v, c) =>
+        {
+            v.Speed = (float)Math.Clamp(-PartVal(c.S, "winch.drum", "motion") / 0.25, -1, 1);
+            v.Load = WinchLoad(c.S);
+        }, shared: "winch", spot: "winch", range: 10),
+        R("winch.zip", s => new WinchVoice(s), (v, c) =>
+        {
+            // 미끄럼 소리는 하중에 비례한다. 처음 소리를 내는 줄이 이것일 수 있으므로 여기서도 하중을 넣는다.
+            v.BrakeSlip = c.V;
+            v.Load = WinchLoad(c.S);
+        }, shared: "winch", spot: "winch", range: 10),
+
+        // 사이펀 기록기 (CBL-02, WP15): 테이프 구동, 신호 중의 펜 소리. 마른 긁힘(막힘)은 시험 신호가 있고 펜 팔이 내려가 있을 때만.
+        R("siphon.tape", s => new SiphonRecorderVoice(s), (v, c) => v.Running = c.V >= 0.5f, shared: "siphon", spot: "siphon", db: -6, range: 3),
+        // 펜 팔을 들면 펜이 테이프에 닿지 않으므로 펜 소리가 없다 (시뮬레이션의 siphon.scratch와 같다).
+        R("siphon.wave", s => new SiphonRecorderVoice(s), (v, c) => v.Signal = PartVal(c.S, "siphon.pen", "armUp") >= 0.5 ? 0 : c.V,
+            shared: "siphon", spot: "siphon", db: -6, range: 3),
+        R("siphon.ink.line", s => new SiphonRecorderVoice(s), (v, c) =>
+            v.Clog = PartVal(c.S, "siphon.state", "signal") > 0.5 && PartVal(c.S, "siphon.pen", "armUp") < 0.5 ? 1 - c.V : 0,
+            shared: "siphon", spot: "siphon", db: -6, range: 3),
         // 젖은 분기함의 누설 (ELC-03): 희미한 지직거림. 키트에 전용 목소리가 없어 칼날 스위치 지직거림을 작게 쓴다.
         R("junction.{c}.sizzle", s => new KnifeSwitchCrackleVoice(s), (v, c) =>
         {
@@ -139,6 +195,25 @@ public static class CueAudio
         foreach (var d in s.Devices)
             if (d.Id == id) return d;
         return null;
+    }
+
+    /// <summary>윈치 하중 0~1 (하중계 ÷ 새 브레이크가 잡는 하중 400kg, tuning.cable.winch.brakeMaxKg).</summary>
+    const double WinchFullKg = 400;
+    static float WinchLoad(SimSnapshot s) => (float)Math.Clamp(Reading(s, "winch.load") / WinchFullKg, 0, 1);
+
+    /// <summary>스냅숏의 보이는 부품 값 (parts.json의 visible). 없으면 0.</summary>
+    static double PartVal(SimSnapshot s, string part, string prop)
+    {
+        foreach (var p in s.Parts)
+            if (p.Id == part) return p.Props.TryGetValue(prop, out var v) ? v : 0;
+        return 0;
+    }
+
+    static double Reading(SimSnapshot s, string id)
+    {
+        foreach (var r in s.Readings)
+            if (r.Id == id) return r.Value;
+        return 0;
     }
 
     static double LeakInflow(SimSnapshot s, string id)

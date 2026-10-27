@@ -39,6 +39,7 @@ static class NavSystem
     public static void Update(SimWorld w)
     {
         if (!w.Mechanics.Nav) return;
+        Navigation.Update(w); // WP14: sim/Systems/Navigation.cs
     }
 }
 
@@ -48,5 +49,6 @@ static class CableGearSystem
     public static void Update(SimWorld w)
     {
         if (!w.Mechanics.Cable) return;
+        CableGear.Update(w);
     }
 }

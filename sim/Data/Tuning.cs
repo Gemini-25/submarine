@@ -26,6 +26,10 @@ public sealed class Tuning
     public List<string> Tools { get; set; } = new();
     /// <summary>공구판과 공구띠 (M2). 없으면 M1처럼 모든 도구를 바로 쥘 수 있다.</summary>
     [Optional] public ToolBoardTuning? ToolBoard { get; set; }
+    /// <summary>항법 모듈 (M2 WP14). 자이로와 항법 계산기 상태 부품이 있으면 필요하다.</summary>
+    [Optional] public NavTuning? Nav { get; set; }
+    /// <summary>케이블 장비: 윈치와 사이펀 기록기 (M2 WP15, data/tuning/cable.json). 상태 부품이 없으면 쓰지 않는다.</summary>
+    [Optional] public CableTuning? Cable { get; set; }
     /// <summary>실내 습도와 분기함 습기 (M2 WP8). 없으면 습기는 주입으로만 바뀐다(M0).</summary>
     [Optional] public HumidityTuning? Humidity { get; set; }
     /// <summary>분기함 배선 (M2 WP8): 맨 이음의 누전. 없으면 맨 이음이 누전하지 않는다.</summary>

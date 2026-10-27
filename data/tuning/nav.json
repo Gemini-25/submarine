@@ -1,0 +1,33 @@
+{
+  "nav": {
+    "courseDeg": 72,
+    "deviationCard": [
+      [0, 2],
+      [45, 3],
+      [90, 1],
+      [135, -1],
+      [180, -2],
+      [225, -3],
+      [270, -1],
+      [315, 1],
+      [360, 2]
+    ],
+    "maxRpm": 300,
+    "advancePerRevM": 0.8,
+    "spinUpSeconds": 120,
+    "spinDownSeconds": 60,
+    "spinDownDragGain": 0.5,
+    "tumbleSpin": 0.5,
+    "settleSeconds": 180,
+    "swingPeriodSeconds": 60,
+    "swingDamping": 0.3,
+    "restartSwingDeg": 25,
+    "restartOffsetMinDeg": 2,
+    "restartOffsetMaxDeg": 5,
+    "driftDegPerMinPerDrag": 1.0,
+    "slipWindowSeconds": 10,
+    "jumpKm": 0.05,
+    "jumpChance": 0.1,
+    "clickSeconds": 0.5
+  }
+}
