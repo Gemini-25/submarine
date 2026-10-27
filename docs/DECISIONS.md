@@ -385,7 +385,7 @@ SPEC 0절 규칙 6에 따라, 명세에 없거나 명세와 다르게 정한 것
 ## 2026-10-27 · M2 (계통이 같이 쓰는 문구와 계기)
 
 - **여러 계통이 같이 쓰는 문구 키는 공통 `data/text/ko.json`에 하나만 둔다.** 합치기 전에 브랜치끼리 견주어 보니 `reason.need_bearing`(물, 항법), `reason.need_screwdriver`(배전반, 동력, 감각, 항법), `reason.screw_cover_open`(배전반, 항법)이 여러 조각에 있었다. 셋을 공통 파일로 옮겼다. 계통 조각의 같은 키는 합칠 때 지운다.
-- **뜻이 다른데 이름이 같은 키는 대상을 넣어 가른다.** `reason.nuts_tight`는 선체(누름판 너트)가 쓰고, 동력의 셀 단자 너트는 `reason.cell_nuts_tight`로 바꾼다.
+- **뜻이 다른데 이름이 같은 키는 대상을 넣어 가른다.** `reason.nuts_tight`를 둘로 나눴다. 선체 누름판 너트는 `reason.follower_nuts_tight`, 동력의 셀 단자 너트는 `reason.cell_nuts_tight`다.
 - **축 회전계는 하나다**(배치의 항법 책상 벽). 항법(WP14)이 `instruments.tachometer`를 정의하고, 동력(WP11)은 따로 두지 않는다. 동력이 합쳐질 때 그 바늘이 브러시 마모(PWR-02)로 흔들리게 한다. 진단 표 '거리가 틀림'(NAV-02 대 PWR-02)이 이 한 계기로 가른다.
 
 ## 2026-10-27 · M2 (WP14 항법, 병렬 세션)
