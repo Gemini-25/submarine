@@ -14,50 +14,47 @@ namespace DeepLine.Game.World;
 /// </summary>
 public partial class Submarine
 {
-    /// <summary>공구판: 해치 격벽(x 2.7)의 중앙 쪽 면, 좌현 쪽 (설계 좌표 x 2.76, z −1.15~−0.5, y 0.85~1.8).</summary>
-    static readonly Vector3 ToolBoardAt = new(HatchX + 0.045f, 0, -0.825f);
-
-    void BuildToolBoard()
+    /// <summary>
+    /// 공구판의 동작. 모습과 윤곽 자리는 배치(WP6, Submarine.Layout.cs)가 짓고, 여기서는 그 표지에
+    /// 가져오기·걸기 명령과 걸린 도구의 모양을 붙인다. 공구판 모듈이 없는 데이터면 표지는 빈 채로 둔다.
+    /// </summary>
+    void BindToolBoard()
     {
         if (_data.Tuning.ToolBoard == null) return;
         var tools = _data.Tuning.Tools.Skip(1).ToArray();
-
-        var root = new Node3D { Name = "ToolBoard", Position = ToolBoardAt };
-        AddChild(root);
-        Geo.Face(root, Vector3.Right);
-        Geo.Box(root, new Vector3(0.68f, 0.98f, 0.02f), new Vector3(0, 1.32f, 0.01f), Geo.Mat(new Color(0.24f, 0.29f, 0.24f), 0.85f, 0));
-        Geo.Text(root, "공구판", new Vector3(0, 1.86f, 0.025f), 0.035f);
-        Stations["toolboard"] = (new Vector3(3.5f, 1.35f, -0.8f), new Vector3(HatchX + 0.06f, 1.3f, -0.82f));
-
         for (int i = 0; i < tools.Length; i++)
         {
             string tool = tools[i];
-            float x = -0.21f + (i % 3) * 0.21f, y = 1.72f - (i / 3) * 0.17f;
-            // 칠한 윤곽: 도구가 빠지면 이것만 보인다.
-            Geo.Box(root, new Vector3(0.17f, 0.12f, 0.003f), new Vector3(x, y, 0.022f), Geo.Mat(new Color(0.78f, 0.74f, 0.6f), 0.9f, 0));
-            Geo.Box(root, new Vector3(0.15f, 0.10f, 0.003f), new Vector3(x, y, 0.024f), Geo.Mat(new Color(0.24f, 0.29f, 0.24f), 0.85f, 0));
-            Geo.Text(root, Texts.Tool(tool), new Vector3(x, y - 0.075f, 0.026f), 0.017f);
-            var mesh = ToolMesh(root, tool, i);
-            mesh.Position = new Vector3(x, y + 0.005f, 0.045f);
-
-            var it = Add(Interactable.Create(root, $"toolboard.{tool}", $"공구판: {Texts.Tool(tool)}", new Vector3(0.18f, 0.14f, 0.07f), new Vector3(x, y, 0.045f), "toolboard"));
+            string id = $"toolboard.{tool}";
+            if (!Interactables.TryGetValue(id, out var it))
+            {
+                GD.PushError($"공구판에 '{tool}'의 윤곽 자리가 없다 (Submarine.Layout.cs의 BoardTools)");
+                continue;
+            }
+            Markers.Remove(id); // 이제 빈 표지가 아니다
+            it.Label = $"공구판: {Texts.Tool(tool)}";
             it.CommandFor = (h, m) => m != Motion.Click ? null
                 : h.Snap.Crew.ToolPlaces.GetValueOrDefault(tool) == "board" ? $"toolboard.take.{tool}" : $"toolboard.return.{tool}";
+            var mesh = ToolMesh((Node3D)it.GetParent(), tool, i);
+            mesh.Position = it.Position + new Vector3(0, 0.01f, 0.015f);
+            mesh.Scale = new Vector3(0.8f, 0.8f, 0.8f);
             OnUpdate((s, _) => mesh.Visible = s.Crew.ToolPlaces.GetValueOrDefault(tool) == "board");
         }
-        SoundSpots["toolboard"] = ToolBoardAt + new Vector3(0, 1.3f, 0);
+        SoundSpots["toolboard"] = new Vector3(HatchX + 0.05f, 1.3f, -0.825f);
         BuildFloorTools(tools);
     }
 
     /// <summary>바닥에 놓인 도구. 구역마다 정해진 자리(가운데 통로 좌현 쪽)에 놓이고, 누르면 줍는다.</summary>
     void BuildFloorTools(string[] tools)
     {
-        // GameData.Zones 순서 (fore, mid, aft). 해치 문이 쓸고 가는 곳과 바닥 구멍을 피한 자리.
-        var bases = new[] { new Vector3(6.0f, 0.03f, -0.5f), new Vector3(3.15f, 0.03f, -0.5f), new Vector3(1.85f, 0.03f, -0.5f) };
+        // GameData.Zones 순서 (fore, mid, aft). 해치 문이 쓸고 가는 곳, 바닥 구멍(챔버, 축전지 갑판 판), 장비 표지를 피한 자리.
+        // 전방은 앞 틀(x 5.4)과 축전지 고정 격자(x 5.9) 사이의 좁은 바닥이라 칸을 좁게 둔다.
+        var bases = new[] { new Vector3(5.52f, 0.03f, -0.5f), new Vector3(3.15f, 0.03f, -0.5f), new Vector3(1.85f, 0.03f, -0.5f) };
+        var steps = new[] { new Vector2(0.12f, 0.15f), new Vector2(0.2f, 0.15f), new Vector2(0.2f, 0.15f) };
         for (int i = 0; i < tools.Length; i++)
         {
             string tool = tools[i];
-            var spots = bases.Select(b => b + new Vector3((i / 6) * 0.2f, 0, (i % 6) * 0.15f)).ToArray();
+            var spots = bases.Select((b, z) => b + new Vector3((i / 6) * steps[z].X, 0, (i % 6) * steps[z].Y)).ToArray();
             var root = new Node3D { Name = $"Floor_{tool}", Position = spots[0], Visible = false };
             AddChild(root);
             var mesh = ToolMesh(root, tool, i);

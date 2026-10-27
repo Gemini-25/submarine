@@ -19,7 +19,7 @@ public static class NavDrill
     public static bool Ready(ObservableQuery q, string cmd)
     {
         if (cmd.StartsWith("gyro.case.screw.", StringComparison.Ordinal) && cmd.EndsWith(".loosen", StringComparison.Ordinal)
-            || cmd.StartsWith("gyro.cap.", StringComparison.Ordinal) || cmd.StartsWith("gyro.bearing.", StringComparison.Ordinal))
+            || cmd.StartsWith("gyro.lid.", StringComparison.Ordinal) || cmd.StartsWith("gyro.bearing.", StringComparison.Ordinal))
             return q.Number("cue.gyro.hum") <= 0;
         if (cmd.StartsWith("gyro.align.", StringComparison.Ordinal))
             return q.Number("cue.gyro.settleLamp") >= 0.5;

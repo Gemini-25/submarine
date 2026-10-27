@@ -40,7 +40,7 @@
       }
     },
     {
-      "id": "gyro.cap",
+      "id": "gyro.lid",
       "part": "gyro.case",
       "kind": "cover",
       "zone": "fore",

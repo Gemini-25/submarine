@@ -6,8 +6,7 @@ using Godot;
 namespace DeepLine.Game.Testing;
 
 /// <summary>
-/// 확인 묶음 drill-nav (M2 WP14): 단독 훈련 m2-nav를 손동작으로 푼다. 항법 책상과 자이로 장의 작업 시점을 보고,
-/// 자이로 베어링 교체와 항법 계산기 톱니 교체를 공구판에 다녀오며(ExpandWithBelt) 따르고, 자리 잡기를 기다려 정렬하고,
+/// 확인 묶음 drill-nav (M2 WP14): 단독 훈련 m2-nav를 손동작으로 푼다. 자이로 베어링 교체와 항법 계산기 톱니 교체를 공구판에 다녀오며(ExpandWithBelt) 따르고, 자리 잡기를 기다려 정렬하고,
 /// 축 회전계로 셈한 거리에 계수기를 맞춘다. 셈은 관찰과 교범의 수만 쓴다(NavDrill). 끝나면 처음 임무로 돌아간다.
 /// </summary>
 public partial class AutoPlayer
@@ -19,8 +18,6 @@ public partial class AutoPlayer
         _main.Restart();
         await Frame(3);
         Check(Snap.Mission.Id == "m2-nav", $"훈련 m2-nav가 시작되지 않았다: {Snap.Mission.Id}");
-
-        await CheckNavWorkViews();
 
         var sim = _main.Runner.Sim;
         var q = new ObservableQuery(sim);
@@ -69,35 +66,6 @@ public partial class AutoPlayer
             await Perform(cmd);
             Step(HandSeconds);
             await Frame();
-        }
-    }
-
-    /// <summary>항법 책상과 자이로 장의 작업 시점: F로 들어가 그 장비의 손잡이와 나사를 모두 가리킬 수 있다.</summary>
-    async Task CheckNavWorkViews()
-    {
-        var stations = new (string Enter, string[] Targets)[]
-        {
-            ("navcomp.cover", new[] { "navcomp.cover", "navcomp.cover.screw.1", "navcomp.cover.screw.2", "navcomp.reset", "navcomp.power" }),
-            ("gyro.cap", new[] { "gyro.cap", "gyro.case.screw.1", "gyro.case.screw.2", "gyro.case.screw.3", "gyro.case.screw.4", "gyro.switch", "gyro.align", "gyro.case" }),
-        };
-        foreach (var (enter, targets) in stations)
-        {
-            if (await Approach(enter) == null) continue;
-            await Frame();
-            Check(_main.Hands.ToggleWorkView(), $"'{enter}'를 보고 F를 눌렀는데 작업 시점이 아니다");
-            await ToSignal(GetTree().CreateTimer(0.8), SceneTreeTimer.SignalName.Timeout);
-            var cam = _main.Player.Camera;
-            var size = cam.GetViewport().GetVisibleRect().Size;
-            foreach (var id in targets)
-            {
-                var it = _main.Sub.Interactables[id];
-                var screen = cam.UnprojectPosition(it.GlobalPosition);
-                bool onScreen = screen.X >= 0 && screen.Y >= 0 && screen.X <= size.X && screen.Y <= size.Y;
-                var hit = _main.Hands.RayPickAt(screen);
-                Check(onScreen && hit == it, $"'{_main.Player.WorkStation}' 작업 시점에서 '{id}'를 가리켰는데 잡힌 것: {hit?.Id ?? "없음"} (화면 {screen} / {size})");
-            }
-            _main.Hands.ToggleWorkView();
-            Check(!_main.Player.InWorkView, "F로 작업 시점에서 나오지 않았다");
         }
     }
 }

@@ -57,7 +57,8 @@ public partial class AutoPlayer : Node
     {
         ["crisis"] = CrisisSuite,
         ["hands"] = HandsSuite,
-        ["workviews"] = CheckWorkView,
+        ["reach"] = ReachSuite,
+        ["workviews"] = WorkViewsSuite,
         ["fixtures"] = FixturesSuite,
         ["tools"] = ToolsSuite,
         ["drill-nav"] = DrillNavSuite,
@@ -86,6 +87,11 @@ public partial class AutoPlayer : Node
             _failures.Add(e.ToString());
             GD.PushError("AUTOTEST 예외: " + e);
         }
+        // 조준선 질의처럼 프레임마다 만든 C# 쪽 껍데기가 끝날 때 한꺼번에 남으면 Godot .NET 종료가 FATAL로 멈출 때가 있다.
+        // 끝내기 전에 거두고 두 프레임 동안 풀리게 둔다.
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        await Frame(2);
         Finish();
     }
 
@@ -323,38 +329,6 @@ public partial class AutoPlayer : Node
         await Perform("switch.C1.on");
         Step(HandSeconds);
         Check(_main.Shocks == 1 && Snap.LightsBrightness > 0.5, "스위치를 내리고 퓨즈를 다시 꽂았는데 등이 돌아오지 않았다");
-    }
-
-    /// <summary>F 작업 시점: 카메라가 장비 앞에 붙고, 그 장비의 물체를 모두 마우스 포인터로 가리킬 수 있다.</summary>
-    async Task CheckWorkView()
-    {
-        var stations = new (string Enter, string[] Targets)[]
-        {
-            ("switch.C2", new[] { "bus", "switch.C1", "switch.C8", "fuse.C1", "fuse.C8", "terminal.C1", "terminal.C8" }),
-            ("strainer.cover", new[] { "strainer.bolt.1", "strainer.bolt.2", "strainer.bolt.3", "strainer.bolt.4", "strainer.cover", "wash_bucket" }),
-            ("locker.fuse", new[] { "locker.fuse", "locker.wood_wedge", "locker.timber_shore", "discard" }),
-            ("panel", new[] { "panel" }),
-        };
-        foreach (var (enter, targets) in stations)
-        {
-            if (await Approach(enter) == null) continue;
-            await Frame();
-            Check(_main.Hands.ToggleWorkView(), $"'{enter}'를 보고 F를 눌렀는데 작업 시점이 아니다");
-            await ToSignal(GetTree().CreateTimer(0.8), SceneTreeTimer.SignalName.Timeout);
-            var cam = _main.Player.Camera;
-            var size = cam.GetViewport().GetVisibleRect().Size;
-            foreach (var id in targets)
-            {
-                // 헤드리스에서는 마우스 포인터 좌표를 믿을 수 없어서, 포인터가 그 점에 있을 때와 같은 조준선을 직접 쏜다.
-                var it = _main.Sub.Interactables[id];
-                var screen = cam.UnprojectPosition(it.GlobalPosition);
-                bool onScreen = screen.X >= 0 && screen.Y >= 0 && screen.X <= size.X && screen.Y <= size.Y;
-                var hit = _main.Hands.RayPickAt(screen);
-                Check(onScreen && hit == it, $"'{_main.Player.WorkStation}' 작업 시점에서 '{id}'를 가리켰는데 잡힌 것: {hit?.Id ?? "없음"} (화면 {screen} / {size})");
-            }
-            _main.Hands.ToggleWorkView();
-            Check(!_main.Player.InWorkView, "F로 작업 시점에서 나오지 않았다");
-        }
     }
 
     /// <summary>절차를 명령으로 펼치고, 명령마다 해당 물체에 손동작을 한다.</summary>

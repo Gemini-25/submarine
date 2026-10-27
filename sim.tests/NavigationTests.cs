@@ -312,11 +312,11 @@ public class NavigationTests
         sim.Inject("NAV-01");
         var log = new List<SimEvent>();
         var cmds = Proc(sim, "proc.gyro.bearing").Where(c => c.Cmd != "gyro.switch.off").ToList();
-        int cap = cmds.FindIndex(c => c.Cmd == "gyro.cap.open");
+        int cap = cmds.FindIndex(c => c.Cmd == "gyro.lid.open");
         Follow(sim, cmds.Take(cap), log, wait: false);
         Assert.DoesNotContain(log, e => e.Kind == SimEventKind.Pinch);
         Follow(sim, cmds.Skip(cap).Take(1), log, wait: false);
-        Assert.Contains(log, e => e.Kind == SimEventKind.Pinch && e.Subject == "gyro.cap.open");
+        Assert.Contains(log, e => e.Kind == SimEventKind.Pinch && e.Subject == "gyro.lid.open");
     }
 
     [Fact]
@@ -325,9 +325,9 @@ public class NavigationTests
         var sim = UnderWay();
         var log = new List<SimEvent>();
         var cmds = Proc(sim, "proc.gyro.bearing");
-        int cap = cmds.ToList().FindIndex(c => c.Cmd == "gyro.cap.open");
+        int cap = cmds.ToList().FindIndex(c => c.Cmd == "gyro.lid.open");
         Follow(sim, cmds.Take(cap + 1), log, wait: false); // 기다리지 않는다
-        Assert.Contains(log, e => e.Kind == SimEventKind.Pinch && e.Subject == "gyro.cap.open");
+        Assert.Contains(log, e => e.Kind == SimEventKind.Pinch && e.Subject == "gyro.lid.open");
     }
 
     [Fact]
