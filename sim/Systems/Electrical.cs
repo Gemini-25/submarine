@@ -254,6 +254,8 @@ static class DeviceRules
             return false;
         if (d == w.Fan)
             return w.Part("fan.motor").Get("stalled") < 0.5;
+        // 베어링을 빼 놓으면 펌프 축이 돌지 않는다 (WP10).
+        if (d == w.Pump && !PumpBearing.Present(w)) return false;
         return true;
     }
 
@@ -262,7 +264,8 @@ static class DeviceRules
         if (d == w.Pump)
         {
             var pr = w.T.Pump;
-            double drag = PartEffects.Effective(w, w.Part("pump.bearing"), "drag");
+            // 기름 잔이 차 있으면 저항이 준다 (WP10). 규칙이 없으면 wear 곡선의 drag 그대로.
+            double drag = PumpBearing.Drag(w);
             // 덮개가 열려 공기를 빨면 막힌 것처럼 헛돈다. 바구니가 없으면 막힘도 없다.
             double starve = Systems.WaterSystem.PumpStarvation(w);
             return Math.Max(0, 1 - pr.ClogLoadDrop * starve + pr.DragLoadGain * drag);

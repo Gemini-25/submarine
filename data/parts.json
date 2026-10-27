@@ -257,16 +257,64 @@
     "kind": "fan_motor",
     "wearPerSecond": 2e-06,
     "props": {
-      "stalled": 0
+      "stalled": 0,
+      "guardNut1": 1,
+      "guardNut2": 1,
+      "guardOpen": 0,
+      "hubNut": 1,
+      "present": 1,
+      "spinLife": 0,
+      "spinArmed": 0,
+      "hubLife": 0,
+      "hubArmed": 0,
+      "bearingWorn": 0
     },
-    "wearFault": "AIR-01"
+    "wearFault": "AIR-01",
+    "visible": [
+      "guardNut1",
+      "guardNut2",
+      "guardOpen",
+      "hubNut",
+      "present"
+    ],
+    "timers": [
+      {
+        "prop": "spinLife",
+        "perSecond": 1,
+        "while": "device.vent_fan.running == 1",
+        "armed": "spinArmed",
+        "onExpire": [
+          { "set": "stalled", "to": 1 },
+          { "event": "TempRepairFailed", "detail": "AIR-01" }
+        ]
+      },
+      {
+        "prop": "hubLife",
+        "perSecond": 1,
+        "while": "self.hubNut < 0.5 && device.vent_fan.running == 1",
+        "armed": "hubArmed",
+        "onExpire": [
+          { "set": "stalled", "to": 1 }
+        ]
+      }
+    ]
   },
   "scrubber.canister": {
     "kind": "canister",
     "spare": true,
     "props": {
-      "saturation": 0
-    }
+      "saturation": 0,
+      "clamp1Open": 0,
+      "clamp2Open": 0,
+      "lidOpen": 0,
+      "present": 1
+    },
+    "visible": [
+      "clamp1Open",
+      "clamp2Open",
+      "lidOpen",
+      "present"
+    ]
   },
   "pump.motor": {
     "kind": "pump_motor",
@@ -276,9 +324,43 @@
     "kind": "bearing",
     "spare": true,
     "wearPerSecond": 2e-05,
+    "visible": [
+      "capBolt1",
+      "capBolt2",
+      "capBolt3",
+      "capBolt4",
+      "capOpen",
+      "lube",
+      "oil",
+      "present"
+    ],
     "props": {
-      "drag": 0
+      "capBolt1": 1,
+      "capBolt2": 1,
+      "capBolt3": 1,
+      "capBolt4": 1,
+      "capOpen": 0,
+      "drag": 0,
+      "lube": 0,
+      "lubeArmed": 0,
+      "lubeLife": 0,
+      "lubePatch": 0,
+      "oil": 0,
+      "present": 1
     },
+    "timers": [
+      {
+        "prop": "lubeLife",
+        "perSecond": 1,
+        "while": "device.bilge_pump.running == 1",
+        "armed": "lubeArmed",
+        "onExpire": [
+          { "set": "lube", "to": 0 },
+          { "if": "self.lubePatch >= 0.5", "event": "TempRepairFailed", "detail": "WTR-02" },
+          { "set": "lubePatch", "to": 0 }
+        ]
+      }
+    ],
     "wearCurves": {
       "drag": [
         [

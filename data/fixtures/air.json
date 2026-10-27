@@ -1,0 +1,183 @@
+{
+  "params": {
+    "spinLife": 480,
+    "hubLife": 300
+  },
+  "fixtures": [
+    {
+      "id": "fan.guard.nut.{n}",
+      "bind": { "n": "1..2" },
+      "part": "fan.motor",
+      "kind": "fastener",
+      "zone": "mid",
+      "prop": "guardNut{n}",
+      "group": "guard",
+      "verbs": {
+        "loosen": { "tool": "hand", "noise": "latch", "rejectIf": [ { "if": "self.guardOpen == 1", "reason": "guard_open" } ] },
+        "tighten": { "tool": "hand", "noise": "latch", "rejectIf": [ { "if": "self.guardOpen == 1", "reason": "guard_open" } ] }
+      }
+    },
+    {
+      "id": "fan.guard",
+      "part": "fan.motor",
+      "kind": "cover",
+      "zone": "mid",
+      "prop": "guardOpen",
+      "gesture": "down",
+      "verbs": {
+        "open": {
+          "tool": "hand",
+          "noise": "cover",
+          "rejectIf": [
+            { "if": "self.guardNut1 == 1", "reason": "guard_nuts_tight" },
+            { "if": "self.guardNut2 == 1", "reason": "guard_nuts_tight" }
+          ]
+        },
+        "close": { "tool": "hand", "noise": "cover" }
+      }
+    },
+    {
+      "id": "fan.hub",
+      "part": "fan.motor",
+      "kind": "fastener",
+      "zone": "mid",
+      "prop": "hubNut",
+      "group": "hub",
+      "verbs": {
+        "loosen": {
+          "tool": "wrench",
+          "noise": "wrench",
+          "rejectIf": [ { "if": "self.guardOpen == 0", "reason": "guard_closed" } ],
+          "hazards": [ { "if": "device.vent_fan.running == 1", "hazard": "pinch" } ],
+          "set": { "hubLife": "$hubLife", "hubArmed": 1 }
+        },
+        "tighten": {
+          "tool": "wrench",
+          "noise": "wrench",
+          "rejectIf": [ { "if": "self.guardOpen == 0", "reason": "guard_closed" } ],
+          "hazards": [ { "if": "device.vent_fan.running == 1", "hazard": "pinch" } ],
+          "set": { "hubArmed": 0 }
+        }
+      }
+    },
+    {
+      "id": "fan.bearing",
+      "part": "fan.motor",
+      "kind": "socket",
+      "zone": "mid",
+      "needReason": "need_fan_bearing",
+      "verbs": {
+        "pull": {
+          "tool": "hand",
+          "noise": "fuse",
+          "rejectIf": [
+            { "if": "self.guardOpen == 0", "reason": "guard_closed" },
+            { "if": "self.hubNut == 1", "reason": "hub_tight" }
+          ],
+          "hazards": [
+            { "if": "device.vent_fan.running == 1", "hazard": "pinch" },
+            { "if": "circuit.C2.energized == 1", "hazard": "shock" }
+          ],
+          "set": { "stalled": 1, "spinArmed": 0 },
+          "gives": [ { "if": "self.bearingWorn >= 0.5", "item": "fan_bearing_worn" }, { "item": "fan_bearing" } ]
+        },
+        "insert": {
+          "noise": "fuse",
+          "rejectIf": [ { "if": "self.hubNut == 1", "reason": "hub_tight" } ],
+          "hazards": [ { "if": "circuit.C2.energized == 1", "hazard": "shock" } ],
+          "accepts": {
+            "fan_bearing": { "set": { "stalled": 0, "spinArmed": 0, "bearingWorn": 0 }, "renew": true },
+            "fan_bearing_worn": { "set": { "stalled": 1 } }
+          }
+        }
+      }
+    },
+    {
+      "id": "fan.blades",
+      "part": "fan.motor",
+      "kind": "work",
+      "zone": "mid",
+      "verbs": {
+        "spin": {
+          "gesture": "rotate",
+          "tool": "hand",
+          "noise": "switch",
+          "rejectIf": [
+            { "if": "self.guardOpen == 0", "reason": "guard_closed" },
+            { "if": "self.present == 0", "reason": "fan_bearing_out" }
+          ],
+          "hazards": [ { "if": "device.vent_fan.running == 1", "hazard": "pinch" } ],
+          "effects": [
+            { "if": "self.stalled >= 0.5 && circuit.C2.energized == 1 && device.vent_fan.enabled == 1 && battery.voltage >= 0.5", "quality": "temporary" },
+            { "if": "self.stalled >= 0.5 && circuit.C2.energized == 1 && device.vent_fan.enabled == 1 && battery.voltage >= 0.5", "arm": "spinLife", "to": "$spinLife" },
+            { "if": "self.stalled >= 0.5 && circuit.C2.energized == 1 && device.vent_fan.enabled == 1 && battery.voltage >= 0.5", "set": "stalled", "to": 0 }
+          ]
+        }
+      }
+    },
+    {
+      "id": "fan.motor",
+      "part": "fan.motor",
+      "kind": "work",
+      "zone": "mid",
+      "touch": {
+        "temp": "device.vent_fan.temp",
+        "vibrating": "device.vent_fan.running == 1"
+      }
+    },
+    {
+      "id": "scrubber.clamp.{n}",
+      "bind": { "n": "1..2" },
+      "part": "scrubber.canister",
+      "kind": "lever",
+      "zone": "mid",
+      "prop": "clamp{n}Open",
+      "positions": [ "close", "open" ],
+      "verbs": {
+        "close": { "tool": "hand", "noise": "latch", "rejectIf": [ { "if": "self.lidOpen == 1", "reason": "lid_open" } ] },
+        "open": { "tool": "hand", "noise": "latch" }
+      }
+    },
+    {
+      "id": "scrubber.lid",
+      "part": "scrubber.canister",
+      "kind": "cover",
+      "zone": "mid",
+      "prop": "lidOpen",
+      "verbs": {
+        "open": {
+          "tool": "hand",
+          "noise": "cover",
+          "rejectIf": [
+            { "if": "self.clamp1Open == 0", "reason": "clamp_shut" },
+            { "if": "self.clamp2Open == 0", "reason": "clamp_shut" }
+          ]
+        },
+        "close": { "tool": "hand", "noise": "cover" }
+      }
+    },
+    {
+      "id": "scrubber.canister",
+      "part": "scrubber.canister",
+      "kind": "socket",
+      "zone": "mid",
+      "needReason": "need_canister",
+      "verbs": {
+        "pull": {
+          "tool": "hand",
+          "noise": "cover",
+          "rejectIf": [ { "if": "self.lidOpen == 0", "reason": "lid_closed" } ],
+          "gives": [ { "if": "self.saturation < 0.05", "item": "canister" }, { "item": "canister_spent" } ]
+        },
+        "insert": {
+          "noise": "cover",
+          "rejectIf": [ { "if": "self.lidOpen == 0", "reason": "lid_closed" } ],
+          "accepts": {
+            "canister": { "set": { "saturation": 0 }, "renew": true },
+            "canister_spent": {}
+          }
+        }
+      }
+    }
+  ]
+}

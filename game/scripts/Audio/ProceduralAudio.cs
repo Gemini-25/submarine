@@ -72,8 +72,6 @@ public partial class ProceduralAudio : Node3D
         Enabled = DisplayServer.GetName() != "headless";
         if (!Enabled) return;
 
-        // 송풍 팬 덮개 (M1부터 소리 쪽이 자리를 정한다).
-        Geo.Cyl(sub, 0.18f, 0.03f, new Vector3(4.0f, Submarine.Height - 0.015f, 0), Geo.DarkSteel, 16);
         _bell = new AlarmBellVoice();
         Add(_bell, sub.SoundSpots["bell"], 0, 20);
         _spark = new FuseBlowVoice();
