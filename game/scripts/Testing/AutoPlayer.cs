@@ -486,7 +486,15 @@ public partial class AutoPlayer : Node
             }
             var v = f.Def.Verbs[row.Verb];
             // 레버는 한 칸씩 움직인다. 지금 자리로 가는 손동작은 없다 (시뮬레이션도 already로 거부한다).
-            if (f.Def.Kind == FixtureKind.Lever && (int)Math.Round(_main.Sub.PartProp(Snap, f.PartId, f.Prop!)) == f.Def.Positions.IndexOf(row.Verb)) continue;
+            int leverNow = f.Def.Kind == FixtureKind.Lever ? (int)Math.Round(_main.Sub.PartProp(Snap, f.PartId, f.Prop!)) : -1;
+            if (f.Def.Kind == FixtureKind.Lever && leverNow == f.Def.Positions.IndexOf(row.Verb)) continue;
+            // 이웃하지 않은 자리(네 자리 흡입 선택기의 셋째, 넷째, WP18)로 가는 손동작은 그쪽으로 한 칸 옮긴다.
+            string expected = row.Command;
+            if (leverNow >= 0)
+            {
+                int goal = f.Def.Positions.IndexOf(row.Verb);
+                expected = $"{f.Id}.{f.Def.Positions[leverNow + Math.Sign(goal - leverNow)]}";
+            }
             string hand = v.Hold != null ? f.Expand(v.Hold) : row.Verb == "insert" ? f.Expand(v.Accepts.Keys.First()) : "";
             var ctx = new HandContext(Snap, v.Tool ?? "hand", hand);
             if (!_main.Sub.Binder.TryResolve(row.Command, out var target, out var motion) || target != f.Id)
@@ -495,7 +503,7 @@ public partial class AutoPlayer : Node
                 continue;
             }
             var got = it.CommandFor(ctx, motion);
-            Check(got == row.Command, $"'{row.Command}'의 손동작({motion}, 도구 {ctx.Tool}, 쥔 것 '{hand}')이 낸 명령: {got ?? "없음"}");
+            Check(got == expected, $"'{row.Command}'의 손동작({motion}, 도구 {ctx.Tool}, 쥔 것 '{hand}')이 낸 명령: {got ?? "없음"}");
         }
         GD.Print($"AUTOTEST: 장치 {catalog.Instances.Count}개, 명령 {catalog.Rows.Count}개를 손동작으로 확인");
     }

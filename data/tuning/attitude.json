@@ -1,0 +1,7 @@
+{
+  "suction": {
+    "tankFactor": 0.8,
+    "chamberLineLps": 0.8,
+    "dryL": 0.5
+  }
+}
