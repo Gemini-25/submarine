@@ -2,9 +2,10 @@
   "cues": {
     "winch.creep": { "sense": "Sight", "anchor": "winch.drum", "q": "part.winch.drum.prop.slip", "map": [[0, 0], [0.01, 0.4], [0.2, 1]], "caption": "cue.winch.creep" },
     "winch.zip": { "sense": "Sound", "anchor": "winch.drum", "q": "part.winch.drum.prop.slip", "map": [[0.005, 0], [0.05, 0.5], [0.3, 1]], "caption": "cue.winch.zip" },
+    "winch.motor": { "sense": "Sound", "anchor": "hook_winch", "q": "device.hook_winch.running", "map": [[0, 0], [1, 1]], "caption": "cue.winch.motor" },
     "winch.hauling": { "sense": "Sound", "anchor": "hook_winch", "q": "part.winch.drum.prop.motion", "map": [[-0.25, 1], [-0.01, 0]], "caption": "cue.winch.hauling" },
     "winch.lining.thin": { "sense": "Sight", "anchor": "winch.lining", "q": "part.winch.brake.prop.lining", "while": "part.winch.brake.prop.present", "map": [[0.2, 1], [0.6, 0]], "caption": "cue.winch.lining.thin" },
-    "winch.brake.smell": { "sense": "Smell", "anchor": "winch.cover", "q": "part.winch.brake.prop.tempC", "map": [[50, 0], [90, 1]], "caption": "cue.winch.brake.smell" },
+    "winch.brake.smell": { "sense": "Smell", "anchor": "winch.cover", "q": "part.winch.brake.prop.tempC", "map": [[35, 0], [60, 1]], "caption": "cue.winch.brake.smell" },
     "siphon.tape": { "sense": "Sight", "anchor": "siphon.pen", "q": "part.siphon.state.prop.tape", "map": [[0, 0], [1, 1]], "caption": "cue.siphon.tape" },
     "siphon.ink.line": { "sense": "Sight", "anchor": "siphon.pen", "q": "part.siphon.state.prop.trace", "map": [[0, 0], [1, 1]], "caption": "cue.siphon.ink.line" },
     "siphon.wave": { "sense": "Sight", "anchor": "siphon.pen", "q": "part.siphon.state.prop.signal", "map": [[0, 0], [1, 1]], "caption": "cue.siphon.wave" },

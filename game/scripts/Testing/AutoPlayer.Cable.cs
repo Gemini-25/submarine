@@ -32,11 +32,11 @@ public partial class AutoPlayer
         await Perform("siphon.testkey.press");
         Step(2);
         await Frame(2);
-        double wave = Cue("siphon.wave"), line = Cue("siphon.ink.line");
+        double wave = CableCue("siphon.wave"), line = CableCue("siphon.ink.line");
         Check(wave > 0.5 && line < 0.7, $"막힌 사이펀에 시험 키를 눌렀는데 기록이 정상처럼 보인다 (펜 흔들림 {wave:F2}, 잉크 줄 {line:F2})");
 
         await FollowCable("proc.siphon.clear");
-        Check(Cue("siphon.wave") > 0.5 && Cue("siphon.ink.line") > 0.95, "모세관을 청소했는데 시험 기록이 끊긴다");
+        Check(CableCue("siphon.wave") > 0.5 && CableCue("siphon.ink.line") > 0.95, "모세관을 청소했는데 시험 기록이 끊긴다");
 
         double limit = Snap.Mission.TimeLimitSeconds;
         for (int i = 0; i < 150 && Snap.Status == MissionStatus.Running && Snap.TimeSeconds < limit; i++)
@@ -54,7 +54,7 @@ public partial class AutoPlayer
         await Frame(2);
     }
 
-    double Cue(string id)
+    double CableCue(string id)
     {
         foreach (var c in Snap.Cues) if (c.Id == id) return c.Value;
         return 0;
@@ -70,7 +70,7 @@ public partial class AutoPlayer
         return (int)Math.Round(_main.Sub.PartProp(Snap, f.PartId, f.Prop!)) == f.Def.Positions.IndexOf(cmd[(dot + 1)..]);
     }
 
-    /// <summary>절차를 공구판 왕복과 함께 손동작으로. 감기 시험은 줄이 5m 줄 때까지, 마지막 멈춤은 60초 지켜본다.</summary>
+    /// <summary>절차를 공구판 왕복과 함께 손동작으로. 감기 시험은 줄이 5m 줄어들 때까지, 마지막 명령(전동기 끄기) 뒤에는 60초 지켜본다.</summary>
     async Task FollowCable(string procedureId)
     {
         var proc = Data.Procedure(procedureId);
@@ -84,7 +84,7 @@ public partial class AutoPlayer
             else await Perform(cmd);
             double wait = HandSeconds;
             if (cmd == "winch.control.haul") wait = 5 / Data.Tuning.Cable!.Winch.HaulMps + 1;
-            else if (cmd == "winch.control.stop" && i == commands.Count - 1) wait = 60;
+            else if (i == commands.Count - 1 && cmd == "device.hook_winch.off") wait = 60;
             Step(wait);
             await Frame();
         }

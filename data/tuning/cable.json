@@ -17,9 +17,9 @@
       "liningWearPerSlipM": 0.002,
       "liningWearPerHaulSecond": 0.00005,
       "dragWearMultiplier": 4,
-      "dragHeatW": 400,
-      "coolingWPerC": 6,
-      "heatCapacityJPerC": 3000,
+      "dragHeatW": 1000,
+      "coolingWPerC": 20,
+      "heatCapacityJPerC": 400,
       "slipNoise": 15,
       "steamAssist": [[0, 0.5], [0.6, 1]]
     },

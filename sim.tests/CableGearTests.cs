@@ -48,10 +48,10 @@ public class CableGearTests
     }
 
     /// <summary>
-    /// 절차를 공구판 왕복을 끼워 펼치고 사람 속도로 한다. 감기 시험은 줄이 5m 줄 때까지, 마지막 멈춤은 60초 지켜본다.
-    /// skip이 참인 명령은 건너뛴다 (위험 건너뛰기 사례).
+    /// 절차를 공구판 왕복을 끼워 펼치고 사람 속도로 한다. 감기 시험은 줄이 5m 줄 때까지, 마지막 명령(전동기 끄기) 뒤에는 60초 지켜본다.
+    /// skip이 참인 명령은 건너뛴다 (위험 건너뛰기 사례). peak이 있으면 틱마다 손동작 소음(지금 소음 − 돌고 있는 장비 소음)의 최댓값을 모은다.
     /// </summary>
-    static List<SimEvent> Follow(Simulation sim, string procId, Func<string, bool>? skip = null)
+    static List<SimEvent> Follow(Simulation sim, string procId, Func<string, bool>? skip = null, double[]? peak = null)
     {
         var cmds = ProcedureRunner.ExpandWithBelt(sim, TestData.Data.Procedure(procId)).Select(c => c.Cmd).ToList();
         var events = new List<SimEvent>();
@@ -61,13 +61,43 @@ public class CableGearTests
             if (skip?.Invoke(c) == true || LeverAlreadyThere(sim, c)) continue;
             double wait = Hand;
             if (c == "winch.control.haul") wait = 5 / TestData.T.Cable!.Winch.HaulMps + 1;
-            else if (c == "winch.control.stop" && i == cmds.Count - 1) wait = 60;
-            events.AddRange(Do(sim, c, wait));
+            else if (i == cmds.Count - 1 && c == "device.hook_winch.off") wait = 60;
+            if (peak == null) { events.AddRange(Do(sim, c, wait)); continue; }
+            sim.Cmd(c);
+            for (int k = 0; k < TestData.Ticks(wait); k++)
+            {
+                sim.Step();
+                events.AddRange(sim.DrainEvents());
+                if (P(sim, "winch.drum", "slip") <= 0) peak[0] = Math.Max(peak[0], ActionNoise(sim));
+            }
         }
         return events;
     }
 
-    static Simulation WithExtraParts(string json)
+    /// <summary>지금 소음에서 돌고 있는 장비의 소음을 뺀 것 (손동작 소음).</summary>
+    static double ActionNoise(Simulation sim)
+    {
+        var w = sim.World;
+        double devices = 0;
+        for (int d = 0; d < w.Devices.Length; d++)
+            if (w.Devices[d].Running) devices += w.Data.Devices[d].Noise * (w.Data.Devices[d].Kind == DeviceKind.Throttle ? w.Devices[d].Throttle : 1);
+        return sim.Q("noise.current") - devices;
+    }
+
+    /// <summary>WP13처럼 증폭관 siphon.tube.1을 사이펀 기록기 장비의 parts에 넣은 데이터.</summary>
+    static Simulation WithAmplifierTube(double present, double filament = 1) => WithData(dir =>
+    {
+        File.WriteAllText(Path.Combine(dir, "parts", "zz-test.json"),
+            $$"""{ "siphon.tube.1": { "kind": "vacuum_tube", "props": { "filament": {{filament}}, "present": {{present}} } } }""");
+        var file = Path.Combine(dir, "devices.json");
+        var devices = JsonNode.Parse(File.ReadAllText(file))!.AsObject();
+        devices["siphon_recorder"]!["parts"] = new JsonArray("siphon.tube.1");
+        File.WriteAllText(file, devices.ToJsonString());
+    });
+
+    static Simulation WithExtraParts(string json) => WithData(dir => File.WriteAllText(Path.Combine(dir, "parts", "zz-test.json"), json));
+
+    static Simulation WithData(Action<string> edit)
     {
         var dir = Directory.CreateTempSubdirectory("deepline-cable-");
         try
@@ -78,7 +108,7 @@ public class CableGearTests
                 Directory.CreateDirectory(Path.GetDirectoryName(to)!);
                 File.Copy(f, to);
             }
-            File.WriteAllText(Path.Combine(dir.FullName, "parts", "zz-test.json"), json);
+            edit(dir.FullName);
             return new Simulation(GameData.LoadFromDirectory(dir.FullName), 1);
         }
         finally
@@ -135,6 +165,8 @@ public class CableGearTests
         Assert.True(sim.Measure("stethoscope", "winch.drum") > 0.3);
         // 소음표의 미끄럼 소음이 지금 소음에 더해진다
         Assert.True(sim.Q("noise.current") >= TestData.T.Cable!.Winch.SlipNoise);
+        // 미끄럼 마찰만으로는 띠 덮개가 뜨겁지 않다 (끌림과 갈린다)
+        Assert.True(TouchBand(sim, "winch.cover") <= 1);
     }
 
     [Fact]
@@ -181,8 +213,11 @@ public class CableGearTests
         var sim = TestLoad();
         sim.Inject("CBL-01");
         sim.Run(3);
-        var events = Follow(sim, "proc.winch.reline");
+        var peak = new double[1];
+        var events = Follow(sim, "proc.winch.reline", peak: peak);
         Assert.False(Has(events, SimEventKind.Pinch) || Has(events, SimEventKind.Shock) || Has(events, SimEventKind.Hurt) || Has(events, SimEventKind.LoadLost));
+        Assert.Equal(0, sim.Q("device.hook_winch.running")); // 시험이 끝나면 전동기를 끈다
+        Assert.InRange(peak[0], 6, 20); // 교범 44쪽: 보통 등급 (교범 11쪽 6~20)
         Assert.Contains(events, e => e.Kind == SimEventKind.PartRepaired && e.Subject == "winch.brake" && e.Detail == "CBL-01");
         var brake = sim.World.Part("winch.brake");
         Assert.Equal("", brake.ActiveFault);
@@ -244,6 +279,66 @@ public class CableGearTests
         Assert.Contains(sim.DrainEvents(), e => e.Kind == SimEventKind.Pinch && e.Subject == "winch.lining.pull");
     }
 
+    /// <summary>멈춤쇠를 걸고 전동기를 끈 채 라이닝을 빼고 새 라이닝을 쥔다.</summary>
+    static Simulation LiningOutWithNewInHand()
+    {
+        var sim = TestLoad();
+        sim.Inject("CBL-01");
+        foreach (var c in new[] { "winch.pawl.engage", "tool.wrench", "winch.cover.bolt.1.loosen", "winch.cover.bolt.2.loosen", "tool.hand",
+                     "winch.cover.open", "winch.lining.pull", "hand.drop", "locker.take.brake_lining" })
+            Do(sim, c);
+        return sim;
+    }
+
+    [Fact]
+    public void Inserting_into_a_hauling_drum_pinches()
+    {
+        var sim = LiningOutWithNewInHand();
+        Do(sim, "device.hook_winch.on");
+        Do(sim, "winch.control.haul");
+        sim.Cmd("winch.lining.insert");
+        sim.Run(0.1);
+        Assert.Contains(sim.DrainEvents(), e => e.Kind == SimEventKind.Pinch && e.Subject == "winch.lining.insert");
+
+        // 대조: 레버를 멈춤에 두고 전동기를 끄면 끼이지 않는다
+        var safe = LiningOutWithNewInHand();
+        Assert.DoesNotContain(Do(safe, "winch.lining.insert"), e => e.Kind == SimEventKind.Pinch);
+    }
+
+    [Fact]
+    public void Reaching_into_a_free_spinning_drum_pinches()
+    {
+        var sim = TestLoad();
+        sim.Inject("CBL-01");
+        foreach (var c in new[] { "tool.wrench", "winch.cover.bolt.1.loosen", "winch.cover.bolt.2.loosen", "tool.hand", "winch.cover.open" })
+            Do(sim, c);
+        sim.Cmd("winch.lining.pull"); // 멈춤쇠 없이: 끼이고 드럼이 헛돈다
+        sim.Run(TestData.T.Crew.PinchStunSeconds + 0.3);
+        Assert.True(P(sim, "winch.drum", "slip") > 0.5);
+        sim.DrainEvents();
+        sim.Cmd("winch.lining.insert"); // 쥐고 있던 헌 라이닝을 헛도는 드럼에 다시 끼운다
+        sim.Run(0.1);
+        Assert.Contains(sim.DrainEvents(), e => e.Kind == SimEventKind.Pinch && e.Subject == "winch.lining.insert");
+    }
+
+    /// <summary>띠 덮개를 맨손으로 만져 본 온도 단계 (0 차갑다 ~ 4 손을 댈 수 없다).</summary>
+    static double TouchBand(Simulation sim, string fixture)
+    {
+        sim.Cmd("tool.hand");
+        sim.Cmd($"{fixture}.touch");
+        sim.Step();
+        return sim.DrainEvents().Last(e => e.Kind == SimEventKind.Touched).Value;
+    }
+
+    /// <summary>줄 계수기가 5m 줄어들 때까지 감는다. 걸린 시간(초)을 돌려준다.</summary>
+    static double HaulFiveMetres(Simulation sim)
+    {
+        double from = sim.Q("reading.winch.line");
+        int ticks = 0;
+        while (from - sim.Q("reading.winch.line") < 5 && ticks < TestData.Ticks(120)) { sim.Step(); ticks++; }
+        return ticks / (double)TestData.T.TicksPerSecond;
+    }
+
     // ── CBL-01 숨은 결함과 헛수리 ────────────────────────
 
     /// <summary>정식 수리를 하되 턴버클을 다른 눈금에 둔다 (끝까지 조인 뒤 되돌린 횟수).</summary>
@@ -276,19 +371,28 @@ public class CableGearTests
         var good = RelinedAt(3);
         var tight = RelinedAt(0);
         Assert.Equal(10, P(tight, "winch.brake", "adjust"));
+        var lining = new Dictionary<Simulation, double>();
         foreach (var sim in new[] { good, tight })
         {
+            Do(sim, "device.hook_winch.on");
             Do(sim, "winch.pawl.release");
+            lining[sim] = P(sim, "winch.brake", "lining");
             sim.Cmd("winch.control.haul");
         }
-        double lg = P(good, "winch.brake", "lining"), lt = P(tight, "winch.brake", "lining");
-        double tg = good.Q("reading.winch.line"), tt = tight.Q("reading.winch.line");
-        good.Run(20);
-        tight.Run(20);
-        double wearGood = lg - P(good, "winch.brake", "lining"), wearTight = lt - P(tight, "winch.brake", "lining");
-        Assert.Equal(4, wearTight / wearGood, 6);
-        Assert.True(P(tight, "winch.brake", "tempC") > P(good, "winch.brake", "tempC") + 0.5, "끌리는 브레이크가 데워지지 않는다");
-        Assert.True(tg - good.Q("reading.winch.line") > (tt - tight.Q("reading.winch.line")) * 1.2, "끌리는 윈치가 덜 느리다");
+        // 절차의 시험 감기(5m)를 한다. 끌리면 느리다.
+        double tGood = HaulFiveMetres(good), tTight = HaulFiveMetres(tight);
+        Assert.True(tTight > tGood * 1.2, $"끌리는 윈치가 덜 느리다 ({tTight:F1}초 / {tGood:F1}초)");
+        double rateGood = (lining[good] - P(good, "winch.brake", "lining")) / tGood;
+        double rateTight = (lining[tight] - P(tight, "winch.brake", "lining")) / tTight;
+        Assert.Equal(4, rateTight / rateGood, 2);
+        // 감은 직후 띠 덮개: 끌리면 뜨겁고(단계 3 이상) 타는 냄새가 난다. 맞으면 차갑고 냄새가 없다 (교범 44 가르기).
+        Assert.True(TouchBand(tight, "winch.cover") >= 3);
+        Assert.Equal(0, TouchBand(good, "winch.cover"));
+        Assert.True(tight.Q("cue.winch.brake.smell") >= 0.3);
+        Assert.Equal(0, good.Q("cue.winch.brake.smell"));
+        // 오래 감아도 화상 기준에는 이르지 않는다
+        Assert.True(P(tight, "winch.brake", "tempC") < TestData.T.Crew.Touch!.BurnAtC);
+
         // 다시 하면(세 눈금 되돌리면) 끌림이 없어진다
         tight.Cmd("winch.control.stop");
         tight.Run(Hand);
@@ -298,7 +402,7 @@ public class CableGearTests
         Do(tight, "winch.control.haul");
         double l2 = P(tight, "winch.brake", "lining");
         tight.Run(5);
-        Assert.Equal(wearGood / 20 * 5, l2 - P(tight, "winch.brake", "lining"), 9);
+        Assert.Equal(rateGood * 5, l2 - P(tight, "winch.brake", "lining"), 9);
     }
 
     [Fact]
@@ -314,6 +418,16 @@ public class CableGearTests
         heavyLoose.Run(10);
         Assert.True(P(heavyLoose, "winch.drum", "slip") > 0.01);
         Assert.Equal("fault", heavyLoose.QS("panel.lamp.cable"));
+        // 다시 하면(창 안으로 두 눈금 조이면) 지워진다
+        Do(heavyLoose, "winch.pawl.engage");
+        Do(heavyLoose, "tool.wrench");
+        Do(heavyLoose, "winch.adjust.up");
+        Do(heavyLoose, "winch.adjust.up");
+        Do(heavyLoose, "tool.hand");
+        Do(heavyLoose, "winch.pawl.release");
+        heavyLoose.Run(10);
+        Assert.Equal(0, P(heavyLoose, "winch.drum", "slip"));
+        Assert.Equal("off", heavyLoose.QS("panel.lamp.cable"));
 
         var heavyGood = RelinedAt(3, load: 300);
         Do(heavyGood, "winch.pawl.release");
@@ -435,8 +549,9 @@ public class CableGearTests
     public void A_clogged_pen_draws_a_dashed_wave_on_test_and_the_panel_stays_quiet()
     {
         var sim = Clogged();
-        sim.Run(3);
+        for (int i = 0; i < TestData.Ticks(3); i++) { sim.Step(); Assert.Equal("off", sim.QS("panel.lamp.cable")); }
         Assert.Equal(0, sim.Q("cue.siphon.wave"));
+        Assert.Equal(1 - TestData.Data.Faults.First(f => f.Id == "CBL-02").Set["clog"], sim.Q("cue.siphon.ink.line"), 9); // 멈춘 펜의 곧은 줄도 점선
         Do(sim, "siphon.testkey.press", 2);
         Assert.Equal(1, sim.Q("cue.siphon.wave"));
         double line = sim.Q("cue.siphon.ink.line");
@@ -444,8 +559,7 @@ public class CableGearTests
         Assert.True(sim.Q("cue.siphon.crust") > 0.3);
         Assert.True(sim.Q("cue.siphon.ink.low") > 0.3);
         Assert.True(sim.Q("cue.siphon.scratch") < 0.5);
-        sim.Run(30);
-        Assert.Equal("off", sim.QS("panel.lamp.cable"));
+        for (int i = 0; i < TestData.Ticks(30); i++) { sim.Step(); Assert.Equal("off", sim.QS("panel.lamp.cable")); }
         Assert.Equal(0, sim.Q("cue.siphon.wave"));
     }
 
@@ -464,8 +578,10 @@ public class CableGearTests
     public void Clearing_the_siphon_by_the_manual_gives_a_clean_wave()
     {
         var sim = Clogged();
-        var events = Follow(sim, "proc.siphon.clear");
+        var peak = new double[1];
+        var events = Follow(sim, "proc.siphon.clear", peak: peak);
         Assert.False(Has(events, SimEventKind.Pinch) || Has(events, SimEventKind.Shock) || Has(events, SimEventKind.Hurt));
+        Assert.InRange(peak[0], 0, 5); // 교범 45쪽: 조용한 수리 (교범 11쪽 0~5)
         Assert.Contains(events, e => e.Kind == SimEventKind.PartRepaired && e.Subject == "siphon.pen" && e.Detail == "CBL-02");
         Assert.Equal("", sim.World.Part("siphon.pen").ActiveFault);
         Assert.Equal(1, sim.Q("cue.siphon.wave"));
@@ -491,6 +607,7 @@ public class CableGearTests
 
         var armUp = Clogged();
         Follow(armUp, "proc.siphon.clear", c => c == "siphon.arm.down");
+        Assert.Equal("", armUp.World.Part("siphon.pen").ActiveFault); // 부품은 고쳐진 것으로 읽힌다
         Assert.Equal(0, armUp.Q("cue.siphon.ink.line"));
         Do(armUp, "siphon.arm.down");
         Do(armUp, "siphon.testkey.press");
@@ -527,14 +644,91 @@ public class CableGearTests
         Assert.Equal(0, dead.Q("cue.siphon.tape"));
         Assert.Equal(0, dead.Q("cue.siphon.wave"));
 
-        // 증폭관이 빠지면 곧은 줄 (잉크 길은 성하다)
-        var flat = WithExtraParts("""{ "siphon.tube.1": { "kind": "vacuum_tube", "props": { "filament": 1, "present": 0 } } }""");
+        // 증폭관이 빠지면 테이프는 흐르고 곧은 줄 (잉크는 펜까지 온다). 관은 WP13처럼 기록기 장비의 parts에 있다.
+        var flat = WithAmplifierTube(present: 0);
         flat.Cmd("siphon.testkey.press");
         flat.Run(2);
         Assert.Equal(1, flat.Q("cue.siphon.tape"));
         Assert.Equal(1, flat.Q("cue.siphon.ink.line"));
         Assert.Equal(0, flat.Q("cue.siphon.wave"));
+
+        // 필라멘트가 끊긴 관도 같다. 성한 관이면 물결이 그려진다.
+        var deadFilament = WithAmplifierTube(present: 1, filament: 0);
+        deadFilament.Cmd("siphon.testkey.press");
+        deadFilament.Run(2);
+        Assert.Equal(1, deadFilament.Q("cue.siphon.tape"));
+        Assert.Equal(0, deadFilament.Q("cue.siphon.wave"));
+        var good = WithAmplifierTube(present: 1);
+        good.Cmd("siphon.testkey.press");
+        good.Run(2);
+        Assert.Equal(1, good.Q("cue.siphon.wave"));
     }
+
+    // ── 테이프가 이상하다 (pair:siphon.trace)의 헛수리 ────
+
+    [Fact]
+    public void Replacing_the_C6_fuse_does_not_clear_a_clogged_pen()
+    {
+        var sim = Clogged();
+        var bind = new Dictionary<string, string> { ["circuit"] = "C6" };
+        foreach (var c in ProcedureRunner.ExpandWithBelt(sim, TestData.Data.Procedure("proc.fuse.replace"), bind).Select(c => c.Cmd))
+        {
+            sim.Cmd(c);
+            sim.Run(Hand);
+        }
+        Do(sim, "siphon.testkey.press", 2);
+        Assert.Equal("CBL-02", sim.World.Part("siphon.pen").ActiveFault);
+        Assert.True(sim.Q("cue.siphon.ink.line") < 0.5);
+        Assert.Equal(TestData.T.Inventory.Locker["fuse"] - 1, sim.Q("inventory.fuse"));
+        Assert.Equal(TestData.T.Inventory.Locker["ink_bottle"], sim.Q("inventory.ink_bottle"));
+    }
+
+    [Fact]
+    public void Clearing_the_siphon_does_not_restart_a_dead_tape_or_a_missing_tube()
+    {
+        var dead = TestData.NewSim();
+        dead.Inject("ELC-01", "fuse.C6");
+        Follow(dead, "proc.siphon.clear");
+        Do(dead, "siphon.testkey.press", 2);
+        Assert.Equal("ELC-01", dead.World.Part("fuse.C6").ActiveFault);
+        Assert.Equal(0, dead.Q("cue.siphon.tape"));
+
+        var flat = WithAmplifierTube(present: 0);
+        Follow(flat, "proc.siphon.clear");
+        Do(flat, "siphon.testkey.press", 2);
+        Assert.Equal(0, flat.Q("cue.siphon.wave"));
+        Assert.Equal(1, flat.Q("cue.siphon.ink.line"));
+    }
+
+    // ── 데이터 맞물림 ────────────────────────────────────
+
+    /// <summary>절차의 되풀이 횟수가 튜닝, 고장, 장치 데이터와 맞는다 (하나만 바꾸면 여기서 걸린다).</summary>
+    [Fact]
+    public void Cable_procedure_counts_match_tuning_and_fixtures()
+    {
+        int Repeat(string proc, string cmdEnd) => TestData.Data.Procedure(proc).Steps.Single(s => s.Cmd != null && s.Cmd.EndsWith(cmdEnd, StringComparison.Ordinal)).Repeat;
+        var w = TestData.T.Cable!.Winch;
+        Assert.Equal((int)w.AdjustMax, Repeat("proc.winch.reline", ".adjust.up"));
+        Assert.InRange(w.AdjustMax - Repeat("proc.winch.reline", ".adjust.down"), w.WindowLow, w.WindowHigh);
+        var file = TestData.Data.Fixtures.Instances.First(f => f.Id == "siphon.pen");
+        double clog = TestData.Data.Faults.First(f => f.Id == "CBL-02").Set["clog"];
+        Assert.Equal((int)Math.Ceiling(clog / file.Params["prickClear"] - 1e-9), Repeat("proc.siphon.clear", ".prick"));
+        var bulb = TestData.Data.Fixtures.Instances.First(f => f.Id == "siphon.bulb");
+        Assert.Equal(bulb.Def.Verbs["prime"].Count, Repeat("proc.siphon.clear", ".prime"));
+        var adjust = TestData.Data.Fixtures.Instances.First(f => f.Id == "winch.adjust");
+        Assert.Equal(w.AdjustMax, adjust.Def.Max);
+    }
+
+    /// <summary>금지 경로 정규식: .fault와 .state는 경로의 끝일 때만 막는다 (부품 ID siphon.state의 상태 값은 읽을 수 있다).</summary>
+    [Theory]
+    [InlineData("part.siphon.state.prop.trace > 0", false)]
+    [InlineData("part.winch.drum.prop.slip > 0.5", false)]
+    [InlineData("part.siphon.state.state == 1", true)]
+    [InlineData("(part.siphon.state.fault)", true)]
+    [InlineData("part.siphon.pen.fault == 'CBL-02'", true)]
+    [InlineData("part.winch.brake.state >= 2", true)]
+    public void Banned_paths_stop_only_at_a_trailing_fault_or_state(string condition, bool banned) =>
+        Assert.Equal(banned, Repair.FixtureActions.BannedPath().IsMatch(condition));
 
     [Fact]
     public void Ink_bottles_run_out_after_the_stock()

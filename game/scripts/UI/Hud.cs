@@ -24,8 +24,9 @@ public partial class Hud : CanvasLayer
         ["unconscious"] = "숨이 막혀 의식을 잃었다.",
         ["timeout"] = "모선이 정한 시간 안에 배를 정상으로 되돌리지 못했다.",
         ["explosion"] = "불꽃이 튀어 수소가 폭발했다.",
-        ["hull_collapse"] = "선체가 수압을 견디지 못하고 무너졌다.",
+        ["hull_collapse"] = "선체가 수압을 견디지 못하고 찌그러졌다.",
         ["swamped"] = "물이 차올라 모스호가 가라앉았다.",
+        ["load_lost"] = "줄 끝이 드럼에서 빠져 시험 하중을 잃었다.",
     };
 
     SimRunner _runner = null!;

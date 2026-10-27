@@ -70,19 +70,22 @@ public static class CueAudio
             v.DepthM = 0;
         }, spot: "battery", db: -6, range: 3),
 
-        // 갈고리 윈치 (CBL-01, WP15): 감는 소리와 브레이크 미끄럼(와이어 쉭 소리와 끽 소리, 미끄럼이 빨라질수록 높아진다).
+        // 갈고리 윈치 (CBL-01, WP15): 전동기 웅웅거림은 전동기 상태를, 드럼 소리는 줄 속도(감기 +, 풀기 −)를 따른다.
+        // 브레이크 미끄럼(와이어가 쉭 하고 풀리고 브레이크가 끽 한다)은 미끄럼이 빨라질수록 커진다.
+        R("winch.motor", s => new WinchVoice(s), (v, c) => v.Running = c.V >= 0.5f, shared: "winch", spot: "winch", range: 10),
         R("winch.hauling", s => new WinchVoice(s), (v, c) =>
         {
-            v.Running = c.V > 0.01f;
-            v.Speed = c.V;
+            v.Speed = (float)Math.Clamp(-PartVal(c.S, "winch.drum", "motion") / 0.25, -1, 1);
             v.Load = (float)Math.Clamp(Reading(c.S, "winch.load") / 400, 0, 1);
         }, shared: "winch", spot: "winch", range: 10),
         R("winch.zip", s => new WinchVoice(s), (v, c) => v.BrakeSlip = c.V, shared: "winch", spot: "winch", range: 10),
 
-        // 사이펀 기록기 (CBL-02, WP15): 테이프 구동, 신호 중의 펜 긁는 소리. 막히면 긁는 소리가 없다.
+        // 사이펀 기록기 (CBL-02, WP15): 테이프 구동, 신호 중의 펜 소리. 마른 긁힘(막힘)은 시험 신호가 있고 펜 팔이 내려가 있을 때만.
         R("siphon.tape", s => new SiphonRecorderVoice(s), (v, c) => v.Running = c.V >= 0.5f, shared: "siphon", spot: "siphon", db: -6, range: 3),
         R("siphon.wave", s => new SiphonRecorderVoice(s), (v, c) => v.Signal = c.V, shared: "siphon", spot: "siphon", db: -6, range: 3),
-        R("siphon.ink.line", s => new SiphonRecorderVoice(s), (v, c) => v.Clog = 1 - c.V, shared: "siphon", spot: "siphon", db: -6, range: 3),
+        R("siphon.ink.line", s => new SiphonRecorderVoice(s), (v, c) =>
+            v.Clog = PartVal(c.S, "siphon.state", "signal") > 0.5 && PartVal(c.S, "siphon.pen", "armUp") < 0.5 ? 1 - c.V : 0,
+            shared: "siphon", spot: "siphon", db: -6, range: 3),
     };
 
     /// <summary>Submarine.SoundSpots에 없는 소리 자리. 송풍 팬은 장면에 장비 물체가 없어 소리 쪽이 자리를 정한다(M1부터).</summary>
@@ -124,6 +127,14 @@ public static class CueAudio
         foreach (var d in s.Devices)
             if (d.Id == id) return d;
         return null;
+    }
+
+    /// <summary>스냅숏의 보이는 부품 값 (parts.json의 visible). 없으면 0.</summary>
+    static double PartVal(SimSnapshot s, string part, string prop)
+    {
+        foreach (var p in s.Parts)
+            if (p.Id == part) return p.Props.TryGetValue(prop, out var v) ? v : 0;
+        return 0;
     }
 
     static double Reading(SimSnapshot s, string id)

@@ -1,7 +1,8 @@
 {
   "params": {
     "testSeconds": 10,
-    "prickClear": 0.25
+    "prickClear": 0.25,
+    "inkDry": 0.1
   },
   "fixtures": [
     {
@@ -90,7 +91,8 @@
             { "if": "self.coverOpen < 0.5", "reason": "cover_closed" }
           ],
           "hazards": [
-            { "if": "device.hook_winch.running == 1 && part.winch.drum.prop.control == 0", "hazard": "pinch" }
+            { "if": "device.hook_winch.running == 1 && part.winch.drum.prop.control == 0", "hazard": "pinch" },
+            { "if": "part.winch.drum.prop.slip > 0.5", "hazard": "pinch" }
           ],
           "accepts": {
             "brake_lining": { "set": { "lining": 1 }, "renew": true },
@@ -177,7 +179,7 @@
           "count": 2,
           "noise": "prime",
           "onComplete": [
-            { "if": "self.ink > 0.1 && self.clog < 0.5", "set": "primed", "to": 1 }
+            { "if": "self.ink > $inkDry && self.clog < 0.5", "set": "primed", "to": 1 }
           ]
         }
       }

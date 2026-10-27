@@ -16,7 +16,7 @@ namespace DeepLine.Sim.Systems;
 ///   줄이 lineMaxM을 넘어 풀리면 줄 끝이 드럼에서 빠진다: LoadLost, 하중 0, 임무 실패.
 ///   증기 보조: 축압기(steam.accumulator, WP19)가 있으면 그 압력이 감기 속도를 정한다. 없으면 배율 1.
 /// 사이펀 기록기 (siphon.pen, siphon.state):
-///   테이프는 기록기(siphon_recorder)가 돌 때 흐른다. 시험 키는 testSeconds 동안 시험 신호를 보낸다.
+///   테이프는 기록기(siphon_recorder)에 전기가 올 때 흐른다. 시험 키는 testSeconds 동안 시험 신호를 보낸다.
 ///   잉크 줄의 품질 = (1 − 막힘) × (잉크가 있음) × 마중물 × (팔이 내려감). 신호는 증폭관(siphon.tube.1, WP13)이 있으면 그것이 성해야 한다.
 ///   펜은 신호를 그리는 동안만 잉크를 쓰고, 잉크가 다 떨어지면 마중물이 빠진다.
 /// 하중이 0이고 시험 키를 누르지 않은 기본 상태에서는 상태 값이 하나도 바뀌지 않는다(불변 조건 I7).
@@ -112,6 +112,12 @@ static class CableGear
             if (!(c.Siphon.InkPerSecond >= 0 && c.Siphon.InkDryBelow >= 0 && c.Siphon.TestSeconds > 0))
                 errors.Add("tuning.cable.siphon: testSeconds > 0, inkPerSecond, inkDryBelow >= 0");
             // 시험 키 장치의 시간은 장치 파일의 params에 있다 (효과는 튜닝을 읽지 못한다). 교범은 튜닝 값을 쓰므로 둘이 같아야 한다.
+            foreach (var f in d.Fixtures.Instances.Where(f => f.PartId == "winch.brake" && f.Def.Kind == FixtureKind.Adjuster))
+                if (f.Def.Min != 0 || f.Def.Max != t.AdjustMax)
+                    errors.Add($"{f.File}: 턴버클 {f.Id}의 범위({f.Def.Min}~{f.Def.Max})가 0~tuning.cable.winch.adjustMax({t.AdjustMax})와 다르다");
+            foreach (var f in d.Fixtures.Instances.Where(f => f.PartId == "siphon.pen"))
+                if (f.Params.TryGetValue("inkDry", out double dry) && dry != c.Siphon.InkDryBelow)
+                    errors.Add($"{f.File}: params.inkDry({dry})가 tuning.cable.siphon.inkDryBelow({c.Siphon.InkDryBelow})와 다르다");
             foreach (var f in d.Fixtures.Instances.Where(f => f.PartId == "siphon.state"))
                 if (f.Params.TryGetValue("testSeconds", out double s) && s != c.Siphon.TestSeconds)
                     errors.Add($"{f.File}: params.testSeconds({s})가 tuning.cable.siphon.testSeconds({c.Siphon.TestSeconds})와 다르다");
@@ -201,16 +207,19 @@ static class CableGear
     static void Siphon(SimWorld w, Refs r, SiphonTuning t)
     {
         double dt = w.Dt;
+        // 테이프 구동과 잉크 줄은 기록기에 전기가 오면(C6이 살아 있고 기록기가 켜져 있으면) 돈다.
+        // 신호(펜의 흔들림)는 증폭기가 돌아야 한다: 장비가 Running이고(WP13: 빠지거나 죽은 진공관은 장비를 세운다),
+        // 증폭관이 데이터에 있으면 꽂혀 있고 필라멘트가 살아 있어야 한다. 그래서 관이 빠지면 테이프는 흐르고 곧은 줄이 그려진다.
+        bool powered = r.SiphonDevice >= 0 && w.Devices[r.SiphonDevice].Enabled && w.Circuits[w.DeviceCircuit[r.SiphonDevice]].Energized;
         bool running = r.SiphonDevice >= 0 && w.Devices[r.SiphonDevice].Running;
         double timer = r.TestTimer.Get();
         if (timer > 0) r.TestTimer.Set(Math.Max(0, timer - dt));
-        // 증폭관이 데이터에 있으면(WP13) 꽂혀 있고 필라멘트가 살아 있어야 신호가 펜에 간다.
         bool amplifier = !r.TubePresent.Exists || (r.TubePresent.Get() >= 0.5 && (!r.TubeFilament.Exists || r.TubeFilament.Get() > 0));
-        double signal = running && timer > 0 && amplifier ? 1 : 0;
+        double signal = powered && running && timer > 0 && amplifier ? 1 : 0;
         double ink = r.Ink.Get();
         double flow = (1 - r.Clog.Get()) * (ink > t.InkDryBelow ? 1 : 0) * (r.Primed.Get() >= 0.5 ? 1 : 0) * (r.ArmUp.Get() >= 0.5 ? 0 : 1);
         flow = Math.Clamp(flow, 0, 1);
-        double trace = running ? flow : 0;
+        double trace = powered ? flow : 0;
         if (signal > 0 && trace > 0)
         {
             ink = Math.Max(0, ink - t.InkPerSecond * trace * dt);
@@ -220,7 +229,7 @@ static class CableGear
         }
         if (trace != r.Trace.Get()) r.Trace.Set(trace);
         if (signal != r.Signal.Get()) r.Signal.Set(signal);
-        double tape = running ? 1 : 0;
+        double tape = powered ? 1 : 0;
         if (tape != r.Tape.Get()) r.Tape.Set(tape);
     }
 
