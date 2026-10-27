@@ -16,6 +16,9 @@
 | `sim.tests/` | xUnit 테스트. 시나리오는 `sim.tests/scenarios/*.json` |
 | `data/` | 튜닝 값과 콘텐츠 (JSON) |
 | `tools/DeepLine.SimCli/` | 시나리오를 돌려 시계열을 뽑는 개발 도구 |
+| `audio/` | 상태 기반 절차적 소리 합성 라이브러리 `DeepLine.Audio`와 시험 (M5 준비, 아직 게임에 연결 전) |
+| `tools/DeepLine.AudioRender/` | 소리 데모를 WAV로 뽑는 도구. 데모는 `docs/reports/audio/` |
+| `docs/drafts/story/` | 이야기 글 초안 (지시서, 결산, 기록물, 거짓 신호, 조난과 결말) |
 | `data/manual/` | 게임 속 정비 교범 (마크다운) |
 | `game/` | Godot 4.7.2 .NET 프로젝트. 장면은 `game/scripts/World/`에서 코드로 짓는다 |
 

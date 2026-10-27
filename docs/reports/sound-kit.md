@@ -9,7 +9,7 @@
 - **`audio/DeepLine.Audio.Tests/`**: 시험 139개. NaN·무한대·클리핑 없음, 매개변수 급변에 딸깍 없음, 나눠 렌더링해도 한 번에 한 것과 같음, 성능, 펌프 고장 구분.
 - **성능**: 32개를 가장 바쁜 상태로 동시에 1초 렌더링하는 데 22.05kHz에서 약 25ms(실시간의 2.5%), 48kHz에서 약 55ms. 기준은 5%.
 - **M5 기준 대비**: 펌프의 정상과 주요 고장 3종(WTR-01 흡입구 막힘, WTR-02 베어링 마모, WTR-03 역류 방지 밸브 고착)이 서로 다른 특징을 가진다. 기본음 높이, 고역 갈림, 딱딱 튀는 정도, 0.7Hz 출렁임이다. 간단한 규칙 네 줄이 눈 가리고 듣기 세트를 20/20으로 맞혔다(아래 '검증'). 실제로 귀로 구분되는지는 사람이 확인해야 한다.
-- **솔루션**: 저장소 루트의 `DeepLine.Audio.sln`. `dotnet test DeepLine.Audio.sln` 139개 통과, `dotnet test DeepLine.sln` 232개 통과. **주의**: 루트에 솔루션이 둘이 되어 인자 없는 `dotnet test`는 MSB1011 오류가 난다(아래 '본선과 합칠 때').
+- **솔루션**: 본선에 합치면서 세 프로젝트를 `DeepLine.sln`에 넣고 `DeepLine.Audio.sln`은 지웠다(아래 '본선과 합칠 때' 1번). 인자 없는 `dotnet test`가 소리 시험 139개도 함께 돌린다.
 
 ## 구조와 실행
 
@@ -25,7 +25,7 @@
 | `docs/reports/sound-kit-blind-answers.md` | 눈 가리고 듣기 정답(먼저 듣고 나서 열 것) |
 
 ```sh
-dotnet test DeepLine.Audio.sln                                          # 소리 키트 시험
+dotnet test                                                             # 소리 키트 시험 포함
 dotnet run --project tools/DeepLine.AudioRender -- render               # 공개 데모를 docs/reports/audio/에
 dotnet run --project tools/DeepLine.AudioRender -- render --all         # 매개변수 쓸기까지 out/audio/에(저장소 밖)
 dotnet run --project tools/DeepLine.AudioRender -- blind --seed 1027    # 눈 가리고 듣기 세트와 정답
@@ -225,7 +225,7 @@ _cough.Cl2Stage = s.Cl2Level;
 
 ## 검증 (들을 수 없어서 수치로)
 
-### 시험 (`dotnet test DeepLine.Audio.sln`, 139개 통과)
+### 시험 (`dotnet test`, 소리 시험 139개 통과)
 
 | 시험 | 무엇을 보나 |
 | --- | --- |
