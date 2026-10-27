@@ -9,6 +9,8 @@ namespace DeepLine.Sim.Repair;
 /// </summary>
 static class FixtureValidator
 {
+    static bool KnownHazard(string h) => FixtureActions.KnownHazards.Contains(h);
+
     public static void Validate(GameData d, List<string> errors)
     {
         void Check(bool ok, string message)
@@ -53,7 +55,11 @@ static class FixtureValidator
             }
             if (def.Kind == FixtureKind.Adjuster) Check(def.Step > 0 && def.Min < def.Max, $"{where}: 조절 손잡이는 step > 0, min < max");
             if (def.Kind == FixtureKind.Lever) Check(def.Positions.Count >= 2, $"{where}: 레버 자리는 둘 이상");
-            Check(def.Verbs.Count > 0, $"{where}: 동사가 없다");
+            Check(def.Verbs.Count > 0 || def.Touch != null, $"{where}: 동사도 만져 보기(touch)도 없다");
+            Check(GameData.ZoneIndex(def.Zone) >= 0, $"{where}: 구역 '{def.Zone}'은 {string.Join(", ", GameData.Zones)} 중 하나여야 한다");
+            Check(!def.Verbs.ContainsKey(FixtureActions.TouchVerb), $"{where}: 'touch'는 touch 블록이 만드는 동사라 verbs에 쓸 수 없다");
+            if (def.Touch != null)
+                foreach (var h in def.Touch.Hazards) Check(KnownHazard(h.Hazard), $"{where}.touch: 위험 '{h.Hazard}'를 모른다");
 
             var allowed = FixtureActions.VerbsOf(def);
             foreach (var (verb, v) in def.Verbs)
@@ -66,7 +72,7 @@ static class FixtureValidator
                 if (v.Count > 0) Check(def.Kind == FixtureKind.Work, $"{at}: count는 작업에만");
                 if (v.Noise != null) Check(d.Tuning.Noise.Actions.ContainsKey(v.Noise), $"{at}: 소음 키 '{v.Noise}'가 tuning.noise.actions에 없다");
                 if (v.Hook != null) Check(FixtureHooks.All.ContainsKey(v.Hook), $"{at}: 갈고리 '{v.Hook}'가 등록부에 없다");
-                foreach (var h in v.Hazards) Check(FixtureActions.KnownHazards.Contains(h.Hazard), $"{at}: 위험 '{h.Hazard}'를 모른다");
+                foreach (var h in v.Hazards) Check(KnownHazard(h.Hazard), $"{at}: 위험 '{h.Hazard}'를 모른다");
                 foreach (var r in v.RejectIf) Check(r.If.Length > 0 && r.Reason.Length > 0, $"{at}: rejectIf에는 if와 reason이 있어야 한다");
                 foreach (var g in v.Gives) Check(IsItem(f.Expand(g.Item)), $"{at}: 줄 물건 '{g.Item}'가 없다");
                 foreach (var key in v.Set.Keys) Check(HasProp(f.Expand(key)), $"{at}: set의 상태 값 '{key}'가 부품에 없다");

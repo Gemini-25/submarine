@@ -57,8 +57,8 @@ public class DataValidationTests
         var sim = TestData.NewSim();
         sim.Run(1);
         var saved = sim.SaveState();
-        // 사물함 예비품은 items.json에 있어야 하므로 이미 있는 물건을 하나 더 넣는다.
-        var other = LoadModified("tuning.json", n => n["inventory"]!["locker"]!["fuse_blown"] = 2);
+        // 사물함 칸 하나를 빼면 저장본의 사물함 배열 길이가 달라진다.
+        var other = LoadModified("tuning.json", n => n["inventory"]!["locker"]!.AsObject().Remove("jumper_bar"));
         var restored = new Simulation(other, 1);
         Assert.Throws<InvalidDataException>(() => restored.RestoreState(saved));
     }
@@ -163,24 +163,8 @@ public class DataValidationTests
         Assert.Equal(new[] { "Stuckness", "stuck", "stuckOpen" }, part.PropNames);
     }
 
-    static void LoadFixed(string file, Action<JsonNode> mutate)
-    {
-        var dir = Directory.CreateTempSubdirectory("deepline-data-");
-        try
-        {
-            foreach (var f in Directory.GetFiles(TestData.DataDir, "*.json"))
-                File.Copy(f, Path.Combine(dir.FullName, Path.GetFileName(f)));
-            var path = Path.Combine(dir.FullName, file);
-            var node = JsonNode.Parse(File.ReadAllText(path))!;
-            mutate(node);
-            File.WriteAllText(path, node.ToJsonString());
-            GameData.LoadFromDirectory(dir.FullName);
-        }
-        finally
-        {
-            dir.Delete(recursive: true);
-        }
-    }
+    /// <summary>고친 데이터가 검증을 통과해야 한다 (하위 폴더의 조각 파일까지 복사한다).</summary>
+    static void LoadFixed(string file, Action<JsonNode> mutate) => LoadModified(file, mutate);
 
     [Fact]
     public void Non_monotonic_voltage_curve_is_rejected()

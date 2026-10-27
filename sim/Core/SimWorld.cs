@@ -168,6 +168,7 @@ sealed class SimWorld
         Air.CanistersLeft = T.Inventory.SpareCanisters;
         Air.Charging = setup.Charging;
         Crew.Locker = data.LockerItems.Select(i => T.Inventory.Locker[i]).ToArray();
+        Repair.ToolBoard.Init(this);
 
         DepthM = setup.DepthM ?? T.DefaultDepthM;
         RandomFaultsEnabled = setup.RandomFaults;

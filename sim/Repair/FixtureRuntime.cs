@@ -86,6 +86,7 @@ sealed partial class FixtureRuntime
     {
         var inst = _w.Data.Fixtures.Instances[row.Instance];
         var def = inst.Def;
+        if (row.Verb == FixtureActions.TouchVerb) return CompileTouch(row, inst);
         var vd = def.Verbs[row.Verb];
         if (!_w.TryPart(inst.PartId, out var part)) throw new KeyNotFoundException($"부품 '{inst.PartId}'가 없다");
         double P(FixValue v) => v.Resolve(inst.Params);
@@ -104,7 +105,8 @@ sealed partial class FixtureRuntime
             SeizedProp = def.SeizedProp == null ? null : inst.Expand(def.SeizedProp),
             NeedReason = def.NeedReason ?? "need_item",
             Rejects = vd.RejectIf.Select(r => (Cond(r.If) ?? throw new FormatException("rejectIf의 if가 비어 있다"), r.Reason)).ToArray(),
-            Hazards = vd.Hazards.Select(h => (Cond(h.If), h.Hazard)).ToArray(),
+            Zone = GameData.ZoneIndex(def.Zone),
+            Hazards = vd.Hazards.Select(h => (Cond(h.If), h.Hazard, h.Detail)).ToArray(),
             Gives = vd.Gives.Select(g => (Cond(g.If), inst.Expand(g.Item))).ToArray(),
             Set = vd.Set.Select(kv => (inst.Expand(kv.Key), P(kv.Value))).ToArray(),
             Effects = vd.Effects.Select(e => Effect(e, inst, Cond, P)).ToArray(),
@@ -132,6 +134,37 @@ sealed partial class FixtureRuntime
             if (prop != null && !part.HasProp(prop)) throw new KeyNotFoundException($"부품 {part.Id}에 상태 값 '{prop}'이 없다");
         if (def.Kind == FixtureKind.Socket && !part.HasProp("present")) throw new KeyNotFoundException($"소켓 부품 {part.Id}에 'present'가 없다");
         return v;
+    }
+
+    /// <summary>만져 보기: 맨손, 위험(행동 전 상태), 온도 단계와 젖음, 떨림.</summary>
+    CompiledVerb CompileTouch(FixtureRow row, FixtureInstance inst)
+    {
+        var t = inst.Def.Touch!;
+        if (!_w.TryPart(inst.PartId, out var part)) throw new KeyNotFoundException($"부품 '{inst.PartId}'가 없다");
+        Assertion? Cond(string text) => text.Length == 0 ? null : Condition(text, inst.PartId, inst, inst.Params);
+        return new CompiledVerb
+        {
+            Inst = inst,
+            Verb = row.Verb,
+            Command = row.Command,
+            Part = part,
+            Tool = "hand",
+            Zone = GameData.ZoneIndex(inst.Def.Zone),
+            Hazards = t.Hazards.Select(h => (Cond(h.If), h.Hazard, h.Detail)).ToArray(),
+            TouchTemp = t.Temp.Length == 0 ? null : Path(t.Temp, inst),
+            TouchWet = Cond(t.Wet),
+            TouchVibrating = Cond(t.Vibrating),
+        };
+    }
+
+    /// <summary>수를 읽는 조회 경로 (self. 가능, 금지 경로 검사).</summary>
+    Func<SimWorld, QueryValue> Path(string text, FixtureInstance inst)
+    {
+        string t = inst.Expand(text).Trim();
+        if (FixtureActions.BannedPath().Match(t) is { Success: true } banned)
+            throw new FormatException($"조건에 쓸 수 없는 경로 '{banned.Value.Trim()}' (판정은 물리 상태로만)");
+        t = Self().Replace(t, $"part.{inst.PartId}.prop.");
+        return SimQuery.Compile(_w, t);
     }
 
     static CompiledEffect Effect(EffectDef e, FixtureInstance inst, Func<string, Assertion?> cond, Func<FixValue, double> p)

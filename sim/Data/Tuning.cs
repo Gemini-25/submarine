@@ -24,6 +24,8 @@ public sealed class Tuning
     public RepairTuning Repair { get; set; } = new();
     /// <summary>손에 들 수 있는 도구 ID. 순서가 단축키 1~9 순서다. 첫 도구는 빈손이다.</summary>
     public List<string> Tools { get; set; } = new();
+    /// <summary>도구판과 허리띠 (M2). 없으면 M1처럼 모든 도구를 바로 쥘 수 있다.</summary>
+    [Optional] public ToolBoardTuning? ToolBoard { get; set; }
 }
 
 /// <summary>손 수리 동작의 수치 (M1). 손동작 하나가 명령 하나다.</summary>
@@ -230,6 +232,47 @@ public sealed class CrewTuning
     public double[] Co2Levels { get; set; } = Array.Empty<double>();
     public double[] O2Levels { get; set; } = Array.Empty<double>();
     public double[] Cl2Levels { get; set; } = Array.Empty<double>();
+    /// <summary>M2의 새 위험(화상, 물 분출). 장치가 그 위험을 쓰면 있어야 한다.</summary>
+    [Optional] public CrewHazardTuning? Hazards { get; set; }
+    /// <summary>손으로 만져 보기의 온도 단계. 만질 수 있는 장치가 있으면 있어야 한다.</summary>
+    [Optional] public TouchTuning? Touch { get; set; }
+}
+
+public sealed class CrewHazardTuning
+{
+    [Optional] public HurtTuning? Burn { get; set; }
+    [Optional] public HurtTuning? Spray { get; set; }
+}
+
+public sealed class HurtTuning
+{
+    public double VitalityLoss { get; set; }
+    public double StunSeconds { get; set; }
+    /// <summary>물 분출: 장치가 있는 구역에 쏟아지는 물 (L). 화상에는 0.</summary>
+    [Optional] public double BurstL { get; set; }
+}
+
+public sealed class TouchTuning
+{
+    /// <summary>온도 단계의 경계 (°C, 오름차순 4개): 차갑다 | 미지근하다 | 따뜻하다 | 뜨겁다 | 손을 댈 수 없다.</summary>
+    public double[] BandsC { get; set; } = Array.Empty<double>();
+    /// <summary>온도 경로가 없는 장치의 온도 (선내 쇠붙이).</summary>
+    public double AmbientC { get; set; }
+    /// <summary>이 온도 이상을 만지면 화상.</summary>
+    public double BurnAtC { get; set; }
+}
+
+/// <summary>도구판, 허리띠, 바닥의 도구 (SPEC 15절 '도구는 들고 다니는 물건'). 상태는 부품 toolbelt, toolboard의 상태 값.</summary>
+public sealed class ToolBoardTuning
+{
+    public int BeltSlots { get; set; }
+    /// <summary>처음 허리띠의 도구 (칸 순서).</summary>
+    public List<string> InitialBelt { get; set; } = new();
+    /// <summary>이 기울기(도)를 넘으면 바닥의 도구가 낮은 쪽으로 구른다 (M2 WP18).</summary>
+    public double RollTiltDeg { get; set; }
+    public double RollSeconds { get; set; }
+    /// <summary>감전이나 물 분출 때 든 도구를 떨어뜨린다.</summary>
+    public bool DropOnShock { get; set; }
 }
 
 public sealed class FailureTuning
@@ -243,7 +286,8 @@ public sealed class FailureTuning
 public sealed class InventoryTuning
 {
     public int OxygenCandles { get; set; }
-    public int SpareCanisters { get; set; }
+    /// <summary>M0의 흡수제 통 재고. M2부터는 사물함의 canister (있으면 그쪽을 센다).</summary>
+    [Optional] public int SpareCanisters { get; set; }
     /// <summary>사물함의 손에 드는 예비품 재고 (퓨즈, 쐐기, 버팀목 …).</summary>
     public SortedDictionary<string, int> Locker { get; set; } = new(StringComparer.Ordinal);
 }

@@ -37,7 +37,7 @@ public sealed class FixtureCatalog
     public static readonly IReadOnlyList<string> ReservedHeads = Array.AsReadOnly(new[]
     {
         "switch", "device", "hatch", "handpump", "cell", "propulsion", "sonar", "candle", "noise", "tool", "locker", "hand",
-        "strainer", "leak",
+        "strainer", "leak", "toolboard",
     });
 
     public IReadOnlyList<FixtureInstance> Instances { get; }
@@ -94,8 +94,12 @@ public sealed class FixtureCatalog
         instances.Sort((a, b) => string.CompareOrdinal(a.Id, b.Id));
         var rows = new List<FixtureRow>();
         for (int i = 0; i < instances.Count; i++)
+        {
             foreach (var verb in instances[i].Def.Verbs.Keys)
                 rows.Add(new FixtureRow($"{instances[i].Id}.{verb}", i, verb));
+            if (instances[i].Def.Touch != null)
+                rows.Add(new FixtureRow($"{instances[i].Id}.{FixtureActions.TouchVerb}", i, FixtureActions.TouchVerb));
+        }
         rows.Sort((a, b) => string.CompareOrdinal(a.Command, b.Command));
         for (int i = 1; i < rows.Count; i++)
             if (rows[i].Command == rows[i - 1].Command) errors.Add($"명령 '{rows[i].Command}'가 두 장치에서 나온다");

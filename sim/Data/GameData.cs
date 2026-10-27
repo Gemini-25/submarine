@@ -38,6 +38,11 @@ public sealed class GameData
     public IReadOnlyDictionary<string, ItemDef> Items { get; }
     /// <summary>손이 닿는 장치를 펼친 목록 (data/fixtures/*.json, 없으면 비어 있다).</summary>
     public Repair.FixtureCatalog Fixtures { get; }
+    /// <summary>
+    /// 한국어 글 (data/text/*.json, 없으면 비어 있다): tool.*, item.*, reason.*, fixture.*, touch.*.
+    /// SPEC 15절의 번역 키 자리. 시뮬레이션은 읽지 않고 표현 층이 쓴다.
+    /// </summary>
+    public IReadOnlyDictionary<string, string> Text { get; }
 
     public GameData(
         Tuning tuning,
@@ -49,8 +54,10 @@ public sealed class GameData
         IEnumerable<ProcedureDef>? procedures = null,
         IEnumerable<MissionDef>? missions = null,
         IEnumerable<ItemDef>? items = null,
-        IReadOnlyList<(string File, FixtureFile Content)>? fixtureFiles = null)
+        IReadOnlyList<(string File, FixtureFile Content)>? fixtureFiles = null,
+        IReadOnlyDictionary<string, string>? text = null)
     {
+        Text = new SortedDictionary<string, string>(text?.ToDictionary(kv => kv.Key, kv => kv.Value) ?? new(), StringComparer.Ordinal);
         Tuning = tuning;
         Procedures = (procedures ?? Array.Empty<ProcedureDef>()).OrderBy(p => p.Id, StringComparer.Ordinal).ToArray();
         Missions = (missions ?? Array.Empty<MissionDef>()).OrderBy(m => m.Id, StringComparer.Ordinal).ToArray();
@@ -245,7 +252,8 @@ public sealed class GameData
             foreach (var file in Directory.GetFiles(fixtureDir, "*.json").OrderBy(f => f, StringComparer.Ordinal))
                 fixtureFiles.Add((Path.Combine("fixtures", Path.GetFileName(file)), Read<FixtureFile>(Path.Combine("fixtures", Path.GetFileName(file)))));
 
-        return new GameData(tuning, circuits, devices, allParts, faults, leaks, procedures, missions, items, fixtureFiles);
+        var text = ReadMerged<SortedDictionary<string, string>>("text");
+        return new GameData(tuning, circuits, devices, allParts, faults, leaks, procedures, missions, items, fixtureFiles, text);
     }
 
     static List<T> WithIds<T>(IDictionary<string, T> map, Action<T, string> setId)

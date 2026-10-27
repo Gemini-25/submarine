@@ -1,4 +1,5 @@
 using DeepLine.Sim.Core;
+using DeepLine.Sim.Data;
 using DeepLine.Sim.Faults;
 using DeepLine.Sim.Parts;
 
@@ -27,15 +28,31 @@ static class HandActions
 
     // ── 도구와 사물함 ─────────────────────────────────────
 
-    public static void SelectTool(SimWorld w, int tool) => w.Crew.Tool = tool;
+    // 도구 고르기는 ToolBoard.Select (도구판 모듈이 없으면 M1처럼 늘 된다).
 
     public static bool TakeFromLocker(SimWorld w, int item)
     {
         string id = w.Data.LockerItems[item];
         if (w.Crew.Hand.Length > 0) return Reject(w, $"locker.take.{id}", "hand_full");
         if (w.Crew.Locker[item] <= 0) return Reject(w, $"locker.take.{id}", "out_of_stock");
+        // 두 손이 드는 물건 (흡수제 통, 예비 셀): 도구를 내려놓아야 든다.
+        if (w.Crew.Tool != 0 && w.Data.Items.TryGetValue(id, out var def) && def.Heavy) return Reject(w, $"locker.take.{id}", "both_hands");
         w.Crew.Locker[item]--;
         w.Crew.Hand = id;
+        w.AddActionNoise("locker");
+        return true;
+    }
+
+    /// <summary>쓰지 않은 예비품을 사물함에 되돌린다. 빼낸 헌 부품(scrap)은 되돌릴 수 없다.</summary>
+    public static bool ReturnToLocker(SimWorld w, int item)
+    {
+        string id = w.Data.LockerItems[item];
+        string cmd = $"locker.return.{id}";
+        if (w.Crew.Hand.Length == 0) return Reject(w, cmd, "hand_empty");
+        if (w.Data.Items.TryGetValue(w.Crew.Hand, out var held) && held.Scrap) return Reject(w, cmd, "scrap_item");
+        if (w.Crew.Hand != id) return Reject(w, cmd, "not_holding");
+        w.Crew.Locker[item]++;
+        w.Crew.Hand = "";
         w.AddActionNoise("locker");
         return true;
     }
@@ -207,11 +224,37 @@ static class HandActions
 /// <summary>손 수리의 위험. 체력은 숨은 값이고 표현 층은 화면 효과로만 보여준다.</summary>
 static class Hazards
 {
-    public static void Shock(SimWorld w, string cause)
+    /// <summary>감전. zone은 떨어뜨린 도구가 가는 바닥 (도구판 모듈의 dropOnShock).</summary>
+    public static void Shock(SimWorld w, string cause, int zone = -1)
     {
         var c = w.T.Crew;
         Hurt(w, c.ShockVitalityLoss, c.ShockStunSeconds);
         w.Emit(SimEventKind.Shock, cause, w.Crew.Vitality);
+        DropHeldTool(w, zone);
+    }
+
+    /// <summary>화상 (뜨거운 몸체, 증기). Hurt(detail = burn 또는 steam).</summary>
+    public static void Burn(SimWorld w, string cause, string detail)
+    {
+        var h = w.T.Crew.Hazards!.Burn!;
+        Hurt(w, h.VitalityLoss, h.StunSeconds);
+        w.Emit(SimEventKind.Hurt, cause, w.Crew.Vitality, detail);
+    }
+
+    /// <summary>물 분출: 다치고, 장치 구역에 물이 쏟아지고(유입량에 셈), 든 도구를 떨어뜨린다.</summary>
+    public static void Spray(SimWorld w, string cause, int zone)
+    {
+        var h = w.T.Crew.Hazards!.Spray!;
+        Hurt(w, h.VitalityLoss, h.StunSeconds);
+        w.Emit(SimEventKind.Hurt, cause, w.Crew.Vitality, "spray");
+        Systems.WaterSystem.Burst(w, zone, h.BurstL);
+        DropHeldTool(w, zone);
+    }
+
+    static void DropHeldTool(SimWorld w, int zone)
+    {
+        if (w.T.ToolBoard is { DropOnShock: true } && w.Crew.Tool != 0)
+            ToolBoard.DropHeld(w, zone >= 0 ? zone : GameData.ZoneIndex("mid"));
     }
 
     public static void Pinch(SimWorld w, string cause)

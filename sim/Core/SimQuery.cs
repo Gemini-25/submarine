@@ -210,7 +210,12 @@ static class SimQuery
             {
                 End(2);
                 if (At(1) == "candles") return x => QueryValue.Of(x.Air.CandlesLeft);
-                if (At(1) == "canisters") return x => QueryValue.Of(x.Air.CanistersLeft);
+                if (At(1) == "canisters")
+                {
+                    // M2: 흡수제 통은 사물함의 canister. 사물함에 없으면 M0의 재고.
+                    int canister = IndexOfItem(w, "canister");
+                    return canister >= 0 ? x => QueryValue.Of(x.Crew.Locker[canister]) : x => QueryValue.Of(x.Air.CanistersLeft);
+                }
                 int item = -1;
                 for (int k = 0; k < w.Data.LockerItems.Count; k++) if (w.Data.LockerItems[k] == At(1)) item = k;
                 if (item < 0) throw Unknown();
@@ -266,6 +271,28 @@ static class SimQuery
                     };
                 }
                 throw Unknown();
+
+            case "crew" when p.Length == 3 && p[1] == "belt":
+            {
+                // crew.belt.N: 허리띠 N번 칸(1부터)의 도구 ID, 빈 칸은 "".
+                if (!Repair.ToolBoard.Installed(w) || !int.TryParse(p[2], System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out int n)
+                    || n < 1 || n > w.T.ToolBoard!.BeltSlots)
+                    throw Unknown();
+                return x =>
+                {
+                    int t = Repair.ToolBoard.SlotTool(x, n);
+                    return QueryValue.Of(t < 0 ? "" : x.T.Tools[t]);
+                };
+            }
+
+            case "toolboard":
+            {
+                // toolboard.<도구>: board, belt, 또는 바닥 구역 이름.
+                End(2);
+                int tool = w.T.Tools.IndexOf(At(1));
+                if (!Repair.ToolBoard.Installed(w) || tool <= 0) throw Unknown();
+                return x => QueryValue.Of(Repair.ToolBoard.LocationName(x, tool));
+            }
 
             case "crew":
                 End(2);
@@ -335,6 +362,13 @@ static class SimQuery
             default:
                 throw Unknown();
         }
+    }
+
+    static int IndexOfItem(SimWorld w, string item)
+    {
+        for (int k = 0; k < w.Data.LockerItems.Count; k++)
+            if (w.Data.LockerItems[k] == item) return k;
+        return -1;
     }
 
     static string LampName(LampState s) => s switch

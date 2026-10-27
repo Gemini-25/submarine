@@ -1,0 +1,34 @@
+{
+  "toolbelt": {
+    "kind": "toolbelt",
+    "props": {
+      "slot1": -1,
+      "slot2": -1,
+      "slot3": -1,
+      "slot4": -1,
+      "slot5": -1
+    }
+  },
+  "toolboard": {
+    "kind": "toolboard",
+    "props": {
+      "loc_caulking_set": 0,
+      "loc_engineer_hammer": 0,
+      "loc_file": 0,
+      "loc_hydrometer": 0,
+      "loc_knife": 0,
+      "loc_mallet": 0,
+      "loc_oil_can": 0,
+      "loc_packing_hook": 0,
+      "loc_pricker": 0,
+      "loc_rag": 0,
+      "loc_scraper": 0,
+      "loc_screwdriver": 0,
+      "loc_scrub_brush": 0,
+      "loc_soldering_iron": 0,
+      "loc_stethoscope": 0,
+      "loc_voltmeter": 0,
+      "loc_wrench": 0
+    }
+  }
+}

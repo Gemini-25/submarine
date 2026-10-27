@@ -44,8 +44,8 @@ public sealed class FixtureDef
     /// <summary>상태를 담는 부품 ID (틀 변수를 쓸 수 있다).</summary>
     public string Part { get; set; } = "";
     public FixtureKind Kind { get; set; }
-    /// <summary>표현 층이 장치를 놓는 구역. 손동작 판정에는 쓰지 않는다.</summary>
-    [Optional] public string Zone { get; set; } = "";
+    /// <summary>장치가 있는 구역 (fore, mid, aft). 판정에는 쓰지 않고, 물 분출과 떨어뜨린 도구가 가는 곳이다.</summary>
+    public string Zone { get; set; } = "";
     /// <summary>종류의 주 상태 값 이름 (볼트의 조임, 덮개의 열림, 밸브의 열린 바퀴 수, 손잡이 눈금, 레버 자리, 작업의 진행).</summary>
     [Optional] public string? Prop { get; set; }
     /// <summary>볼트가 속한 묶음 이름 (덮개의 heldBy가 가리킨다).</summary>
@@ -64,8 +64,10 @@ public sealed class FixtureDef
     [Optional] public double Step { get; set; }
     /// <summary>레버의 자리 이름 (순서가 상태 값).</summary>
     [Optional] public List<string> Positions { get; set; } = new();
-    /// <summary>동사 → 그 동사의 규칙. 종류가 허락하는 동사만 쓸 수 있다.</summary>
-    public SortedDictionary<string, VerbDef> Verbs { get; set; } = new(StringComparer.Ordinal);
+    /// <summary>동사 → 그 동사의 규칙. 종류가 허락하는 동사만 쓸 수 있다. "touch"는 아래 touch 블록이 만든다.</summary>
+    [Optional] public SortedDictionary<string, VerbDef> Verbs { get; set; } = new(StringComparer.Ordinal);
+    /// <summary>만져 보기 블록 (어느 종류에나).</summary>
+    [Optional] public TouchDef? Touch { get; set; }
 }
 
 /// <summary>
@@ -109,8 +111,26 @@ public sealed class HazardRule
 {
     /// <summary>assert 식. 비어 있으면 늘 일어난다.</summary>
     [Optional] public string If { get; set; } = "";
-    /// <summary>spark, shock, pinch (WP2부터 burn, spray).</summary>
+    /// <summary>spark, shock, pinch, burn, spray.</summary>
     public string Hazard { get; set; } = "";
+    /// <summary>Hurt 사건의 detail (burn의 기본은 burn, 증기는 steam).</summary>
+    [Optional] public string Detail { get; set; } = "";
+}
+
+/// <summary>
+/// 맨손으로 만져 보기 (명령 "&lt;장치 ID&gt;.touch"). 다칠 수 있으므로 명령이다.
+/// Touched(값 = 온도 단계 0~4, detail = wet / vibrating / wet,vibrating)를 낸다. 숫자는 화면에 나오지 않는다.
+/// </summary>
+public sealed class TouchDef
+{
+    /// <summary>온도 (°C)를 읽는 조회 경로 ("self.tempC" 가능). 없으면 tuning.crew.touch.ambientC.</summary>
+    [Optional] public string Temp { get; set; } = "";
+    /// <summary>축축한가 (assert 식).</summary>
+    [Optional] public string Wet { get; set; } = "";
+    /// <summary>떨리는가 (assert 식).</summary>
+    [Optional] public string Vibrating { get; set; } = "";
+    /// <summary>만질 때의 위험 (젖은 상자의 감전 등). 온도가 burnAtC 이상이면 화상은 저절로 더한다.</summary>
+    [Optional] public List<HazardRule> Hazards { get; set; } = new();
 }
 
 public sealed class GiveRule
@@ -195,8 +215,14 @@ public sealed class FixValueConverter : JsonConverter<FixValue>
 public sealed class ItemDef
 {
     [JsonIgnore] public string Id { get; set; } = "";
-    /// <summary>한국어 이름 (data/text/ko.json이 생기기 전까지의 기본 이름).</summary>
-    public string Name { get; set; } = "";
     /// <summary>폐기함에 버릴 수 있는가.</summary>
     [Optional] public bool Discard { get; set; } = true;
+    /// <summary>두 손이 드는 물건: 도구를 들 수 없다 (both_hands), 걸음이 느려진다.</summary>
+    [Optional] public bool Heavy { get; set; }
+    /// <summary>빼낸 헌 부품 (*_worn, *_old ...): 사물함에 되돌릴 수 없다.</summary>
+    [Optional] public bool Scrap { get; set; }
+    /// <summary>부품에 딸린 물건 (거름망 바구니): 버릴 수 없고 재고가 없다.</summary>
+    [Optional] public bool Component { get; set; }
+    /// <summary>한정 재고 (진공관, 탄소봉, 자이로 베어링, 예비 셀). 임무 검증기가 수요를 센다.</summary>
+    [Optional] public bool Limited { get; set; }
 }

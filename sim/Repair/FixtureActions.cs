@@ -14,7 +14,10 @@ namespace DeepLine.Sim.Repair;
 /// </summary>
 static partial class FixtureActions
 {
-    public static readonly IReadOnlyList<string> KnownHazards = Array.AsReadOnly(new[] { "spark", "shock", "pinch" });
+    public static readonly IReadOnlyList<string> KnownHazards = Array.AsReadOnly(new[] { "spark", "shock", "pinch", "burn", "spray" });
+
+    /// <summary>touch 블록이 만드는 동사. 다른 동사 이름으로 쓸 수 없다.</summary>
+    public const string TouchVerb = "touch";
 
     /// <summary>
     /// 데이터 조건에 쓸 수 없는 경로. 판정은 물리 상태로만 한다: 고장 여부, 부품 상태 단계, 상황판(센서), 단서, 계기 읽기, 사건 수를 읽지 않는다.
@@ -43,20 +46,13 @@ static partial class FixtureActions
             return;
         }
 
-        // 위험은 행동 전 상태로 모두 평가한 뒤 차례대로 적용한다. 다쳐도 손은 하던 일을 마친다(SPEC 6절).
-        Span<int> fired = stackalloc int[v.Hazards.Length];
-        int n = 0;
-        for (int i = 0; i < v.Hazards.Length; i++)
-            if (v.Hazards[i].If?.Eval(w) != false) fired[n++] = i;
-        for (int i = 0; i < n; i++)
+        if (v.Verb == TouchVerb)
         {
-            switch (v.Hazards[fired[i]].Hazard)
-            {
-                case "spark": w.Spark(v.Inst.Id); break;
-                case "shock": Hazards.Shock(w, v.Command); break;
-                case "pinch": Hazards.Pinch(w, v.Command); break;
-            }
+            Touch(w, v);
+            return;
         }
+
+        ApplyHazards(w, v, autoBurn: false);
 
         var p = v.Part;
         switch (v.Inst.Def.Kind)
@@ -116,6 +112,44 @@ static partial class FixtureActions
             FixtureEffects.Clear(w, p, resetWear: false);
     }
 
+    /// <summary>위험은 행동 전 상태로 모두 평가한 뒤 차례대로 적용한다. 다쳐도 손은 하던 일을 마친다(SPEC 6절).</summary>
+    static void ApplyHazards(SimWorld w, CompiledVerb v, bool autoBurn)
+    {
+        Span<int> fired = stackalloc int[v.Hazards.Length + 1];
+        int n = 0;
+        for (int i = 0; i < v.Hazards.Length; i++)
+            if (v.Hazards[i].If?.Eval(w) != false) fired[n++] = i;
+        if (autoBurn) fired[n++] = -1;
+        for (int i = 0; i < n; i++)
+        {
+            var (_, hazard, detail) = fired[i] < 0 ? (null, "burn", "") : v.Hazards[fired[i]];
+            switch (hazard)
+            {
+                case "spark": w.Spark(v.Inst.Id); break;
+                case "shock": Hazards.Shock(w, v.Command, v.Zone); break;
+                case "pinch": Hazards.Pinch(w, v.Command); break;
+                case "burn": Hazards.Burn(w, v.Command, detail.Length > 0 ? detail : "burn"); break;
+                case "spray": Hazards.Spray(w, v.Command, v.Zone); break;
+            }
+        }
+    }
+
+    /// <summary>
+    /// 만져 보기. 맨손이 아니면 need_bare_hand. 위험(데이터, 그리고 burnAtC 이상이면 화상)은 행동 전 상태로 판정한 뒤
+    /// Touched(장치 ID, 온도 단계 0~4, wet / vibrating)를 낸다.
+    /// </summary>
+    static void Touch(SimWorld w, CompiledVerb v)
+    {
+        var tt = w.T.Crew.Touch!;
+        double temp = v.TouchTemp?.Invoke(w).Number ?? tt.AmbientC;
+        bool wet = v.TouchWet?.Eval(w) == true, vibrating = v.TouchVibrating?.Eval(w) == true;
+        int band = 0;
+        while (band < tt.BandsC.Length && temp >= tt.BandsC[band]) band++;
+        ApplyHazards(w, v, autoBurn: temp >= tt.BurnAtC);
+        string detail = wet && vibrating ? "wet,vibrating" : wet ? "wet" : vibrating ? "vibrating" : "";
+        w.Emit(SimEventKind.Touched, v.Inst.Id, band, detail);
+    }
+
     /// <summary>
     /// 거부 사유. 종류의 기본 판정과 데이터 rejectIf를 종류마다 정해진 순서로 본다(M1 HandActions와 같은 순서):
     ///   Fastener: 도구 → rejectIf → 이미 풀림/조임            (M1 StrainerBolt: need_wrench → cover_open → already_*)
@@ -132,6 +166,7 @@ static partial class FixtureActions
         var p = v.Part;
         var d = v.Inst.Def;
         string? tool = ToolReason(w, v);
+        if (v.Verb == TouchVerb) return tool;
         switch (d.Kind)
         {
             case FixtureKind.Fastener:
@@ -285,7 +320,11 @@ sealed class CompiledVerb
     public string NeedReason = "need_item";
     public (Part Part, string Prop)[] HeldBy = Array.Empty<(Part, string)>();
     public (Assertion If, string Reason)[] Rejects = Array.Empty<(Assertion, string)>();
-    public (Assertion? If, string Hazard)[] Hazards = Array.Empty<(Assertion?, string)>();
+    public (Assertion? If, string Hazard, string Detail)[] Hazards = Array.Empty<(Assertion?, string, string)>();
+    /// <summary>장치가 있는 구역 (GameData.Zones의 순번).</summary>
+    public int Zone;
+    public Func<SimWorld, QueryValue>? TouchTemp;
+    public Assertion? TouchWet, TouchVibrating;
     public (Assertion? If, string Item)[] Gives = Array.Empty<(Assertion?, string)>();
     public Dictionary<string, CompiledAccept> Accepts = new(StringComparer.Ordinal);
     public (string Prop, double Value)[] Set = Array.Empty<(string, double)>();

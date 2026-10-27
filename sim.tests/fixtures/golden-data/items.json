@@ -1,7 +1,12 @@
 {
-  "fuse": { "name": "퓨즈" },
-  "fuse_blown": { "name": "끊긴 퓨즈" },
-  "strainer_basket": { "name": "거름망 바구니", "discard": false },
-  "timber_shore": { "name": "버팀목" },
-  "wood_wedge": { "name": "나무 쐐기" }
+  "fuse": {},
+  "fuse_blown": {
+    "scrap": true
+  },
+  "strainer_basket": {
+    "discard": false,
+    "component": true
+  },
+  "timber_shore": {},
+  "wood_wedge": {}
 }

@@ -16,28 +16,28 @@ public class FixtureEngineTests
     {
       "params": { "heat": 0.25 },
       "fixtures": [
-        { "id": "rig.bolt.{n}", "bind": { "n": "1..2" }, "part": "rig.a", "kind": "fastener", "prop": "bolt{n}", "group": "lid",
+        { "id": "rig.bolt.{n}", "bind": { "n": "1..2" }, "part": "rig.a", "kind": "fastener", "zone": "mid", "prop": "bolt{n}", "group": "lid",
           "verbs": {
             "loosen": { "tool": "wrench", "noise": "wrench", "rejectIf": [ { "if": "self.cover == 1", "reason": "cover_open" } ] },
             "tighten": { "tool": "wrench", "rejectIf": [ { "if": "self.cover == 1", "reason": "cover_open" } ] } } },
-        { "id": "rig.cover", "part": "rig.a", "kind": "cover", "prop": "cover", "heldBy": "lid",
+        { "id": "rig.cover", "part": "rig.a", "kind": "cover", "zone": "mid", "prop": "cover", "heldBy": "lid",
           "verbs": {
             "open": { "noise": "cover" },
             "close": { "hazards": [ { "if": "self.cover == 1 && self.heat >= 0.5", "hazard": "pinch" } ] } } },
-        { "id": "rig.socket", "part": "rig.a", "kind": "socket", "needReason": "need_fuse",
+        { "id": "rig.socket", "part": "rig.a", "kind": "socket", "zone": "mid", "needReason": "need_fuse",
           "verbs": {
             "pull": { "tool": "hand", "gives": [ { "if": "self.blown >= 0.5", "item": "fuse_blown" }, { "item": "fuse" } ] },
             "insert": {
               "hazards": [ { "if": "self.heat >= 0.5", "hazard": "spark" }, { "if": "self.heat >= 0.5", "hazard": "shock" },
                            { "if": "self.heat >= 0.5 && crew.stunned == 0", "hazard": "pinch" } ],
               "accepts": { "fuse": { "set": { "blown": 0 }, "renew": true }, "fuse_blown": { "quality": "temporary" } } } } },
-        { "id": "rig.valve", "part": "rig.a", "kind": "valve", "prop": "valve", "turns": 2, "seizedProp": "seized",
+        { "id": "rig.valve", "part": "rig.a", "kind": "valve", "zone": "mid", "prop": "valve", "turns": 2, "seizedProp": "seized",
           "verbs": { "open": {}, "close": {} } },
-        { "id": "rig.knob", "part": "rig.a", "kind": "adjuster", "prop": "knob", "min": 0, "max": 1, "step": 0.4,
+        { "id": "rig.knob", "part": "rig.a", "kind": "adjuster", "zone": "mid", "prop": "knob", "min": 0, "max": 1, "step": 0.4,
           "verbs": { "up": {}, "down": {} } },
-        { "id": "rig.lever", "part": "rig.a", "kind": "lever", "prop": "lever", "positions": [ "off", "low", "high" ],
+        { "id": "rig.lever", "part": "rig.a", "kind": "lever", "zone": "mid", "prop": "lever", "positions": [ "off", "low", "high" ],
           "verbs": { "off": {}, "low": {}, "high": {} } },
-        { "id": "rig.work", "part": "rig.a", "kind": "work", "prop": "work",
+        { "id": "rig.work", "part": "rig.a", "kind": "work", "zone": "mid", "prop": "work",
           "verbs": {
             "scrape": { "tool": "scrub_brush", "count": 3,
               "rejectIf": [ { "if": "self.lever == 0", "reason": "lever_off" }, { "if": "self.lever == 0 || self.knob == 0", "reason": "knob_zero" } ],
@@ -87,6 +87,9 @@ public class FixtureEngineTests
                 if (clearedWhen != null) fault["clearedWhen"] = clearedWhen;
                 n["RIG-01"] = fault;
             });
+            // 시험용 거부 사유의 한국어 글 (data/text가 있으면 데이터가 내는 사유마다 글이 있어야 한다).
+            File.WriteAllText(Path.Combine(dir.FullName, "text", "rig.json"),
+                """{ "reason.lever_off": "레버가 내려가 있다.", "reason.knob_zero": "손잡이가 0이다.", "reason.x": "시험" }""");
             var fixtures = RigFixtures();
             mutate?.Invoke(fixtures);
             File.WriteAllText(Path.Combine(dir.FullName, "fixtures", "rig.json"), fixtures.ToJsonString());
@@ -468,7 +471,7 @@ public class FixtureEngineTests
         { "missing-prop", "상태 값 prop" },
         { "unknown-tool", "도구 'spanner'" },
         { "unknown-hook", "갈고리 'magic'" },
-        { "unknown-hazard", "위험 'burn'" },
+        { "unknown-hazard", "위험 'explode'" },
         { "banned-state", "쓸 수 없는 경로" },
         { "banned-panel", "쓸 수 없는 경로" },
         { "missing-param", "params에 '$nope'" },
@@ -496,7 +499,7 @@ public class FixtureEngineTests
             "missing-prop" => f => Fixture(f, "rig.valve")["prop"] = "torque",
             "unknown-tool" => f => Verb(f, "rig.valve", "open")["tool"] = "spanner",
             "unknown-hook" => f => Verb(f, "rig.valve", "open")["hook"] = "magic",
-            "unknown-hazard" => f => Verb(f, "rig.valve", "open")["hazards"] = new JsonArray(new JsonObject { ["hazard"] = "burn" }),
+            "unknown-hazard" => f => Verb(f, "rig.valve", "open")["hazards"] = new JsonArray(new JsonObject { ["hazard"] = "explode" }),
             "banned-state" => f => Verb(f, "rig.valve", "open")["rejectIf"] = new JsonArray(new JsonObject { ["if"] = "part.rig.a.state == 'fault'", ["reason"] = "x" }),
             "banned-panel" => f => Verb(f, "rig.valve", "open")["hazards"] = new JsonArray(new JsonObject { ["if"] = "panel.on == 1", ["hazard"] = "shock" }),
             "missing-param" => f => Verb(f, "rig.valve", "open")["set"] = new JsonObject { ["heat"] = "$nope" },

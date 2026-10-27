@@ -59,12 +59,28 @@ static class CommandProcessor
                 return new ParsedCommand(CommandKind.ToolSelect, tool, false, 0, 0);
             }
 
-            case "locker" when parts.Length == 3 && parts[1] == "take":
+            case "locker" when parts.Length == 3 && parts[1] is "take" or "return":
             {
                 int item = IndexOf(w.Data.LockerItems, parts[2]);
                 if (item < 0) throw Bad($"사물함에 '{parts[2]}'가 없다");
-                return new ParsedCommand(CommandKind.LockerTake, item, false, 0, 0);
+                return new ParsedCommand(parts[1] == "take" ? CommandKind.LockerTake : CommandKind.LockerReturn, item, false, 0, 0);
             }
+
+            case "tool" when parts.Length == 3 && parts[1] == "drop":
+            {
+                NeedToolBoard(w, Bad);
+                int zone = GameData.ZoneIndex(parts[2]);
+                if (zone < 0) throw Bad($"구역 '{parts[2]}'가 없다 ({string.Join(", ", GameData.Zones)})");
+                return new ParsedCommand(CommandKind.ToolDrop, zone, false, 0, 0);
+            }
+
+            case "tool" when parts.Length == 3 && parts[1] == "pickup":
+                NeedToolBoard(w, Bad);
+                return new ParsedCommand(CommandKind.ToolPickup, CarriedTool(w, parts[2], Bad), false, 0, 0);
+
+            case "toolboard" when parts.Length == 3 && parts[1] is "take" or "return":
+                NeedToolBoard(w, Bad);
+                return new ParsedCommand(parts[1] == "take" ? CommandKind.ToolBoardTake : CommandKind.ToolBoardReturn, CarriedTool(w, parts[2], Bad), false, 0, 0);
 
             case "hand" when parts.Length == 2 && parts[1] == "drop":
                 return new ParsedCommand(CommandKind.HandDrop, 0, false, 0, 0);
@@ -110,6 +126,19 @@ static class CommandProcessor
                     return new ParsedCommand(CommandKind.Fixture, row, false, 0, 0);
                 throw Bad("알 수 없는 명령");
         }
+    }
+
+    static void NeedToolBoard(SimWorld w, Func<string, ArgumentException> bad)
+    {
+        if (!ToolBoard.Installed(w)) throw bad("도구판이 없는 데이터다 (tuning.toolBoard)");
+    }
+
+    /// <summary>도구판과 바닥을 오가는 도구 (빈손 제외).</summary>
+    static int CarriedTool(SimWorld w, string id, Func<string, ArgumentException> bad)
+    {
+        int tool = w.T.Tools.IndexOf(id);
+        if (tool <= 0) throw bad($"도구 '{id}'가 없다");
+        return tool;
     }
 
     static int IndexOf(IReadOnlyList<string> list, string value)
@@ -187,7 +216,12 @@ static class CommandProcessor
                 w.AddActionNoise(c.Value, c.Value2);
                 break;
 
-            case CommandKind.ToolSelect: HandActions.SelectTool(w, c.Index); break;
+            case CommandKind.ToolSelect: ToolBoard.Select(w, c.Index); break;
+            case CommandKind.ToolBoardTake: ToolBoard.Take(w, c.Index); break;
+            case CommandKind.ToolBoardReturn: ToolBoard.Return(w, c.Index); break;
+            case CommandKind.ToolDrop: ToolBoard.Drop(w, c.Index); break;
+            case CommandKind.ToolPickup: ToolBoard.Pickup(w, c.Index); break;
+            case CommandKind.LockerReturn: HandActions.ReturnToLocker(w, c.Index); break;
             case CommandKind.LockerTake: HandActions.TakeFromLocker(w, c.Index); break;
             case CommandKind.HandDrop: HandActions.Drop(w); break;
             case CommandKind.Fixture: FixtureActions.Execute(w, c.Index); break;

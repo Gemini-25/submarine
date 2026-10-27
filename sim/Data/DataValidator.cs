@@ -201,7 +201,10 @@ static class DataValidator
         Check(r.WedgePatchFactor is > 0 and <= 1 && r.ShorePatchFactor is > 0 and <= 1, "tuning.repair 패치 배율은 0~1");
         Check(r.CaulkIntegrity is > 0 and <= 1, "tuning.repair.caulkIntegrity는 0~1");
         Check(t.Tools.Count > 0 && t.Tools[0] == "hand", "tuning.tools의 첫 도구는 빈손(hand)이어야 한다");
-        Check(t.Tools.Count <= 9 && t.Tools.Distinct().Count() == t.Tools.Count, "tuning.tools는 9개 이하, 중복 없음");
+        Check(t.Tools.Distinct().Count() == t.Tools.Count, "tuning.tools에 중복이 없어야 한다");
+        // M1 키 1~6과 M1 시험이 그대로 맞도록 앞 여섯 도구는 M1 순서 그대로 (M2 설계 '도구').
+        Check(t.Tools.Take(Bindings.Tools.Count).SequenceEqual(Bindings.Tools),
+            $"tuning.tools의 앞 {Bindings.Tools.Count}개는 M1 도구 순서 그대로 ({string.Join(", ", Bindings.Tools)})");
         foreach (var (item, count) in t.Inventory.Locker)
             Check(count >= 0, $"tuning.inventory.locker.{item} >= 0");
         Check(t.Crew.ShockVitalityLoss >= 0 && t.Crew.PinchVitalityLoss >= 0 && t.Crew.VitalityRecoveryPerMin >= 0, "tuning.crew 체력 수치 >= 0");
@@ -240,6 +243,7 @@ static class DataValidator
         }
 
         Repair.FixtureValidator.Validate(d, errors);
+        Repair.CrewValidator.Validate(d, errors);
 
         if (errors.Count > 0)
             throw new DataValidationException(errors);

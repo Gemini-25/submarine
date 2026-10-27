@@ -180,6 +180,18 @@ static class WaterSystem
 
     public static double Capacity(SimWorld w, int bilge) => w.T.Water.Bilges[w.BilgeIds[bilge]].CapacityL;
 
+    /// <summary>한꺼번에 쏟아지는 물 (물 분출 위험). 누수처럼 그 구역의 빌지를 먼저 채우고 넘치면 바닥에 고인다. 유입량에 센다.</summary>
+    public static void Burst(SimWorld w, int zone, double liters)
+    {
+        if (liters <= 0) return;
+        var water = w.Water;
+        water.InflowL += liters;
+        int b = w.ZoneBilge[zone];
+        double toBilge = Math.Min(liters, Room(w, b));
+        water.Bilge[b] += toBilge;
+        water.Floor[zone] += liters - toBilge;
+    }
+
     public static double Room(SimWorld w, int bilge) => Math.Max(0, Capacity(w, bilge) - w.Water.Bilge[bilge]);
 
     public static bool ZonesConnected(SimWorld w, int a, int b)

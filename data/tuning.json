@@ -173,6 +173,66 @@
       "locker": {
         "level": 2,
         "seconds": 0.5
+      },
+      "screwdriver": {
+        "level": 2,
+        "seconds": 1
+      },
+      "valve": {
+        "level": 3,
+        "seconds": 1
+      },
+      "scrape": {
+        "level": 8,
+        "seconds": 1
+      },
+      "rag": {
+        "level": 1,
+        "seconds": 0.5
+      },
+      "oil": {
+        "level": 1,
+        "seconds": 0.5
+      },
+      "wrap": {
+        "level": 2,
+        "seconds": 1
+      },
+      "hook": {
+        "level": 4,
+        "seconds": 1
+      },
+      "latch": {
+        "level": 4,
+        "seconds": 0.5
+      },
+      "lever": {
+        "level": 3,
+        "seconds": 0.4
+      },
+      "pawl": {
+        "level": 12,
+        "seconds": 0.3
+      },
+      "tap": {
+        "level": 1,
+        "seconds": 0.2
+      },
+      "cell_lift": {
+        "level": 6,
+        "seconds": 1
+      },
+      "toolboard": {
+        "level": 2,
+        "seconds": 0.5
+      },
+      "prime": {
+        "level": 1,
+        "seconds": 0.5
+      },
+      "tooldrop": {
+        "level": 8,
+        "seconds": 0.3
       }
     },
     "maxEmitSeconds": 60
@@ -227,7 +287,28 @@
       10,
       30,
       60
-    ]
+    ],
+    "hazards": {
+      "burn": {
+        "vitalityLoss": 0.12,
+        "stunSeconds": 1.2
+      },
+      "spray": {
+        "vitalityLoss": 0.1,
+        "stunSeconds": 2,
+        "burstL": 30
+      }
+    },
+    "touch": {
+      "bandsC": [
+        15,
+        30,
+        45,
+        60
+      ],
+      "ambientC": 12,
+      "burnAtC": 70
+    }
   },
   "failure": {
     "swampedFloorWaterL": 6000,
@@ -235,10 +316,30 @@
   },
   "inventory": {
     "oxygenCandles": 4,
-    "spareCanisters": 2,
     "locker": {
+      "brake_lining": 2,
+      "brush_set": 3,
+      "canister": 2,
+      "carbon_rods": 2,
+      "chamber_seal": 2,
+      "fan_bearing": 2,
       "fuse": 12,
+      "fuse_wire": 6,
+      "gasket": 3,
+      "gyro_bearing": 1,
+      "ink_bottle": 3,
+      "insulating_tape": 6,
+      "jumper_bar": 2,
+      "nav_gear": 2,
+      "packing_cord": 6,
+      "packing_tape": 4,
+      "panel_bulb": 8,
+      "penetrating_oil": 3,
+      "pump_bearing": 2,
+      "spare_cell": 1,
       "timber_shore": 6,
+      "vacuum_tube": 2,
+      "viewport_seal": 2,
       "wood_wedge": 8
     }
   },
@@ -254,7 +355,19 @@
     "mallet",
     "caulking_set",
     "voltmeter",
-    "scrub_brush"
+    "scrub_brush",
+    "screwdriver",
+    "engineer_hammer",
+    "file",
+    "scraper",
+    "knife",
+    "rag",
+    "oil_can",
+    "packing_hook",
+    "pricker",
+    "stethoscope",
+    "hydrometer",
+    "soldering_iron"
   ],
   "repair": {
     "strainerBolts": 4,
@@ -268,5 +381,18 @@
     "shorePatchDurability": 1.0,
     "caulkStrikes": 8,
     "caulkIntegrity": 1.0
+  },
+  "toolBoard": {
+    "beltSlots": 5,
+    "initialBelt": [
+      "wrench",
+      "mallet",
+      "caulking_set",
+      "voltmeter",
+      "scrub_brush"
+    ],
+    "rollTiltDeg": 10,
+    "rollSeconds": 3,
+    "dropOnShock": true
   }
 }
