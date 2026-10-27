@@ -1,0 +1,51 @@
+// 선체 (교범 04쪽 '선체', '축 패킹').
+{
+  "pairs": {
+    "aft.alarm": {
+      "no": 8,
+      "priority": 10,
+      "urgent": true,
+      "page": "04-진단-표-물과-선체.md",
+      "section": "축 패킹",
+      "sees": [
+        [ { "q": "zone.aft.alarm", "unit": "none", "above": 0.5 } ]
+      ],
+      "checks": [
+        {
+          "each": { "point": "leak.rivet.09,leak.rivet.10,leak.rivet.11,leak.rivet.12" },
+          "all": [ { "q": "cue.{point}.hiss", "unit": "cue", "above": 0.3, "says": "쉿 소리", "section": "선체" } ],
+          "verdict": "HUL-01"
+        },
+        {
+          "all": [ { "q": "cue.shaft.stream", "unit": "cue", "above": 0.3, "says": "축 고리 둘레로 물이 줄줄 흐르고" } ],
+          "verdict": "HUL-03"
+        }
+      ],
+      "verdicts": {
+        "HUL-01": {
+          "fault": "HUL-01",
+          "says": "그 구역의 누수",
+          "section": "선체",
+          "do": [ { "procedure": "proc.rivet.caulk", "bind": { "point": "{point}" } } ],
+          "verify": { "all": [ { "q": "cue.{point}.hiss", "unit": "cue", "below": 0.1 } ], "within": 60 }
+        },
+        "HUL-03": {
+          "fault": "HUL-03",
+          "says": "프로펠러 축 패킹 누수",
+          "do": [
+            { "procedure": "proc.shaft.repack", "if": [ { "q": "inventory.packing_cord", "unit": "none", "above": 0.5 } ] },
+            { "procedure": "proc.shaft.gland", "if": [ { "q": "inventory.packing_cord", "unit": "none", "below": 0.5 } ] }
+          ],
+          "verify": { "all": [ { "q": "cue.shaft.stream", "unit": "cue", "below": 0.3 } ], "within": 120 }
+        }
+      },
+      "exposure": { "setup": { "depthM": 300, "switches": { "C3": true }, "throttle": 0.75 }, "seconds": 60 },
+      "cases": [
+        { "expect": "HUL-01", "bind": { "point": "leak.rivet.11" }, "inject": [ { "fault": "HUL-01", "part": "leak.rivet.11" } ] },
+        { "expect": "HUL-03", "inject": [ { "fault": "HUL-03" } ] },
+        { "expect": "HUL-01", "bind": { "point": "leak.rivet.11" }, "inject": [ { "fault": "HUL-03" }, { "fault": "HUL-01", "part": "leak.rivet.11" } ] },
+        { "expect": "none" }
+      ]
+    }
+  }
+}

@@ -1,0 +1,12 @@
+// 진단 자료 (WP16, docs/plans/WP16-solver.md 2절). 교범 03~05쪽 진단 표의 증상, 확인, 의심, 조치를 기계가 읽는 꼴로 옮긴 것이다.
+// 쌍(pairs)은 계통마다 data/diagnosis/<계통>.json에 둔다. pace와 margins는 이 파일에만 둔다.
+{
+  "pace": {
+    "handSeconds": 0.6, "lookSeconds": 0.6, "pollSeconds": 1, "startSeconds": 1,
+    "quietSeconds": 10, "recheckSeconds": 60, "recentSeconds": 300, "historySeconds": 300, "retries": 1
+  },
+  "margins": {
+    "V": 5, "A": 0.4, "Lpm": 6, "L": 20, "sg": 0.010, "deg": 3, "km": 0.05, "rpm": 5, "m": 1,
+    "pct": 0.1, "cue": 0.3, "band": 1, "MOhm": 2, "Ohm": 2, "none": 0.5
+  }
+}

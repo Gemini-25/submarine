@@ -337,6 +337,8 @@ public class ObservationTests
             File.WriteAllText(Path.Combine(dir, "observables", "air.json"), """
                 { "cues": { "fan.rattle": { "sense": "Feel", "anchor": "vent_fan", "q": "device.vent_fan.temp", "map": [[20,0],[80,1]], "caption": "cue.fan.hum" } } }
                 """);
+            // 공기 진단 자료는 지운 단서(팬 리본, 멎은 팬 소리)를 읽는다 (검사기가 컴파일해 본다).
+            File.Delete(Path.Combine(dir, "diagnosis", "air.json"));
         });
         Assert.Contains(data.Cues, c => c.Id == "fan.rattle");
         Assert.Contains(data.Cues, c => c.Id == "fan.hum");

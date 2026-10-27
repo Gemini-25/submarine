@@ -1,0 +1,77 @@
+// 항법 (교범 05쪽 '자이로컴퍼스와 항법 계산기').
+{
+  "pairs": {
+    "heading.off": {
+      "no": 12,
+      "priority": 50,
+      "page": "05-진단-표-공기-감각-항법-케이블.md",
+      "section": "자이로컴퍼스와 항법 계산기",
+      "sees": [
+        [ { "q": "cue.gyro.warble", "unit": "cue", "above": 0.5 } ],
+        [ { "calc": "headingGap", "unit": "deg", "trend": 240, "above": 2, "says": "1분에 약 1도씩 계속 벌어진다" } ],
+        [ { "q": "panel.lamp.nav", "is": "warning" } ]
+      ],
+      "checks": [
+        {
+          "all": [ { "q": "panel.lamp.nav", "is": "warning" }, { "q": "cue.gyro.settleLamp", "unit": "cue", "below": 0.5, "says": "안정 표시등이 꺼져 있다" } ],
+          "verdict": "unsettled"
+        },
+        {
+          "prep": [ { "cmd": "tool.stethoscope" } ],
+          "undo": [ { "cmd": "tool.hand" } ],
+          "all": [ { "measure": "stethoscope", "target": "gyro.case", "unit": "cue", "above": 0.4, "says": "청진기" } ],
+          "verdict": "NAV-01"
+        }
+      ],
+      "verdicts": {
+        "unsettled": { "says": "자이로가 자리 잡기 전", "do": [] },
+        "NAV-01": {
+          "fault": "NAV-01",
+          "says": "(NAV-01)",
+          "do": [ { "procedure": "proc.gyro.bearing" }, { "align": "gyro" } ],
+          "verify": { "all": [ { "q": "cue.gyro.warble", "unit": "cue", "below": 0.3 }, { "calc": "headingGap", "unit": "deg", "below": 1 } ], "within": 120, "hold": 30 }
+        }
+      },
+      "exposure": { "setup": { "depthM": 120, "throttle": 0.5 }, "seconds": 60 },
+      "cases": [
+        { "expect": "NAV-01", "inject": [ { "fault": "NAV-01" } ] },
+        { "expect": "unsettled", "setup": { "devices": { "gyrocompass": false } }, "seconds": 5 },
+        { "expect": "none" }
+      ]
+    },
+    "distance.wrong": {
+      "no": 13,
+      "priority": 55,
+      "page": "05-진단-표-공기-감각-항법-케이블.md",
+      "section": "자이로컴퍼스와 항법 계산기",
+      "sees": [
+        [ { "q": "cue.navcomp.stall", "unit": "cue", "peak": 10, "above": 0.5, "says": "몇 초씩 멎다가" } ],
+        [ { "calc": "distanceGap", "unit": "km", "trend": 240, "above": 0.05 } ]
+      ],
+      "checks": [
+        {
+          "prep": [ { "cmd": "tool.stethoscope" } ],
+          "undo": [ { "cmd": "tool.hand" } ],
+          "all": [
+            { "q": "reading.tachometer", "unit": "rpm", "watch": 10, "below": 5, "says": "축 회전계 바늘은 고른데" },
+            { "measure": "stethoscope", "target": "navcomp.unit", "unit": "cue", "above": 0.4 }
+          ],
+          "verdict": "NAV-02"
+        }
+      ],
+      "verdicts": {
+        "NAV-02": {
+          "fault": "NAV-02",
+          "says": "(NAV-02)",
+          "do": [ { "procedure": "proc.navcomp.gear" }, { "reset": "navcomp" } ],
+          "verify": { "all": [ { "calc": "distanceGap", "unit": "km", "below": 0.05 } ], "within": 60, "hold": 20 }
+        }
+      },
+      "exposure": { "setup": { "depthM": 120, "throttle": 0.5 }, "seconds": 300 },
+      "cases": [
+        { "expect": "NAV-02", "inject": [ { "fault": "NAV-02" } ] },
+        { "expect": "none" }
+      ]
+    }
+  }
+}
