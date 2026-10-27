@@ -521,7 +521,10 @@ public class PartMechanicsTests
     {
         var m = NewSim(TestData.Data).World.Mechanics;
         Assert.False(m.Steam || m.Attitude || m.Senses || m.Nav || m.Cable);
-        // 바다 경로와 타이머는 계통 데이터(축 패킹 등)에 생긴다. 얼린 기준 데이터에는 없다.
+        // 부품 타이머와 바다 경로는 모듈이 아니다. 계통 데이터(송풍 팬의 응급 수리 수명, 펌프 베어링의 기름 타이머, 축 패킹)가 있으면 켜진다.
+        Assert.True(m.HasTimers);
+        Assert.True(m.HasSeaPaths);
+        // 그런 데이터가 없는 얼린 기준 데이터에서는 꺼진다
         var frozen = NewSim(GameData.LoadFromDirectory(Path.Combine(TestData.FixtureDir, "golden-data"))).World.Mechanics;
         Assert.False(frozen.HasSeaPaths);
         Assert.False(frozen.HasTimers);

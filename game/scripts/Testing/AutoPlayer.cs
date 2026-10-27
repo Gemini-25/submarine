@@ -62,6 +62,8 @@ public partial class AutoPlayer : Node
         ["fixtures"] = FixturesSuite,
         ["tools"] = ToolsSuite,
         ["drill-hull"] = DrillHullSuite,
+        ["drill-air"] = DrillAirSuite,
+        ["drill-water"] = DrillWaterSuite,
     };
 
     async Task Run()

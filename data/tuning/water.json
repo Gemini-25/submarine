@@ -1,0 +1,6 @@
+{
+  "pumpBearing": {
+    "lubeDragCut": 0.5,
+    "looseCapWearMultiplier": 3
+  }
+}

@@ -63,8 +63,10 @@ public partial class Submarine : Node3D
         BuildFurniture();
         M1Ids.UnionWith(Interactables.Keys);
         BuildLayout();
+        BuildAir(); // 배치의 환풍기와 흡수통 표지에 동작을 붙인다 (WP9)
         BindToolBoard(); // 배치가 놓은 공구판 윤곽에 동작을 붙인다
         BuildSpareCompartments(); // 예비품 칸 (중앙 벽장, 후방 사물함)
+        BuildPumpBearing(); // WP10: 배치의 펌프 표지 자리에 베어링 뚜껑, 볼트, 기름 컵, 몸통
         BuildShaftGlandFixtures(); // 선체: 축 패킹 상자 (Submarine.Hull)
     }
 
@@ -325,9 +327,7 @@ public partial class Submarine : Node3D
         Geo.Box(this, new Vector3(0.24f, 0.05f, 0.2f), new Vector3(7.4f, 0.945f, 0.95f), new Color(0.35f, 0.12f, 0.08f));
         Geo.Text(this, "정비 교범", new Vector3(7.4f, 0.972f, 0.95f), 0.03f, Geo.Cream, Vector3.Up).RotationDegrees = new Vector3(-90, 90, 0);
 
-        // 중앙의 흡수통 (M1에서는 장식)
-        Geo.Solid(this, new Vector3(0.4f, 0.6f, 0.35f), new Vector3(3.0f, 0.3f, -HalfWidth + 0.2f), Geo.Steel, "Scrubber");
-        Geo.Text(this, "흡수통", new Vector3(3.0f, 0.65f, -HalfWidth + 0.38f), 0.03f, Geo.Bakelite, Vector3.Back);
+        // 중앙의 흡수통은 M2부터 진짜 장비다 (Submarine.Air.cs).
 
         // 후방: 주 전동기와 프로펠러 축. 전동기는 x 0.45~1.15로 줄여 뒤쪽 축 패킹 상자에 웅크려 닿게 했다(M2 배치).
         float motorMid = (MotorX0 + MotorX1) / 2, motorLen = MotorX1 - MotorX0;
