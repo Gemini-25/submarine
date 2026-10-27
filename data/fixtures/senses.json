@@ -128,7 +128,6 @@
         },
         "insert": {
           "noise": "fuse",
-          "hazards": [ { "if": "device.sonar.running == 1", "hazard": "shock" } ],
           "accepts": {
             "vacuum_tube": { "set": { "filament": 1 }, "renew": true },
             "tube_dead": { "set": { "filament": 0 } }

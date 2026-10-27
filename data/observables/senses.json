@@ -37,6 +37,13 @@
       "while": "device.hydrophone.running",
       "map": [[0, 1], [0.3, 0.8], [0.5, 0.3], [1, 0]],
       "caption": "cue.hydrophone.hiss"
+    },
+    "hydrophone.listen": {
+      "sense": "Sound",
+      "anchor": "hydrophone",
+      "q": "device.hydrophone.running",
+      "map": [[0, 0], [1, 1]],
+      "caption": "cue.hydrophone.listen"
     }
   }
 }

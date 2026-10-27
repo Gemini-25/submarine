@@ -1,0 +1,37 @@
+{
+  "name": "감각 훈련: 상황판과 청음기",
+  "briefing": [
+    "모선 아르고스호 → 모스호 기관사. 수심 300m 정박 훈련.",
+    "후방 빌지에 물이 차 있는데 상황판이 조용하다. 청음기 당직은 헤드폰의 잡음이 심해졌다고 보고했다. 상황판과 청음기를 확인하고, 매뉴얼(Tab)을 참고해 원인을 찾아 고칠 것.",
+    "상황판 표시가 바르게 돌아오고, 청음기가 두 진공관으로 소리를 내고, 빌지 수위를 60L 아래로 30초 동안 유지하면 훈련을 마친다."
+  ],
+  "seed": 1313,
+  "setup": {
+    "depthM": 300,
+    "bilges": {
+      "bilge.aft": 150
+    }
+  },
+  "events": [
+    {
+      "atSeconds": 0,
+      "fault": "SNS-01",
+      "part": "panel.bulb.water"
+    },
+    {
+      "atSeconds": 0,
+      "fault": "SNS-03",
+      "part": "hydrophone.tube.1"
+    }
+  ],
+  "success": {
+    "assert": "part.panel.bulb.water.prop.burnt == 0 && part.panel.bulb.water.prop.present == 1 && part.panel.bulb.water.prop.bezel == 1 && part.hydrophone.tube.1.prop.filament >= 0.5 && part.hydrophone.tube.2.prop.filament >= 0.5 && device.hydrophone.running == 1 && bilge.total < 60",
+    "holdSeconds": 30,
+    "objectives": [
+      "상황판 표시등이 바르게 켜지게 한다",
+      "청음기가 두 진공관으로 소리를 내게 한다",
+      "빌지 수위를 60L 아래로 30초 동안 유지한다"
+    ]
+  },
+  "timeLimitSeconds": 1200
+}

@@ -1015,8 +1015,7 @@ public partial class Submarine
         Geo.Blocker(n, new Vector3(0.65f, 0.04f, 0.5f), new Vector3(6.425f, top - 0.02f, z));
         var glass = new MeshBuilder();
         glass.Cylinder(ArtMat.Glass, new Transform3D(Basis.Identity, new Vector3(6.15f, 0.8f, 0.82f)), 0.02f, 0.04f, 10);
-        glass.Cylinder(ArtMat.Glass, new Transform3D(Basis.Identity, new Vector3(6.3f, 1.04f, 1.12f)), 0.018f, 0.07f, 10);
-        glass.Cylinder(ArtMat.Glass, Kit.AlongAxis(Vector3.Forward, new Vector3(6.72f, 1.45f, 1.015f)), 0.018f, 0.06f, 10);
+        // 증폭 진공관과 소나 진공관의 유리는 감각 계통이 뽑고 꽂는 모습과 함께 짓는다 (Submarine.Senses.cs).
         glass.Instance(n, "Glass", NoShadow);
         Dial(n, new Vector3(6.6f, 0.887f, 0.9f), Vector3.Up, 0.035f, "검류계").SetFraction(0.5f);
         NamePlate(n, "사이펀 기록기", new Vector3(6.25f, 0.96f, 0.923f), Vector3.Forward, 0.014f);
@@ -1037,7 +1036,7 @@ public partial class Submarine
         Marker(n, "hydrophone.door.screw.2", "청음기 문 나사 2", new Vector3(6.25f, 1.585f, 1.008f), new Vector3(0.025f, 0.025f, 0.02f), hy);
         Marker(n, "hydrophone.door", "청음기 문", new Vector3(6.35f, 1.45f, 1.01f), new Vector3(0.2f, 0.15f, 0.01f), hy);
         Marker(n, "hydrophone", "청음기", new Vector3(6.35f, 1.632f, 1.01f), new Vector3(0.2f, 0.02f, 0.01f), hy);
-        Marker(n, "sonar.tube.1", "소나 진공관", new Vector3(6.72f, 1.45f, 1.0f), new Vector3(0.04f, 0.08f, 0.02f), hy);
+        Marker(n, "sonarset.tube.1", "소나 진공관", new Vector3(6.72f, 1.45f, 1.0f), new Vector3(0.04f, 0.08f, 0.02f), hy);
         Marker(n, "gadget.headphones", "헤드폰", new Vector3(6.45f, 1.22f, 1.12f), new Vector3(0.12f, 0.1f, 0.04f), hy);
     }
 }

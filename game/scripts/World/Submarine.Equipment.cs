@@ -73,6 +73,9 @@ public partial class Submarine
         ("배수량", "L/분", 150, p => p.PumpFlow * 60),
     };
 
+    /// <summary>표시등 전구의 재질과 모양 (감각 계통이 탄 전구, 빠진 전구, 램프 시험을 덧그린다: Submarine.Senses.cs).</summary>
+    readonly (StandardMaterial3D Mat, MeshInstance3D Bulb)[] _panelLamps = new (StandardMaterial3D, MeshInstance3D)[8];
+
     void BuildStatusPanel()
     {
         var root = new Node3D { Name = "StatusPanel", Position = new Vector3(Length - 0.01f, 0, 0) };
@@ -91,7 +94,7 @@ public partial class Submarine
             float x = -0.77f + i * 0.22f;
             Geo.Cyl(root, 0.045f, 0.02f, new Vector3(x, 1.73f, 0.05f), Geo.Brass).RotationDegrees = new Vector3(90, 0, 0);
             lampMats[i] = Geo.Glow(red, 0);
-            Geo.Sphere(root, 0.034f, new Vector3(x, 1.73f, 0.065f), lampMats[i]);
+            _panelLamps[i] = (lampMats[i], Geo.Sphere(root, 0.034f, new Vector3(x, 1.73f, 0.065f), lampMats[i]));
             Geo.Text(root, LampLabels[i], new Vector3(x, 1.655f, 0.055f), 0.034f);
 
             var g = Gauges[i];

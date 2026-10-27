@@ -65,6 +65,7 @@ public partial class Submarine : Node3D
         BuildLayout();
         BindToolBoard(); // 배치가 놓은 공구판 윤곽에 동작을 붙인다
         BuildSpareCompartments(); // 예비품 칸 (중앙 벽장, 후방 사물함)
+        BuildSenses(query); // 감각 (WP13): 상황판 전구와 램프 시험, 청음기와 소나, 증폭 진공관
     }
 
     /// <summary>표현 층이 매 프레임 부른다.</summary>

@@ -368,6 +368,63 @@ public class SensesTests
     }
 
     [Fact]
+    public void Inserting_a_tube_into_a_switched_on_hydrophone_shocks()
+    {
+        var sim = TestData.NewSim();
+        sim.Run(2);
+        // 끈 채로 문을 열고 성한 관을 뽑는다 (위험 없음)
+        var open = Follow(sim, "proc.tube.replace", Tube("2"), skip: c => c is "hand.drop" || c.StartsWith("locker.", StringComparison.Ordinal)
+            || c.EndsWith(".insert", StringComparison.Ordinal) || c.EndsWith(".close", StringComparison.Ordinal) || c.EndsWith(".tighten", StringComparison.Ordinal)
+            || c == "device.hydrophone.on");
+        Assert.DoesNotContain(open, e => Harm.Contains(e.Kind));
+        Assert.Equal("vacuum_tube", sim.QS("crew.hand"));
+        // 켜 놓고 꽂으면: 관이 빠져 청음기는 서 있지만 전원은 걸려 있다
+        sim.Cmd("device.hydrophone.on");
+        sim.Run(Pace);
+        Assert.Equal(0, sim.Q("device.hydrophone.running"));
+        sim.Cmd("hydrophone.tube.2.insert");
+        sim.Run(Pace);
+        Assert.Contains(sim.DrainEvents(), e => e.Kind == SimEventKind.Shock && e.Subject == "hydrophone.tube.2.insert");
+        Assert.Equal(1, sim.Q("part.hydrophone.tube.2.prop.present"));
+    }
+
+    [Fact]
+    public void Pulling_the_sonar_tube_during_a_ping_shocks()
+    {
+        var sim = TestData.NewSim();
+        sim.Cmd("tool.hand");
+        sim.Cmd("sonar.ping");
+        sim.Step();
+        Assert.Equal(1, sim.Q("device.sonar.running"));
+        sim.Cmd("sonarset.tube.1.pull");
+        sim.Step();
+        Assert.Contains(sim.DrainEvents(), e => e.Kind == SimEventKind.Shock && e.Subject == "sonarset.tube.1.pull");
+        Assert.Equal("vacuum_tube", sim.QS("crew.hand"));
+    }
+
+    /// <summary>교범 11쪽: 전구 교체와 진공관 교체는 '조용'(손동작 소리의 합이 5 이하)하다.</summary>
+    [Theory]
+    [InlineData("proc.bulb.replace", "lamp", "water")]
+    [InlineData("proc.tube.replace", "tube", "1")]
+    [InlineData("proc.tube.salvage", "tube", "1")]
+    public void Bulb_and_tube_work_is_quiet(string proc, string name, string value)
+    {
+        var sim = TestData.NewSim();
+        sim.Inject(proc == "proc.bulb.replace" ? "SNS-01" : "SNS-03");
+        double peak = 0;
+        foreach (var c in ProcedureRunner.ExpandWithBelt(sim, TestData.Data.Procedure(proc), new Dictionary<string, string> { [name] = value }))
+        {
+            sim.Apply(c);
+            for (int i = 0; i < 12; i++)
+            {
+                sim.Run(Pace / 12);
+                peak = Math.Max(peak, sim.World.Noise.Actions.Sum(a => a.Level));
+            }
+        }
+        Assert.InRange(peak, 1, 5);
+    }
+
+    [Fact]
     public void Tubes_sit_behind_the_screwed_door()
     {
         var sim = TestData.NewSim();
@@ -471,5 +528,68 @@ public class SensesTests
         foreach (var s in new[] { sim, other })
             for (int i = half; i < cmds.Count; i++) { s.Apply(cmds[i]); s.Run(Pace); }
         Assert.Equal(sim.StateHash(), other.StateHash());
+    }
+
+    // ---------- 훈련 m2-senses-a
+
+    /// <summary>
+    /// 교범대로 푸는 사람: 빌지가 찼는데 배수 표시등이 조용하면 램프 시험 → 전구 교체, 빌지를 퍼내고,
+    /// 청음기 잡음이 크면 흐린 필라멘트의 관을 바꾼다. 판단은 ObservableQuery로만 한다(SensesDrill).
+    /// </summary>
+    static (Simulation Sim, List<SimEvent> Events) SolveDrill()
+    {
+        var sim = new Simulation();
+        sim.StartMission(TestData.Data, "m2-senses-a");
+        var q = new Autoplay.ObservableQuery(sim);
+        var events = new List<SimEvent>();
+        sim.Run(2);
+        events.AddRange(sim.DrainEvents());
+
+        Assert.True(Autoplay.SensesDrill.WaterLampSilent(q, TestData.T.Panel.BilgeWarnL));
+        string? lamp = Autoplay.SensesDrill.DarkBulb(q);
+        Assert.Equal("water", lamp);
+        events.AddRange(Follow(sim, "proc.bulb.replace", Lamp(lamp!)));
+        Assert.Equal("warning", q.Read("panel.lamp.water").Text);
+        Assert.Null(Autoplay.SensesDrill.DarkBulb(q));
+
+        sim.Cmd("switch.C3.on");
+        sim.Run(Pace);
+
+        string? tube = null;
+        for (int i = 0; i < 100 && tube == null; i++)
+        {
+            tube = Autoplay.SensesDrill.WeakTube(q);
+            if (tube == null) sim.Run(5);
+        }
+        Assert.Equal("1", tube);
+        events.AddRange(Follow(sim, "proc.tube.replace", Tube(tube!)));
+        Assert.Null(Autoplay.SensesDrill.WeakTube(q));
+
+        double limit = sim.Mission!.TimeLimitSeconds;
+        while (sim.Status == MissionStatus.Running && sim.Q("time") < limit) sim.Run(1);
+        events.AddRange(sim.DrainEvents());
+        return (sim, events);
+    }
+
+    [Fact]
+    public void Senses_drill_is_solvable_at_human_pace_by_the_manual()
+    {
+        var (sim, events) = SolveDrill();
+        Assert.Equal(MissionStatus.Succeeded, sim.Status);
+        Assert.DoesNotContain(events, e => Harm.Contains(e.Kind));
+        Assert.True(sim.Q("time") < 600, $"{sim.Q("time")}초");
+        // 같은 풀이는 같은 상태 해시
+        Assert.Equal(sim.StateHash(), SolveDrill().Sim.StateHash());
+    }
+
+    [Fact]
+    public void Doing_nothing_fails_the_senses_drill()
+    {
+        var sim = new Simulation();
+        sim.StartMission(TestData.Data, "m2-senses-a");
+        sim.Run(sim.Mission!.TimeLimitSeconds + 1);
+        Assert.Equal(MissionStatus.Failed, sim.Status);
+        Assert.Equal("off", sim.QS("panel.lamp.water"));
+        Assert.Equal(0, sim.Q("device.hydrophone.running"));
     }
 }

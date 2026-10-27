@@ -61,6 +61,7 @@ public partial class AutoPlayer : Node
         ["workviews"] = WorkViewsSuite,
         ["fixtures"] = FixturesSuite,
         ["tools"] = ToolsSuite,
+        ["drill-senses"] = SensesDrillSuite,
     };
 
     async Task Run()
