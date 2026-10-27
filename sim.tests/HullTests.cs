@@ -259,7 +259,7 @@ public class ShaftPackingTests
         Assert.InRange(Prop(sim, "heat"), 45, 60);
         Assert.Equal(0.4, sim.Q($"{Packing}.integrity"), 9);
         var q = new ObservableQuery(sim);
-        Assert.True(q.Number("cue.shaft.squeal") < 0.3);
+        Assert.Equal(0, q.Number("cue.shaft.squeal"));
         Assert.Equal(0, q.Number("cue.shaft.smoke"));
         Assert.Equal(1, sim.Q("zone.aft.alarm")); // 응급 수리 뒤에도 경고등은 남는다 (교범)
         var touch = Do(sim, "tool.hand", "shaft.collar.touch");
@@ -282,6 +282,39 @@ public class ShaftPackingTests
         // 응급 수리의 타이머는 새 패킹을 건드리지 않는다.
         sim.Run(1000);
         Assert.Equal(0.95, sim.Q($"{Packing}.integrity"), 9);
+    }
+
+    /// <summary>바르게 한 응급 수리(3/3)는 훈련 스로틀과 전속 모두에서 뜨겁기만 하다: 끽끽 소리, 끽끽 소음, 연기가 없고 만져도 데지 않는다 (교범 '연필 정정').</summary>
+    [Theory]
+    [InlineData(0.8)]
+    [InlineData(1)]
+    public void The_emergency_three_three_is_hot_but_quiet(double throttle)
+    {
+        var sim = Faulted(throttle);
+        NoHarm(Follow(sim, "proc.shaft.gland"));
+        sim.Run(800);
+        var q = new ObservableQuery(sim);
+        Assert.Equal(0, q.Number("cue.shaft.squeal"));
+        Assert.Equal(0, q.Number("cue.shaft.smoke"));
+        Assert.Equal(DeviceNoise(sim), sim.Q("noise.current"), 9);
+        var touch = Do(sim, "tool.hand", "shaft.collar.touch");
+        Assert.InRange(touch.Single(e => e.Kind == SimEventKind.Touched).Value, 0, 3);
+        Assert.DoesNotContain(touch, e => e.Kind == SimEventKind.Hurt);
+    }
+
+    /// <summary>
+    /// 교범 '응급 수리의 수명': 수명이 다한 3/3에서 축을 멈추고 한 칸 더 조이면 15분쯤 덜 새지만, 도로 풀어도 그 15분 뒤 다시 더 샌다.
+    /// </summary>
+    [Fact]
+    public void One_more_notch_then_back_still_wears_out_after_fifteen_minutes()
+    {
+        var sim = Faulted(throttle: 0);
+        NoHarm(Follow(sim, "proc.shaft.gland"));
+        sim.Run(905);
+        double worn = sim.Q($"{Packing}.integrity");
+        NoHarm(Do(sim, "tool.wrench", "shaft.nut.A.up", "shaft.nut.A.down"));
+        sim.Run(950);
+        Assert.Equal(worn - 0.15, sim.Q($"{Packing}.integrity"), 9);
     }
 
     /// <summary>응급 수리를 한 칸 더 한 뒤(4/3, 4/4)에도 정식 수리가 절차 그대로 된다.</summary>
@@ -403,8 +436,11 @@ public class ShaftPackingTests
     {
         var sim = UnevenRepack(throttle: 0.8);
         Assert.Equal(1, Prop(sim, "cocked"));
+        Assert.Equal("", sim.QS($"part.{Packing}.fault")); // 고친 것으로 보인다
         var q = new ObservableQuery(sim);
-        sim.Run(300);
+        sim.Run(60);
+        Assert.Equal(0, sim.Q("zone.aft.alarm")); // 처음에는 경고등이 꺼진다
+        sim.Run(240);
         Assert.True(q.Number("cue.shaft.smoke") > 0.3);
         sim.Run(900);
         Assert.Equal(1, sim.Q("zone.aft.alarm"));
@@ -517,7 +553,7 @@ public class ShaftPackingTests
     // ── 손의 판정 ───────────────────────────────────────
 
     [Theory]
-    [InlineData("shaft.follower.back", "hand", "nuts_tight")]
+    [InlineData("shaft.follower.back", "hand", "follower_nuts_tight")]
     [InlineData("shaft.packing.hook", "packing_hook", "follower_in")]
     [InlineData("shaft.packing.wrap", "hand", "need_packing_cord")]
     [InlineData("shaft.nut.A.up", "hand", "need_wrench")]
@@ -543,6 +579,35 @@ public class ShaftPackingTests
         Assert.Equal("", sim.QS("crew.hand")); // 끈 한 타래로 고리 셋
         Do(sim, "locker.take.packing_cord");
         Assert.Contains(Do(sim, "shaft.packing.wrap"), e => e.Detail == "packing_full");
+    }
+
+    // ── repeatFrom ──────────────────────────────────────
+
+    [Fact]
+    public void Repeat_counts_come_only_from_visible_part_values()
+    {
+        var sim = Faulted(throttle: 0);
+        var q = new ObservableQuery(sim);
+        Assert.Equal(2, q.Number($"part.{Packing}.prop.nutA")); // 화면에 보이는 너트 칸 수
+        Assert.Throws<UnobservableException>(() => q.Read($"part.{Packing}.prop.glandLife")); // 숨은 수명
+        Assert.Throws<UnobservableException>(() => q.Read($"part.{Packing}.prop.cocked")); // 숨은 결함
+        foreach (var step in TestData.Data.Procedures.SelectMany(p => p.Steps).Where(s => s.RepeatFrom != null))
+            Assert.True(ObservableQuery.IsVisiblePartProp(step.RepeatFrom!, TestData.Data), step.RepeatFrom);
+    }
+
+    [Theory]
+    [InlineData("part.leak.shaft_packing.prop.glandLife", false, "visible")]
+    [InlineData("leak.shaft_packing.inflow", false, "visible")]
+    [InlineData("part.leak.shaft_packing.prop.nutA", true, "order")]
+    public void Broken_repeat_from_is_a_load_error(string path, bool withOrder, string mention)
+    {
+        var e = Assert.Throws<DataValidationException>(() => DataValidationTests.LoadModified(Path.Combine("procedures", "hull.json"), n =>
+        {
+            var step = n["proc.shaft.repack"]!["steps"]![2]!;
+            step["repeatFrom"] = path;
+            if (withOrder) step["order"] = new System.Text.Json.Nodes.JsonArray(1, 2);
+        }));
+        Assert.Contains(e.Errors, x => x.Contains("repeatFrom") && x.Contains(mention));
     }
 
     // ── 교범 ────────────────────────────────────────────

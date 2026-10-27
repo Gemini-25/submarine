@@ -75,7 +75,7 @@
         "back": {
           "tool": "hand",
           "noise": "lever",
-          "rejectIf": [ { "if": "self.nutA >= 0.5 || self.nutB >= 0.5", "reason": "nuts_tight" } ],
+          "rejectIf": [ { "if": "self.nutA >= 0.5 || self.nutB >= 0.5", "reason": "follower_nuts_tight" } ],
           "hazards": [ { "if": "device.propulsion.running == 1", "hazard": "pinch" } ]
         },
         "in": {

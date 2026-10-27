@@ -49,8 +49,23 @@ public sealed class ObservableQuery
         return parts.Length == 3 && parts[0] == "zone" && parts[2] == "alarm";
     }
 
+    /// <summary>
+    /// 부품의 보이는 상태 값 `part.&lt;id&gt;.prop.&lt;p&gt;`: p가 그 부품(kindTemplates 합침 뒤)의 visible에 있으면 사람이 보는 값이다
+    /// (너트의 칸 수처럼 Snapshot.Parts로 화면에 나가는 값). 숨은 값(고착, 숨은 결함, 수명)은 거절한다.
+    /// </summary>
+    public static bool IsVisiblePartProp(string path, Data.GameData data)
+    {
+        const string head = "part.", mid = ".prop.";
+        if (!path.StartsWith(head, StringComparison.Ordinal)) return false;
+        int at = path.LastIndexOf(mid, StringComparison.Ordinal);
+        if (at <= head.Length) return false;
+        string id = path[head.Length..at], prop = path[(at + mid.Length)..];
+        return prop.Length > 0 && prop.IndexOf('.') < 0 && data.Parts.FirstOrDefault(p => p.Id == id) is { } part && part.Visible.Contains(prop);
+    }
+
     /// <summary>관찰할 수 있는 경로만 읽는다. 아니면 UnobservableException.</summary>
-    public QueryValue Read(string path) => IsObservable(path) ? _sim.Query(path) : throw new UnobservableException(path);
+    public QueryValue Read(string path) =>
+        IsObservable(path) || IsVisiblePartProp(path, _sim.Data) ? _sim.Query(path) : throw new UnobservableException(path);
 
     public double Number(string path) => Read(path).Number;
 

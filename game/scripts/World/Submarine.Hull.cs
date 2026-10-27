@@ -137,10 +137,33 @@ public partial class Submarine
                 spray.Position = new Vector3(0.39f, y - 0.08f, z);
                 spray.Direction = Vector3.Down;
                 spray.Spread = 25;
-                OnUpdate((_, _) =>
+                // 고친 뒤처럼 조금 새면(0.05L/s 이하, 물줄기 단서가 사라지는 곳) 빽빽한 줄기 대신 띄엄띄엄 떨어지는 물방울.
+                var drip = new CpuParticles3D
                 {
+                    Amount = 3,
+                    Lifetime = 1.0,
+                    Mesh = spray.Mesh,
+                    Direction = Vector3.Down,
+                    Spread = 5,
+                    Gravity = new Vector3(0, -9.8f, 0),
+                    InitialVelocityMin = 0,
+                    InitialVelocityMax = 0.05f,
+                    Emitting = false,
+                    LocalCoords = false,
+                    Position = spray.Position,
+                };
+                n.AddChild(drip);
+                OnUpdate((s, _) =>
+                {
+                    double q = 0;
+                    foreach (var l in s.Leaks)
+                        if (l.Id == GlandPart) q = l.InflowLps;
+                    spray.Emitting = q > 0.05;
                     spray.InitialVelocityMin = 0.05f;
                     spray.InitialVelocityMax = 0.3f;
+                    drip.Emitting = q > 0.0002 && q <= 0.05;
+                    // 새는 양에 따라 물방울 간격이 달라진다 (분당 0.2L이면 1초에 몇 방울).
+                    drip.SpeedScale = (float)Math.Clamp(q / 0.0035, 0.2, 4);
                 });
                 break;
             }

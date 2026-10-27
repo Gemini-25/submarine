@@ -79,7 +79,8 @@ public static class ProcedureRunner
         var steps = p.Steps.Select(s => s.RepeatFrom == null ? s : new ProcedureStep
         {
             Type = s.Type, Text = s.Text, Cmd = s.Cmd, Tool = s.Tool, Order = s.Order, Requires = s.Requires, Hazard = s.Hazard, Revision = s.Revision,
-            Repeat = Math.Max(0, (int)Math.Round(sim.Query(s.RepeatFrom).Number)),
+            // 사람이 보는 값만 읽는다 (부품의 visible 값; 관찰 화이트리스트를 거친다).
+            Repeat = Math.Max(0, (int)Math.Round(new Autoplay.ObservableQuery(sim).Number(s.RepeatFrom))),
         }).ToList();
         return new ProcedureDef { Id = p.Id, Title = p.Title, Fault = p.Fault, Grade = p.Grade, Bind = p.Bind, Steps = steps };
     }

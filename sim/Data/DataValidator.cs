@@ -226,6 +226,14 @@ static class DataValidator
                 Check(step.Tool == null || t.Tools.Contains(step.Tool), $"procedures.{p.Id}: 알 수 없는 도구 '{step.Tool}'");
                 Check(step.Repeat >= 1, $"procedures.{p.Id}: repeat >= 1");
                 Check(step.Text.Length > 0, $"procedures.{p.Id}: 단계 설명(text)이 비어 있음");
+                if (step.RepeatFrom is { } from)
+                {
+                    // 되풀이 횟수는 사람이 보는 값(부품의 visible)에서만 읽는다. 조이는 순서(order)와는 함께 쓰지 않는다.
+                    Check(Autoplay.ObservableQuery.IsVisiblePartProp(from, d),
+                        $"procedures.{p.Id}: repeatFrom '{from}'은 part.<부품>.prop.<값> 꼴이고 그 값이 부품의 visible에 있어야 한다");
+                    Check(step.Order.Count == 0, $"procedures.{p.Id}: repeatFrom과 order는 함께 쓸 수 없다");
+                    Check(step.Cmd != null, $"procedures.{p.Id}: repeatFrom에는 cmd가 있어야 한다");
+                }
             }
         }
 
