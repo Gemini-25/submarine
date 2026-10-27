@@ -269,27 +269,6 @@ public partial class Submarine
         var spring = Add(Binder.Bind(mount, "motor.brush.spring", new Vector3(0.05f, 0.05f, 0.03f), new Vector3(-0.12f, 0.24f, 0.04f), "motor"));
         WheelVisual(spring, screw, Vector3.Back, -900); // 한 눈금(0.1) = 4분의 1바퀴
         NamePlate(mount, "스프링", new Vector3(-0.12f, 0.205f, 0.031f), Vector3.Back, 0.012f);
-
-        // 예비 브러시 칸: 후방 예비품 사물함 맨 윗칸의 오른쪽 끝 (배치나 다른 계통이 같은 칸을 이미 지었으면 짓지 않는다).
-        if (!Interactables.ContainsKey("locker.brush_set"))
-        {
-            var locker = (Node3D)Interactables["locker.aft.shelf.3"].GetParent();
-            var at = new Vector3(0.24f, 0.62f, 0.19f);
-            var box = new Node3D { Name = "BrushSets", Position = at };
-            locker.AddChild(box);
-            var bb = new MeshBuilder();
-            bb.Box(ArtMat.RawWood, new Vector3(0, -0.04f, -0.04f), new Vector3(0.14f, 0.07f, 0.09f), 0.004f);
-            bb.Instance(box, "Tray", NoShadow);
-            var sets = new Node3D { Name = "Sets" };
-            box.AddChild(sets);
-            var sm2 = new MeshBuilder();
-            for (int k = 0; k < 3; k++) sm2.Box(ArtMat.BlackEnamel, new Vector3(-0.04f + k * 0.04f, 0.0f, -0.04f), new Vector3(0.025f, 0.03f, 0.05f), 0.002f);
-            sm2.Instance(sets, "Carbon", NoShadow);
-            NamePlate(locker, "전동기 브러시", new Vector3(at.X, at.Y - 0.085f, at.Z - 0.04f + 0.046f), Vector3.Back, 0.011f);
-            var bin = Add(Interactable.Create(locker, "locker.brush_set", "사물함: 전동기 브러시 한 벌", new Vector3(0.15f, 0.09f, 0.04f), at + new Vector3(0, -0.02f, 0.01f), "locker.aft"));
-            bin.CommandFor = (h, m) => m != Motion.Click ? null : h.Hand == "brush_set" ? "locker.return.brush_set" : "locker.take.brush_set";
-            OnUpdate((s, _) => sets.Visible = s.Crew.Locker.TryGetValue("brush_set", out int c) && c > 0);
-        }
     }
 
     // ── 기관 전령기 ─────────────────────────────────────

@@ -6,7 +6,7 @@ using Stand = DeepLine.Game.Testing.StandPoints.Stand;
 namespace DeepLine.Game.Testing;
 
 /// <summary>
-/// 배치 확인 묶음 (M2 WP6): reach(손이 닿는지)와 workviews(작업 시점 28곳). 자리와 대상은 StandPoints 표.
+/// 배치 확인 묶음 (M2 WP6): reach(손이 닿는지)와 workviews(작업 시점 전부). 자리와 대상은 StandPoints 표.
 /// 둘 다 임무 처음 상태에서 시작하고, 연 것은 닫고 끝난다.
 /// --layoutshots=폴더를 주면 workviews가 작업 시점마다 화면을 찍는다(화면이 있을 때, 예: xvfb-run).
 /// </summary>
@@ -103,7 +103,10 @@ public partial class AutoPlayer
             var station = Sub.Interactables[id].Station;
             Check(station.Length == 0 || Sub.Stations.ContainsKey(station), $"표지 '{id}'의 작업 시점 '{station}'이 없다");
         }
-        Check(StandPoints.WorkViews.Count() == 28, $"작업 시점이 {StandPoints.WorkViews.Count()}곳 (28곳이어야)");
+        // 장면의 작업 시점과 자리 표의 작업 시점이 서로 빠짐없이 맞아야 한다 (계통 작업이 작업 시점을 더하면 표에도 더한다).
+        var views = StandPoints.WorkViews.Select(s => s.Name).ToHashSet(StringComparer.Ordinal);
+        foreach (var name in Sub.Stations.Keys) Check(views.Contains(name), $"작업 시점 '{name}'이 자리 표에 없다");
+        foreach (var name in views) Check(Sub.Stations.ContainsKey(name), $"자리 표의 작업 시점 '{name}'이 장면에 없다");
         foreach (var st in StandPoints.WorkViews)
             Check(Sub.Interactables.TryGetValue(st.Targets[0], out var first) && first.Station == st.Name,
                 $"'{st.Name}' 자리의 첫 대상 '{st.Targets[0]}'로는 그 작업 시점에 들어갈 수 없다");

@@ -64,6 +64,7 @@ public partial class Submarine : Node3D
         M1Ids.UnionWith(Interactables.Keys);
         BuildLayout();
         BindToolBoard(); // 배치가 놓은 공구판 윤곽에 동작을 붙인다
+        BuildSpareCompartments(); // 예비품 칸 (중앙 벽장, 후방 사물함)
         BuildPower(); // 축전지 갑판, 셀 상자, 전동기 브러시, 기관 전령기 (M2 WP11)
     }
 
