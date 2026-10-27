@@ -16,7 +16,9 @@ public static class ProcedureRunner
         {
             if (step.Cmd == null) continue;
             if (step.Tool != null) commands.Add(new Command($"tool.{step.Tool}"));
-            for (int n = 1; n <= step.Repeat; n++)
+            // Fasten 단계에 order가 있으면 {n}을 그 순서로 펼친다 (조이는 순서가 숨은 결함의 기준).
+            var numbers = step.Order.Count > 0 ? step.Order : Enumerable.Range(1, step.Repeat);
+            foreach (int n in numbers)
             {
                 string cmd = step.Cmd.Replace("{n}", n.ToString(System.Globalization.CultureInfo.InvariantCulture), StringComparison.Ordinal);
                 foreach (var name in procedure.Bind)

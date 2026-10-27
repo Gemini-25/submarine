@@ -63,6 +63,7 @@ static partial class FixtureActions
         {
             case FixtureKind.Fastener:
                 p.Set(v.Prop!, v.Verb == "tighten" ? 1 : 0);
+                v.Fastening?.Track(v.Verb == "tighten");
                 break;
             case FixtureKind.Cover:
                 p.Set(v.Prop!, v.Verb == "open" ? 1 : 0);
@@ -108,6 +109,9 @@ static partial class FixtureActions
         foreach (var e in v.Effects) Apply(w, v, e);
         if (v.Inst.Def.Kind == FixtureKind.Work && v.Count > 0 && p.Get(v.Prop!) >= v.Count)
             foreach (var e in v.OnComplete) Apply(w, v, e);
+        // 묶음의 마지막 볼트가 조여지는 순간 (순서 어김 Bad를 읽는 숨은 결함).
+        if (v.Fastening is { OnAllTight.Length: > 0 } fl && v.Verb == "tighten" && fl.AllTight())
+            foreach (var e in fl.OnAllTight) Apply(w, v, e);
         v.Hook?.Invoke(w, v);
         if (v.Noise != null) w.AddActionNoise(v.Noise);
 
@@ -203,10 +207,12 @@ static partial class FixtureActions
         return null;
     }
 
-    static void Apply(SimWorld w, CompiledVerb v, CompiledEffect e)
+    static void Apply(SimWorld w, CompiledVerb v, CompiledEffect e) => Apply(w, v.Part, v.Inst.Id, v, e);
+
+    /// <summary>효과 하나. 장치 명령 밖(부품 타이머의 onExpire)에서는 v가 null이고, 그때 갈고리는 쓸 수 없다(검증기가 막는다).</summary>
+    internal static void Apply(SimWorld w, Part p, string subject, CompiledVerb? v, CompiledEffect e)
     {
         if (e.If?.Eval(w) == false) return;
-        var p = v.Part;
         switch (e.Kind)
         {
             case EffectKind.Set: p.Set(e.Prop!, e.Value); break;
@@ -215,8 +221,9 @@ static partial class FixtureActions
             case EffectKind.Consume: w.Crew.Hand = ""; break;
             case EffectKind.Renew: Renew(w, p); break;
             case EffectKind.Temporary: Patch(w, p); break;
-            case EffectKind.Event: w.Emit(e.EventKind, v.Inst.Id, 0, e.Text ?? ""); break;
-            case EffectKind.Hook: e.Hook!(w, v); break;
+            case EffectKind.Event: w.Emit(e.EventKind, subject, 0, e.Text ?? ""); break;
+            case EffectKind.Hook: e.Hook!(w, v!); break;
+            case EffectKind.Arm: Parts.PartTimers.Arm(p, e.Prop!, e.Value); break;
         }
     }
 
@@ -249,7 +256,7 @@ static class FixtureEffects
     }
 }
 
-enum EffectKind { Set, Add, Give, Consume, Renew, Temporary, Event, Hook }
+enum EffectKind { Set, Add, Give, Consume, Renew, Temporary, Event, Hook, Arm }
 
 sealed class CompiledEffect
 {
@@ -293,4 +300,6 @@ sealed class CompiledVerb
     public CompiledEffect[] OnComplete = Array.Empty<CompiledEffect>();
     public FixtureHook? Hook;
     public string? Noise;
+    /// <summary>볼트: 같은 부품 같은 묶음의 볼트들, 조이는 순서 추적, onAllTight.</summary>
+    public Parts.FastenerLink? Fastening;
 }

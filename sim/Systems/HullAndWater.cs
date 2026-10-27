@@ -1,5 +1,6 @@
 using DeepLine.Sim.Core;
 using DeepLine.Sim.Data;
+using DeepLine.Sim.Parts;
 
 namespace DeepLine.Sim.Systems;
 
@@ -58,13 +59,47 @@ static class HullSystem
         if (collapse) w.Fail("hull_collapse");
     }
 
+    /// <summary>구역 유입량 (L/s): 누수 지점 + 바다 경로. 상황판 구역 감지와 조회 zone.*.inflow가 쓴다.</summary>
     public static double ZoneInflow(SimWorld w, int leakZone)
     {
         double sum = 0;
         for (int i = 0; i < w.Leaks.Length; i++)
             if (w.LeakZone[i] == leakZone)
                 sum += w.Leaks[i].InflowLps;
+        if (w.Mechanics.HasSeaPaths) sum += SeaPaths.ZoneInflow(w, leakZone);
         return sum;
+    }
+}
+
+/// <summary>
+/// 바다 경로 (docs/plans/M2-design.md 3.6절): 풀린 볼트, 열린 덮개, 풀린 패킹으로 바닷물이 들어오는 길. q = k·a·√수심.
+/// 유입은 상태가 아니라 지금의 부품 상태 값에서 매번 계산한다. 경로가 없거나 넓이가 0이면 아무것도 바꾸지 않는다.
+/// </summary>
+static class SeaPaths
+{
+    public static double Lps(SimWorld w, CompiledSeaPath p)
+    {
+        double area = p.Area(w);
+        return area > 0 ? w.T.Water.LeakK * area * Math.Sqrt(Math.Max(0, w.DepthM)) : 0;
+    }
+
+    public static double ZoneInflow(SimWorld w, int leakZone)
+    {
+        double sum = 0;
+        foreach (var p in w.Mechanics.SeaPaths)
+            if (p.Zone == leakZone) sum += Lps(w, p);
+        return sum;
+    }
+
+    /// <summary>누수 유입 다음에 물을 넣는다 (누수와 똑같이 빌지 칸 먼저, 넘치면 바닥 위; 챔버는 따로).</summary>
+    public static void Flow(SimWorld w)
+    {
+        foreach (var p in w.Mechanics.SeaPaths)
+        {
+            double liters = Lps(w, p) * w.Dt;
+            if (liters <= 0) continue;
+            WaterSystem.AddInflow(w, p.Zone, liters);
+        }
     }
 }
 
@@ -84,19 +119,14 @@ static class WaterSystem
 
         if (water.HandPumpBusy > 0) water.HandPumpBusy = Math.Max(0, water.HandPumpBusy - dt);
 
-        // 1. 누수 유입
+        // 1. 누수 유입, 그다음 바다 경로
         for (int i = 0; i < w.Leaks.Length; i++)
         {
             double liters = w.Leaks[i].InflowLps * dt;
             if (liters <= 0) continue;
-            water.InflowL += liters;
-            int z = w.LeakZone[i];
-            if (z >= zones) { water.Chamber += liters; continue; } // 케이블 챔버는 실내와 따로 찬다
-            int b = w.ZoneBilge[z];
-            double toBilge = Math.Min(liters, Room(w, b));
-            water.Bilge[b] += toBilge;
-            water.Floor[z] += liters - toBilge;
+            AddInflow(w, w.LeakZone[i], liters);
         }
+        if (w.Mechanics.HasSeaPaths) SeaPaths.Flow(w);
 
         // 2. 전동 펌프. 배출량 = 정격 × (1 − 흡입구 막힘), 역류 방지 밸브가 열린 채 고착되면 되돌아온다.
         var pump = w.Devices[w.Pump];
@@ -176,6 +206,18 @@ static class WaterSystem
         double clog = intake.Get("basketOut") >= 0.5 ? 0 : intake.Get("clog");
         double air = Repair.HandActions.LooseBolts(w) * w.T.Repair.LooseBoltAirLeak;
         return Curve.Clamp01(clog + air);
+    }
+
+    /// <summary>바깥에서 들어온 물 (누수 구역 인덱스). 누적 유입량에 더하고 빌지 칸 먼저, 넘치면 바닥 위로. 케이블 챔버는 실내와 따로 찬다.</summary>
+    public static void AddInflow(SimWorld w, int leakZone, double liters)
+    {
+        var water = w.Water;
+        water.InflowL += liters;
+        if (leakZone >= GameData.Zones.Count) { water.Chamber += liters; return; }
+        int b = w.ZoneBilge[leakZone];
+        double toBilge = Math.Min(liters, Room(w, b));
+        water.Bilge[b] += toBilge;
+        water.Floor[leakZone] += liters - toBilge;
     }
 
     public static double Capacity(SimWorld w, int bilge) => w.T.Water.Bilges[w.BilgeIds[bilge]].CapacityL;

@@ -107,8 +107,8 @@ sealed partial class FixtureRuntime
             Hazards = vd.Hazards.Select(h => (Cond(h.If), h.Hazard)).ToArray(),
             Gives = vd.Gives.Select(g => (Cond(g.If), inst.Expand(g.Item))).ToArray(),
             Set = vd.Set.Select(kv => (inst.Expand(kv.Key), P(kv.Value))).ToArray(),
-            Effects = vd.Effects.Select(e => Effect(e, inst, Cond, P)).ToArray(),
-            OnComplete = vd.OnComplete.Select(e => Effect(e, inst, Cond, P)).ToArray(),
+            Effects = vd.Effects.Select(e => Effect(e, inst.Expand, Cond, P)).ToArray(),
+            OnComplete = vd.OnComplete.Select(e => Effect(e, inst.Expand, Cond, P)).ToArray(),
             Hook = vd.Hook == null ? null : FixtureHooks.All[vd.Hook],
             Noise = vd.Noise,
         };
@@ -130,23 +130,24 @@ sealed partial class FixtureRuntime
         foreach (var prop in new[] { v.Prop, v.SeizedProp }.Concat(v.Set.Select(s => s.Prop)).Concat(v.Accepts.Values.SelectMany(a => a.Set.Select(s => s.Prop)))
                      .Concat(v.Effects.Concat(v.OnComplete).Select(e => e.Prop)))
             if (prop != null && !part.HasProp(prop)) throw new KeyNotFoundException($"부품 {part.Id}에 상태 값 '{prop}'이 없다");
+        if (def.Kind == FixtureKind.Fastener) v.Fastening = Parts.FastenerSequence.Compile(_w, inst, row.Verb, Cond, P);
         if (def.Kind == FixtureKind.Socket && !part.HasProp("present")) throw new KeyNotFoundException($"소켓 부품 {part.Id}에 'present'가 없다");
         return v;
     }
 
-    static CompiledEffect Effect(EffectDef e, FixtureInstance inst, Func<string, Assertion?> cond, Func<FixValue, double> p)
+    internal static CompiledEffect Effect(EffectDef e, Func<string?, string> expand, Func<string, Assertion?> cond, Func<FixValue, double> p)
     {
         var c = new CompiledEffect { If = cond(e.If) };
-        if (e.Set != null) { c.Kind = EffectKind.Set; c.Prop = inst.Expand(e.Set); c.Value = p(e.To ?? throw new FormatException($"set {e.Set}에 to가 없다")); }
+        if (e.Set != null) { c.Kind = EffectKind.Set; c.Prop = expand(e.Set); c.Value = p(e.To ?? throw new FormatException($"set {e.Set}에 to가 없다")); }
         else if (e.Add != null)
         {
             c.Kind = EffectKind.Add;
-            c.Prop = inst.Expand(e.Add);
+            c.Prop = expand(e.Add);
             c.Value = p(e.By ?? throw new FormatException($"add {e.Add}에 by가 없다"));
             if (e.Min is double lo) c.Min = lo;
             if (e.Max is double hi) c.Max = hi;
         }
-        else if (e.Give != null) { c.Kind = EffectKind.Give; c.Text = inst.Expand(e.Give); }
+        else if (e.Give != null) { c.Kind = EffectKind.Give; c.Text = expand(e.Give); }
         else if (e.Consume) c.Kind = EffectKind.Consume;
         else if (e.Renew) c.Kind = EffectKind.Renew;
         else if (e.Quality == "temporary") c.Kind = EffectKind.Temporary;
@@ -158,7 +159,8 @@ sealed partial class FixtureRuntime
             c.Text = e.Detail;
         }
         else if (e.Hook != null) { c.Kind = EffectKind.Hook; c.Hook = FixtureHooks.All[e.Hook]; }
-        else throw new FormatException("효과가 비어 있다 (set, add, give, consume, renew, quality, event, hook 중 하나)");
+        else if (e.Arm != null) { c.Kind = EffectKind.Arm; c.Prop = expand(e.Arm); c.Value = p(e.To ?? throw new FormatException($"arm {e.Arm}에 to가 없다")); }
+        else throw new FormatException("효과가 비어 있다 (set, add, give, consume, renew, quality, event, hook, arm 중 하나)");
         return c;
     }
 
@@ -169,7 +171,7 @@ sealed partial class FixtureRuntime
     private static partial Regex Param();
 
     /// <summary>assert 식에 틀 변수, self.(이 부품의 상태 값), $params를 넣고 컴파일한다.</summary>
-    Assertion Condition(string text, string partId, FixtureInstance? inst, IReadOnlyDictionary<string, double>? parameters)
+    internal Assertion Condition(string text, string partId, FixtureInstance? inst, IReadOnlyDictionary<string, double>? parameters)
     {
         string t = inst?.Expand(text) ?? text;
         if (FixtureActions.BannedPath().Match(t) is { Success: true } banned)

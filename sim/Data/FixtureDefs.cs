@@ -50,6 +50,13 @@ public sealed class FixtureDef
     [Optional] public string? Prop { get; set; }
     /// <summary>볼트가 속한 묶음 이름 (덮개의 heldBy가 가리킨다).</summary>
     [Optional] public string? Group { get; set; }
+    /// <summary>
+    /// 볼트: 조이는 순서를 이 절차의 Fasten 단계 order와 비교한다. 부품에 &lt;묶음&gt;Seq, &lt;묶음&gt;Start, &lt;묶음&gt;Bad가 저절로 생긴다.
+    /// 볼트 번호는 틀 변수 n. 한 부품의 한 묶음은 모두 같은 정의(틀)에서 나와야 한다.
+    /// </summary>
+    [Optional] public string? SequenceFrom { get; set; }
+    /// <summary>볼트: 묶음의 볼트가 모두 조여지는 순간의 효과 (&lt;묶음&gt;Bad를 읽어 숨은 결함을 남긴다).</summary>
+    [Optional] public List<EffectDef> OnAllTight { get; set; } = new();
     /// <summary>덮개: 이 묶음의 볼트가 하나라도 조여 있으면 열리지 않는다(bolts_tight).</summary>
     [Optional] public string? HeldBy { get; set; }
     /// <summary>소켓: 꽂을 수 없는 물건을 들고 꽂으려 할 때의 거부 사유. 기본 need_item.</summary>
@@ -130,7 +137,7 @@ public sealed class AcceptRule
 
 /// <summary>
 /// 닫힌 효과 목록. 하나의 효과는 다음 중 하나만 쓴다:
-/// set+to, add+by(+min, max), give, consume, renew, quality, event(+detail), hook. 어느 효과든 if 하나를 붙일 수 있다(중첩 없음).
+/// set+to, add+by(+min, max), give, consume, renew, quality, event(+detail), hook, arm+to. 어느 효과든 if 하나를 붙일 수 있다(중첩 없음).
 /// </summary>
 public sealed class EffectDef
 {
@@ -149,6 +156,8 @@ public sealed class EffectDef
     [Optional] public string? Event { get; set; }
     [Optional] public string Detail { get; set; } = "";
     [Optional] public string? Hook { get; set; }
+    /// <summary>부품 타이머를 건다: 타이머의 수명 상태 값(이 이름)을 to로, 그 타이머의 armed를 1로.</summary>
+    [Optional] public string? Arm { get; set; }
 }
 
 /// <summary>수 하나 또는 파일 params의 "$이름". 이름 앞에 '-'를 붙이면 부호를 바꾼다.</summary>

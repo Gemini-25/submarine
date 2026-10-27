@@ -39,6 +39,13 @@ public sealed class Part
 
     public bool HasProp(string name) => Array.IndexOf(_propNames, name) >= 0;
 
+    /// <summary>상태 값의 자리 번호. 없으면 −1 (PropRef가 한 번만 찾아 둔다).</summary>
+    public int PropIndex(string name) => Array.IndexOf(_propNames, name);
+
+    public double GetAt(int index) => _props[index];
+
+    public void SetAt(int index, double value) => _props[index] = value;
+
     public double Get(string name)
     {
         int i = Array.IndexOf(_propNames, name);

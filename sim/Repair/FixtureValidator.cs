@@ -83,7 +83,8 @@ static class FixtureValidator
                 foreach (var e in v.Effects.Concat(v.OnComplete))
                 {
                     int kinds = (e.Set != null ? 1 : 0) + (e.Add != null ? 1 : 0) + (e.Give != null ? 1 : 0) + (e.Consume ? 1 : 0)
-                              + (e.Renew ? 1 : 0) + (e.Quality != null ? 1 : 0) + (e.Event != null ? 1 : 0) + (e.Hook != null ? 1 : 0);
+                              + (e.Renew ? 1 : 0) + (e.Quality != null ? 1 : 0) + (e.Event != null ? 1 : 0) + (e.Hook != null ? 1 : 0)
+                              + (e.Arm != null ? 1 : 0);
                     Check(kinds == 1, $"{at}: 효과 하나에는 종류가 하나만 (지금 {kinds}개)");
                     if (e.Set != null) Check(HasProp(f.Expand(e.Set)) && e.To != null, $"{at}: set '{e.Set}'(부품에 있고 to가 있어야 함)");
                     if (e.Add != null) Check(HasProp(f.Expand(e.Add)) && e.By != null, $"{at}: add '{e.Add}'(부품에 있고 by가 있어야 함)");
