@@ -64,7 +64,8 @@ public partial class Submarine : Node3D
         M1Ids.UnionWith(Interactables.Keys);
         BuildLayout();
         BindToolBoard(); // 배치가 놓은 공구판 윤곽에 동작을 붙인다
-        BuildSwitchboardTierA(query); // 분기함, 전류계, 납땜인두 전원, 전기 예비품, 브리지 대기 (WP8)
+        BuildSpareCompartments(); // 예비품 칸 (중앙 벽장, 후방 사물함)
+        BuildSwitchboardTierA(query); // 분기함, 전류계, 납땜인두 전원, 브리지 대기 (WP8)
     }
 
     /// <summary>표현 층이 매 프레임 부른다.</summary>

@@ -7,7 +7,7 @@ namespace DeepLine.Game.World;
 
 /// <summary>
 /// 배전반 Tier A (M2 WP8): 분기함 여덟의 동작(나사, 덮개, 상자, 케이블), 배전반 전류계 바늘, 납땜인두 전원,
-/// 전기 예비품 상자(퓨즈 대용 철사, 절연 테이프), 저항 브리지의 최소 대기(분기함 선택 손잡이와 검류계).
+/// 저항 브리지의 최소 대기(분기함 선택 손잡이와 검류계). 퓨즈 대용 철사와 절연 테이프 칸은 본선의 예비품 칸(Submarine.Lockers.cs)이다.
 /// 모습과 자리는 배치(WP6, Submarine.Layout.cs)가 지었고, 여기서는 표지를 지우고 같은 ID로 실제 물체를 붙인다.
 /// 판정은 시뮬레이션이 한다. 계산 도구로서의 브리지(다이얼과 평형)는 WP22 몫이라 gadget.bridge는 건드리지 않는다.
 /// </summary>
@@ -22,7 +22,6 @@ public partial class Submarine
         foreach (var c in _data.Circuits) BindJunction(c.Id);
         BindAmmeters();
         BuildIronSwitch();
-        BuildElectricalSpares();
         BuildBridgeLead(query);
     }
 
@@ -185,47 +184,6 @@ public partial class Submarine
         foreach (var d in s.Devices)
             if (d.Id == "soldering_iron") return d;
         return null;
-    }
-
-    // ── 전기 예비품 상자 ──────────────────────────────────
-
-    /// <summary>
-    /// 예비품 사물함 오른쪽 벽의 작은 상자 두 칸: 퓨즈 대용 철사와 절연 테이프. 누르면 꺼낸다(locker.take).
-    /// M1 사물함의 칸은 셋뿐이라 전기 예비품은 여기에 둔다.
-    /// </summary>
-    void BuildElectricalSpares()
-    {
-        var m = Mount(this, "ElectricalSpares", new Vector3(4.62f, 0, -HalfWidth + 0.01f), Vector3.Back);
-        var mb = new MeshBuilder();
-        mb.Box(ArtMat.Wood, new Vector3(0, 1.26f, 0.06f), new Vector3(0.26f, 0.4f, 0.12f), 0.006f);
-        mb.Instance(m, "Box");
-        Geo.Blocker(m, new Vector3(0.26f, 0.4f, 0.1f), new Vector3(0, 1.26f, 0.05f));
-        NamePlate(m, "전기 예비품", new Vector3(0, 1.49f, 0.06f), Vector3.Back, 0.014f);
-        var rows = new (string Item, float Y)[] { ("fuse_wire", 1.35f), ("insulating_tape", 1.16f) };
-        foreach (var (item, y) in rows)
-        {
-            Geo.Box(m, new Vector3(0.24f, 0.01f, 0.1f), new Vector3(0, y - 0.075f, 0.065f), ArtMat.Wood);
-            var label = Geo.Text(m, "", new Vector3(0, y + 0.06f, 0.122f), 0.016f);
-            var pieces = new List<Node3D>();
-            int stock = _data.Tuning.Inventory.Locker.GetValueOrDefault(item);
-            for (int k = 0; k < stock; k++)
-            {
-                var p = new Vector3(-0.09f + (k % 6) * 0.036f, y - 0.05f, 0.07f);
-                var piece = item == "fuse_wire"
-                    ? Geo.Cyl(m, 0.012f, 0.02f, p, ArtMat.Copper)
-                    : Geo.Cyl(m, 0.015f, 0.018f, p, Geo.Mat(new Color(0.05f, 0.05f, 0.06f), 0.4f, 0));
-                piece.RotationDegrees = new Vector3(90, 0, 0);
-                pieces.Add(piece);
-            }
-            var bin = Add(Interactable.Create(m, $"locker.{item}", $"전기 예비품: {ItemName(item)}", new Vector3(0.24f, 0.15f, 0.05f), new Vector3(0, y, 0.14f), "locker"));
-            bin.CommandFor = (_, mo) => mo == Motion.Click ? $"locker.take.{item}" : null;
-            OnUpdate((s, _) =>
-            {
-                int left = s.Crew.Locker.TryGetValue(item, out var n) ? n : 0;
-                label.Text = $"{ItemName(item)}  {left}";
-                for (int k = 0; k < pieces.Count; k++) pieces[k].Visible = k < left;
-            });
-        }
     }
 
     // ── 저항 브리지 (최소 대기) ───────────────────────────

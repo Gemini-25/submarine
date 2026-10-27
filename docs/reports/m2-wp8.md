@@ -16,7 +16,7 @@
 | 단서 | `junction.Cx.sizzle`(소리), `junction.Cx.smoke`(연기), `junction.Cx.burning`(타는 냄새), `fuse.Cx.wire`(철사 감긴 퓨즈) |
 | 상황판 | 배선이 탄 회로는 스위치가 올라가 있으면 배전반 빨강 |
 | 훈련 | `data/missions/m2-switchboard-a.json`: C1 분기함 누전(ELC-03) + 앞 당번이 철사를 감았다가 탄 C6 배선. 시뮬레이션에서 사람 속도로 78초에 성공, 그대로 두면 시간 초과로 실패 |
-| Godot | 분기함 여덟(덮개 경첩, 나사 머리, 상자 안 단자대·이음·테이프·맨 구리·그을음, 이슬, 연기), 전류계 바늘 여덟, 납땜인두 전원, 전기 예비품 상자, 브리지 선택 손잡이와 검류계. 확인 묶음 `drill-switchboard` |
+| Godot | 분기함 여덟(덮개 경첩, 나사 머리, 상자 안 단자대·이음·테이프·맨 구리·그을음, 이슬, 연기), 전류계 바늘 여덟, 납땜인두 전원, 브리지 선택 손잡이와 검류계. 퓨즈 대용 철사와 절연 테이프는 본선의 예비품 칸(`Submarine.Lockers.cs`)에서 꺼낸다. 확인 묶음 `drill-switchboard` |
 | 교범 | 23쪽에 '퓨즈 대용 철사'와 '탄 배선 다시 잇기' 절, 새 25쪽 '분기함과 누전', 03쪽 '분기함, 퓨즈 철사, 탄 배선', 08쪽 전압계·저항 브리지·배전반 전류계, 10쪽 분기함 감전과 땜질 불꽃 |
 
 ## 시험
@@ -25,7 +25,7 @@
   - 시작할 때 491개였다. 본선을 합치며 M1 교범 스냅숏 시험 하나가 빠졌고(본선이 지움), 이 작업이 24개를 더했다.
   - 새 파일 `sim.tests/SwitchboardTests.cs`(`SwitchboardTierATests`, 23개). `PowerAndSwitchboardTests.cs`에 이미 `SwitchboardTests`가 있어 이름을 바꿨다.
   - `Diagnosability.cs`에 탄 배선 사례 하나.
-- Godot (`tools/godot-check.sh`, 묶음 전부): crisis, hands, reach(305/305), workviews(28곳), fixtures(장치 48, 명령 104), tools, drill-switchboard(훈련 78초에 성공, 감전 0). 모두 통과.
+- Godot (`tools/godot-check.sh`, 묶음 전부, 본선 8573d4c를 합친 뒤): crisis, hands, reach(318/318), workviews(29곳), fixtures(장치 48, 명령 104), tools, drill-switchboard(훈련 78초에 성공, 감전 0). 모두 통과.
 - 기준 해시(golden-data, golden-scenarios, golden-hand, mission-m1-crisis)는 **다시 만들지 않았고 그대로 맞는다**. 얼린 데이터에는 `air.humidity`, `tuning.humidity`, `tuning.junctions`, 분기함의 새 상태 값이 없어서 새 규칙이 모두 바로 돌아간다.
 
 ### 시험 계획 5절의 사례
@@ -61,7 +61,7 @@
 5. **브리지 절연은 WP4의 곡선 그대로다.** 명세는 젖은 상자를 약 0.05MΩ으로 적었지만 지금 곡선은 0.95에서 0.3MΩ이다. 교범의 구분(10MΩ 넘음 마름, 2MΩ 아래 젖음)은 곡선에서 읽는다.
 6. **'걸레는 습도 목표 아래로 말리지 못한다'는 갈고리 `humidityFloor`로.** 효과의 min은 고정 수라서 공기에 따라 바뀌는 바닥을 쓸 수 없다.
 7. **납땜인두 전원은 장면의 스위치로.** 절차는 내장 명령 `device.soldering_iron.on/off`를 쓴다. 자동 플레이어의 명령 → 손동작 표(AutoPlayer.Map)는 `device.*`을 모르므로 확인 묶음 쪽(`AutoPlayer.Switchboard.cs`)에서 전원 스위치를 누른다.
-8. **전기 예비품 상자.** M1 사물함은 칸이 셋뿐이라(설계의 6칸 사물함은 아직 없다) 퓨즈 대용 철사와 절연 테이프 칸을 사물함 오른쪽 벽의 작은 상자(x 4.62)에 두었다. 사물함 작업 시점에서 보이고 `locker` 자리에서 손이 닿는다. 6칸 사물함이 생기면 옮기면 된다.
+8. **예비품 칸.** 처음에는 사물함 옆에 작은 전기 예비품 상자를 따로 지었으나, 본선이 예비품 칸(`Submarine.Lockers.cs`, 공통 지침 6-1)을 정해서 지웠다. 훈련 묶음은 본선의 `locker.fuse_wire`, `locker.insulating_tape` 칸을 쓴다.
 9. **분기함 모습을 다시 지었다.** 배치가 몸통, 덮개, 나사, 케이블을 한 덩어리 메시로 지어서, 그 메시(`Box`)를 지우고 같은 모양을 몸통과 움직이는 덮개·나사로 나눠 다시 지었다. 명판은 그대로다. 케이블 조준 상자는 표지보다 4cm 아래, 1cm 앞이다(서서 내려다보면 덮개 조준 상자에 가렸다).
 10. **AutoPlayer.Approach에 자리 표를 쓰게 했다(공유 파일, 몇 줄).** 책상 밑 분기함 C5처럼 아무 데서나 닿지 않는 장치가 생겨서, 자리 표(StandPoints)에 있는 대상은 그 자리에 서고 필요하면 웅크린다. 다른 계통 작업에도 같은 문제가 생길 것이다.
 11. **상황판 배전반 표시등 입력.** `SensorReadings.CircuitWiringBurnt`를 더하고 배선이 탄 회로를 퓨즈 단선과 같이 빨강으로 했다(설계 8절 '탄 배선').
@@ -98,7 +98,7 @@
 | `data/procedures/switchboard.json`, `data/observables/switchboard.json`, `data/text/ko/switchboard.json` | 절차, 단서, 문구 |
 | `data/missions/m2-switchboard-a.json` | 훈련 |
 | `data/manual/23·25·03·08·10` | 교범 |
-| `game/scripts/World/Submarine.Switchboard.cs` | 분기함, 전류계, 인두 전원, 전기 예비품, 브리지 대기 |
+| `game/scripts/World/Submarine.Switchboard.cs` | 분기함, 전류계, 인두 전원, 브리지 대기 |
 | `game/scripts/Testing/AutoPlayer.Switchboard.cs` | `drill-switchboard` |
 | `game/scripts/Audio/CueAudio.cs`, `StandPoints.cs`, `AutoPlayer.cs`, `Submarine.cs`, `tools/godot-check.sh` | 몇 줄씩 덧붙임 |
 | `sim.tests/SwitchboardTests.cs`, `Diagnosability.cs`, `ObservationTests.cs`, `CrewToolTests.cs` | 시험 (기존 둘은 퓨즈 visible에 wire, M1 절차만 공구판 왕복 없음으로 고침) |
@@ -115,5 +115,4 @@
 - **갈고리 `humidityFloor`**: 걸레로 말린 상자의 습기를 지금 공기의 목표 아래로 내리지 않는다(습도 모듈이 없으면 아무것도 안 함). 시험: `SwitchboardTierATests.Rag_cannot_dry_a_box_below_what_the_air_allows`.
 - **전압계 퓨즈 양단**: 스위치가 올라가 있고 퓨즈가 끊겼거나 빠졌을 때 버스 전압. 배선이 탄 회로의 성한 퓨즈는 0.
 - **브리지 절연**: 분기함 습기와 맨 이음 중 큰 쪽으로 읽는다.
-- **전기 예비품 상자**: 퓨즈 대용 철사와 절연 테이프는 예비품 사물함 오른쪽 벽의 작은 상자에서 꺼낸다(6칸 사물함 전까지).
 - **자동 플레이어의 접근**: 자리 표(StandPoints)에 있는 대상은 그 자리에 서고(필요하면 웅크리고) 겨냥한다.

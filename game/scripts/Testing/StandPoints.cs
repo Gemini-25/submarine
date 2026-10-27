@@ -56,7 +56,7 @@ public static class StandPoints
               ..Circuits.Select(c => $"switch.{c}.clamp"), ..Circuits.Select(c => $"ammeter.{c}") ], None),
         new("strainer", At(1.55f, -0.3f), true,
             [ "strainer.cover", "strainer.bolt.1", "strainer.bolt.2", "strainer.bolt.3", "strainer.bolt.4", "wash_bucket" ], None),
-        new("locker", At(3.75f, -0.25f), false, [ "locker.fuse", "locker.wood_wedge", "locker.timber_shore", "discard", "locker.fuse_wire", "locker.insulating_tape" ], None),
+        new("locker", At(3.75f, -0.25f), false, [ "locker.fuse", "locker.wood_wedge", "locker.timber_shore", "discard" ], None),
         new("panel", At(7.3f, -0.1f), false,
             [ "panel", ..DeepLine.Sim.Data.Bindings.PanelLamps.Select(l => $"panel.bezel.{l}"), ..DriftGauges.Select(g => $"gauge.{g}.glass"),
               ..DriftGauges.Select(g => $"gauge.{g}.zero"), "panel.lamptest", "propulsion.telegraph", "searchlight.switch" ], None),
@@ -70,7 +70,8 @@ public static class StandPoints
             [ "winch.control", "winch.brake", "winch.pawl", "winch.cover", "winch.cover.bolt.1", "winch.cover.bolt.2", "winch.adjust" ], None),
         new("pump", At(1.0f, -0.3f), false,
             [ "pump.cap", ..Four("pump.cap.bolt"), "pump.oilcup", "pump.body", "checkvalve.bonnet", ..Four("checkvalve.bolt"), "pump.discharge" ], None),
-        new("locker.aft", At(1.5f, -0.35f), false, [ "locker.aft.shelf.1", "locker.aft.shelf.2", "locker.aft.shelf.3" ], None),
+        new("locker.aft", At(1.5f, -0.35f), false, World.Submarine.AftShelves.SelectMany(s => s).Select(i => $"locker.{i}").ToArray(), None),
+        new("locker.top", At(3.75f, -0.25f), false, World.Submarine.MidUpperShelves.SelectMany(s => s).Select(i => $"locker.{i}").ToArray(), None),
 
         // ── 중앙 ──
         new("toolboard", At(3.4f, -0.45f), false, Tools(), None),
