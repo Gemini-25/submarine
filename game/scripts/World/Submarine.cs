@@ -60,6 +60,7 @@ public partial class Submarine : Node3D
         BuildPumpAndStrainer();
         BuildLeaks();
         BuildFurniture();
+        BuildNav();
     }
 
     /// <summary>표현 층이 매 프레임 부른다.</summary>

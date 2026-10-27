@@ -3,6 +3,7 @@
   "cue.gyro.settleLamp": "자이로 장의 자리 잡기 표시등이 켜져 있다",
   "cue.gyro.warble": "자이로 장에서 떨리며 갈리는 소리",
   "cue.navcomp.click": "항법 계산기에서 톱니가 딸깍한다",
+  "cue.navcomp.tick": "항법 계산기의 탈진기가 째깍거린다",
   "cue.navcomp.stall": "거리 계수기가 멎어 있다",
   "fixture.gyro.align": "자이로 정렬 손잡이",
   "fixture.gyro.bearing": "자이로 회전자 베어링",

@@ -4,6 +4,7 @@
     "gyro.warble": { "sense": "Sound", "anchor": "gyro.case", "q": "part.gyro.bearing.prop.drag", "while": "nav.gyroSpin", "map": [[0.1, 0], [0.5, 0.6], [1, 1]], "caption": "cue.gyro.warble" },
     "gyro.settleLamp": { "sense": "Sight", "anchor": "gyro.case", "q": "nav.settled", "map": [[0, 0], [1, 1]], "caption": "cue.gyro.settleLamp" },
     "navcomp.stall": { "sense": "Sight", "anchor": "navcomp.unit", "q": "nav.counterStalled", "map": [[0, 0], [1, 1]], "caption": "cue.navcomp.stall" },
+    "navcomp.tick": { "sense": "Sound", "anchor": "navcomp.unit", "q": "nav.rpm", "while": "device.nav_computer.running", "map": [[0, 0], [300, 1]], "caption": "cue.navcomp.tick" },
     "navcomp.click": { "sense": "Sound", "anchor": "navcomp.unit", "q": "nav.counterClick", "map": [[0, 0], [1, 1]], "caption": "cue.navcomp.click" }
   },
   "instruments": {
