@@ -60,6 +60,7 @@ public partial class AutoPlayer : Node
         ["workviews"] = CheckWorkView,
         ["fixtures"] = FixturesSuite,
         ["tools"] = ToolsSuite,
+        ["drill-cable"] = DrillCableSuite,
     };
 
     async Task Run()
@@ -500,6 +501,8 @@ public partial class AutoPlayer : Node
                 continue;
             }
             var v = f.Def.Verbs[row.Verb];
+            // 레버는 한 칸씩 움직인다. 지금 자리로 가는 손동작은 없다 (시뮬레이션도 already로 거부한다).
+            if (f.Def.Kind == FixtureKind.Lever && (int)Math.Round(_main.Sub.PartProp(Snap, f.PartId, f.Prop!)) == f.Def.Positions.IndexOf(row.Verb)) continue;
             string hand = v.Hold != null ? f.Expand(v.Hold) : row.Verb == "insert" ? f.Expand(v.Accepts.Keys.First()) : "";
             var ctx = new HandContext(Snap, v.Tool ?? "hand", hand);
             if (!_main.Sub.Binder.TryResolve(row.Command, out var target, out var motion) || target != f.Id)
