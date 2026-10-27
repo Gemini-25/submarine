@@ -21,11 +21,11 @@
 
 ## 시험
 
-- `dotnet test`(저장소 루트): 시뮬레이션 **528**, 소리 139, 계산 도구 93. 모두 통과 (검토 반영 뒤).
+- `dotnet test`(저장소 루트): 시뮬레이션 **558**(본선의 WP9를 합친 뒤, 이 작업의 시험 포함), 소리 139, 계산 도구 93. 모두 통과 (검토 반영 뒤). 소리의 성능 시험 하나가 시뮬레이션 시험과 함께 돌 때 한 번 시간 초과로 실패했고, 따로 두 번과 전체 다시 돌리기에서는 통과했다(이 작업은 소리 쪽을 건드리지 않았다).
   - 시작할 때 491개였다. 본선을 합치며 M1 교범 스냅숏 시험 하나가 빠졌고(본선이 지움), 이 작업이 38개를 더했다.
   - 새 파일 `sim.tests/SwitchboardTests.cs`(`SwitchboardTierATests`, 37개). `PowerAndSwitchboardTests.cs`에 이미 `SwitchboardTests`가 있어 이름을 바꿨다.
   - `Diagnosability.cs`에 탄 배선 사례 하나(퓨즈 단선, 팬 정지, 같은 회로의 누전과 가른다).
-- Godot (`tools/godot-check.sh`, 묶음 전부, 본선 00901eb를 합친 뒤): crisis, hands, reach(318/318), workviews(29곳), fixtures(장치 48, 명령 112), tools, drill-switchboard(훈련 78초에 성공, 감전 0). 모두 통과.
+- Godot (`tools/godot-check.sh`, 묶음 전부, 본선 d7ed75f를 합친 뒤): crisis, hands, reach(323/323), workviews(29곳), fixtures(장치 59, 명령 132), tools, drill-air, drill-switchboard(훈련 78초에 성공, 감전 0). 모두 통과.
 - 기준 해시(golden-data, golden-scenarios, golden-hand, mission-m1-crisis)는 **다시 만들지 않았고 그대로 맞는다**. 얼린 데이터에는 `air.humidity`, `tuning.humidity`, `tuning.junctions`, 분기함의 새 상태 값이 없어서 새 규칙이 모두 바로 돌아간다.
 
 ### 시험 계획 5절의 사례
