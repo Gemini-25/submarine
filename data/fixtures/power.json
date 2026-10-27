@@ -57,8 +57,8 @@
           "noise": "cell_lift",
           "rejectIf": [
             { "if": "part.battery.deck.prop.open < 0.5", "reason": "deck_closed" },
-            { "if": "self.nut1 >= 0.5", "reason": "nuts_tight" },
-            { "if": "self.nut2 >= 0.5", "reason": "nuts_tight" },
+            { "if": "self.nut1 >= 0.5", "reason": "cell_nuts_tight" },
+            { "if": "self.nut2 >= 0.5", "reason": "cell_nuts_tight" },
             { "if": "cell.{n}.submerged == 1", "reason": "cell_submerged" }
           ],
           "gives": [

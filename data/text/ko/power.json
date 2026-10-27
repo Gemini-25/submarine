@@ -12,7 +12,6 @@
   "fixture.motor.commutator": "정류자",
   "fixture.motor.cover": "전동기 끝 덮개",
   "fixture.motor.cover.bolt.{n}": "끝 덮개 볼트 {n}",
-  "reading.tachometer": "축 회전계",
   "reading.telegraph": "기관 전령기 눈금",
   "reason.brushes_in": "브러시가 끼워져 있어 줄이 정류자에 닿지 않는다.",
   "reason.cell_absent": "그 자리에 셀이 없다.",
@@ -24,5 +23,5 @@
   "reason.need_cell": "앉힐 셀을 들고 있지 않다.",
   "reason.need_jumper_bar": "걸칠 점퍼 막대를 쥐고 있지 않다.",
   "reason.no_brushes": "홀더에 브러시가 없다.",
-  "reason.nuts_tight": "단자 너트가 셀을 붙들고 있다."
+  "reason.cell_nuts_tight": "단자 너트가 셀을 붙들고 있다."
 }

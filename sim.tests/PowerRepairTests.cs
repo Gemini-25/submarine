@@ -426,7 +426,7 @@ public class PowerRepairTests
         Assert.Equal("deck_closed", Reject("battery.cell.3.nut.1.loosen", "wrench"));
         Assert.Equal("deck_closed", Reject("battery.cell.3.pull"));
         Assert.Equal("", Reject("battery.deck.open"));
-        Assert.Equal("nuts_tight", Reject("battery.cell.3.pull"));
+        Assert.Equal("cell_nuts_tight", Reject("battery.cell.3.pull"));
         Assert.Equal("need_wrench", Reject("battery.cell.3.nut.1.loosen"));
         Assert.Equal("need_jumper_bar", Reject("battery.link.3.fit", "wrench"));
         Assert.Equal("link_empty", Reject("battery.link.3.remove", "wrench"));
@@ -506,7 +506,7 @@ public class PowerRepairTests
         Assert.True(sim.Q("cue.motor.crackle") > 0.5);
         Assert.True(sim.Q("cue.motor.ozone") > 0.3);
         Assert.True(sim.Measure("stethoscope", "motor.brushes") > 0.6);
-        var rpm = Range(sim, "reading.tachometer", 10);
+        var rpm = Range(sim, "propulsion.rpm", 10);
         double mean = TestData.T.Power!.Brushes.NominalRpm * 0.75 * (1 - TestData.T.Power.Brushes.ThrustLoss * s);
         Assert.True(rpm.Max > mean * 1.08 && rpm.Min < mean * 0.92, $"회전계 {rpm.Min:F0}~{rpm.Max:F0} (평균 {mean:F0})");
         var amps = Range(sim, "panel.gauge.current", 10);
@@ -519,7 +519,7 @@ public class PowerRepairTests
 
         // 기준: 새 브러시면 아무것도 없다.
         var ok = Sim(s => s.Throttle = 0.75);
-        var okRpm = Range(ok, "reading.tachometer", 10);
+        var okRpm = Range(ok, "propulsion.rpm", 10);
         Assert.True(okRpm.Max - okRpm.Min < 0.3, $"고른 회전계 {okRpm.Min:F2}~{okRpm.Max:F2}"); // 방전으로 아주 천천히 내려갈 뿐
         Assert.Equal(0, ok.Q("cue.motor.sparks"));
         Assert.Equal(0.75, ok.Q("propulsion.thrust"), 9);
@@ -539,13 +539,13 @@ public class PowerRepairTests
     {
         var ok = Sim(s => s.Throttle = 0.75);
         ok.Run(5);
-        double rpm = ok.Q("reading.tachometer");
+        double rpm = ok.Q("propulsion.rpm");
         Assert.Equal(TestData.T.Power!.Brushes.NominalRpm * 0.75 * ok.Q("battery.voltage"), rpm, 6);
         foreach (var low in new[] { Sim(s => { s.Throttle = 0.75; s.BatteryCharge = 0.12; }), Loaded() })
         {
             if (low.Q("battery.voltage") > 0.99) low.Inject("PWR-01", "cell.3");
             low.Run(5);
-            var r = Range(low, "reading.tachometer", 10);
+            var r = Range(low, "propulsion.rpm", 10);
             Assert.True(r.Max < rpm - 3, $"낮은 전압의 회전계 {r.Max:F1} (기준 {rpm:F1})");
             Assert.True(r.Max - r.Min < 0.3, $"고르다 {r.Min:F2}~{r.Max:F2}");
         }

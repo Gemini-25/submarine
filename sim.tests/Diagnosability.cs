@@ -222,7 +222,7 @@ public class Diagnosability
             Assert.NotEmpty(DiagnosisHarness.Separating(v["PWR-02"], v[other]));
         Assert.True(v["PWR-02"]["cue.motor.sparks"].Differs(v["none"]["cue.motor.sparks"]));
         Assert.True(v["PWR-02"]["cue.motor.sparks"].Differs(v["PWR-01"]["cue.motor.sparks"]));
-        Assert.True(v["PWR-02"]["reading.tachometer"].Differs(v["ELC-01"]["reading.tachometer"]));
+        Assert.True(v["PWR-02"]["reading.ammeter.C8"].Differs(v["ELC-01"]["reading.ammeter.C8"]));
         Assert.True(v["PWR-01"]["measure.voltmeter.cell.3"].Differs(v["PWR-02"]["measure.voltmeter.cell.3"]));
     }
 
