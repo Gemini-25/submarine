@@ -60,6 +60,7 @@ public partial class AutoPlayer : Node
         ["workviews"] = CheckWorkView,
         ["fixtures"] = FixturesSuite,
         ["tools"] = ToolsSuite,
+        ["drill-air"] = DrillAirSuite,
     };
 
     async Task Run()

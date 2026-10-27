@@ -59,6 +59,7 @@ public partial class Submarine : Node3D
         BuildHandPump();
         BuildPumpAndStrainer();
         BuildLeaks();
+        BuildAir();
         BuildFurniture();
     }
 
@@ -312,9 +313,7 @@ public partial class Submarine : Node3D
         Geo.Box(this, new Vector3(0.24f, 0.05f, 0.2f), new Vector3(7.4f, 0.945f, 0.95f), new Color(0.35f, 0.12f, 0.08f));
         Geo.Text(this, "정비 교범", new Vector3(7.4f, 0.972f, 0.95f), 0.03f, Geo.Cream, Vector3.Up).RotationDegrees = new Vector3(-90, 90, 0);
 
-        // 중앙의 흡수통 (M1에서는 장식)
-        Geo.Solid(this, new Vector3(0.4f, 0.6f, 0.35f), new Vector3(3.0f, 0.3f, -HalfWidth + 0.2f), Geo.Steel, "Scrubber");
-        Geo.Text(this, "흡수통", new Vector3(3.0f, 0.65f, -HalfWidth + 0.38f), 0.03f, Geo.Bakelite, Vector3.Back);
+        // 중앙의 흡수통은 M2부터 진짜 장비다 (Submarine.Air.cs).
 
         // 후방: 주 전동기와 프로펠러 축
         var motor = Geo.Cyl(this, 0.35f, 1.0f, new Vector3(0.6f, 0.45f, 0.45f), Geo.Paint, 20);
