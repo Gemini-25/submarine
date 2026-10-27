@@ -204,7 +204,7 @@ public partial class Submarine
             mb.Cylinder(ArtMat.Bakelite, Kit.AlongAxis(Vector3.Right, new Vector3(0.0125f, 0, 0)), 0.018f, 0.025f, 12, 0.003f);
             mb.Box(ArtMat.Porcelain, new Vector3(0.026f, 0, 0.01f), new Vector3(0.002f, 0.004f, 0.012f), 0);
         });
-        WheelVisual(BindOver(root, "navcomp.reset", new Vector3(0.025f, 0.04f, 0.04f), new Vector3(5.97f, 0.93f, -0.98f), st), knob, Vector3.Right, 1800);
+        WheelVisual(BindOver(root, "navcomp.reset", new Vector3(0.025f, 0.04f, 0.04f), new Vector3(5.9625f, 0.93f, -0.98f), st), knob, Vector3.Right, 1800);
 
         // 전원 레버 (윗면): 앞으로 눕히면 끔, 세우면 켬
         var pivot = new Node3D { Position = new Vector3(5.72f, 1.085f, -1.0f) };
