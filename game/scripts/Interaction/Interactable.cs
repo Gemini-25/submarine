@@ -46,6 +46,8 @@ public partial class Interactable : StaticBody3D
     public Func<HandContext, GestureKind> GestureFor { get; set; } = _ => GestureKind.Click;
     /// <summary>끝난 손동작 → 명령. null이면 아무 일도 없다.</summary>
     public Func<HandContext, Motion, string?> CommandFor { get; set; } = (_, _) => null;
+    /// <summary>명령에 붙일 값 (기관 전령기의 propulsion.set처럼 값이 있는 내장 명령). 없으면 0.</summary>
+    public Func<HandContext, Motion, double>? ValueFor { get; set; }
     /// <summary>끄는 중의 손 위치(-1~1, 회전은 바퀴 수). 손잡이와 볼트 머리가 따라 움직이게.</summary>
     public Action<float>? Preview { get; set; }
     /// <summary>잡지 못하게 막는 물리적 이유(예: 펌프 손잡이가 아직 돌아오는 중). 판정이 아니라 손이 느끼는 저항이다.</summary>

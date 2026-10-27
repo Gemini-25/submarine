@@ -239,7 +239,8 @@ public partial class ProceduralAudio : Node3D
             case SimEventKind.AlarmBell when e.Value >= 1:
                 _bell.Ring(2.5f);
                 break;
-            case SimEventKind.Spark:
+            // 브러시 불꽃은 정류자 목소리(CueAudio 'motor.crackle')가 낸다. 불꽃 하나하나를 퓨즈 터지는 소리로 내지 않는다.
+            case SimEventKind.Spark when e.Subject != "motor.brushes":
                 _sparkSrc.Player.GlobalPosition = _sub.SoundSpots.TryGetValue(e.Subject, out var sp) ? sp : Spot(e.Subject, Vector3.Zero);
                 _spark.Blow();
                 break;

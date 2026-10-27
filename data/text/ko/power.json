@@ -13,6 +13,7 @@
   "fixture.motor.cover": "전동기 끝 덮개",
   "fixture.motor.cover.bolt.{n}": "끝 덮개 볼트 {n}",
   "reading.tachometer": "축 회전계",
+  "reading.telegraph": "기관 전령기 눈금",
   "reason.brushes_in": "브러시가 정류자를 덮고 있다.",
   "reason.cell_absent": "그 자리에 셀이 없다.",
   "reason.cell_submerged": "셀이 물에 잠겨 손이 들어가지 않는다.",

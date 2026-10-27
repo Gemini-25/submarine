@@ -61,6 +61,7 @@ public partial class AutoPlayer : Node
         ["workviews"] = WorkViewsSuite,
         ["fixtures"] = FixturesSuite,
         ["tools"] = ToolsSuite,
+        ["drill-power"] = DrillPowerSuite,
     };
 
     async Task Run()
@@ -459,11 +460,25 @@ public partial class AutoPlayer : Node
     async Task FixturesSuite()
     {
         var catalog = Data.Fixtures;
+        var pending = new List<string>();
         foreach (var f in catalog.Instances)
         {
             if (!_main.Sub.Interactables.ContainsKey(f.Id)) { Check(false, $"장치 '{f.Id}'의 물체가 장면에 없다"); continue; }
-            await Approach(f.Id);
+            pending.Add(f.Id);
         }
+        // 작업 자리 표(StandPoints)에 있는 장치는 그 자리에서, 가리는 덮개를 열고 겨냥한다 (갑판 판 아래의 셀, 덮개 안의 브러시. WP11).
+        foreach (var st in StandPoints.All)
+        {
+            var mine = pending.Where(id => st.Targets.Contains(id)).ToList();
+            if (mine.Count == 0) continue;
+            await Prepare(st, true);
+            if (await StandAt(st))
+                foreach (var id in mine) await AimFrom(st, id);
+            await Crouch(false);
+            await Prepare(st, false);
+            pending.RemoveAll(mine.Contains);
+        }
+        foreach (var id in pending) await Approach(id);
         foreach (var row in catalog.Rows)
         {
             var f = catalog.Instances[row.Instance];

@@ -730,14 +730,14 @@ public partial class Submarine
         // 끝벽 레버: 기관 전령기(눈금 다섯)와 탐조등 레버
         float lx = -1.07f;
         mb.Box(ArtMat.Machinery, new Vector3(lx, 1.25f, 0.01f), new Vector3(0.12f, 0.5f, 0.02f), 0.004f);
-        Lever(mb, new Vector3(lx, 1.1f, 0.06f), new Vector3(lx + 0.03f, 1.16f, 0.085f), 0.024f);
+        // 기관 전령기 손잡이는 움직이는 물체라 Submarine.Power가 단다.
         Lever(mb, new Vector3(lx, 1.37f, 0.03f), new Vector3(lx, 1.45f, 0.06f), 0.024f);
         mb.Instance(m, "Additions", NoShadow);
         var glass = new MeshBuilder();
         foreach (var (gi, _) in DriftGauges)
             glass.Cylinder(ArtMat.Glass, Kit.AlongAxis(Vector3.Back, new Vector3(-0.77f + gi * 0.22f, 1.33f, 0.075f)), 0.08f, 0.004f, 24);
         glass.Instance(m, "GaugeGlass", NoShadow);
-        Dial(m, new Vector3(lx, 1.1f, 0.025f), Vector3.Back, 0.058f, "", new[] { "후진", "정지", "미속", "반속", "전속" });
+        Dial(m, new Vector3(lx, 1.1f, 0.025f), Vector3.Back, 0.058f, "", new[] { "정지", "미속", "저속", "반속", "전속" });
         NamePlate(m, "램프 시험", new Vector3(0.8f, 1.055f, 0.051f), Vector3.Back, 0.014f);
         NamePlate(m, "기관 전령기", new Vector3(lx, 1.2f, 0.021f), Vector3.Back, 0.012f);
         NamePlate(m, "탐조등", new Vector3(lx, 1.5f, 0.021f), Vector3.Back, 0.012f);

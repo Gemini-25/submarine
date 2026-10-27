@@ -64,6 +64,7 @@ public partial class Submarine : Node3D
         M1Ids.UnionWith(Interactables.Keys);
         BuildLayout();
         BindToolBoard(); // 배치가 놓은 공구판 윤곽에 동작을 붙인다
+        BuildPower(); // 축전지 갑판, 셀 상자, 전동기 브러시, 기관 전령기 (M2 WP11)
     }
 
     /// <summary>표현 층이 매 프레임 부른다.</summary>
@@ -249,7 +250,7 @@ public partial class Submarine : Node3D
         for (int i = 0; i < 6; i++)
         {
             float cx = x0 + 0.3f + (i % 3) * 0.5f, cz = i < 3 ? -0.25f : 0.25f;
-            Geo.Box(well, new Vector3(0.36f, 0.4f, 0.4f), new Vector3(cx, -0.3f, cz), cellMat);
+            _cellBodies[i] = Geo.Box(well, new Vector3(0.36f, 0.4f, 0.4f), new Vector3(cx, -0.3f, cz), cellMat); // 셀을 들어내면 감춘다 (Submarine.Power)
             Geo.Cyl(well, 0.025f, 0.05f, new Vector3(cx - 0.1f, -0.07f, cz), Geo.Mat(new Color(0.6f, 0.15f, 0.1f)));
             Geo.Cyl(well, 0.025f, 0.05f, new Vector3(cx + 0.1f, -0.07f, cz), Geo.Mat(new Color(0.1f, 0.1f, 0.1f)));
             Geo.Text(well, $"{i + 1}", new Vector3(cx, -0.095f, cz + 0.12f), 0.05f, facing: Vector3.Up).RotationDegrees = new Vector3(-90, 0, 0);

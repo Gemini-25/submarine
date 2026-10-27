@@ -69,6 +69,20 @@ public static class CueAudio
             v.InflowLps = c.V > 0 ? 0.01f + 0.15f * c.V : 0;
             v.DepthM = 0;
         }, spot: "battery", db: -6, range: 3),
+
+        // 추진 전동기 (WP11): 회전음은 축 회전계(전속 300회/분)를 따르고, 브러시가 닳으면 회전계와 함께 흔들린다.
+        R("propulsion.hum", s => new MotorVoice(s), (v, c) =>
+        {
+            v.Running = c.V > 0.02f;
+            v.ShaftHz = 10f + 0.12f * (float)c.S.Readings.FirstOrDefault(r => r.Id == "tachometer").Value;
+        }, spot: "motor", db: -4, range: 10),
+        // 정류자 불꽃 (PWR-02): 브러시 불꽃 세기만큼 탁탁 튄다. 회전음 위에 겹친다.
+        R("motor.crackle", s => new CommutatorSparkVoice(s), (v, c) =>
+        {
+            v.Running = c.V > 0;
+            v.ShaftHz = 10f + 0.12f * (float)c.S.Readings.FirstOrDefault(r => r.Id == "tachometer").Value;
+            v.BrushWear = 0.4f + 0.6f * c.V;
+        }, spot: "motor", range: 6),
     };
 
     /// <summary>Submarine.SoundSpots에 없는 소리 자리. 송풍 팬은 장면에 장비 물체가 없어 소리 쪽이 자리를 정한다(M1부터).</summary>

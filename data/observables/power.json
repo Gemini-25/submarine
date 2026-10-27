@@ -6,7 +6,8 @@
     "propulsion.hum": { "sense": "Sound", "anchor": "propulsion", "q": "propulsion.thrust", "map": [[0, 0], [1, 1]], "caption": "cue.propulsion.hum" }
   },
   "instruments": {
-    "tachometer": { "anchor": "fore", "q": "propulsion.rpm", "unit": "none", "label": "reading.tachometer" }
+    "tachometer": { "anchor": "fore", "q": "propulsion.rpm", "unit": "none", "label": "reading.tachometer" },
+    "telegraph": { "anchor": "fore", "q": "propulsion.throttle", "unit": "none", "label": "reading.telegraph" }
   },
   "stethoscope": {
     "motor.brushes": { "q": "propulsion.sparking", "while": "device.propulsion.running", "map": [[0, 0.1], [1, 1]] }
