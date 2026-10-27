@@ -7,14 +7,14 @@ using Godot;
 namespace DeepLine.Game.World;
 
 /// <summary>
-/// 도구판과 바닥의 도구 (M2 WP5). 도구는 들고 다니는 물건이다: 해치 격벽 중앙 쪽 면의 도구판에 윤곽이 그려져 있어
-/// 빠진 도구는 빈 윤곽으로 보인다. 윤곽을 누르면 허리띠로 가져오고(toolboard.take), 다시 누르면 걸어 둔다(toolboard.return).
+/// 공구판과 바닥의 도구 (M2 WP5). 도구는 들고 다니는 물건이다: 해치 격벽 중앙 쪽 면의 공구판에 윤곽이 그려져 있어
+/// 빠진 도구는 빈 윤곽으로 보인다. 윤곽을 누르면 공구띠로 가져오고(toolboard.take), 다시 누르면 걸어 둔다(toolboard.return).
 /// 내려놓거나 떨어뜨린 도구는 그 구역 바닥에 놓이고, 누르면 줍는다(tool.pickup). 판정은 시뮬레이션이 한다.
-/// 도구판 모듈이 없는 데이터(M1)면 짓지 않는다.
+/// 공구판 모듈이 없는 데이터(M1)면 짓지 않는다.
 /// </summary>
 public partial class Submarine
 {
-    /// <summary>도구판: 해치 격벽(x 2.7)의 중앙 쪽 면, 좌현 쪽 (설계 좌표 x 2.76, z −1.15~−0.5, y 0.85~1.8).</summary>
+    /// <summary>공구판: 해치 격벽(x 2.7)의 중앙 쪽 면, 좌현 쪽 (설계 좌표 x 2.76, z −1.15~−0.5, y 0.85~1.8).</summary>
     static readonly Vector3 ToolBoardAt = new(HatchX + 0.045f, 0, -0.825f);
 
     void BuildToolBoard()

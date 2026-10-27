@@ -28,7 +28,7 @@ static class HandActions
 
     // ── 도구와 사물함 ─────────────────────────────────────
 
-    // 도구 고르기는 ToolBoard.Select (도구판 모듈이 없으면 M1처럼 늘 된다).
+    // 도구 고르기는 ToolBoard.Select (공구판 모듈이 없으면 M1처럼 늘 된다).
 
     public static bool TakeFromLocker(SimWorld w, int item)
     {
@@ -224,7 +224,7 @@ static class HandActions
 /// <summary>손 수리의 위험. 체력은 숨은 값이고 표현 층은 화면 효과로만 보여준다.</summary>
 static class Hazards
 {
-    /// <summary>감전. zone은 떨어뜨린 도구가 가는 바닥 (도구판 모듈의 dropOnShock).</summary>
+    /// <summary>감전. zone은 떨어뜨린 도구가 가는 바닥 (공구판 모듈의 dropOnShock).</summary>
     public static void Shock(SimWorld w, string cause, int zone = -1)
     {
         var c = w.T.Crew;

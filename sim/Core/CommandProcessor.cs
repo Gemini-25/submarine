@@ -130,10 +130,10 @@ static class CommandProcessor
 
     static void NeedToolBoard(SimWorld w, Func<string, ArgumentException> bad)
     {
-        if (!ToolBoard.Installed(w)) throw bad("도구판이 없는 데이터다 (tuning.toolBoard)");
+        if (!ToolBoard.Installed(w)) throw bad("공구판이 없는 데이터다 (tuning.toolBoard)");
     }
 
-    /// <summary>도구판과 바닥을 오가는 도구 (빈손 제외).</summary>
+    /// <summary>공구판과 바닥을 오가는 도구 (빈손 제외).</summary>
     static int CarriedTool(SimWorld w, string id, Func<string, ArgumentException> bad)
     {
         int tool = w.T.Tools.IndexOf(id);

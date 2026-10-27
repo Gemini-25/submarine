@@ -276,7 +276,7 @@ static class SimQuery
 
             case "crew" when p.Length == 3 && p[1] == "belt":
             {
-                // crew.belt.N: 허리띠 N번 칸(1부터)의 도구 ID, 빈 칸은 "".
+                // crew.belt.N: 공구띠 N번 칸(1부터)의 도구 ID, 빈 칸은 "".
                 if (!Repair.ToolBoard.Installed(w) || !int.TryParse(p[2], System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out int n)
                     || n < 1 || n > w.T.ToolBoard!.BeltSlots)
                     throw Unknown();

@@ -4,9 +4,9 @@ using DeepLine.Sim.Repair;
 namespace DeepLine.Sim.Tests;
 
 /// <summary>
-/// 도구는 들고 다니는 물건이다 (M2 WP2, docs/plans/M2-design.md 'Crew and tools'): 도구판, 허리띠, 바닥,
-/// 두 손이 드는 물건, 사물함 되돌리기, 화상과 물 분출, 만져 보기, 도구판을 오가는 절차 펼치기.
-/// 실제 data/에는 도구판 모듈이 켜져 있고, 기준 해시의 얼린 데이터에는 없다(모듈이 꺼진 M1 그대로).
+/// 도구는 들고 다니는 물건이다 (M2 WP2, docs/plans/M2-design.md 'Crew and tools'): 공구판, 공구띠, 바닥,
+/// 두 손이 드는 물건, 사물함 되돌리기, 화상과 물 분출, 만져 보기, 공구판을 오가는 절차 펼치기.
+/// 실제 data/에는 공구판 모듈이 켜져 있고, 기준 해시의 얼린 데이터에는 없다(모듈이 꺼진 M1 그대로).
 /// </summary>
 public class CrewToolTests
 {
@@ -35,7 +35,7 @@ public class CrewToolTests
     static string[] Belt(Simulation sim) =>
         Enumerable.Range(1, TestData.T.ToolBoard!.BeltSlots).Select(n => sim.QS($"crew.belt.{n}")).ToArray();
 
-    // ── 허리띠와 도구판 ─────────────────────────────────
+    // ── 공구띠와 공구판 ─────────────────────────────────
 
     [Fact]
     public void The_belt_starts_with_the_m1_tools_so_m1_keys_are_unchanged()
@@ -280,7 +280,7 @@ public class CrewToolTests
         Assert.Contains(events, e => e.Kind == SimEventKind.Touched && e.Detail == "wet"); // 다쳐도 느낌은 전해진다
     }
 
-    // ── 절차를 허리띠로 펼치기 ───────────────────────────
+    // ── 절차를 공구띠로 펼치기 ───────────────────────────
 
     static ProcedureDef Proc(params (string Tool, string Cmd)[] steps) => new()
     {
@@ -340,7 +340,7 @@ public class CrewToolTests
         { "hand-on-belt", "initialBelt의 'hand'" },
         { "no-belt-part", "상태 부품 'toolbelt'" },
         { "tools-reordered", "M1 도구 순서" },
-        { "procedure-too-many-tools", "허리띠 1칸보다 많다" },
+        { "procedure-too-many-tools", "공구띠 1칸보다 많다" },
         { "scrap-in-locker", "items.fuse_blown: 헌 부품(scrap)은 사물함 재고" },
         { "component-discardable", "items.strainer_basket: 부품에 딸린 물건" },
         { "missing-tool-name", "'tool.rag'이 없다" },

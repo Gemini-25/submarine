@@ -67,7 +67,7 @@ public partial class Hud : CanvasLayer
         _held.HorizontalAlignment = HorizontalAlignment.Right;
         _held.Position += new Vector2(-24, -20);
 
-        // 허리띠: 왼쪽 아래 흐린 한 줄. '1 빈손 · 2 렌치 · …'. 쥔 칸은 조금 밝게.
+        // 공구띠: 왼쪽 아래 흐린 한 줄. '1 빈손 · 2 렌치 · …'. 쥔 칸은 조금 밝게.
         _belt = UiKit.Text("", 15, new Color(1, 0.95f, 0.85f, 0.5f));
         _belt.SetAnchorsPreset(Control.LayoutPreset.BottomLeft);
         _belt.GrowVertical = Control.GrowDirection.Begin;
@@ -198,7 +198,7 @@ public partial class Hud : CanvasLayer
         _ => "",
     };
 
-    /// <summary>'1 빈손 · 2 렌치 · …'. 빈 칸은 '·'만. 도구판 모듈이 없으면 M1처럼 도구 순서.</summary>
+    /// <summary>'1 빈손 · 2 렌치 · …'. 빈 칸은 '·'만. 공구판 모듈이 없으면 M1처럼 도구 순서.</summary>
     static string BeltLine(SimSnapshot s)
     {
         var slots = s.Crew.Belt.Count > 0 ? s.Crew.Belt : Array.Empty<string>();

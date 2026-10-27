@@ -6,11 +6,11 @@ namespace DeepLine.Sim.Repair;
 
 /// <summary>
 /// 도구는 들고 다니는 물건이다 (SPEC 15절, docs/plans/M2-design.md 'Tools are physical things you carry').
-/// 해치 격벽의 도구판, 허리띠 몇 칸, 그리고 구역마다의 바닥. tuning.toolBoard가 없으면(M1 데이터) 이 모듈은 꺼져 있고
+/// 해치 격벽의 공구판, 공구띠 몇 칸, 그리고 구역마다의 바닥. tuning.toolBoard가 없으면(M1 데이터) 이 모듈은 꺼져 있고
 /// 모든 도구를 바로 쥘 수 있다.
 /// 상태는 부품 두 개의 상태 값이다 (SimWorld에 새 필드를 만들지 않는다):
 ///   toolbelt.slot1..slotN = 도구 순번 (tuning.tools), 빈 칸은 -1
-///   toolboard.loc_&lt;도구&gt; = 0 도구판, 1 허리띠, 10 + 구역 순번 = 그 구역 바닥
+///   toolboard.loc_&lt;도구&gt; = 0 공구판, 1 공구띠, 10 + 구역 순번 = 그 구역 바닥
 /// 빈손(도구 0)은 어디에도 없다. 도구는 잃어버리지 않는다 (SPEC 14절).
 /// </summary>
 static class ToolBoard
@@ -27,7 +27,7 @@ static class ToolBoard
     static Part Belt(SimWorld w) => w.Part(BeltPart);
     static Part Board(SimWorld w) => w.Part(BoardPart);
 
-    /// <summary>세계를 만들 때: 처음 허리띠를 채우고 나머지는 도구판에 건다.</summary>
+    /// <summary>세계를 만들 때: 처음 공구띠를 채우고 나머지는 공구판에 건다.</summary>
     public static void Init(SimWorld w)
     {
         var tb = w.T.ToolBoard;
@@ -42,7 +42,7 @@ static class ToolBoard
 
     public static double Location(SimWorld w, int tool) => Board(w).Get(LocProp(w.T.Tools[tool]));
 
-    /// <summary>허리띠 n번 칸(1부터)의 도구 순번. 빈 칸은 -1.</summary>
+    /// <summary>공구띠 n번 칸(1부터)의 도구 순번. 빈 칸은 -1.</summary>
     public static int SlotTool(SimWorld w, int n) => (int)Belt(w).Get(SlotProp(n));
 
     /// <summary>"board", "belt", 또는 바닥의 구역 이름.</summary>
@@ -62,7 +62,7 @@ static class ToolBoard
     static bool HoldingHeavy(SimWorld w) =>
         w.Crew.Hand.Length > 0 && w.Data.Items.TryGetValue(w.Crew.Hand, out var item) && item.Heavy;
 
-    /// <summary>tool.&lt;id&gt;: 두 손이 드는 물건을 들고 있으면 both_hands, 허리띠에 없으면 not_carried. 빈손은 언제나 된다.</summary>
+    /// <summary>tool.&lt;id&gt;: 두 손이 드는 물건을 들고 있으면 both_hands, 공구띠에 없으면 not_carried. 빈손은 언제나 된다.</summary>
     public static bool Select(SimWorld w, int tool)
     {
         string cmd = $"tool.{w.T.Tools[tool]}";
@@ -72,7 +72,7 @@ static class ToolBoard
         return true;
     }
 
-    /// <summary>toolboard.take.&lt;id&gt;: 도구판의 윤곽에서 허리띠의 첫 빈 칸으로.</summary>
+    /// <summary>toolboard.take.&lt;id&gt;: 공구판의 윤곽에서 공구띠의 첫 빈 칸으로.</summary>
     public static bool Take(SimWorld w, int tool)
     {
         string cmd = $"toolboard.take.{w.T.Tools[tool]}";
@@ -85,7 +85,7 @@ static class ToolBoard
         return true;
     }
 
-    /// <summary>toolboard.return.&lt;id&gt;: 허리띠에서 도구판으로. 쥐고 있던 도구면 손이 빈다.</summary>
+    /// <summary>toolboard.return.&lt;id&gt;: 공구띠에서 공구판으로. 쥐고 있던 도구면 손이 빈다.</summary>
     public static bool Return(SimWorld w, int tool)
     {
         string cmd = $"toolboard.return.{w.T.Tools[tool]}";
@@ -105,7 +105,7 @@ static class ToolBoard
         return true;
     }
 
-    /// <summary>tool.pickup.&lt;id&gt;: 바닥의 도구를 허리띠로. 두 손이 드는 물건을 들고 있으면 hands_full.</summary>
+    /// <summary>tool.pickup.&lt;id&gt;: 바닥의 도구를 공구띠로. 두 손이 드는 물건을 들고 있으면 hands_full.</summary>
     public static bool Pickup(SimWorld w, int tool)
     {
         string cmd = $"tool.pickup.{w.T.Tools[tool]}";
@@ -118,7 +118,7 @@ static class ToolBoard
         return true;
     }
 
-    /// <summary>쥔 도구가 바닥에 떨어진다 (내려놓기, 감전, 물 분출). 허리띠 칸이 빈다.</summary>
+    /// <summary>쥔 도구가 바닥에 떨어진다 (내려놓기, 감전, 물 분출). 공구띠 칸이 빈다.</summary>
     public static void DropHeld(SimWorld w, int zone)
     {
         int tool = w.Crew.Tool;

@@ -34,8 +34,8 @@ public static class ProcedureRunner
     }
 
     /// <summary>
-    /// 도구판 모듈이 있을 때: 지금 허리띠(칸마다 도구 ID, 빈 칸은 "")에서 출발해 절차를 펼치고,
-    /// 허리띠에 없는 도구를 쥐기 전에 도구판에 다녀오는 명령을 끼운다.
+    /// 공구판 모듈이 있을 때: 지금 공구띠(칸마다 도구 ID, 빈 칸은 "")에서 출발해 절차를 펼치고,
+    /// 공구띠에 없는 도구를 쥐기 전에 공구판에 다녀오는 명령을 끼운다.
     /// 칸이 모자라면 남은 절차에서 가장 늦게(또는 다시는) 쓰지 않을 도구를 먼저 돌려놓는다.
     /// </summary>
     public static IReadOnlyList<Command> ExpandWithBelt(ProcedureDef procedure, IReadOnlyDictionary<string, string>? bind, IReadOnlyList<string> belt)
@@ -62,7 +62,7 @@ public static class ProcedureRunner
         return commands;
     }
 
-    /// <summary>시뮬레이션의 지금 허리띠에서 출발한다. 도구판 모듈이 없으면 Expand와 같다.</summary>
+    /// <summary>시뮬레이션의 지금 공구띠에서 출발한다. 공구판 모듈이 없으면 Expand와 같다.</summary>
     public static IReadOnlyList<Command> ExpandWithBelt(Simulation sim, ProcedureDef procedure, IReadOnlyDictionary<string, string>? bind = null)
     {
         var tb = sim.Data.Tuning.ToolBoard;

@@ -404,9 +404,9 @@ public partial class AutoPlayer : Node
         var p = cmd.Split('.');
         if (p[0] == "tool" && p.Length == 2)
         {
-            // 키 1은 빈손, 2~6은 허리띠 칸 (M2). 허리띠에 없는 도구면 도구판에 먼저 다녀와야 한다(ExpandWithBelt).
+            // 키 1은 빈손, 2~6은 공구띠 칸 (M2). 공구띠에 없는 도구면 공구판에 먼저 다녀와야 한다(ExpandWithBelt).
             int key = _main.Hands.KeyForTool(p[1]);
-            Check(key > 0, $"'{p[1]}'가 허리띠에 없어서 키로 쥘 수 없다 (허리띠: {string.Join(", ", Snap.Crew.Belt)})");
+            Check(key > 0, $"'{p[1]}'가 공구띠에 없어서 키로 쥘 수 없다 (공구띠: {string.Join(", ", Snap.Crew.Belt)})");
             if (key > 0) await Key(Godot.Key.Key1 + key - 1);
         }
         else if (p[0] == "tool" && p[1] == "drop")
@@ -513,32 +513,32 @@ public partial class AutoPlayer : Node
         GD.Print($"AUTOTEST: 장치 {catalog.Instances.Count}개, 명령 {catalog.Rows.Count}개를 손동작으로 확인");
     }
 
-    /// <summary>도구판과 허리띠: 키 2~6, 꽉 찬 허리띠의 거부와 그 글, 걸고 가져오기, 바닥에 내려놓고 줍기.</summary>
+    /// <summary>공구판과 공구띠: 키 2~6, 꽉 찬 공구띠의 거부와 그 글, 걸고 가져오기, 바닥에 내려놓고 줍기.</summary>
     async Task ToolsSuite()
     {
-        if (Snap.Crew.Belt.Count == 0) { Check(false, "도구판 모듈이 없는 데이터로 tools 묶음을 돌렸다"); return; }
+        if (Snap.Crew.Belt.Count == 0) { Check(false, "공구판 모듈이 없는 데이터로 tools 묶음을 돌렸다"); return; }
         for (int n = 0; n < Snap.Crew.Belt.Count; n++)
         {
             await Key(Godot.Key.Key2 + n);
             Step(0.1);
-            Check(Snap.Crew.Tool == Snap.Crew.Belt[n], $"키 {n + 2}를 눌렀는데 쥔 도구가 {Snap.Crew.Tool} (허리띠 {n + 1}칸은 {Snap.Crew.Belt[n]})");
+            Check(Snap.Crew.Tool == Snap.Crew.Belt[n], $"키 {n + 2}를 눌렀는데 쥔 도구가 {Snap.Crew.Tool} (공구띠 {n + 1}칸은 {Snap.Crew.Belt[n]})");
         }
         await Key(Godot.Key.Key1);
         Step(0.1);
         Check(Snap.Crew.Tool == "hand", "키 1이 빈손이 아니다");
 
-        // 허리띠가 차 있으면 여섯 번째 도구는 거부되고, 손이 느낀 글이 보인다.
+        // 공구띠가 차 있으면 여섯 번째 도구는 거부되고, 손이 느낀 글이 보인다.
         await Perform("toolboard.take.screwdriver");
         Step(0.1);
         await Frame(2);
-        Check(_main.Hud.LastFelt == UI.Texts.Reason("belt_full"), $"꽉 찬 허리띠의 거부 글: '{_main.Hud.LastFelt}'");
-        Check(Snap.Crew.ToolPlaces["screwdriver"] == "board", "거부됐는데 드라이버가 도구판을 떠났다");
+        Check(_main.Hud.LastFelt == UI.Texts.Reason("belt_full"), $"꽉 찬 공구띠의 거부 글: '{_main.Hud.LastFelt}'");
+        Check(Snap.Crew.ToolPlaces["screwdriver"] == "board", "거부됐는데 드라이버가 공구판을 떠났다");
 
         await Perform("toolboard.return.scrub_brush");
         Step(HandSeconds);
         await Perform("toolboard.take.screwdriver");
         Step(HandSeconds);
-        Check(Snap.Crew.Belt[^1] == "screwdriver", $"솔 자리에 드라이버가 들어가지 않았다 (허리띠: {string.Join(", ", Snap.Crew.Belt)})");
+        Check(Snap.Crew.Belt[^1] == "screwdriver", $"솔 자리에 드라이버가 들어가지 않았다 (공구띠: {string.Join(", ", Snap.Crew.Belt)})");
         await Perform("tool.screwdriver");
         Step(0.1);
         Check(Snap.Crew.Tool == "screwdriver", "키 6으로 드라이버를 쥐지 못했다");
@@ -555,8 +555,8 @@ public partial class AutoPlayer : Node
         Step(HandSeconds);
         await Perform("toolboard.take.scrub_brush");
         Step(HandSeconds);
-        Check(Snap.Crew.Belt.SequenceEqual(Data.Tuning.ToolBoard!.InitialBelt), $"허리띠가 처음으로 돌아오지 않았다: {string.Join(", ", Snap.Crew.Belt)}");
-        GD.Print("AUTOTEST: 도구판, 허리띠 키, 거부 글, 바닥에 내려놓고 줍기 확인");
+        Check(Snap.Crew.Belt.SequenceEqual(Data.Tuning.ToolBoard!.InitialBelt), $"공구띠가 처음으로 돌아오지 않았다: {string.Join(", ", Snap.Crew.Belt)}");
+        GD.Print("AUTOTEST: 공구판, 공구띠 키, 거부 글, 바닥에 내려놓고 줍기 확인");
     }
 
     /// <summary>

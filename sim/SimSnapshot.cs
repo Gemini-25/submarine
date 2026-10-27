@@ -203,9 +203,9 @@ public readonly record struct LeakView(string Id, string Zone, double InflowLps,
 /// <summary>손에 든 도구와 물건, 숨은 체력(화면 효과용), 사물함 재고.</summary>
 public sealed record CrewView
 {
-    /// <summary>허리띠 칸의 도구 ID (빈 칸은 ""). 도구판 모듈이 없으면 비어 있다.</summary>
+    /// <summary>공구띠 칸의 도구 ID (빈 칸은 ""). 공구판 모듈이 없으면 비어 있다.</summary>
     public IReadOnlyList<string> Belt { get; init; } = Array.Empty<string>();
-    /// <summary>빈손이 아닌 도구 → "board", "belt", 또는 바닥 구역 이름. 도구판 모듈이 없으면 비어 있다.</summary>
+    /// <summary>빈손이 아닌 도구 → "board", "belt", 또는 바닥 구역 이름. 공구판 모듈이 없으면 비어 있다.</summary>
     public IReadOnlyDictionary<string, string> ToolPlaces { get; init; } = new Dictionary<string, string>();
     public string Tool { get; init; } = "hand";
     public string Hand { get; init; } = "";

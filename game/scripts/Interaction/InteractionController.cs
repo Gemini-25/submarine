@@ -152,8 +152,8 @@ public partial class InteractionController : Node
     }
 
     /// <summary>
-    /// 키 1은 빈손, 2~6은 허리띠 1~5칸 (M2). 처음 허리띠가 M1 도구 다섯 개라 M1의 키와 같다.
-    /// 도구판 모듈이 없는 데이터면 M1처럼 도구 순서대로.
+    /// 키 1은 빈손, 2~6은 공구띠 1~5칸 (M2). 처음 공구띠가 M1 도구 다섯 개라 M1의 키와 같다.
+    /// 공구판 모듈이 없는 데이터면 M1처럼 도구 순서대로.
     /// </summary>
     public string? ToolForKey(int index)
     {
@@ -165,7 +165,7 @@ public partial class InteractionController : Node
         return index < tools.Count ? tools[index] : null;
     }
 
-    /// <summary>그 도구를 고르는 키 (1부터). 허리띠에 없으면 0.</summary>
+    /// <summary>그 도구를 고르는 키 (1부터). 공구띠에 없으면 0.</summary>
     public int KeyForTool(string tool)
     {
         for (int i = 0; i < 9; i++)

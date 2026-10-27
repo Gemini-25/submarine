@@ -3,11 +3,11 @@ using DeepLine.Sim.Data;
 namespace DeepLine.Sim.Repair;
 
 /// <summary>
-/// 도구판, 물건, 새 위험, 만지기, 한국어 글의 데이터 검증 (M2 WP2). 틀린 데이터는 로드 오류다.
+/// 공구판, 물건, 새 위험, 만지기, 한국어 글의 데이터 검증 (M2 WP2). 틀린 데이터는 로드 오류다.
 /// </summary>
 static class CrewValidator
 {
-    /// <summary>코드가 내는 거부 사유 (M1 손 수리, 장치 종류의 기본 판정, 도구판, 기절).</summary>
+    /// <summary>코드가 내는 거부 사유 (M1 손 수리, 장치 종류의 기본 판정, 공구판, 기절).</summary>
     public static readonly IReadOnlyList<string> BuiltInReasons = Array.AsReadOnly(new[]
     {
         "stunned", "hand_full", "hand_empty", "out_of_stock", "cannot_discard", "need_bare_hand",
@@ -28,7 +28,7 @@ static class CrewValidator
         var t = d.Tuning;
         var parts = d.Parts.ToDictionary(p => p.Id, StringComparer.Ordinal);
 
-        // 도구판과 허리띠
+        // 공구판과 공구띠
         if (t.ToolBoard is { } tb)
         {
             Check(tb.BeltSlots is >= 1 and <= 8, "tuning.toolBoard.beltSlots는 1~8");
@@ -46,12 +46,12 @@ static class CrewValidator
                     Check(board.Props.ContainsKey(ToolBoard.LocProp(tool)), $"parts.{ToolBoard.BoardPart}.props에 {ToolBoard.LocProp(tool)}가 없다");
             else errors.Add($"tuning.toolBoard가 있으면 상태 부품 '{ToolBoard.BoardPart}'가 있어야 한다");
             foreach (var key in new[] { "toolboard", "tooldrop" })
-                Check(t.Noise.Actions.ContainsKey(key), $"tuning.noise.actions에 도구판 소음 '{key}'가 없다");
-            // 한 절차가 허리띠보다 많은 도구를 요구하면 도구판을 몇 번이고 오가야 한다.
+                Check(t.Noise.Actions.ContainsKey(key), $"tuning.noise.actions에 공구판 소음 '{key}'가 없다");
+            // 한 절차가 공구띠보다 많은 도구를 요구하면 공구판을 몇 번이고 오가야 한다.
             foreach (var p in d.Procedures)
             {
                 int tools = p.Steps.Select(s => s.Tool).Where(x => x != null && x != "hand").Distinct().Count();
-                Check(tools <= tb.BeltSlots, $"procedures.{p.Id}: 도구 {tools}가지는 허리띠 {tb.BeltSlots}칸보다 많다");
+                Check(tools <= tb.BeltSlots, $"procedures.{p.Id}: 도구 {tools}가지는 공구띠 {tb.BeltSlots}칸보다 많다");
             }
         }
 

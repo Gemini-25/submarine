@@ -57,7 +57,7 @@ enum CommandKind
     LeakCaulk,
     /// <summary>데이터로 정의한 장치의 명령 (Index = FixtureCatalog의 순번). M2.</summary>
     Fixture,
-    // M2 도구판 모듈 (Index = 도구 순번 또는 구역 순번)
+    // M2 공구판 모듈 (Index = 도구 순번 또는 구역 순번)
     ToolBoardTake,
     ToolBoardReturn,
     ToolDrop,

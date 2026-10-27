@@ -24,7 +24,7 @@ public sealed class Tuning
     public RepairTuning Repair { get; set; } = new();
     /// <summary>손에 들 수 있는 도구 ID. 순서가 단축키 1~9 순서다. 첫 도구는 빈손이다.</summary>
     public List<string> Tools { get; set; } = new();
-    /// <summary>도구판과 허리띠 (M2). 없으면 M1처럼 모든 도구를 바로 쥘 수 있다.</summary>
+    /// <summary>공구판과 공구띠 (M2). 없으면 M1처럼 모든 도구를 바로 쥘 수 있다.</summary>
     [Optional] public ToolBoardTuning? ToolBoard { get; set; }
 }
 
@@ -262,11 +262,11 @@ public sealed class TouchTuning
     public double BurnAtC { get; set; }
 }
 
-/// <summary>도구판, 허리띠, 바닥의 도구 (SPEC 15절 '도구는 들고 다니는 물건'). 상태는 부품 toolbelt, toolboard의 상태 값.</summary>
+/// <summary>공구판, 공구띠, 바닥의 도구 (SPEC 15절 '도구는 들고 다니는 물건'). 상태는 부품 toolbelt, toolboard의 상태 값.</summary>
 public sealed class ToolBoardTuning
 {
     public int BeltSlots { get; set; }
-    /// <summary>처음 허리띠의 도구 (칸 순서).</summary>
+    /// <summary>처음 공구띠의 도구 (칸 순서).</summary>
     public List<string> InitialBelt { get; set; } = new();
     /// <summary>이 기울기(도)를 넘으면 바닥의 도구가 낮은 쪽으로 구른다 (M2 WP18).</summary>
     public double RollTiltDeg { get; set; }
