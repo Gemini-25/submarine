@@ -1,0 +1,8 @@
+{
+  "scrubber": {
+    "bypassAbsorption": 0.5
+  },
+  "fan": {
+    "stallHeatW": 30
+  }
+}

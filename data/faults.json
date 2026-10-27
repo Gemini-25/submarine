@@ -37,7 +37,8 @@
     "defaultPart": "fan.motor",
     "state": "Fault",
     "set": {
-      "stalled": 1
+      "stalled": 1,
+      "bearingWorn": 1
     },
     "baseRatePerHour": 0.02
   },
