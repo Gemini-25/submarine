@@ -86,6 +86,13 @@ public partial class InteractionController : Node
             ? cam.GetViewport().GetMousePosition()
             : cam.GetViewport().GetVisibleRect().Size / 2;
         if (_player.InWorkView && _grab != null) screen = _savedCursor;
+        return RayPickAt(screen);
+    }
+
+    /// <summary>화면의 한 점(뷰포트 좌표)에서 쏜 조준선이 닿는 물체.</summary>
+    public Interactable? RayPickAt(Vector2 screen)
+    {
+        var cam = _player.Camera;
         var from = cam.ProjectRayOrigin(screen);
         var to = from + cam.ProjectRayNormal(screen) * Reach;
         return RayPick(from, to);

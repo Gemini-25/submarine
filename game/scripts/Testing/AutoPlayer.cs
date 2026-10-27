@@ -26,6 +26,8 @@ public partial class AutoPlayer : Node
     {
         _main = GetParent<Main>();
         _main.Runner.Paused = true; // 시간은 여기서 직접 진행한다
+        // 헤드리스 창은 기본이 정사각형이라 실제 화면 비율(16:9)로 맞춘다. 작업 시점에서 무엇이 보이는지가 달라진다.
+        GetTree().Root.Size = new Vector2I(1600, 900);
         _main.Hands.CommandIssued += c => _issued.Add(c);
         _ = Run();
     }
@@ -95,6 +97,9 @@ public partial class AutoPlayer : Node
             await Frame(5);
             Check(_main.Hud.ResultOpen, "결과 화면이 뜨지 않았다");
             await CheckRestart();
+            await CheckHatchAndHandPump();
+            await CheckShock();
+            await CheckWorkView();
         }
         catch (Exception e)
         {
@@ -145,6 +150,91 @@ public partial class AutoPlayer : Node
         await Key(Godot.Key.R);
         Check(!_main.Hud.ResultOpen, "R로 다시 시작되지 않았다");
         Check(Snap.Tick == 0 && Snap.Status == MissionStatus.Running, "다시 시작했는데 처음 상태가 아니다");
+    }
+
+    /// <summary>해치는 닫히면 지나갈 수 없고, 수동 펌프 손잡이는 한 번 퍼낸 뒤 돌아올 때까지 움직이지 않는다.</summary>
+    async Task CheckHatchAndHandPump()
+    {
+        await Perform("hatch.close");
+        Step(HandSeconds);
+        await Frame(3);
+        Check(Snap.Water.HatchClosed, "해치가 닫히지 않았다");
+        var from = new Vector3(World.Submarine.HatchX + 0.6f, 1.0f, 0);
+        var space = _main.Player.GetWorld3D().DirectSpaceState;
+        var q = PhysicsRayQueryParameters3D.Create(from, from + Vector3.Left * 1.2f, World.Geo.WallLayer);
+        Check(space.IntersectRay(q).Count > 0, "닫힌 해치가 길을 막지 않는다");
+        await Perform("hatch.open");
+        Step(HandSeconds);
+        Check(!Snap.Water.HatchClosed, "해치가 열리지 않았다");
+
+        await Perform("handpump.stroke");
+        Step(0.2);
+        int before = _issued.Count;
+        var pump = _main.Sub.Interactables["handpump"];
+        _main.Hands.PointerDown(pump);
+        _main.Hands.PointerMove(new Vector2(0, -InteractionController.StrokePixels * 2));
+        _main.Hands.PointerMove(new Vector2(0, InteractionController.StrokePixels * 2));
+        _main.Hands.PointerUp();
+        Check(_issued.Count == before, "펌프 손잡이가 돌아오는 중인데 또 퍼졌다");
+        Step(1.2);
+        await Perform("handpump.stroke");
+    }
+
+    /// <summary>살아 있는 회로의 성한 퓨즈를 빈손으로 뽑으면 감전되고, 잠시 손을 못 쓴다.</summary>
+    async Task CheckShock()
+    {
+        await Perform("tool.hand");
+        Step(HandSeconds);
+        await Perform("fuse.C1.pull");
+        Step(0.1);
+        await Frame(3);
+        Check(_main.Shocks == 1, $"살아 있는 퓨즈를 뽑았는데 감전 {_main.Shocks}번");
+        Check(Snap.Crew.Stunned, "감전 뒤에 손을 쓸 수 있다");
+        int before = _issued.Count;
+        _main.Hands.PointerDown(_main.Sub.Interactables["switch.C1"]);
+        _main.Hands.PointerUp();
+        Check(_issued.Count == before, "감전으로 손을 못 쓰는 동안 손동작이 먹혔다");
+        Step(_main.Runner.Data.Tuning.Crew.ShockStunSeconds + 0.5);
+        Check(!Snap.Crew.Stunned, "감전 뒤 시간이 지나도 손을 못 쓴다");
+        await Perform("switch.C1.off");
+        Step(HandSeconds);
+        await Perform("fuse.C1.insert");
+        Step(HandSeconds);
+        await Perform("switch.C1.on");
+        Step(HandSeconds);
+        Check(_main.Shocks == 1 && Snap.LightsBrightness > 0.5, "스위치를 내리고 퓨즈를 다시 꽂았는데 등이 돌아오지 않았다");
+    }
+
+    /// <summary>F 작업 시점: 카메라가 장비 앞에 붙고, 그 장비의 물체를 모두 마우스 포인터로 가리킬 수 있다.</summary>
+    async Task CheckWorkView()
+    {
+        var stations = new (string Enter, string[] Targets)[]
+        {
+            ("switch.C2", new[] { "bus", "switch.C1", "switch.C8", "fuse.C1", "fuse.C8", "terminal.C1", "terminal.C8" }),
+            ("strainer.cover", new[] { "strainer.bolt.1", "strainer.bolt.2", "strainer.bolt.3", "strainer.bolt.4", "strainer.cover", "wash_bucket" }),
+            ("locker.fuse", new[] { "locker.fuse", "locker.wood_wedge", "locker.timber_shore", "discard" }),
+            ("panel", new[] { "panel" }),
+        };
+        foreach (var (enter, targets) in stations)
+        {
+            if (await Approach(enter) == null) continue;
+            await Frame();
+            Check(_main.Hands.ToggleWorkView(), $"'{enter}'를 보고 F를 눌렀는데 작업 시점이 아니다");
+            await ToSignal(GetTree().CreateTimer(0.8), SceneTreeTimer.SignalName.Timeout);
+            var cam = _main.Player.Camera;
+            var size = cam.GetViewport().GetVisibleRect().Size;
+            foreach (var id in targets)
+            {
+                // 헤드리스에서는 마우스 포인터 좌표를 믿을 수 없어서, 포인터가 그 점에 있을 때와 같은 조준선을 직접 쏜다.
+                var it = _main.Sub.Interactables[id];
+                var screen = cam.UnprojectPosition(it.GlobalPosition);
+                bool onScreen = screen.X >= 0 && screen.Y >= 0 && screen.X <= size.X && screen.Y <= size.Y;
+                var hit = _main.Hands.RayPickAt(screen);
+                Check(onScreen && hit == it, $"'{_main.Player.WorkStation}' 작업 시점에서 '{id}'를 가리켰는데 잡힌 것: {hit?.Id ?? "없음"} (화면 {screen} / {size})");
+            }
+            _main.Hands.ToggleWorkView();
+            Check(!_main.Player.InWorkView, "F로 작업 시점에서 나오지 않았다");
+        }
     }
 
     /// <summary>절차를 명령으로 펼치고, 명령마다 해당 물체에 손동작을 한다.</summary>

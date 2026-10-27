@@ -158,7 +158,7 @@ public partial class Submarine
         Geo.Box(root, new Vector3(1.88f, 1.18f, 0.04f), new Vector3(0, 1.4f, 0.02f), Geo.Mat(new Color(0.2f, 0.17f, 0.14f), 0.6f, 0));
         Geo.Text(root, "배전반", new Vector3(0, 1.94f, 0.045f), 0.05f);
         Geo.Blocker(root, new Vector3(1.9f, 1.2f, 0.05f), new Vector3(0, 1.4f, 0.025f));
-        Stations["switchboard"] = (GlobalOf(root, new Vector3(0, 1.48f, 0.85f)), GlobalOf(root, new Vector3(0, 1.38f, 0)));
+        Stations["switchboard"] = (GlobalOf(root, new Vector3(0, 1.45f, 1.0f)), GlobalOf(root, new Vector3(0, 1.38f, 0)));
 
         // 버스 바: 칼날 스위치 위쪽 접점으로 이어지는 구리 막대
         Geo.Box(root, new Vector3(1.78f, 0.025f, 0.012f), new Vector3(0.02f, 1.72f, 0.05f), Geo.Copper);

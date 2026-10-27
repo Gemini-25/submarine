@@ -13,7 +13,7 @@ dotnet build game/DeepLine.Game.csproj -nologo -v q
 
 run() {
   local name="$1"; shift
-  if ! "$GODOT" --headless --path game -- "$@" > "$LOG/$name.log" 2>&1; then
+  if ! "$GODOT" --headless --path game --resolution 1600x900 -- "$@" > "$LOG/$name.log" 2>&1; then
     echo "$name 실패. 기록: $LOG/$name.log"; grep -E "ERROR|AUTOTEST|SMOKE" "$LOG/$name.log" || true; exit 1
   fi
   if grep -q "ERROR" "$LOG/$name.log"; then
