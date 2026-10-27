@@ -74,6 +74,13 @@ public class AirRepairTests
         h2.Inject("AIR-01");
         h2.Run(120);
         Assert.Equal(1, h2.Q("air.h2"), 6);
+        var cl = Sim(s => s.Air["cl2"] = 5);
+        cl.Inject("AIR-01");
+        cl.Run(120);
+        Assert.Equal(5, cl.Q("air.cl2"), 6);
+        var clOk = Sim(s => s.Air["cl2"] = 5);
+        clOk.Run(120);
+        Assert.True(clOk.Q("air.cl2") < 4);
 
         // C2 퓨즈가 끊긴 경우와 가른다: 웅웅 소리도 점화기 빛도 없다.
         var fuse = Sim();
@@ -82,11 +89,20 @@ public class AirRepairTests
         Assert.Equal(0, fuse.Q("cue.fan.stall"));
         Assert.Equal(0, fuse.Q("cue.igniter.glow"));
 
-        // 만져 보면 떨리지 않는다. 도는 팬은 떨린다.
+        // 청진기: 멎은 채 전기가 오는 전동기는 거칠고, 도는 팬은 고르다.
+        var baseline = Sim();
+        baseline.Run(10);
+        Assert.True(Math.Abs(sim.Measure("stethoscope", "fan.motor") - baseline.Measure("stethoscope", "fan.motor")) >= 0.3);
+
+        // 만져 보면 따뜻하고(구속 발열, 10분 뒤) 떨리지 않는다. 도는 팬은 떨린다.
+        sim.Run(600);
+        sim.DrainEvents();
         sim.Cmd("tool.hand");
         sim.Cmd("fan.motor.touch");
         sim.Run(Hand);
-        Assert.Contains(sim.DrainEvents(), e => e.Kind == SimEventKind.Touched && e.Subject == "fan.motor" && e.Detail == "");
+        var touched = sim.DrainEvents().Single(e => e.Kind == SimEventKind.Touched && e.Subject == "fan.motor");
+        Assert.Equal("", touched.Detail);
+        Assert.True(touched.Value >= 2, $"멎은 전동기의 온도 단계 {touched.Value} (따뜻하다는 2)");
         var ok = Sim();
         ok.Cmd("fan.motor.touch");
         ok.Run(Hand);
@@ -208,7 +224,7 @@ public class AirRepairTests
     [Fact]
     public void Hand_spin_runs_the_fan_temporarily_and_it_stalls_again_after_its_life()
     {
-        var sim = Sim();
+        var sim = Sim(s => s.Air["co2"] = 1.5);
         sim.Inject("AIR-01");
         sim.Run(5);
         var events = Follow(sim, "proc.fan.spin");
@@ -217,7 +233,8 @@ public class AirRepairTests
         Assert.True(FanRuns(sim));
         Assert.Equal(Quality.Temporary, Fan(sim).Quality);
         Assert.Equal("AIR-01", sim.QS("part.fan.motor.fault"));
-        Assert.True(Co2After(sim, 60) < 0.1 * 1.0 && sim.Q("cue.fan.hum") == 1);
+        Assert.True(Co2After(sim, 60) < 0);
+        Assert.Equal(1, sim.Q("cue.fan.hum"));
 
         // 수명(가동 8분)이 다하면 다시 멎는다. 걸린 때부터 센다.
         double life = TestData.Data.Fixtures.Instances.First(f => f.Id == "fan.blades").Params["spinLife"];
@@ -248,6 +265,20 @@ public class AirRepairTests
         Do(sim, new[] { "switch.C2.on" });
         sim.Run(5);
         Assert.False(FanRuns(sim));
+
+        // 장치를 꺼 두었거나 버스 전압이 최소 전압 아래여도 같다.
+        var off = Sim();
+        off.Inject("AIR-01");
+        var ev = Do(off, Plan(off, "proc.fan.spin").Prepend("device.vent_fan.off"));
+        Assert.DoesNotContain(ev, e => e.Kind is SimEventKind.CommandRejected or SimEventKind.PartPatched);
+        Assert.Equal(1, Fan(off).Get("stalled"));
+        var low = Sim(s => s.BatteryCharge = 0);
+        low.Inject("AIR-01");
+        low.Run(1);
+        Assert.True(low.Q("battery.voltage") < 0.5, $"버스 전압 {low.Q("battery.voltage")}");
+        ev = Do(low, Plan(low, "proc.fan.spin"));
+        Assert.DoesNotContain(ev, e => e.Kind == SimEventKind.PartPatched);
+        Assert.Equal(1, Fan(low).Get("stalled"));
     }
 
     [Fact]
@@ -260,25 +291,35 @@ public class AirRepairTests
     // ── 위험 건너뛰기 ────────────────────────────────────
 
     [Fact]
-    public void Skipping_C2_off_shocks_at_the_bearing_pull()
+    public void Skipping_C2_off_shocks_at_the_bearing_pull_and_insert_and_pinches_at_the_hub()
     {
         var sim = Sim();
         sim.Inject("AIR-01");
-        var plan = Plan(sim, "proc.fan.bearing", c => c != "switch.C2.off");
         var events = new List<SimEvent>();
-        foreach (var c in plan)
+        foreach (var c in Plan(sim, "proc.fan.bearing", c => c != "switch.C2.off"))
         {
             var ev = Do(sim, new[] { c });
             events.AddRange(ev);
-            if (ev.Any(e => e.Kind == SimEventKind.Shock))
-            {
-                Assert.Equal("fan.bearing.pull", c);
-                break;
-            }
+            if (ev.Any(e => e.Kind is SimEventKind.Shock or SimEventKind.Pinch))
+                sim.Run(Math.Max(TestData.T.Crew.ShockStunSeconds, TestData.T.Crew.PinchStunSeconds));
         }
-        Assert.Single(events, e => e.Kind == SimEventKind.Shock);
-        Assert.DoesNotContain(events, e => e.Kind == SimEventKind.Pinch); // 멎은 팬이라 끼이지는 않는다
-        Assert.Equal("fan_bearing_worn", sim.QS("crew.hand")); // 다쳐도 손은 하던 일을 마친다
+        Assert.Single(events, e => e.Kind == SimEventKind.Shock && e.Subject == "fan.bearing.pull");
+        Assert.Single(events, e => e.Kind == SimEventKind.Shock && e.Subject == "fan.bearing.insert");
+        // 새 베어링이 들어가면 팬이 돌기 시작하므로 허브를 조일 때 끼인다.
+        Assert.Contains(events, e => e.Kind == SimEventKind.Pinch && e.Subject == "fan.hub.tighten");
+        Assert.Equal(1, Fan(sim).Get("present")); // 다쳐도 손은 하던 일을 마친다
+    }
+
+    [Fact]
+    public void Inserting_the_bearing_on_a_live_C2_shocks_and_the_hand_finishes()
+    {
+        var sim = Sim();
+        sim.Inject("AIR-01");
+        NoHarm(Do(sim, new[] { "tool.hand", "switch.C2.off", "fan.guard.nut.1.loosen", "fan.guard.nut.2.loosen", "fan.guard.open",
+            "tool.wrench", "fan.hub.loosen", "tool.hand", "fan.bearing.pull", "hand.drop", "locker.take.fan_bearing", "switch.C2.on" }));
+        var ev = Do(sim, new[] { "fan.bearing.insert" });
+        Assert.Single(ev, e => e.Kind == SimEventKind.Shock && e.Subject == "fan.bearing.insert");
+        Assert.Equal(1, Fan(sim).Get("present"));
     }
 
     [Fact]
@@ -294,6 +335,9 @@ public class AirRepairTests
         sim.Run(TestData.T.Crew.PinchStunSeconds);
         var hub = Do(sim, new[] { "tool.wrench", "fan.hub.loosen" });
         Assert.Single(hub, e => e.Kind == SimEventKind.Pinch && e.Subject == "fan.hub.loosen");
+        sim.Run(TestData.T.Crew.PinchStunSeconds);
+        var pull = Do(sim, new[] { "tool.hand", "fan.bearing.pull" });
+        Assert.Contains(pull, e => e.Kind == SimEventKind.Pinch && e.Subject == "fan.bearing.pull");
     }
 
     // ── 숨은 결함 ────────────────────────────────────────
@@ -316,8 +360,10 @@ public class AirRepairTests
         Assert.False(FanRuns(sim));                           // 늦은 증상: 다시 멎었다
         Assert.Equal(0, sim.Q("cue.fan.rattle"));
 
-        // 다시 하면(이번에는 너트를 조여) 지워진다. 너트는 이미 풀려 있다.
-        NoHarm(Follow(sim, "proc.fan.bearing", c => c != "fan.hub.loosen"));
+        // 다시 하면(이번에는 너트를 조여) 지워진다. 너트는 이미 풀려 있고, 뽑은 베어링은 성한 것이라 도로 끼운다.
+        double stock = sim.Q("inventory.fan_bearing");
+        NoHarm(Follow(sim, "proc.fan.bearing", c => c != "fan.hub.loosen" && c != "hand.drop" && c != "locker.take.fan_bearing"));
+        Assert.Equal(stock, sim.Q("inventory.fan_bearing"));
         Assert.Equal(0, sim.Q("cue.fan.rattle"));
         sim.Run(hubLife * 2);
         Assert.True(FanRuns(sim));
@@ -362,7 +408,7 @@ public class AirRepairTests
             "fan.bearing.pull",                                // 허브 너트가 물고 있다
             "fan.guard.nut.1.tighten",                         // 보호망이 열려 있다
         });
-        Assert.Equal(new[] { "clamp_shut", "clamp_shut", "lid_closed", "guard_closed", "bolts_tight", "hub_tight", "guard_open" },
+        Assert.Equal(new[] { "clamp_shut", "clamp_shut", "lid_closed", "guard_closed", "guard_nuts_tight", "hub_tight", "guard_open" },
             ev.Where(e => e.Kind == SimEventKind.CommandRejected).Select(e => e.Detail));
     }
 
@@ -373,7 +419,13 @@ public class AirRepairTests
     {
         var sim = Sim(s => s.Air["co2"] = 1.5);
         sim.Inject("AIR-02");
-        NoHarm(Follow(sim, "proc.fan.bearing"));
+        double stock = sim.Q("inventory.fan_bearing");
+        var events = Follow(sim, "proc.fan.bearing");
+        NoHarm(events);
+        Assert.Contains(events, e => e.Kind == SimEventKind.PartRepaired && e.Subject == "fan.motor");
+        // 성한 베어링을 버리고 새것을 끼웠다(절차대로). 건드린 팬만 새것이다.
+        Assert.Equal(stock - 1, sim.Q("inventory.fan_bearing"));
+        Assert.True(Fan(sim).Wear < 1e-4);
         Assert.Equal("AIR-02", sim.QS("part.scrubber.canister.fault"));
         Assert.Equal(1, sim.Q("cue.scrubber.indicator"));
         Assert.True(Co2After(sim, 120) > 0.1);
@@ -384,7 +436,44 @@ public class AirRepairTests
     {
         var sim = Sim(s => s.Air["co2"] = 1.5);
         sim.Inject("AIR-01");
-        NoHarm(Follow(sim, "proc.canister.replace"));
+        sim.Run(200); // 멎은 팬이라 통은 새것 그대로다
+        double stock = sim.Q("inventory.canisters");
+        var events = Follow(sim, "proc.canister.replace");
+        NoHarm(events);
+        Assert.Contains(events, e => e.Kind == SimEventKind.PartRepaired && e.Subject == "scrubber.canister");
+        Assert.Equal(0, sim.Q("air.canister"));
+        Assert.Equal(stock - 1, sim.Q("inventory.canisters"));
+        Assert.Equal("AIR-01", sim.QS("part.fan.motor.fault"));
+        Assert.False(FanRuns(sim));
+        Assert.True(Co2After(sim, 120) > 0.1);
+    }
+
+    [Fact]
+    public void A_bearing_for_a_blown_C2_fuse_renews_only_the_fan()
+    {
+        var sim = Sim(s => s.Air["co2"] = 1.5);
+        sim.Inject("ELC-01", "fuse.C2");
+        sim.Run(5);
+        double stock = sim.Q("inventory.fan_bearing");
+        var events = Follow(sim, "proc.fan.bearing");
+        NoHarm(events);
+        Assert.Contains(events, e => e.Kind == SimEventKind.PartRepaired && e.Subject == "fan.motor");
+        Assert.Equal(stock - 1, sim.Q("inventory.fan_bearing"));
+        Assert.Equal("ELC-01", sim.QS("part.fuse.C2.fault"));
+        Assert.False(FanRuns(sim));
+        Assert.True(Co2After(sim, 120) > 0.1);
+    }
+
+    [Fact]
+    public void A_C2_fuse_for_a_stalled_fan_renews_only_the_fuse()
+    {
+        var sim = Sim(s => s.Air["co2"] = 1.5);
+        sim.Inject("AIR-01");
+        var plan = ProcedureRunner.ExpandWithBelt(sim, TestData.Data.Procedure("proc.fuse.replace"), new Dictionary<string, string> { ["circuit"] = "C2" })
+            .Select(c => c.Cmd);
+        var events = Do(sim, plan);
+        NoHarm(events);
+        Assert.Contains(events, e => e.Kind == SimEventKind.PartRepaired && e.Subject == "fuse.C2");
         Assert.Equal("AIR-01", sim.QS("part.fan.motor.fault"));
         Assert.False(FanRuns(sim));
         Assert.True(Co2After(sim, 120) > 0.1);
@@ -403,10 +492,11 @@ public class AirRepairTests
             NoHarm(Follow(sim, "proc.canister.replace"));
         }
         Assert.Equal(0, sim.Q("inventory.canisters"));
+        Canister(sim).Set("saturation", 1);
         var ev = Follow(sim, "proc.canister.replace");
         Assert.Contains(ev, e => e.Kind == SimEventKind.CommandRejected && e.Subject == "locker.take.canister" && e.Detail == "out_of_stock");
-        // 사물함이 비어도 성한 통을 빼면 성한 통이 손에 든다(되돌릴 수 있다).
-        Assert.Equal(0, sim.Q("inventory.canisters"));
+        Assert.Contains(ev, e => e.Kind == SimEventKind.CommandRejected && e.Detail == "need_canister");
+        Assert.Equal(0, sim.Q("air.scrubberFlow")); // 통이 없으면 흡수가 멎는다
     }
 
     [Fact]
@@ -418,6 +508,77 @@ public class AirRepairTests
         Assert.Equal(0, sim.Q("air.scrubberFlow"));
         Do(sim, new[] { "locker.return.canister" });
         Assert.Equal(TestData.T.Inventory.Locker["canister"] + 1, sim.Q("inventory.canisters"));
+    }
+
+    [Fact]
+    public void A_good_bearing_pulled_and_put_back_runs_again_without_using_stock()
+    {
+        var sim = Sim();
+        double stock = sim.Q("inventory.fan_bearing");
+        NoHarm(Do(sim, new[] { "tool.hand", "switch.C2.off", "fan.guard.nut.1.loosen", "fan.guard.nut.2.loosen", "fan.guard.open",
+            "tool.wrench", "fan.hub.loosen", "tool.hand", "fan.bearing.pull" }));
+        Assert.Equal("fan_bearing", sim.QS("crew.hand"));
+        NoHarm(Do(sim, new[] { "fan.bearing.insert", "tool.wrench", "fan.hub.tighten", "tool.hand", "fan.guard.close",
+            "fan.guard.nut.1.tighten", "fan.guard.nut.2.tighten", "switch.C2.on" }));
+        sim.Run(5);
+        Assert.True(FanRuns(sim));
+        Assert.Equal(stock, sim.Q("inventory.fan_bearing"));
+    }
+
+    [Fact]
+    public void A_worn_bearing_put_back_leaves_the_fan_stalled()
+    {
+        var sim = Sim();
+        sim.Inject("AIR-01");
+        NoHarm(Follow(sim, "proc.fan.bearing", c => c != "hand.drop" && c != "locker.take.fan_bearing"));
+        Assert.False(FanRuns(sim));
+        Assert.Equal("AIR-01", sim.QS("part.fan.motor.fault"));
+    }
+
+    [Fact]
+    public void A_half_used_canister_put_back_keeps_its_saturation()
+    {
+        var sim = Sim(s => s.Air["co2"] = 1.5);
+        Canister(sim).Set("saturation", 0.3);
+        NoHarm(Do(sim, new[] { "tool.hand", "scrubber.clamp.1.open", "scrubber.clamp.2.open", "scrubber.lid.open", "scrubber.canister.pull" }));
+        Assert.Equal("canister_spent", sim.QS("crew.hand"));
+        Assert.Equal(0, sim.Q("cue.scrubber.indicator")); // 빈 자리는 지시약이 보이지 않는다
+        NoHarm(Do(sim, new[] { "scrubber.canister.insert", "scrubber.lid.close", "scrubber.clamp.1.close", "scrubber.clamp.2.close" }));
+        Assert.InRange(sim.Q("air.canister"), 0.3, 0.31); // 다시 닫는 몇 초 동안 조금 더 찼을 뿐
+        Assert.True(Co2After(sim, 120) < 0);
+    }
+
+    [Fact]
+    public void A_lid_left_open_absorbs_nothing()
+    {
+        var sim = Sim(s => s.Air["co2"] = 1.5);
+        sim.Inject("AIR-02");
+        var ev = Follow(sim, "proc.canister.replace", c => c != "scrubber.lid.close");
+        Assert.Equal(2, ev.Count(e => e.Kind == SimEventKind.CommandRejected && e.Detail == "lid_open"));
+        Assert.Equal("", sim.QS("part.scrubber.canister.fault"));
+        Assert.Equal(0, sim.Q("air.scrubberFlow"));
+        Assert.Equal(0, sim.Q("cue.scrubber.whistle"));
+        Assert.True(sim.Q("cue.scrubber.indicator") < 0.1);
+        Assert.True(Co2After(sim, 300) > 0.1);
+        NoHarm(Do(sim, new[] { "scrubber.lid.close", "scrubber.clamp.1.close", "scrubber.clamp.2.close" }));
+        Assert.Equal(1, sim.Q("air.scrubberFlow"));
+    }
+
+    [Fact]
+    public void A_second_hand_spin_buys_another_life()
+    {
+        var sim = Sim();
+        sim.Inject("AIR-01");
+        Follow(sim, "proc.fan.spin");
+        double life = TestData.Data.Fixtures.Instances.First(f => f.Id == "fan.blades").Params["spinLife"];
+        sim.Run(life + 10);
+        Assert.False(FanRuns(sim));
+        var events = Follow(sim, "proc.fan.spin");
+        NoHarm(events);
+        Assert.Contains(events, e => e.Kind == SimEventKind.PartPatched && e.Subject == "fan.motor");
+        Assert.True(FanRuns(sim));
+        Assert.Equal(Quality.Temporary, Fan(sim).Quality);
+        Assert.Equal("AIR-01", sim.QS("part.fan.motor.fault"));
     }
 
     // ── 기본 상태와 결정성 ───────────────────────────────
@@ -436,21 +597,24 @@ public class AirRepairTests
     [Fact]
     public void Save_and_restore_in_the_middle_of_both_repairs_continues_hash_identical()
     {
+        // 저장할 때: 응급 수리 타이머가 돌고, 렌치는 중앙 바닥에, 나비 너트 하나가 풀려 있고, 다 쓴 통을 들었다.
         var a = Sim();
         a.Inject("AIR-01");
         a.Inject("AIR-02");
-        var spin = Plan(a, "proc.fan.spin");
-        Do(a, spin);                                           // 응급 수리 타이머가 돈다
-        var half = Plan(a, "proc.canister.replace").Take(5).ToList();
-        Do(a, half);                                           // 뚜껑이 열리고 다 쓴 통을 들었다
-        Do(a, new[] { "tool.wrench", "fan.guard.nut.1.loosen" });
+        Do(a, Plan(a, "proc.fan.spin"));
+        NoHarm(Do(a, new[] { "tool.wrench", "tool.drop.mid", "tool.hand", "fan.guard.nut.1.loosen", "scrubber.clamp.1.open",
+            "scrubber.clamp.2.open", "scrubber.lid.open", "scrubber.canister.pull" }));
+        Assert.Equal("canister_spent", a.QS("crew.hand"));
+        Assert.Equal(0, Fan(a).Get("guardNut1"));
+        Assert.Equal(1, Fan(a).Get("spinArmed"));
         var saved = a.SaveState();
         var b = new Simulation(TestData.Data, 1);
         b.RestoreState(saved);
         Assert.Equal(a.StateHash(), b.StateHash());
         foreach (var s in new[] { a, b })
         {
-            Do(s, new[] { "tool.hand", "fan.guard.nut.1.loosen", "hand.drop", "locker.take.canister", "scrubber.canister.insert" });
+            NoHarm(Do(s, new[] { "hand.drop", "locker.take.canister", "scrubber.canister.insert", "scrubber.lid.close",
+                "scrubber.clamp.1.close", "scrubber.clamp.2.close", "fan.guard.nut.1.tighten" }));
             s.Run(600);
         }
         Assert.Equal(a.StateHash(), b.StateHash());
@@ -505,8 +669,11 @@ public class AirRepairTests
         Assert.Contains("## 팬 베어링 교체", fan);
         Assert.Contains("## 흡수통 교체", can);
         Assert.Contains("허브 너트를 풀어 둔 채", fan);
+        var prm = TestData.Data.Fixtures.Instances.First(f => f.Id == "fan.blades").Params;
+        Assert.Contains($"약 {prm["spinLife"] / 60:0}분 돌다가", fan);
+        Assert.Contains($"약 {prm["hubLife"] / 60:0}분 돈 뒤", fan);
         Assert.Contains($"흡수량이 {ManualText.Number(TestData.T.Scrubber!.BypassAbsorption, 1)}배로 떨어진다", can);
-        Assert.Contains($"사물함에 {TestData.T.Inventory.Locker["canister"]}개", can);
+        Assert.Contains($"바닥 받침에 {TestData.T.Inventory.Locker["canister"]}개", can);
         Assert.DoesNotContain("(작성 중: WP9)", diag);
         Assert.DoesNotContain("이 판에 없음", diag);
         foreach (var name in new[] { "팬 베어링", "흡수제 통", "렌치", "빈손" })

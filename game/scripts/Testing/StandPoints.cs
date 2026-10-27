@@ -70,7 +70,8 @@ public static class StandPoints
             [ "winch.control", "winch.brake", "winch.pawl", "winch.cover", "winch.cover.bolt.1", "winch.cover.bolt.2", "winch.adjust" ], None),
         new("pump", At(1.0f, -0.3f), false,
             [ "pump.cap", ..Four("pump.cap.bolt"), "pump.oilcup", "pump.body", "checkvalve.bonnet", ..Four("checkvalve.bolt"), "pump.discharge" ], None),
-        new("locker.aft", At(1.5f, -0.35f), false, [ "locker.fan_bearing", "locker.aft.shelf.2", "locker.aft.shelf.3" ], None),
+        new("locker.aft", At(1.5f, -0.35f), false, World.Submarine.AftShelves.SelectMany(s => s).Select(i => $"locker.{i}").ToArray(), None),
+        new("locker.top", At(3.75f, -0.25f), false, World.Submarine.MidUpperShelves.SelectMany(s => s).Select(i => $"locker.{i}").ToArray(), None),
 
         // ── 중앙 ──
         new("toolboard", At(3.4f, -0.45f), false, Tools(), None),
@@ -101,7 +102,7 @@ public static class StandPoints
             [ "hydrophone.door", "hydrophone.door.screw.1", "hydrophone.door.screw.2", "hydrophone", "sonar.tube.1", "gadget.headphones" ], None),
 
         // ── 손이 닿는지만 보는 자리 ──
-        new("canister.rack", At(3.75f, -0.2f), false, [ "locker.canister" ], None, WorkView: false),
+        new("canister.stand", At(4.1f, -0.15f), false, [ "locker.canister" ], None, WorkView: false),
         new("strainer.open", At(1.55f, -0.3f), true, [ "strainer.basket" ], [ "strainer.cover" ], WorkView: false),
         new("junction.C8", At(0.3f, -0.2f), false, Junction("C8"), None, WorkView: false),
         new("aft.port", At(2.0f, -0.2f), false, [ "discard.aft", ..Junction("C3") ], None, WorkView: false),

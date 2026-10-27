@@ -63,7 +63,9 @@ public partial class Submarine
         var bearingIt = Add(Binder.Bind(root, "fan.bearing", new Vector3(0.05f, 0.03f, 0.04f), new Vector3(0, -0.02f, 0.06f), station));
         SocketVisual(bearingIt, rotor);
         SocketVisual(bearingIt, bearingMesh);
-        Add(Binder.Bind(root, "fan.blades", new Vector3(0.05f, 0.02f, 0.05f), new Vector3(0, -0.055f, -0.09f), station));
+        var bladesIt = Add(Binder.Bind(root, "fan.blades", new Vector3(0.05f, 0.02f, 0.05f), new Vector3(0, -0.055f, -0.09f), station));
+        float hand = float.NaN, handLast = 0;
+        bladesIt.Preview = t => hand = t;
         // 허브 너트: 틀의 +z가 아래를 본다. 풀리면 아래로 조금 내려온다.
         var hubFrame = new Node3D { Position = new Vector3(0, -0.01f, 0), RotationDegrees = new Vector3(90, 0, 0) };
         rotor.AddChild(hubFrame);
@@ -75,13 +77,26 @@ public partial class Submarine
         var hubIt = Add(Binder.Bind(root, "fan.hub", new Vector3(0.05f, 0.03f, 0.05f), new Vector3(0, -0.075f, 0), station));
         BoltVisual(hubIt, hubHead, 0.012f);
 
-        float spin = 0;
+        // 날개: 팬이 돌면 돌고, 손으로 돌리는 동안은 손을 따라 돈다. 손을 놓으면 남은 기세가 2~3초 안에 잦아든다 (표현만).
+        float spin = 0, vel = 0;
         int fanIndex = -1;
         for (int i = 0; i < _data.Devices.Count; i++) if (_data.Devices[i].Id == DeepLine.Sim.Data.Bindings.Fan) fanIndex = i;
         OnUpdate((s, dt) =>
         {
             bool running = fanIndex >= 0 && fanIndex < s.Devices.Count && s.Devices[fanIndex].Running;
-            spin += (running ? 14f : 0f) * dt;
+            if (!float.IsNaN(hand))
+            {
+                float d = (hand - handLast) * Mathf.Tau;
+                handLast = hand;
+                spin += d;
+                if (dt > 0) vel = d / dt;
+            }
+            else
+            {
+                handLast = 0;
+                vel = running ? 14f : vel * MathF.Exp(-dt * 1.5f);
+                spin += vel * dt;
+            }
             rotor.RotationDegrees = new Vector3(0, Mathf.RadToDeg(spin) % 360, 0);
         });
 
@@ -151,13 +166,15 @@ public partial class Submarine
         // 통 몸통: M1 상자와 같은 크기로 위가 열린 상자. 막는 부피는 낮게 두어 위에서 통을 겨냥할 수 있게 한다.
         var box = new MeshBuilder();
         box.Box(ArtMat.Machinery, new Vector3(0, 0.01f, 0), new Vector3(w, 0.02f, d), 0.004f);
-        box.Box(ArtMat.Machinery, new Vector3(-w / 2, h / 2, 0), new Vector3(0.02f, h, d), 0.004f);
-        box.Box(ArtMat.Machinery, new Vector3(w / 2, h / 2, 0), new Vector3(0.02f, h, d), 0.004f);
-        box.Box(ArtMat.Machinery, new Vector3(0, h / 2, -d / 2), new Vector3(w, h, 0.02f), 0.004f);
-        box.Box(ArtMat.Machinery, new Vector3(0, h / 2, d / 2), new Vector3(w, h, 0.02f), 0.004f);
+        // 벽의 바깥면이 M1 상자(0.4×0.6×0.35)의 바깥면과 같다. 배치의 '흡수제 표시' 명판이 앞면에 그대로 보인다.
+        box.Box(ArtMat.Machinery, new Vector3(-(w / 2 - 0.01f), h / 2, 0), new Vector3(0.02f, h, d), 0.004f);
+        box.Box(ArtMat.Machinery, new Vector3(w / 2 - 0.01f, h / 2, 0), new Vector3(0.02f, h, d), 0.004f);
+        box.Box(ArtMat.Machinery, new Vector3(0, h / 2, -(d / 2 - 0.01f)), new Vector3(w, h, 0.02f), 0.004f);
+        box.Box(ArtMat.Machinery, new Vector3(0, h / 2, d / 2 - 0.01f), new Vector3(w, h, 0.02f), 0.004f);
         box.Cylinder(ArtMat.Brass, Kit.AlongAxis(Vector3.Back, new Vector3(0, 0.4f, d / 2 + 0.004f)), 0.045f, 0.008f, 18);
         box.Instance(root, "Body");
         Geo.Blocker(root, new Vector3(w, 0.4f, d), new Vector3(0, 0.2f, 0));
+        NamePlate(root, "흡수통", new Vector3(0, 0.18f, d / 2), Vector3.Back, 0.022f);
 
         // 흡수제 통 (소켓)
         var can = new MeshBuilder();
@@ -200,55 +217,37 @@ public partial class Submarine
     }
 
     /// <summary>
-    /// 공기 예비품의 칸. 팬 베어링은 후방 예비품 사물함 맨 아래 칸(배치 표지 locker.aft.shelf.1)에 둔다.
-    /// 흡수제 통은 중앙 사물함 앞 바닥 받침에 눕혀 둔다(사물함 칸이 늘면 그쪽으로 옮긴다).
+    /// 흡수제 통 받침: 예비 흡수제 통을 중앙 사물함 앞 바닥에 세워 둔다(본선 결정 '흡수제 통 받침은 장비 옆에 그 계통이 둔다').
+    /// 받침은 사물함 앞쪽(+x) 끝, 폐기함 옆이다. M1 물체(버팀목 칸, 폐기함)에서 0.25m 넘게 떨어져 있고, 사물함 칸을 겨냥하는 조준선(x 3.75)을 가리지 않는다. 팬 베어링은 후방 예비품 사물함(Submarine.Lockers.cs)에 있다.
     /// </summary>
     void BuildAirSpares()
     {
-        if (!Interactables.ContainsKey("locker.canister"))
+        if (Interactables.ContainsKey("locker.canister")) return;
+        var root = new Node3D { Name = "CanisterStand", Position = new Vector3(4.11f, 0, -0.65f) };
+        AddChild(root);
+        var stand = new MeshBuilder();
+        stand.Box(ArtMat.Machinery, new Vector3(0, 0.01f, 0), new Vector3(0.56f, 0.02f, 0.28f), 0.004f);
+        stand.Box(ArtMat.BareSteel, new Vector3(0, 0.2f, -0.13f), new Vector3(0.56f, 0.02f, 0.02f), 0.003f); // 넘어지지 않게 거는 띠
+        stand.Instance(root, "Stand");
+        var cans = new List<MeshInstance3D>();
+        int stock = _data.Tuning.Inventory.Locker.GetValueOrDefault("canister");
+        var paint = ArtMat.PaintedSteel(new Color(0.5f, 0.45f, 0.28f));
+        for (int k = 0; k < stock; k++)
         {
-            var root = new Node3D { Name = "CanisterRack", Position = new Vector3(3.75f, 0, -0.68f) };
-            AddChild(root);
-            var rack = new MeshBuilder();
-            rack.Box(ArtMat.Machinery, new Vector3(0, 0.01f, 0), new Vector3(0.7f, 0.02f, 0.14f), 0.004f);
-            rack.Instance(root, "Rack");
-            var cans = new List<MeshInstance3D>();
-            int stock = _data.Tuning.Inventory.Locker.GetValueOrDefault("canister");
-            for (int k = 0; k < stock; k++)
-            {
-                var m = Geo.Cyl(root, 0.05f, 0.24f, new Vector3(-0.18f + k * 0.36f, 0.07f, 0), ArtMat.PaintedSteel(new Color(0.5f, 0.45f, 0.28f)));
-                m.RotationDegrees = new Vector3(0, 0, 90);
-                cans.Add(m);
-            }
-            var label = Geo.Text(root, "", new Vector3(0, 0.03f, 0.075f), 0.022f);
-            var bin = Add(Interactable.Create(root, "locker.canister", $"사물함: {ItemName("canister")}", new Vector3(0.7f, 0.12f, 0.14f), new Vector3(0, 0.06f, 0)));
-            bin.CommandFor = (_, m) => m == Motion.Click ? "locker.take.canister" : null;
-            OnUpdate((s, _) =>
-            {
-                int left = s.Crew.Locker.TryGetValue("canister", out var n) ? n : 0;
-                label.Text = $"{ItemName("canister")}  {left}";
-                for (int k = 0; k < cans.Count; k++) cans[k].Visible = k < left;
-            });
+            var can = new MeshBuilder();
+            float x = stock == 1 ? 0 : -0.135f + k * 0.27f / (stock - 1);
+            can.Cylinder(paint, new Transform3D(Basis.Identity, new Vector3(x, 0.27f, 0)), 0.13f, 0.5f, 20, 0.01f);
+            can.Cylinder(ArtMat.BareSteel, new Transform3D(Basis.Identity, new Vector3(x, 0.53f, 0)), 0.05f, 0.02f, 12);
+            cans.Add(can.Instance(root, $"Canister{k + 1}"));
         }
-        if (!Interactables.ContainsKey("locker.fan_bearing") && Markers.Contains("locker.aft.shelf.1"))
+        var label = Geo.Text(root, "", new Vector3(0, 0.08f, 0.145f), 0.02f);
+        var bin = Add(Interactable.Create(root, "locker.canister", $"바닥 받침: {ItemName("canister")}", new Vector3(0.52f, 0.45f, 0.26f), new Vector3(0, 0.245f, 0)));
+        bin.CommandFor = (_, m) => m == Motion.Click ? "locker.take.canister" : null;
+        OnUpdate((s, _) =>
         {
-            var shelf = Interactables["locker.aft.shelf.1"];
-            var parent = shelf.GetParent<Node3D>();
-            var at = shelf.Position;
-            RemoveMarker("locker.aft.shelf.1");
-            var pieces = new List<MeshInstance3D>();
-            int stock = _data.Tuning.Inventory.Locker.GetValueOrDefault("fan_bearing");
-            for (int k = 0; k < stock; k++)
-                pieces.Add(Geo.Cyl(parent, 0.032f, 0.025f, at + new Vector3(-0.2f + k * 0.08f, -0.08f, -0.08f), ArtMat.BareSteel, 14));
-            var label = Geo.Text(parent, "", at + new Vector3(0.15f, -0.06f, 0.01f), 0.016f);
-            var bin = Add(Interactable.Create(parent, "locker.fan_bearing", $"사물함: {ItemName("fan_bearing")}", new Vector3(0.6f, 0.18f, 0.03f), at, "locker.aft"));
-            bin.CommandFor = (_, m) => m == Motion.Click ? "locker.take.fan_bearing" : null;
-            OnUpdate((s, _) =>
-            {
-                int left = s.Crew.Locker.TryGetValue("fan_bearing", out var n) ? n : 0;
-                label.Text = $"{ItemName("fan_bearing")}  {left}";
-                for (int k = 0; k < pieces.Count; k++) pieces[k].Visible = k < left;
-            });
-        }
+            int left = s.Crew.Locker.TryGetValue("canister", out var n) ? n : 0;
+            label.Text = $"{ItemName("canister")}  {left}";
+            for (int k = 0; k < cans.Count; k++) cans[k].Visible = k < left;
+        });
     }
 }

@@ -23,10 +23,16 @@
       "kind": "cover",
       "zone": "mid",
       "prop": "guardOpen",
-      "heldBy": "guard",
       "gesture": "down",
       "verbs": {
-        "open": { "tool": "hand", "noise": "cover" },
+        "open": {
+          "tool": "hand",
+          "noise": "cover",
+          "rejectIf": [
+            { "if": "self.guardNut1 == 1", "reason": "guard_nuts_tight" },
+            { "if": "self.guardNut2 == 1", "reason": "guard_nuts_tight" }
+          ]
+        },
         "close": { "tool": "hand", "noise": "cover" }
       }
     },
@@ -73,14 +79,14 @@
             { "if": "circuit.C2.energized == 1", "hazard": "shock" }
           ],
           "set": { "stalled": 1, "spinArmed": 0 },
-          "gives": [ { "item": "fan_bearing_worn" } ]
+          "gives": [ { "if": "self.bearingWorn >= 0.5", "item": "fan_bearing_worn" }, { "item": "fan_bearing" } ]
         },
         "insert": {
           "noise": "fuse",
           "rejectIf": [ { "if": "self.hubNut == 1", "reason": "hub_tight" } ],
           "hazards": [ { "if": "circuit.C2.energized == 1", "hazard": "shock" } ],
           "accepts": {
-            "fan_bearing": { "set": { "stalled": 0, "spinArmed": 0 }, "renew": true },
+            "fan_bearing": { "set": { "stalled": 0, "spinArmed": 0, "bearingWorn": 0 }, "renew": true },
             "fan_bearing_worn": { "set": { "stalled": 1 } }
           }
         }
@@ -102,9 +108,9 @@
           ],
           "hazards": [ { "if": "device.vent_fan.running == 1", "hazard": "pinch" } ],
           "effects": [
-            { "if": "self.stalled >= 0.5 && circuit.C2.energized == 1", "quality": "temporary" },
-            { "if": "self.stalled >= 0.5 && circuit.C2.energized == 1", "arm": "spinLife", "to": "$spinLife" },
-            { "if": "self.stalled >= 0.5 && circuit.C2.energized == 1", "set": "stalled", "to": 0 }
+            { "if": "self.stalled >= 0.5 && circuit.C2.energized == 1 && device.vent_fan.enabled == 1 && battery.voltage >= 0.5", "quality": "temporary" },
+            { "if": "self.stalled >= 0.5 && circuit.C2.energized == 1 && device.vent_fan.enabled == 1 && battery.voltage >= 0.5", "arm": "spinLife", "to": "$spinLife" },
+            { "if": "self.stalled >= 0.5 && circuit.C2.energized == 1 && device.vent_fan.enabled == 1 && battery.voltage >= 0.5", "set": "stalled", "to": 0 }
           ]
         }
       }
@@ -161,7 +167,6 @@
           "tool": "hand",
           "noise": "cover",
           "rejectIf": [ { "if": "self.lidOpen == 0", "reason": "lid_closed" } ],
-          "set": { "saturation": 0 },
           "gives": [ { "if": "self.saturation < 0.05", "item": "canister" }, { "item": "canister_spent" } ]
         },
         "insert": {
@@ -169,7 +174,7 @@
           "rejectIf": [ { "if": "self.lidOpen == 0", "reason": "lid_closed" } ],
           "accepts": {
             "canister": { "set": { "saturation": 0 }, "renew": true },
-            "canister_spent": { "set": { "saturation": 1 } }
+            "canister_spent": {}
           }
         }
       }

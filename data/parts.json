@@ -212,7 +212,8 @@
       "spinLife": 0,
       "spinArmed": 0,
       "hubLife": 0,
-      "hubArmed": 0
+      "hubArmed": 0,
+      "bearingWorn": 0
     },
     "wearFault": "AIR-01",
     "visible": [

@@ -28,6 +28,15 @@ public sealed class Tuning
     [Optional] public ToolBoardTuning? ToolBoard { get; set; }
     /// <summary>흡수통의 죔쇠와 뚜껑 (M2 WP9, data/tuning/air.json). 없으면 죔쇠를 열어 둔 흡수통도 다 흡수한다.</summary>
     [Optional] public ScrubberTuning? Scrubber { get; set; }
+    /// <summary>송풍 팬 (M2 WP9, data/tuning/air.json). 없으면 멎은 팬은 데워지지 않는다.</summary>
+    [Optional] public FanTuning? Fan { get; set; }
+}
+
+/// <summary>송풍 팬 (AIR-01).</summary>
+public sealed class FanTuning
+{
+    /// <summary>C2에 전기가 오는데 날개가 멎어 있을 때(구속) 전동기에 드는 열 (W). 만지면 따뜻하다.</summary>
+    public double StallHeatW { get; set; }
 }
 
 /// <summary>흡수통 (AIR-02). 상태는 부품 scrubber.canister의 상태 값 clamp1Open, clamp2Open, lidOpen, present.</summary>

@@ -15,6 +15,7 @@
   "reason.clamp_shut": "죔쇠가 뚜껑을 누르고 있어 열리지 않는다.",
   "reason.fan_bearing_out": "날개가 빠져 있다.",
   "reason.guard_closed": "보호망이 막고 있어 손이 닿지 않는다.",
+  "reason.guard_nuts_tight": "나비 너트가 보호망을 물고 있어 열리지 않는다.",
   "reason.guard_open": "보호망이 열려 있어 나비 너트가 헛돈다.",
   "reason.hub_tight": "허브 너트가 날개를 물고 있다.",
   "reason.lid_closed": "뚜껑이 닫혀 있다.",

@@ -65,6 +65,7 @@ public partial class Submarine : Node3D
         BuildLayout();
         BuildAir(); // 배치의 환풍기와 흡수통 표지에 동작을 붙인다 (WP9)
         BindToolBoard(); // 배치가 놓은 공구판 윤곽에 동작을 붙인다
+        BuildSpareCompartments(); // 예비품 칸 (중앙 벽장, 후방 사물함)
     }
 
     /// <summary>표현 층이 매 프레임 부른다.</summary>

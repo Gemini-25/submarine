@@ -42,6 +42,8 @@ static class AirSystem
             }
         }
 
+        StalledMotorHeat(w);
+
         air.O2 -= a.PersonO2PerMin * min;
         if (air.CandleRemaining > 0)
         {
@@ -61,6 +63,21 @@ static class AirSystem
         air.Co2 = Math.Max(0, air.Co2);
         air.Cl2 = Math.Max(0, air.Cl2);
         air.H2 = Math.Max(0, air.H2);
+    }
+
+    /// <summary>
+    /// 멎은 팬의 구속 발열 (M2 WP9). C2에 전기가 오고 장치가 켜져 있는데 날개가 멎어 있으면 전동기에 tuning.fan.stallHeatW가 든다.
+    /// 식는 쪽은 HeatSystem이 이미 한다. tuning.fan이나 팬의 WP9 상태 값(bearingWorn)이 없는 데이터(M0·M1)에서는 아무것도 하지 않는다.
+    /// </summary>
+    static void StalledMotorHeat(SimWorld w)
+    {
+        if (w.T.Fan is not { StallHeatW: > 0 } fan) return;
+        var motor = w.Part("fan.motor");
+        if (!PropRef.Resolve(motor, "bearingWorn").Exists || motor.Get("stalled") < 0.5) return;
+        var ds = w.Devices[w.Fan];
+        var def = w.Data.Devices[w.Fan];
+        if (!ds.Enabled || !w.TryCircuitIndex(def.Circuit, out int c) || !w.Circuits[c].Energized || w.BusVoltage < def.MinVoltage || def.HeatCapacityJPerC <= 0) return;
+        ds.TempC += fan.StallHeatW / def.HeatCapacityJPerC * w.Dt;
     }
 
     /// <summary>
