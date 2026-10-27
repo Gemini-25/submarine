@@ -13,7 +13,8 @@ public sealed class UnobservableException : Exception
 /// 자동 플레이어(DrillSolver, 진단 하네스)가 읽을 수 있는 것의 화이트리스트 (M2 설계 6절).
 /// 사람이 보고 듣고 재는 것만 통과시킨다: 상황판에 보이는 표시등과 계기, 구역 경고등, 현장 단서, 제자리 계기, 도구로 잰 값,
 /// 손에 든 것과 기절, 사물함 재고, 임무, 시각, 그리고 몸으로 느끼는 사건(만져 본 결과, 벨, 감전...).
-/// 고장 여부, 부품 상태 값, 정답 쪽 경로(circuit.*, part.*...)는 예외를 낸다.
+/// 고장 여부, 부품 상태 값, 정답 쪽 경로(circuit.*, part.*...)는 예외를 낸다. 다만 부품의 visible 값(part.&lt;id&gt;.prop.&lt;p&gt;, 화면에 보이는 너트 칸 수 등)만은
+/// 사람이 보는 값으로 받는다(IsVisiblePartProp).
 /// </summary>
 public sealed class ObservableQuery
 {

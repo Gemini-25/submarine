@@ -487,6 +487,19 @@ public class ShaftPackingTests
         Assert.Equal(0.95, sim.Q($"{Packing}.integrity"), 9);
     }
 
+    /// <summary>교범 '순서를 어기면': 다 풀지 않고 한쪽만 두 칸 먼저 풀어도 비뚤게 앉고, 고르게 되돌려도 남는다.</summary>
+    [Fact]
+    public void Loosening_one_nut_two_notches_ahead_also_cocks_the_follower()
+    {
+        var sim = Faulted(throttle: 0);
+        NoHarm(Do(sim, "tool.wrench", "shaft.nut.A.up", "shaft.nut.B.up", "shaft.nut.A.up", "shaft.nut.B.up")); // 4/4
+        Assert.Equal(0, Prop(sim, "cocked"));
+        NoHarm(Do(sim, "shaft.nut.A.down", "shaft.nut.A.down")); // 2/4
+        Assert.Equal(1, Prop(sim, "cocked"));
+        NoHarm(Do(sim, "shaft.nut.B.down", "shaft.nut.B.down")); // 2/2
+        Assert.Equal(1, Prop(sim, "cocked"));
+    }
+
     [Fact]
     public void Redoing_the_nuts_alternately_clears_the_cocked_follower()
     {

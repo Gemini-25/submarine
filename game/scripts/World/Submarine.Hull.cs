@@ -137,23 +137,33 @@ public partial class Submarine
                 spray.Position = new Vector3(0.39f, y - 0.08f, z);
                 spray.Direction = Vector3.Down;
                 spray.Spread = 25;
-                // 고친 뒤처럼 조금 새면(0.05L/s 이하, 물줄기 단서가 사라지는 곳) 빽빽한 줄기 대신 띄엄띄엄 떨어지는 물방울.
-                var drip = new CpuParticles3D
+                // 유입이 0.05L/s 이하이면 M1 물줄기를 끄고 띄엄띄엄 떨어지는 물방울로 바꾼다.
+                // (Godot 물줄기 원기둥은 단서 shaft.stream이 0.05 이하, 곧 유입 약 0.005L/s 아래에서 사라진다. 그 사이에서는 원기둥과 물방울만 남는다.)
+                // 물방울 하나는 한 번만 쏘는 입자 하나다. 낙하 속도는 그대로 두고 쏘는 간격만 유입에 맞춘다.
+                var drops = new CpuParticles3D[4];
+                for (int k = 0; k < drops.Length; k++)
                 {
-                    Amount = 3,
-                    Lifetime = 1.0,
-                    Mesh = spray.Mesh,
-                    Direction = Vector3.Down,
-                    Spread = 5,
-                    Gravity = new Vector3(0, -9.8f, 0),
-                    InitialVelocityMin = 0,
-                    InitialVelocityMax = 0.05f,
-                    Emitting = false,
-                    LocalCoords = false,
-                    Position = spray.Position,
-                };
-                n.AddChild(drip);
-                OnUpdate((s, _) =>
+                    drops[k] = new CpuParticles3D
+                    {
+                        Amount = 1,
+                        Lifetime = 1.0,
+                        OneShot = true,
+                        Explosiveness = 1,
+                        Mesh = spray.Mesh,
+                        Direction = Vector3.Down,
+                        Spread = 5,
+                        Gravity = new Vector3(0, -9.8f, 0),
+                        InitialVelocityMin = 0,
+                        InitialVelocityMax = 0.05f,
+                        Emitting = false,
+                        LocalCoords = false,
+                        Position = spray.Position,
+                    };
+                    n.AddChild(drops[k]);
+                }
+                int nextDrop = 0;
+                double sinceDrop = 0;
+                OnUpdate((s, dt) =>
                 {
                     double q = 0;
                     foreach (var l in s.Leaks)
@@ -161,9 +171,14 @@ public partial class Submarine
                     spray.Emitting = q > 0.05;
                     spray.InitialVelocityMin = 0.05f;
                     spray.InitialVelocityMax = 0.3f;
-                    drip.Emitting = q > 0.0002 && q <= 0.05;
-                    // 새는 양에 따라 물방울 간격이 달라진다 (분당 0.2L이면 1초에 몇 방울).
-                    drip.SpeedScale = (float)Math.Clamp(q / 0.0035, 0.2, 4);
+                    if (q <= 0.0002 || q > 0.05) { sinceDrop = 0; return; }
+                    // 정식 수리 뒤 300m(약 0.0035L/s)에서 0.5초에 한 방울. 많이 샐수록 잦고 적을수록 드물다.
+                    double interval = Math.Clamp(0.5 * 0.0035 / q, 0.08, 3);
+                    sinceDrop += dt;
+                    if (sinceDrop < interval) return;
+                    sinceDrop = 0;
+                    drops[nextDrop].Restart();
+                    nextDrop = (nextDrop + 1) % drops.Length;
                 });
                 break;
             }

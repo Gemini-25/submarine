@@ -1,0 +1,23 @@
+{
+  "NAV-01": {
+    "name": "자이로 베어링 마모",
+    "system": "nav",
+    "partKind": "gyro_bearing",
+    "defaultPart": "gyro.bearing",
+    "state": "Fault",
+    "set": {},
+    "wear": 0.85,
+    "baseRatePerHour": 0
+  },
+  "NAV-02": {
+    "name": "항법 계산기 톱니 이탈",
+    "system": "nav",
+    "partKind": "nav_gear",
+    "defaultPart": "navcomp.gear",
+    "state": "Fault",
+    "set": {
+      "slip": 0.6
+    },
+    "baseRatePerHour": 0
+  }
+}
