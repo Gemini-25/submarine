@@ -89,7 +89,10 @@ public sealed class GameData
         // 장치 조건과 clearedWhen은 조회 경로로 컴파일된다. 시험용 세계 하나에서 전부 컴파일해 보고, 틀리면 로드 오류다.
         if (Fixtures.Rows.Count > 0 || Faults.Any(f => f.ClearedWhen is { Length: > 0 }) || Parts.Any(p => p.Timers.Count > 0 || p.SeaPaths.Count > 0))
         {
-            var probe = new Core.SimWorld(this, 0);
+            Core.SimWorld probe;
+            // 바다 경로는 세계를 만들 때(첫 상황판 갱신) 이미 컴파일된다. 그때의 오류도 로드 오류로 알린다.
+            try { probe = new Core.SimWorld(this, 0); }
+            catch (Exception e) when (e is FormatException or KeyNotFoundException) { throw new DataValidationException(new[] { e.Message }); }
             var errors = new List<string>();
             probe.Fixtures.CompileAll(errors);
             probe.Mechanics.CompileAll(errors);
