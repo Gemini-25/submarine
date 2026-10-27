@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- 선내 계산 도구의 역학 (SPEC 7절 '선내 계산 도구', M2 WP21). Godot과 sim을 참조하지 않는다. WP22의 Godot 장치가 부른다.
+       sim의 BannedSymbols 밖이라 로그 눈금을 쓴다. 화면 표시 전용이라 재생과 저장에 들어가지 않는다. -->
+  <PropertyGroup>
+    <RootNamespace>DeepLine.Instruments</RootNamespace>
+    <Deterministic>true</Deterministic>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+</Project>
