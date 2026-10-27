@@ -54,6 +54,7 @@ public partial class Submarine : Node3D
         BuildPumpAndStrainer();
         BuildLeaks();
         BuildFurniture();
+        BuildLayout();
     }
 
     /// <summary>표현 층이 매 프레임 부른다.</summary>
@@ -81,10 +82,13 @@ public partial class Submarine : Node3D
         AddChild(hull);
         float t = 0.1f;
         // 바닥, 천장, 양 옆벽, 앞뒤 끝벽
-        // 바닥: 부딪힘은 한 판, 보이는 판은 전방 축전지 우물 자리를 비워 둔다(격자 너머로 셀이 보이게).
-        Geo.Blocker(hull, new Vector3(Length, t, HalfWidth * 2), new Vector3(Length / 2, -t / 2, 0));
+        // 바닥: 보이는 판은 전방 축전지 우물 자리를 비워 둔다(격자 너머로 셀이 보이게).
+        // 부딪힘 판은 케이블 챔버 해치와 축전지 갑판 판 자리를 비우고, 닫힌 덮개가 그 자리를 막는다(Submarine.Layout).
+        foreach (var r in FloorPieces(new Rect2(0, -HalfWidth, Length, HalfWidth * 2), ChamberHole, DeckHole))
+            Geo.Blocker(hull, new Vector3(r.Size.X, t, r.Size.Y), new Vector3(r.GetCenter().X, -t / 2, r.GetCenter().Y));
         var floorMat = Geo.Mat(Geo.DarkSteel);
-        Geo.Box(hull, new Vector3(WellX0, t, HalfWidth * 2), new Vector3(WellX0 / 2, -t / 2, 0), floorMat);
+        foreach (var r in FloorPieces(new Rect2(0, -HalfWidth, WellX0, HalfWidth * 2), ChamberHole))
+            Geo.Box(hull, new Vector3(r.Size.X, t, r.Size.Y), new Vector3(r.GetCenter().X, -t / 2, r.GetCenter().Y), floorMat);
         Geo.Box(hull, new Vector3(Length - WellX1, t, HalfWidth * 2), new Vector3((Length + WellX1) / 2, -t / 2, 0), floorMat);
         foreach (float side in new[] { -1f, 1f })
             Geo.Box(hull, new Vector3(WellX1 - WellX0, t, HalfWidth - WellHalfZ), new Vector3((WellX0 + WellX1) / 2, -t / 2, side * (HalfWidth + WellHalfZ) / 2), floorMat);
@@ -212,11 +216,15 @@ public partial class Submarine : Node3D
         Geo.Box(well, new Vector3(x1 - x0, depth, 0.02f), new Vector3((x0 + x1) / 2, -depth / 2, zHalf), Geo.DarkSteel);
         Geo.Box(well, new Vector3(0.02f, depth, zHalf * 2), new Vector3(x0, -depth / 2, 0), Geo.DarkSteel);
         Geo.Box(well, new Vector3(0.02f, depth, zHalf * 2), new Vector3(x1, -depth / 2, 0), Geo.DarkSteel);
-        // 격자 창: 바닥 위에 살짝 얹은 반투명 판과 살
+        // 격자 창: 바닥 위에 살짝 얹은 반투명 판과 살. 가운데(x 6.0~7.4)는 들어 올리는 갑판 판이라 Submarine.Layout이 짓는다.
         var grate = new StandardMaterial3D { AlbedoColor = new Color(0.1f, 0.1f, 0.1f, 0.08f), Transparency = BaseMaterial3D.TransparencyEnum.Alpha };
-        Geo.Box(well, new Vector3(x1 - x0, 0.012f, zHalf * 2), new Vector3((x0 + x1) / 2, 0.006f, 0), grate);
+        foreach (var (a, b) in new[] { (x0, DeckHole.Position.X), (DeckHole.End.X, x1) })
+            Geo.Box(well, new Vector3(b - a, 0.012f, zHalf * 2), new Vector3((a + b) / 2, 0.006f, 0), grate);
         for (float x = x0; x <= x1 + 0.01f; x += 0.1f)
+        {
+            if (x > DeckHole.Position.X + 0.01f && x < DeckHole.End.X - 0.01f) continue;
             Geo.Box(well, new Vector3(0.015f, 0.02f, zHalf * 2), new Vector3(x, 0.01f, 0), Geo.Steel);
+        }
         Geo.Text(well, "축전지 · 전방 빌지", new Vector3(x0 - 0.05f, 0.02f, 0), 0.04f, facing: Vector3.Up).RotationDegrees = new Vector3(-90, -90, 0);
 
         // 바닥(-0.7)에서 셀 밑(-0.5)까지가 잠김 시작 전, 셀 높이(-0.5~-0.1)가 잠기는 구간.
@@ -302,12 +310,13 @@ public partial class Submarine : Node3D
         Geo.Solid(this, new Vector3(0.4f, 0.6f, 0.35f), new Vector3(3.0f, 0.3f, -HalfWidth + 0.2f), Geo.Steel, "Scrubber");
         Geo.Text(this, "흡수통", new Vector3(3.0f, 0.65f, -HalfWidth + 0.38f), 0.03f, Geo.Bakelite, Vector3.Back);
 
-        // 후방: 주 전동기와 프로펠러 축
-        var motor = Geo.Cyl(this, 0.35f, 1.0f, new Vector3(0.6f, 0.45f, 0.45f), Geo.Paint, 20);
+        // 후방: 주 전동기와 프로펠러 축. 전동기는 x 0.45~1.15로 줄여 뒤쪽 축 패킹 상자에 웅크려 닿게 했다(M2 배치).
+        float motorMid = (MotorX0 + MotorX1) / 2, motorLen = MotorX1 - MotorX0;
+        var motor = Geo.Cyl(this, 0.35f, motorLen, new Vector3(motorMid, 0.45f, 0.45f), Geo.Paint, 20);
         motor.RotationDegrees = new Vector3(0, 0, 90);
-        Geo.Blocker(this, new Vector3(1.1f, 0.9f, 0.75f), new Vector3(0.55f, 0.45f, 0.45f));
-        Geo.Text(this, "주 전동기", new Vector3(0.6f, 0.86f, 0.45f), 0.03f, Geo.Cream, Vector3.Up).RotationDegrees = new Vector3(-90, 90, 0);
-        var shaft = Geo.Cyl(this, 0.06f, 0.5f, new Vector3(0.05f, 0.45f, 0.45f), Geo.Steel);
+        Geo.Blocker(this, new Vector3(motorLen, 0.9f, 0.75f), new Vector3(motorMid, 0.45f, 0.45f));
+        Geo.Text(this, "주 전동기", new Vector3(motorMid, 0.86f, 0.45f), 0.03f, Geo.Cream, Vector3.Up).RotationDegrees = new Vector3(-90, 90, 0);
+        var shaft = Geo.Cyl(this, 0.06f, MotorX0, new Vector3(MotorX0 / 2, 0.45f, 0.45f), Geo.Steel);
         shaft.RotationDegrees = new Vector3(0, 0, 90);
     }
 }
