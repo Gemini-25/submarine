@@ -35,6 +35,12 @@ public sealed record SimSnapshot
     public CrewView Crew { get; init; } = new();
     public StrainerView Strainer { get; init; } = new();
     public MissionView Mission { get; init; } = new();
+    /// <summary>현장 단서 (data/observables의 cues 순서). 세기 0~1. 표현 층은 이것으로 소리, 냄새 줄, 보이는 것을 움직인다.</summary>
+    public IReadOnlyList<CueView> Cues { get; init; } = Array.Empty<CueView>();
+    /// <summary>제자리 계기 (instruments 순서). 값은 표시 단위.</summary>
+    public IReadOnlyList<ReadingView> Readings { get; init; } = Array.Empty<ReadingView>();
+    /// <summary>parts.json의 visible에 적은 상태 값만. 숨은 값(고착, 숨은 결함)은 나오지 않는다.</summary>
+    public IReadOnlyList<PartView> Parts { get; init; } = Array.Empty<PartView>();
 
     internal static SimSnapshot From(SimWorld w)
     {
@@ -103,7 +109,47 @@ public sealed record SimSnapshot
             },
             Strainer = StrainerOf(w),
             Mission = MissionOf(w),
+            Cues = CuesOf(w),
+            Readings = ReadingsOf(w),
+            Parts = PartsOf(w),
         };
+    }
+
+    static CueView[] CuesOf(SimWorld w)
+    {
+        var o = w.Data.Observation;
+        var list = new CueView[o.Cues.Length];
+        for (int i = 0; i < list.Length; i++)
+        {
+            var d = o.Cues[i];
+            list[i] = new CueView(d.Id, d.Sense, d.Anchor, o.Cue(w, i), d.Caption);
+        }
+        return list;
+    }
+
+    static ReadingView[] ReadingsOf(SimWorld w)
+    {
+        var o = w.Data.Observation;
+        var list = new ReadingView[o.Instruments.Length];
+        for (int i = 0; i < list.Length; i++)
+        {
+            var d = o.Instruments[i];
+            list[i] = new ReadingView(d.Id, d.Anchor, d.Unit, o.Reading(w, i), d.Label);
+        }
+        return list;
+    }
+
+    static PartView[] PartsOf(SimWorld w)
+    {
+        var list = new List<PartView>();
+        foreach (var part in w.Parts)
+        {
+            if (part.Def.Visible.Count == 0) continue;
+            var props = new SortedDictionary<string, double>(StringComparer.Ordinal);
+            foreach (var name in part.Def.Visible) props[name] = DeepLine.Sim.Parts.PartEffects.Effective(w, part, name);
+            list.Add(new PartView(part.Id, props));
+        }
+        return list.ToArray();
     }
 
     static StrainerView StrainerOf(SimWorld w)
@@ -134,6 +180,13 @@ public sealed record SimSnapshot
         };
     }
 }
+
+/// <summary>현장 단서 하나. Caption은 data/text/ko의 문구 키.</summary>
+public readonly record struct CueView(string Id, CueSense Sense, string Anchor, double Value, string Caption);
+/// <summary>제자리 계기 하나. Value는 Unit 단위 (V, A, L, Lpm...). Label은 문구 키.</summary>
+public readonly record struct ReadingView(string Id, string Anchor, string Unit, double Value, string Label);
+/// <summary>보이는 부품 상태 값 (parts.json의 visible).</summary>
+public sealed record PartView(string Id, IReadOnlyDictionary<string, double> Props);
 
 public readonly record struct CellView(int Number, double Charge, double Health, double TempC, bool Submerged, bool Jumpered);
 /// <summary>LeakCurrent와 JunctionMoisture는 분기함 결로와 감전 위험 같은 현장 단서용이다.</summary>

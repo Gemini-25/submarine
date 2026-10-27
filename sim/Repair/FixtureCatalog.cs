@@ -103,7 +103,7 @@ public sealed class FixtureCatalog
     }
 
     /// <summary>틀 변수의 모든 조합 (변수 이름의 서수 순서로 펼친다).</summary>
-    static List<Dictionary<string, string>> Combos(GameData data, IReadOnlyDictionary<string, string> bind)
+    internal static List<Dictionary<string, string>> Combos(GameData data, IReadOnlyDictionary<string, string> bind)
     {
         var combos = new List<Dictionary<string, string>> { new(StringComparer.Ordinal) };
         foreach (var (name, source) in bind.OrderBy(kv => kv.Key, StringComparer.Ordinal))
@@ -123,6 +123,7 @@ public sealed class FixtureCatalog
     {
         if (source == "circuits") return data.Circuits.Select(c => c.Id).ToArray();
         if (source == "cells") return Enumerable.Range(1, data.Tuning.Battery.Cells).Select(n => n.ToString(CultureInfo.InvariantCulture)).ToArray();
+        if (source == "leaks") return data.LeakPoints.Select(l => l.Id).ToArray();
         int dots = source.IndexOf("..", StringComparison.Ordinal);
         if (dots > 0)
         {
@@ -132,7 +133,7 @@ public sealed class FixtureCatalog
             return Enumerable.Range(a, b - a + 1).Select(n => n.ToString(CultureInfo.InvariantCulture)).ToArray();
         }
         var list = source.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        if (list.Length < 2) throw new FormatException($"출처 '{source}'를 모른다 (circuits, cells, 1..4, a,b,c)");
+        if (list.Length < 2) throw new FormatException($"출처 '{source}'를 모른다 (circuits, cells, leaks, 1..4, a,b,c)");
         return list;
     }
 

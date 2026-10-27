@@ -79,6 +79,8 @@ public sealed class PartDef
     [Optional] public string? WearFault { get; set; }
     /// <summary>wear에서 저절로 나오는 상태 값. 실제 값 = max(Props 값, 곡선(wear)). 곡선은 [wear, 값] 점들.</summary>
     [Optional] public SortedDictionary<string, List<double[]>> WearCurves { get; set; } = new(StringComparer.Ordinal);
+    /// <summary>표현 층(Snapshot.Parts)에 보이는 상태 값. 여기 없는 값(고착, 숨은 결함)은 디버그 조회로만 읽힌다.</summary>
+    [Optional] public List<string> Visible { get; set; } = new();
 }
 
 public sealed class FaultDef

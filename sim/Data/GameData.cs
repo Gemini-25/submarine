@@ -5,7 +5,7 @@ using System.Text.Json.Serialization;
 namespace DeepLine.Sim.Data;
 
 /// <summary>data/에서 읽은 전체 게임 데이터. 모든 목록은 ID의 서수 정렬 순서다.</summary>
-public sealed class GameData
+public sealed partial class GameData
 {
     /// <summary>실내 구역. 앞에서 뒤 순서이고 이웃한 구역끼리 이어진다.</summary>
     public static readonly IReadOnlyList<string> Zones = Array.AsReadOnly(new[] { "fore", "mid", "aft" });
@@ -245,7 +245,9 @@ public sealed class GameData
             foreach (var file in Directory.GetFiles(fixtureDir, "*.json").OrderBy(f => f, StringComparer.Ordinal))
                 fixtureFiles.Add((Path.Combine("fixtures", Path.GetFileName(file)), Read<FixtureFile>(Path.Combine("fixtures", Path.GetFileName(file)))));
 
-        return new GameData(tuning, circuits, devices, allParts, faults, leaks, procedures, missions, items, fixtureFiles);
+        var data = new GameData(tuning, circuits, devices, allParts, faults, leaks, procedures, missions, items, fixtureFiles);
+        data.LoadObservation(dataDir);
+        return data;
     }
 
     static List<T> WithIds<T>(IDictionary<string, T> map, Action<T, string> setId)

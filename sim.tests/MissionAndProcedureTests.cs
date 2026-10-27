@@ -1,3 +1,4 @@
+using DeepLine.Sim.Manual;
 using DeepLine.Sim.Repair;
 using Xunit.Abstractions;
 
@@ -67,11 +68,11 @@ public class ProcedureTests
         Assert.Equal(r.WedgeStrikes, Repeat("proc.rivet.wedge", ".wedge"));
         Assert.Equal(r.CaulkStrikes, Repeat("proc.rivet.caulk", ".caulk"));
 
-        var manualDir = Path.Combine(TestData.DataDir, "manual");
+        var pages = ManualText.LoadPages(Path.Combine(TestData.DataDir, "manual"), TestData.Data);
         foreach (var p in TestData.Data.Procedures)
         {
-            var page = Directory.GetFiles(manualDir, "*.md").Select(File.ReadAllText)
-                .First(t => t.TrimStart().StartsWith("# " + p.Title, StringComparison.Ordinal));
+            // 절차 제목이 장 제목('# ')이나 절 제목('## ')인 장 (응급과 정식 수리가 한 장에 들어갈 수 있다)
+            var page = pages.First(pg => ManualText.Headings(pg.Markdown).Contains(p.Title)).Markdown;
             foreach (var step in p.Steps.Where(s => s.Repeat > 1))
             {
                 string word = KoreanCount[step.Repeat];
@@ -83,16 +84,15 @@ public class ProcedureTests
     [Fact]
     public void Every_step_has_manual_text_and_every_procedure_has_a_manual_page()
     {
-        // 교범 오버레이(game/scripts/UI/MarkdownBb.Title)와 같은 규칙: 페이지 제목은 첫 '# ' 줄이다.
+        // M2 규칙 (DECISIONS '교범 제목 규칙'): 절차 제목은 렌더한 교범의 장 제목('# ')이나 절 제목('## ')이다.
+        // 장 제목은 첫 '# ' 줄이다 (교범 오버레이 game/scripts/UI/MarkdownBb.Title과 같은 규칙).
         var manualDir = Path.Combine(TestData.DataDir, "manual");
         Assert.True(Directory.Exists(manualDir), "data/manual이 없다");
-        var titles = Directory.GetFiles(manualDir, "*.md")
-            .Select(f => File.ReadLines(f).Select(l => l.Trim()).FirstOrDefault(l => l.StartsWith("# ", StringComparison.Ordinal))?[2..].Trim() ?? "")
-            .ToList();
+        var headings = ManualText.LoadPages(manualDir, TestData.Data).SelectMany(pg => ManualText.Headings(pg.Markdown)).ToList();
         foreach (var p in TestData.Data.Procedures)
         {
             Assert.All(p.Steps, s => Assert.False(string.IsNullOrWhiteSpace(s.Text)));
-            Assert.True(titles.Any(t => t.StartsWith(p.Title, StringComparison.Ordinal)), $"교범에 제목이 '{p.Title}'인 장이 없다");
+            Assert.True(headings.Contains(p.Title), $"교범에 제목이 '{p.Title}'인 장이나 절이 없다");
         }
     }
 }
@@ -327,5 +327,19 @@ static class CrisisPlayer
             sim.Step();
             afterStep?.Invoke(sim);
         }
+    }
+}
+
+/// <summary>교범 제목 규칙 (M2): 절차 제목은 장 제목('# ')이나 절 제목('## ')이다. '### ' 이하는 아니다.</summary>
+public class ManualTitleRuleTests
+{
+    [Fact]
+    public void A_procedure_title_may_be_a_page_title_or_a_section_heading()
+    {
+        const string md = "# 배전반 퓨즈\n\n## 퓨즈 교체\n\n본문\n\n### 퓨즈 대용 철사\n";
+        Assert.Equal("배전반 퓨즈", DeepLine.Sim.Manual.ManualText.Title(md));
+        var headings = DeepLine.Sim.Manual.ManualText.Headings(md).ToList();
+        Assert.Equal(new[] { "배전반 퓨즈", "퓨즈 교체" }, headings);
+        Assert.DoesNotContain("퓨즈 대용 철사", headings);
     }
 }

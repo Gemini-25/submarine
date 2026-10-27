@@ -1,12 +1,13 @@
 using DeepLine.Game.Sim;
 using DeepLine.Sim;
+using DeepLine.Sim.Manual;
 using Godot;
 
 namespace DeepLine.Game.UI;
 
 /// <summary>
 /// 정비 교범. 언제든 Tab으로 펼친다 (SPEC 6, 7절). 펼쳐 둔 동안에도 시뮬레이션은 흐른다.
-/// 첫 장은 이번 임무의 지시서, 그다음은 data/manual의 페이지들, 마지막 장은 조작 안내다.
+/// 첫 장은 이번 임무의 지시서, 그다음은 data/manual의 페이지들(ManualText로 자리표시자를 채운 것), 마지막 장은 조작 안내다.
 /// </summary>
 public partial class ManualOverlay : CanvasLayer
 {
@@ -100,7 +101,16 @@ public partial class ManualOverlay : CanvasLayer
         {
             foreach (var file in Directory.GetFiles(manualDir, "*.md").OrderBy(f => Path.GetFileName(f), StringComparer.Ordinal))
             {
+                // 교범의 숫자, 재고, 소음은 데이터에서 채운다 (sim/Manual/ManualText). 자리표시자가 틀리면 오류로 알리고 원문을 보인다.
                 string md = File.ReadAllText(file);
+                try
+                {
+                    md = ManualText.Render(md, runner.Data);
+                }
+                catch (ManualTextException e)
+                {
+                    GD.PushError($"교범 {Path.GetFileName(file)}: {e.Message}");
+                }
                 string title = MarkdownBb.Title(md);
                 if (title.Length == 0) title = Path.GetFileNameWithoutExtension(file);
                 string bb = MarkdownBb.Convert(md);
@@ -116,6 +126,8 @@ public partial class ManualOverlay : CanvasLayer
 
     public int PageCount => _pages.Count;
     public IEnumerable<string> PageTitles => _pages.Select(p => p.Title);
+    /// <summary>화면에 보일 본문 (BBCode). 자동 확인용.</summary>
+    public IEnumerable<string> PageBodies => _pages.Select(p => p.Body());
 
     string OrdersPage()
     {

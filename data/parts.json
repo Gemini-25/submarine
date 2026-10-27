@@ -49,6 +49,10 @@
   },
   "fuse.C1": {
     "kind": "fuse",
+    "visible": [
+      "blown",
+      "present"
+    ],
     "spare": true,
     "props": {
       "blown": 0,
@@ -58,6 +62,10 @@
   },
   "fuse.C2": {
     "kind": "fuse",
+    "visible": [
+      "blown",
+      "present"
+    ],
     "spare": true,
     "props": {
       "blown": 0,
@@ -67,6 +75,10 @@
   },
   "fuse.C3": {
     "kind": "fuse",
+    "visible": [
+      "blown",
+      "present"
+    ],
     "spare": true,
     "props": {
       "blown": 0,
@@ -76,6 +88,10 @@
   },
   "fuse.C4": {
     "kind": "fuse",
+    "visible": [
+      "blown",
+      "present"
+    ],
     "spare": true,
     "props": {
       "blown": 0,
@@ -85,6 +101,10 @@
   },
   "fuse.C5": {
     "kind": "fuse",
+    "visible": [
+      "blown",
+      "present"
+    ],
     "spare": true,
     "props": {
       "blown": 0,
@@ -94,6 +114,10 @@
   },
   "fuse.C6": {
     "kind": "fuse",
+    "visible": [
+      "blown",
+      "present"
+    ],
     "spare": true,
     "props": {
       "blown": 0,
@@ -103,6 +127,10 @@
   },
   "fuse.C7": {
     "kind": "fuse",
+    "visible": [
+      "blown",
+      "present"
+    ],
     "spare": true,
     "props": {
       "blown": 0,
@@ -112,6 +140,10 @@
   },
   "fuse.C8": {
     "kind": "fuse",
+    "visible": [
+      "blown",
+      "present"
+    ],
     "spare": true,
     "props": {
       "blown": 0,
@@ -218,6 +250,14 @@
   },
   "pump.intake": {
     "kind": "intake",
+    "visible": [
+      "basketOut",
+      "bolt1",
+      "bolt2",
+      "bolt3",
+      "bolt4",
+      "coverOpen"
+    ],
     "props": {
       "basketOut": 0,
       "bolt1": 1,

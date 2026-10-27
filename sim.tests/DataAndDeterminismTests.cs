@@ -168,8 +168,12 @@ public class DataValidationTests
         var dir = Directory.CreateTempSubdirectory("deepline-data-");
         try
         {
-            foreach (var f in Directory.GetFiles(TestData.DataDir, "*.json"))
-                File.Copy(f, Path.Combine(dir.FullName, Path.GetFileName(f)));
+            foreach (var f in Directory.GetFiles(TestData.DataDir, "*.json", SearchOption.AllDirectories))
+            {
+                var to = Path.Combine(dir.FullName, Path.GetRelativePath(TestData.DataDir, f));
+                Directory.CreateDirectory(Path.GetDirectoryName(to)!);
+                File.Copy(f, to);
+            }
             var path = Path.Combine(dir.FullName, file);
             var node = JsonNode.Parse(File.ReadAllText(path))!;
             mutate(node);
