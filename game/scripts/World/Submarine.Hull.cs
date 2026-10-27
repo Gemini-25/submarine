@@ -8,7 +8,7 @@ namespace DeepLine.Game.World;
 /// 선체 계통 (M2 WP12): 프로펠러 축 패킹 상자(HUL-03). 배치(WP6)가 놓은 표지를 지우고 같은 ID로 장치를 붙인다.
 /// 배치가 지은 상자 모습은 한 덩어리 메시라서 숨기고, 같은 모양을 움직이지 않는 부분(상자, 볼트 기둥, 축 고리)과
 /// 움직이는 부분(누름판, 너트 둘, 패킹 고리)으로 나누어 다시 짓는다. 움직임은 보이는 부품 값(nutA, nutB, followerBack, ringsOut)만 따른다.
-/// 후방 사물함 셋째 칸의 왼쪽 절반은 패킹 끈 칸이 된다.
+/// 패킹 끈 칸은 본선의 예비품 칸(Submarine.Lockers, 후방 예비품 사물함 윗칸)을 쓴다.
 /// </summary>
 public partial class Submarine
 {
@@ -111,39 +111,6 @@ public partial class Submarine
             smoke.Scale = Vector3.One * (0.5f + k);
         });
 
-        BuildPackingCordShelf();
-    }
-
-    /// <summary>후방 사물함 셋째 칸의 왼쪽 절반: 패킹 끈. 오른쪽 절반은 다른 예비품을 위한 표지로 남긴다.</summary>
-    void BuildPackingCordShelf()
-    {
-        const string shelf = "locker.aft.shelf.3";
-        var it = Interactables[shelf];
-        var m = it.GetParent<Node3D>();
-        var at = it.Position;
-        var size = ((BoxShape3D)it.GetChild<CollisionShape3D>(0).Shape).Size;
-        RemoveMarker(shelf);
-        float half = size.X / 2;
-        Marker(m, shelf, "후방 사물함 3칸", at + new Vector3(half / 2, 0, 0), new Vector3(half - 0.02f, size.Y, size.Z), "locker.aft");
-
-        const string item = "packing_cord";
-        var coils = new List<MeshInstance3D>();
-        int stock = _data.Tuning.Inventory.Locker[item];
-        for (int k = 0; k < stock; k++)
-        {
-            var cb = new MeshBuilder();
-            cb.Torus(ArtMat.RawWood, Kit.AlongAxis(Vector3.Up, at + new Vector3(-half + 0.05f + (k % 3) * 0.07f, -0.07f + (k / 3) * 0.025f, -0.08f)), 0.028f, 0.009f, 14, 5);
-            coils.Add(cb.Instance(m, $"Cord{k + 1}"));
-        }
-        var label = Geo.Text(m, "", at + new Vector3(-half / 2, -0.085f, 0.004f), 0.016f);
-        var bin = Add(Interactable.Create(m, $"locker.{item}", $"사물함: {ItemName(item)}", new Vector3(half - 0.02f, size.Y, size.Z), at - new Vector3(half / 2, 0, 0), "locker.aft"));
-        bin.CommandFor = (_, mo) => mo == Motion.Click ? $"locker.take.{item}" : null;
-        OnUpdate((s, _) =>
-        {
-            int left = s.Crew.Locker.TryGetValue(item, out var c) ? c : 0;
-            label.Text = $"{ItemName(item)}  {left}";
-            for (int k = 0; k < coils.Count; k++) coils[k].Visible = k < left;
-        });
     }
 
     static float Cue(DeepLine.Sim.SimSnapshot s, string id)
