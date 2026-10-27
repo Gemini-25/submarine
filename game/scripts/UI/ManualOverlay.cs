@@ -23,7 +23,10 @@ public partial class ManualOverlay : CanvasLayer
         | 왼쪽 버튼 | 잡기. 누른 채 마우스를 움직이면 손이 움직인다 |
         | 오른쪽 버튼 (누른 채) | 가까이 보기 |
         | F | 작업 시점 들어가기, 나오기 (배전반, 흡입 거름망, 사물함, 상황판) |
-        | 1 ~ 6 | 빈손, 렌치, 나무망치, 코킹 세트, 전압계, 솔 |
+        | 1 | 빈손 |
+        | 2 ~ 6 | 허리띠 칸의 도구 (처음에는 렌치, 나무망치, 코킹 세트, 전압계, 솔) |
+        | G | 쥔 도구를 바닥에 내려놓기 |
+        | T | 맨손바닥을 대 보기 (뜨거운지, 젖었는지, 떨리는지) |
         | Tab | 교범 펴기, 덮기 |
         | N | 메모장 |
         | Esc | 창 닫기 |
@@ -39,11 +42,26 @@ public partial class ManualOverlay : CanvasLayer
         - **망치질**: 나무망치나 코킹 세트를 들고 대상을 누를 때마다 한 번 친다.
         - **전압계**: 전압계를 들고 단자나 퓨즈 소켓을 누르고 있는 동안 바늘이 값을 가리킨다.
         - **소켓, 사물함 칸, 폐기함, 해치, 버팀목 대기**: 누른다.
+        - **공구판**: 해치 격벽의 공구판에서 윤곽을 누르면 그 도구를 허리띠로 가져오고, 다시 누르면 걸어 둔다. 허리띠는 다섯 칸이다.
+        - **바닥의 도구**: 누르면 줍는다.
 
         손에는 물건을 하나만 들 수 있다. 감전되거나 손이 끼이면 잠시 손을 쓸 수 없다.
         """;
 
+    /// <summary>계통 탭: 파일 번호 범위 (M2 교범 계획). 지시서와 조작 안내는 어느 탭에서나 보인다.</summary>
+    static readonly (string Name, int From, int To)[] Tabs =
+    {
+        ("전체", 0, 99), ("일반", 0, 19), ("동력", 20, 22), ("배전반", 23, 25), ("공기", 26, 28), ("물", 29, 32),
+        ("선체", 33, 37), ("감각", 38, 41), ("항법", 42, 43), ("케이블", 44, 45),
+    };
+
     readonly List<(string Title, Func<string> Body)> _pages = new();
+    /// <summary>쪽마다 파일 번호 (지시서와 조작 안내는 -1)와 ## 절 제목.</summary>
+    readonly List<(int Number, string[] Sections)> _meta = new();
+    /// <summary>목록의 줄 → (쪽, 절 순번; -1이면 쪽 처음).</summary>
+    readonly List<(int Page, int Section)> _rows = new();
+    int _tab;
+    HBoxContainer _tabs = null!;
     ItemList _list = null!;
     RichTextLabel _text = null!;
     Label _header = null!;
@@ -71,6 +89,18 @@ public partial class ManualOverlay : CanvasLayer
         book.AddChild(v);
         _header = UiKit.Text("대양전신회사 · 모스호 정비 교범", 22, UiKit.Faded, UiKit.Myeongjo);
         v.AddChild(_header);
+        _tabs = new HBoxContainer();
+        _tabs.AddThemeConstantOverride("separation", 6);
+        v.AddChild(_tabs);
+        for (int t = 0; t < Tabs.Length; t++)
+        {
+            int tab = t;
+            var b = new Button { Text = Tabs[t].Name, ToggleMode = true, ButtonPressed = t == 0, FocusMode = Control.FocusModeEnum.None };
+            b.AddThemeFontOverride("font", UiKit.Myeongjo);
+            b.AddThemeFontSizeOverride("font_size", 16);
+            b.Pressed += () => SelectTab(tab);
+            _tabs.AddChild(b);
+        }
         var h = new HBoxContainer { SizeFlagsVertical = Control.SizeFlags.ExpandFill };
         h.AddThemeConstantOverride("separation", 18);
         v.AddChild(h);
@@ -85,7 +115,7 @@ public partial class ManualOverlay : CanvasLayer
         _list.AddThemeStyleboxOverride("panel", listBg);
         _list.AddThemeStyleboxOverride("selected", new StyleBoxFlat { BgColor = new Color(0.72f, 0.62f, 0.45f) });
         _list.AddThemeStyleboxOverride("selected_focus", new StyleBoxFlat { BgColor = new Color(0.72f, 0.62f, 0.45f) });
-        _list.ItemSelected += i => Show((int)i);
+        _list.ItemSelected += i => Jump((int)i);
         h.AddChild(_list);
 
         _text = UiKit.Rich(19, UiKit.Ink);
@@ -93,10 +123,11 @@ public partial class ManualOverlay : CanvasLayer
         _text.SizeFlagsVertical = Control.SizeFlags.ExpandFill;
         h.AddChild(_text);
 
-        var foot = UiKit.Text("Tab 또는 Esc: 덮기    ↑ ↓: 장 넘기기", 16, UiKit.Faded);
+        var foot = UiKit.Text("Tab 또는 Esc: 덮기    ↑ ↓: 장 넘기기    ← →: 계통 탭", 16, UiKit.Faded);
         v.AddChild(foot);
 
         _pages.Add(("지시서", OrdersPage));
+        _meta.Add((-1, Array.Empty<string>()));
         if (Directory.Exists(manualDir))
         {
             foreach (var file in Directory.GetFiles(manualDir, "*.md").OrderBy(f => Path.GetFileName(f), StringComparer.Ordinal))
@@ -115,12 +146,16 @@ public partial class ManualOverlay : CanvasLayer
                 if (title.Length == 0) title = Path.GetFileNameWithoutExtension(file);
                 string bb = MarkdownBb.Convert(md);
                 _pages.Add((title, () => bb));
+                string name = Path.GetFileName(file);
+                int number = name.Length >= 2 && char.IsAsciiDigit(name[0]) && char.IsAsciiDigit(name[1]) ? (name[0] - '0') * 10 + (name[1] - '0') : 0;
+                var sections = md.Split('\n').Where(l => l.StartsWith("## ", StringComparison.Ordinal)).Select(l => l[3..].Trim()).ToArray();
+                _meta.Add((number, sections));
             }
         }
         else GD.PushWarning($"매뉴얼 폴더가 없습니다: {manualDir}");
         string controls = MarkdownBb.Convert(ControlsText);
         _pages.Add(("조작 안내", () => controls));
-        foreach (var (title, _) in _pages) _list.AddItem(title);
+        _meta.Add((-1, Array.Empty<string>()));
         Show(0);
     }
 
@@ -151,19 +186,89 @@ public partial class ManualOverlay : CanvasLayer
         return MarkdownBb.Convert(md.ToString());
     }
 
+    /// <summary>탭에 드는 쪽인가. 지시서와 조작 안내는 늘 든다.</summary>
+    bool InTab(int page) => _meta[page].Number < 0 || (_meta[page].Number >= Tabs[_tab].From && _meta[page].Number <= Tabs[_tab].To);
+
+    public void SelectTab(int tab)
+    {
+        _tab = Math.Clamp(tab, 0, Tabs.Length - 1);
+        for (int t = 0; t < _tabs.GetChildCount(); t++) ((Button)_tabs.GetChild(t)).ButtonPressed = t == _tab;
+        if (!InTab(_page)) _page = Enumerable.Range(0, _pages.Count).First(InTab);
+        Show(_page);
+    }
+
+    /// <summary>목록: 탭에 드는 쪽들, 그리고 펼친 쪽 아래에 그 쪽의 ## 절.</summary>
+    void Rebuild()
+    {
+        _list.Clear();
+        _rows.Clear();
+        for (int p = 0; p < _pages.Count; p++)
+        {
+            if (!InTab(p)) continue;
+            _list.AddItem(_pages[p].Title);
+            _rows.Add((p, -1));
+            if (p != _page) continue;
+            for (int k = 0; k < _meta[p].Sections.Length; k++)
+            {
+                int row = _list.AddItem("    " + _meta[p].Sections[k]);
+                _list.SetItemCustomFgColor(row, UiKit.Faded);
+                _rows.Add((p, k));
+            }
+        }
+    }
+
+    void Jump(int row)
+    {
+        if (row < 0 || row >= _rows.Count) return;
+        var (page, section) = _rows[row];
+        if (page != _page) Show(page);
+        if (section >= 0) ScrollToSection(_meta[page].Sections[section]);
+    }
+
+    /// <summary>## 절 제목이 있는 문단으로 넘긴다.</summary>
+    void ScrollToSection(string heading)
+    {
+        var lines = _text.Text.Split('\n');
+        int line = Array.FindIndex(lines, l => l.Contains(heading, StringComparison.Ordinal));
+        if (line >= 0) _text.ScrollToParagraph(line);
+    }
+
     void Show(int page)
     {
         _page = Math.Clamp(page, 0, _pages.Count - 1);
-        _list.Select(_page);
-        _list.EnsureCurrentIsVisible();
+        Rebuild();
+        int row = _rows.FindIndex(r => r.Page == _page && r.Section < 0);
+        if (row >= 0)
+        {
+            _list.Select(row);
+            _list.EnsureCurrentIsVisible();
+        }
         _text.Text = _pages[_page].Body();
         _text.ScrollToLine(0);
+    }
+
+    /// <summary>쪽 제목(#)과 절 제목(##) 모두. 절차 제목은 이 중 하나여야 한다 (교범 제목 규칙).</summary>
+    public IEnumerable<string> Headings => _pages.Select(p => p.Title).Concat(_meta.SelectMany(m => m.Sections));
+
+    /// <summary>탭 이름들 (자동 확인용).</summary>
+    public IEnumerable<string> TabNames => Tabs.Select(t => t.Name);
+
+    /// <summary>그 탭에서 보이는 쪽 제목 (자동 확인용).</summary>
+    public IEnumerable<string> TitlesInTab(int tab)
+    {
+        int keep = _tab;
+        _tab = tab;
+        var titles = Enumerable.Range(0, _pages.Count).Where(InTab).Select(p => _pages[p].Title).ToList();
+        _tab = keep;
+        return titles;
     }
 
     public void ShowPage(string title)
     {
         int i = _pages.FindIndex(p => p.Title == title);
-        if (i >= 0) Show(i);
+        if (i < 0) return;
+        if (!InTab(i)) SelectTab(0);
+        Show(i);
     }
 
     public void Open()
@@ -185,13 +290,23 @@ public partial class ManualOverlay : CanvasLayer
         _text.GetVScrollBar().Value = scroll;
     }
 
+    /// <summary>탭 안에서 다음(앞) 쪽.</summary>
+    int Step(int dir)
+    {
+        for (int p = _page + dir; p >= 0 && p < _pages.Count; p += dir)
+            if (InTab(p)) return p;
+        return _page;
+    }
+
     public override void _Input(InputEvent e)
     {
         if (!Visible) return;
         if (e is InputEventKey { Pressed: true, Echo: false } k)
         {
-            if (k.PhysicalKeycode is Key.Down or Key.Pagedown) { Show(_page + 1); GetViewport().SetInputAsHandled(); }
-            else if (k.PhysicalKeycode is Key.Up or Key.Pageup) { Show(_page - 1); GetViewport().SetInputAsHandled(); }
+            if (k.PhysicalKeycode is Key.Down or Key.Pagedown) { Show(Step(+1)); GetViewport().SetInputAsHandled(); }
+            else if (k.PhysicalKeycode is Key.Up or Key.Pageup) { Show(Step(-1)); GetViewport().SetInputAsHandled(); }
+            else if (k.PhysicalKeycode is Key.Right) { SelectTab((_tab + 1) % Tabs.Length); GetViewport().SetInputAsHandled(); }
+            else if (k.PhysicalKeycode is Key.Left) { SelectTab((_tab + Tabs.Length - 1) % Tabs.Length); GetViewport().SetInputAsHandled(); }
         }
     }
 }

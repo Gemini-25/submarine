@@ -110,13 +110,7 @@ public partial class InteractionController : Node
     public override void _UnhandledInput(InputEvent e)
     {
         if (Blocked) return;
-        if (e is InputEventMouseButton { ButtonIndex: MouseButton.Right, Pressed: true } && _grab == null && Hovered?.TouchCommand != null)
-        {
-            // 오른쪽 버튼: 맨손바닥을 대 본다 (장치의 touch 블록). 도구를 들었으면 시뮬레이션이 need_bare_hand로 답한다.
-            Touch(Hovered);
-            GetViewport().SetInputAsHandled();
-        }
-        else if (e is InputEventMouseButton mb && mb.ButtonIndex == MouseButton.Left)
+        if (e is InputEventMouseButton mb && mb.ButtonIndex == MouseButton.Left)
         {
             if (mb.Pressed)
             {
@@ -138,6 +132,13 @@ public partial class InteractionController : Node
             if (k.PhysicalKeycode == Key.G)
             {
                 DropTool();
+                GetViewport().SetInputAsHandled();
+                return;
+            }
+            if (k.PhysicalKeycode == Key.T && _grab == null && Hovered?.TouchCommand != null)
+            {
+                // T: 맨손바닥을 대 본다 (장치의 touch 블록). 도구를 들었으면 시뮬레이션이 need_bare_hand로 답한다.
+                Touch(Hovered);
                 GetViewport().SetInputAsHandled();
                 return;
             }

@@ -29,6 +29,10 @@ public sealed class FixtureBinder
 
     public bool Has(string fixtureId) => _fixtures.ContainsKey(fixtureId);
 
+    /// <summary>펼친 장치 (부품 ID, 상태 값 이름, 틀 변수). 모양 갱신기가 쓴다.</summary>
+    public FixtureInstance Instance(string fixtureId) =>
+        _fixtures.TryGetValue(fixtureId, out var f) ? f : throw new KeyNotFoundException($"장치 '{fixtureId}'가 data/fixtures에 없다");
+
     /// <summary>명령을 낼 물체와 손동작. 바인더가 만든 장치의 명령이 아니면 false.</summary>
     public bool TryResolve(string cmd, out string target, out Motion motion)
     {

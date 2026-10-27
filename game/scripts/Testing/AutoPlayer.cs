@@ -167,8 +167,14 @@ public partial class AutoPlayer : Node
     {
         var titles = _main.Manual.PageTitles.ToList();
         Check(titles.Count >= 12, $"교범 장 수가 모자란다: {titles.Count}");
+        var headings = _main.Manual.Headings.ToHashSet();
         foreach (var proc in Data.Procedures)
-            Check(titles.Contains(proc.Title), $"교범에 '{proc.Title}' 장이 없다");
+            Check(headings.Contains(proc.Title), $"교범에 '{proc.Title}' 장이나 절이 없다");
+        // 계통 탭: 전체는 모든 쪽, 배전반 탭에는 퓨즈 교체, 물 탭에는 거름망 청소.
+        Check(_main.Manual.TitlesInTab(0).Count() == titles.Count, "교범의 '전체' 탭에 모든 쪽이 들지 않는다");
+        int Tab(string name) => _main.Manual.TabNames.ToList().IndexOf(name);
+        Check(_main.Manual.TitlesInTab(Tab("배전반")).Contains("퓨즈 교체"), "배전반 탭에 '퓨즈 교체'가 없다");
+        Check(_main.Manual.TitlesInTab(Tab("물")).Contains("펌프 흡입 거름망 청소"), "물 탭에 '펌프 흡입 거름망 청소'가 없다");
         foreach (var body in _main.Manual.PageBodies)
             Check(!body.Contains("{{"), "교범에 채우지 않은 자리표시자가 보인다");
         await Key(Godot.Key.Tab);

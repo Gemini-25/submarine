@@ -222,7 +222,7 @@ public partial class Hud : CanvasLayer
         {
             _target.Text = it.Label;
             var hint = GestureHint(it.GestureFor(_hands.Context));
-            if (it.TouchCommand != null) hint += "  ·  오른쪽 버튼 만져 보기";
+            if (it.TouchCommand != null) hint += "  ·  T 만져 보기";
             if (!_player.InWorkView && it.Station.Length > 0) hint += "  ·  F 작업 시점";
             _gesture.Text = hint;
         }

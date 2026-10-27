@@ -12,12 +12,15 @@ public class ManualTests
     static readonly Lazy<IReadOnlyList<ManualPage>> _pages = new(() => ManualText.LoadPages(ManualDir, TestData.Data));
     static IReadOnlyList<ManualPage> Pages => _pages.Value;
 
-    /// <summary>M1 교범 10쪽은 숫자를 자리표시자로 옮긴 뒤에도 글자 하나까지 같게 렌더된다 (fixtures/manual-m1은 옮기기 전 원본).</summary>
+    /// <summary>
+    /// M1 교범 쪽은 숫자를 자리표시자로 옮긴 뒤에도 글자 하나까지 같게 렌더된다 (fixtures/manual-m1은 옮기기 전 원본).
+    /// M2에서 일부러 고친 쪽은 그 스냅숏을 지우고 보고서에 적는다 (진단 표는 셋으로 나누며 지웠다).
+    /// </summary>
     [Fact]
     public void M1_pages_render_exactly_as_before_the_placeholders()
     {
         var snapshots = Directory.GetFiles(SnapshotDir, "*.md").OrderBy(f => f, StringComparer.Ordinal).ToList();
-        Assert.Equal(10, snapshots.Count);
+        Assert.NotEmpty(snapshots);
         foreach (var snap in snapshots)
         {
             string name = Path.GetFileName(snap);
@@ -53,8 +56,8 @@ public class ManualTests
         });
         var pages = ManualText.LoadPages(ManualDir, data);
         Assert.Contains("| 퓨즈 | 11 | 퓨즈 교체 |", pages.Single(p => p.File.StartsWith("01-", StringComparison.Ordinal)).Markdown);
-        Assert.Contains("| 볼트 하나 (렌치) | 4 |", pages.Single(p => p.File.StartsWith("05-", StringComparison.Ordinal)).Markdown);
-        Assert.Contains("| 렌치 (볼트 하나) | 4 | 2초 |", pages.Single(p => p.File.StartsWith("10-", StringComparison.Ordinal)).Markdown);
+        Assert.Contains("| 볼트 하나 (렌치) | 4 |", pages.Single(p => p.File.StartsWith("29-", StringComparison.Ordinal)).Markdown); // 펌프 흡입 거름망 청소
+        Assert.Contains("| 렌치 (볼트 하나) | 4 | 2초 |", pages.Single(p => p.File.StartsWith("11-", StringComparison.Ordinal)).Markdown); // 소음 표
     }
 
     [Theory]
