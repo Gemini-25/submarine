@@ -286,7 +286,7 @@
     "steps": [
       {
         "type": "Inspect",
-        "text": "납땜인두를 쓸 수 없을 때 쓴다. 공구 회로(C7) 분기함이 타면 인두가 돌지 않는다."
+        "text": "납땜인두를 쓸 수 없을 때 쓴다. 공구 회로(C7) 분기함이 타면 인두가 돌지 않는다. C7 분기함이 젖었는지도 본다. 젖은 채 두면 꼰 뒤에 또 탄다."
       },
       {
         "type": "Isolate",
@@ -294,6 +294,12 @@
         "cmd": "switch.{circuit}.off",
         "tool": "hand",
         "hazard": "스위치를 내리지 않고 배선을 만지면 감전된다."
+      },
+      {
+        "type": "Isolate",
+        "text": "납땜인두를 끈다. 켜 둔 채 회로를 다시 올리면 인두와 누설이 겹쳐 정격을 넘는다.",
+        "cmd": "device.soldering_iron.off",
+        "tool": "hand"
       },
       {
         "type": "Open",
@@ -306,7 +312,18 @@
         "type": "Open",
         "text": "덮개를 연다.",
         "cmd": "junction.{circuit}.cover.open",
-        "tool": "hand"
+        "tool": "hand",
+        "requires": "회로 스위치가 내려가 있을 것",
+        "hazard": "감전"
+      },
+      {
+        "type": "Work",
+        "text": "걸레로 상자 안을 네 번 닦아 말린다. 감긴 테이프가 있으면 풀어 낸다.",
+        "cmd": "junction.{circuit}.box.dry",
+        "tool": "rag",
+        "repeat": 4,
+        "requires": "회로 스위치가 내려가 있을 것",
+        "hazard": "감전"
       },
       {
         "type": "Work",
@@ -334,7 +351,9 @@
         "type": "Work",
         "text": "절연 테이프로 꼰 이음을 세 번 감는다. 맨 이음을 남기면 누전한다.",
         "cmd": "junction.{circuit}.cable.wrap",
-        "repeat": 3
+        "repeat": 3,
+        "requires": "만져서 축축하지 않을 것",
+        "hazard": "물기가 테이프 안에 갇혀 몇 분 뒤 누전이 돌아온다"
       },
       {
         "type": "Close",
@@ -347,6 +366,29 @@
         "cmd": "junction.{circuit}.screw.{n}.tighten",
         "tool": "screwdriver",
         "repeat": 2
+      },
+      {
+        "type": "Remove",
+        "text": "철사를 감은 퓨즈를 뽑는다. 예비 퓨즈가 없으면 이 단계부터 셋을 건너뛰고 철사를 그대로 둔다.",
+        "cmd": "fuse.{circuit}.pull",
+        "tool": "hand",
+        "requires": "회로 스위치가 내려가 있을 것",
+        "hazard": "감전"
+      },
+      {
+        "type": "Remove",
+        "text": "쓴 철사를 폐기함에 버린다.",
+        "cmd": "hand.drop"
+      },
+      {
+        "type": "Install",
+        "text": "사물함에서 새 퓨즈를 꺼낸다.",
+        "cmd": "locker.take.fuse"
+      },
+      {
+        "type": "Install",
+        "text": "새 퓨즈를 소켓에 끝까지 밀어 넣는다.",
+        "cmd": "fuse.{circuit}.insert"
       },
       {
         "type": "Test",

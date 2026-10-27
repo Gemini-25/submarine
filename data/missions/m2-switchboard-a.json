@@ -17,7 +17,7 @@
     { "atSeconds": 0, "fault": "ELC-03", "part": "junction.C1" }
   ],
   "success": {
-    "assert": "circuit.C1.energized == 1 && circuit.C6.energized == 1 && part.fuse.C6.prop.wire == 0 && part.junction.C1.prop.moisture < 0.6 && part.junction.C1.prop.coverOpen == 0 && part.junction.C6.prop.coverOpen == 0 && part.junction.C6.prop.insulated == 1",
+    "assert": "circuit.C1.energized == 1 && circuit.C6.energized == 1 && part.fuse.C6.prop.wire == 0 && part.junction.C1.prop.moisture < 0.6 && part.junction.C1.prop.coverOpen == 0 && part.junction.C6.prop.coverOpen == 0 && part.junction.C6.prop.insulated == 1 && part.junction.C6.prop.twisted == 0",
     "holdSeconds": 30,
     "objectives": [
       "C1 분기함을 말리고 새 퓨즈로 회로를 살린다",

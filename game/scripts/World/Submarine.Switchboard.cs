@@ -13,7 +13,7 @@ namespace DeepLine.Game.World;
 /// </summary>
 public partial class Submarine
 {
-    /// <summary>저항 브리지 선택 손잡이가 가리키는 분기함 (표현 전용, 저장하지 않는다). 빈 문자열이면 떼어 둠.</summary>
+    /// <summary>저항 브리지 선택 손잡이가 가리키는 분기함 (표현 전용, 저장하지 않는다). 빈 문자열이면 끊음.</summary>
     public string BridgeLead { get; private set; } = "";
 
     void BuildSwitchboardTierA(Func<string, double> query)
@@ -115,6 +115,8 @@ public partial class Submarine
             bool taped = PartProp(s, part, "taped") >= 0.5 || PartProp(s, part, "wrap") >= 1;
             inside.Visible = open;
             tape.Visible = taped;
+            // 꼰 이음(응급)은 테이프가 울퉁불퉁 두껍게 보인다.
+            tape.Scale = PartProp(s, part, "twisted") >= 0.5 ? new Vector3(1.4f, 1.6f, 1.4f) : Vector3.One;
             bare.Visible = !taped && PartProp(s, part, "insulated", 1) < 0.5;
             soot.Visible = PartProp(s, part, "burnt") >= 0.5;
             outerTape.Visible = taped;
@@ -149,7 +151,7 @@ public partial class Submarine
 
     // ── 배전반 전류계 ────────────────────────────────────
 
-    /// <summary>배치가 지은 전류계 바늘을 회로 전류(reading.ammeter.Cx, A)로 움직인다. 눈금 끝은 퓨즈 정격의 1.25배.</summary>
+    /// <summary>배치가 지은 전류계 바늘을 회로 전류(reading.ammeter.Cx, A)로 움직인다. 눈금 끝은 퓨즈 정격의 1.25배보다 크거나 같은 둥근 값이고, 큰 눈금 다섯에 숫자를 쓴다.</summary>
     void BindAmmeters()
     {
         foreach (var c in _data.Circuits)
@@ -218,9 +220,10 @@ public partial class Submarine
     // ── 저항 브리지 (최소 대기) ───────────────────────────
 
     /// <summary>
-    /// 브리지 상자 앞면의 선택 손잡이(bridge.lead): 누를 때마다 분기함 C1~C8, 떼어 둠 순으로 넘어간다(표현 전용, 명령 없음).
-    /// 검류계 바늘은 고른 분기함의 절연(measure.bridge.insulation.Cx)을 로그 눈금으로 보인다: 왼쪽 끝 0.1MΩ, 오른쪽 끝 100MΩ.
-    /// 회로가 살아 있으면 읽히지 않아 바늘이 가운데에 선다. 다이얼로 평형을 맞추는 계산 도구는 WP22가 만든다.
+    /// 브리지 상자 앞면의 선택 손잡이(bridge.lead): 누를 때마다 분기함 C1~C8, 끊음 순으로 넘어간다(표현 전용, 명령 없음).
+    /// 검류계 바늘은 고른 분기함의 절연(measure.bridge.insulation.Cx)을 로그 눈금으로 보인다: f = (log10 MΩ + 2) / 4,
+    /// 큰 눈금 0.01·0.1·1·10·100MΩ, 단위 글씨 MΩ. 회로가 살아 있어 읽을 수 없으면(NaN) 바늘이 한 자리에 서지 않고 떨고,
+    /// 끊음이면 열린 선처럼 오른쪽 끝에 쉰다. 다이얼로 평형을 맞추는 계산 도구는 WP22가 만든다.
     /// </summary>
     void BuildBridgeLead(Func<string, double> query)
     {
@@ -235,7 +238,12 @@ public partial class Submarine
         mb.Instance(knob, "Knob");
         var label = Geo.Text(m, "끊음", new Vector3(0, 0.032f, 0.002f), 0.012f, Geo.Cream);
         // 검류계 눈금: f = (log10 MΩ + 2) / 4, 큰 눈금 0.01, 0.1, 1, 10, 100MΩ.
-        if (gauge != null) GaugeLabels(gauge, 0.035f, new[] { "0.01", "0.1", "1", "10", "100" });
+        if (gauge != null)
+        {
+            GaugeLabels(gauge, 0.035f, new[] { "0.01", "0.1", "1", "10", "100" });
+            // 배치가 단위 자리에 쓴 '검류계'를 단위 'MΩ'로 바꾼다 (양 끝 숫자와 겹치지 않는 짧은 글씨).
+            foreach (var l in gauge.GetChildren().OfType<Label3D>().Where(l => l.Text == "검류계")) l.Text = "MΩ";
+        }
         var leads = _data.Circuits.Select(c => c.Id).Append("").ToArray();
         var it = Add(Interactable.Create(m, "bridge.lead", "브리지 선택 손잡이", new Vector3(0.05f, 0.05f, 0.03f), new Vector3(0, 0, 0.012f), "commdesk"));
         it.CommandFor = (_, mo) =>
@@ -251,9 +259,9 @@ public partial class Submarine
             label.Text = BridgeLead.Length == 0 ? "끊음" : $"분기함 {BridgeLead}";
             if (gauge == null) return;
             t += dt;
-            // 끊음이면 왼쪽 끝에 쉰다. 회로가 살아 있어 읽을 수 없으면(NaN) 바늘이 한 자리에 서지 않고 떤다(가운데는 평형으로 읽히므로).
+            // 끊음이면 열린 선처럼 오른쪽 끝에 쉰다. 회로가 살아 있어 읽을 수 없으면(NaN) 바늘이 한 자리에 서지 않고 떤다(가운데는 평형으로 읽히므로).
             double mohm = BridgeLead.Length == 0 ? 0 : query($"measure.bridge.insulation.{BridgeLead}");
-            float f = BridgeLead.Length == 0 ? 0
+            float f = BridgeLead.Length == 0 ? 1
                 : double.IsNaN(mohm) ? 0.5f + 0.35f * Mathf.Sin(t * 9)
                 : (float)Math.Clamp((Math.Log10(Math.Max(mohm, 1e-3)) + 2) / 4, 0, 1);
             gauge.SetFraction(f);
@@ -271,5 +279,5 @@ public partial class Submarine
         }
     }
 
-    static string Fmt(float v) => v.ToString(v < 1 && v > 0 ? "0.##" : "0.#", System.Globalization.CultureInfo.InvariantCulture);
+    static string Fmt(float v) => v.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
 }

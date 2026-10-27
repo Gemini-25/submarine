@@ -170,6 +170,7 @@
       "soldered",
       "stripped",
       "taped",
+      "twisted",
       "wrap"
     ],
     "props": {
@@ -183,6 +184,7 @@
       "stripped": 0,
       "taped": 0,
       "trapped": 0,
+      "twisted": 0,
       "wrap": 0
     }
   },
@@ -197,6 +199,7 @@
       "soldered",
       "stripped",
       "taped",
+      "twisted",
       "wrap"
     ],
     "props": {
@@ -210,6 +213,7 @@
       "stripped": 0,
       "taped": 0,
       "trapped": 0,
+      "twisted": 0,
       "wrap": 0
     }
   },
@@ -224,6 +228,7 @@
       "soldered",
       "stripped",
       "taped",
+      "twisted",
       "wrap"
     ],
     "props": {
@@ -237,6 +242,7 @@
       "stripped": 0,
       "taped": 0,
       "trapped": 0,
+      "twisted": 0,
       "wrap": 0
     }
   },
@@ -251,6 +257,7 @@
       "soldered",
       "stripped",
       "taped",
+      "twisted",
       "wrap"
     ],
     "props": {
@@ -264,6 +271,7 @@
       "stripped": 0,
       "taped": 0,
       "trapped": 0,
+      "twisted": 0,
       "wrap": 0
     }
   },
@@ -278,6 +286,7 @@
       "soldered",
       "stripped",
       "taped",
+      "twisted",
       "wrap"
     ],
     "props": {
@@ -291,6 +300,7 @@
       "stripped": 0,
       "taped": 0,
       "trapped": 0,
+      "twisted": 0,
       "wrap": 0
     }
   },
@@ -305,6 +315,7 @@
       "soldered",
       "stripped",
       "taped",
+      "twisted",
       "wrap"
     ],
     "props": {
@@ -318,6 +329,7 @@
       "stripped": 0,
       "taped": 0,
       "trapped": 0,
+      "twisted": 0,
       "wrap": 0
     }
   },
@@ -332,6 +344,7 @@
       "soldered",
       "stripped",
       "taped",
+      "twisted",
       "wrap"
     ],
     "props": {
@@ -345,6 +358,7 @@
       "stripped": 0,
       "taped": 0,
       "trapped": 0,
+      "twisted": 0,
       "wrap": 0
     }
   },
@@ -359,6 +373,7 @@
       "soldered",
       "stripped",
       "taped",
+      "twisted",
       "wrap"
     ],
     "props": {
@@ -372,6 +387,7 @@
       "stripped": 0,
       "taped": 0,
       "trapped": 0,
+      "twisted": 0,
       "wrap": 0
     }
   },
@@ -406,8 +422,14 @@
         "while": "device.vent_fan.running == 1",
         "armed": "spinArmed",
         "onExpire": [
-          { "set": "stalled", "to": 1 },
-          { "event": "TempRepairFailed", "detail": "AIR-01" }
+          {
+            "set": "stalled",
+            "to": 1
+          },
+          {
+            "event": "TempRepairFailed",
+            "detail": "AIR-01"
+          }
         ]
       },
       {
@@ -416,7 +438,10 @@
         "while": "self.hubNut < 0.5 && device.vent_fan.running == 1",
         "armed": "hubArmed",
         "onExpire": [
-          { "set": "stalled", "to": 1 }
+          {
+            "set": "stalled",
+            "to": 1
+          }
         ]
       }
     ]
@@ -477,9 +502,19 @@
         "while": "device.bilge_pump.running == 1",
         "armed": "lubeArmed",
         "onExpire": [
-          { "set": "lube", "to": 0 },
-          { "if": "self.lubePatch >= 0.5", "event": "TempRepairFailed", "detail": "WTR-02" },
-          { "set": "lubePatch", "to": 0 }
+          {
+            "set": "lube",
+            "to": 0
+          },
+          {
+            "if": "self.lubePatch >= 0.5",
+            "event": "TempRepairFailed",
+            "detail": "WTR-02"
+          },
+          {
+            "set": "lubePatch",
+            "to": 0
+          }
         ]
       }
     ],

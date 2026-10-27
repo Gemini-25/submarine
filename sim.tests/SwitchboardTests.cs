@@ -96,13 +96,14 @@ public class SwitchboardTierATests
         sim.Run(1);
         Assert.True(sim.Q("circuit.C3.leak") > 0);
         Assert.True(sim.Q("cue.junction.C3.dew") > 0.5);
-        sim.Cmd("switch.C3.off");
-        sim.Step();
 
-        // 물을 퍼내 공기가 말라 가도 분기함은 마르지 않는다.
+        // 배수 펌프(C3)로 물을 퍼내 공기가 말라 가도 분기함은 마르지 않는다.
         var before = Enumerable.Range(1, 8).Select(c => sim.Q($"part.junction.C{c}.prop.moisture")).ToArray();
-        sim.Cmd("hatch.open");
-        sim.Run(600);
+        double rhBefore = sim.Q("part.air.humidity.prop.rh");
+        sim.Run(2400);
+        double rhAfter = sim.Q("part.air.humidity.prop.rh");
+        _out.WriteLine($"퍼낸 뒤 rh {rhAfter:F3} (전 {rhBefore:F3}), 후방 바닥 {sim.Q("zone.aft.water"):F0}L");
+        Assert.True(rhAfter < rhBefore, "물을 퍼냈는데 공기가 마르지 않았다");
         for (int c = 1; c <= 8; c++) Assert.True(sim.Q($"part.junction.C{c}.prop.moisture") >= before[c - 1]);
     }
 
@@ -678,22 +679,104 @@ public class SwitchboardTierATests
         sim.Step();
         var ev = Follow(sim, "proc.junction.twist", "C7");
         NoHarm(ev);
-        Assert.Contains(ev, e => e.Kind == SimEventKind.PartPatched && e.Subject == "junction.C7");
         Assert.Equal(0, sim.Q("part.junction.C7.prop.burnt"));
         Assert.Equal(1, sim.Q("part.junction.C7.prop.insulated"));
-        Assert.Equal("temporary", sim.QS("part.junction.C7.quality"));
+        Assert.Equal(1, sim.Q("part.junction.C7.prop.twisted")); // 꼰 이음(응급)은 상태 값으로 남는다
+        Assert.Equal(0, sim.Q("part.fuse.C7.prop.wire"));
         Assert.Equal(1, sim.Q("circuit.C7.energized"));
         NoHarm(Follow(sim, "proc.junction.rewire", "C6"));
         sim.Run(5);
         Assert.Equal(1, sim.Q("circuit.C6.energized"));
         Assert.Equal(0, sim.Q("part.junction.C6.prop.burnt"));
+        Assert.Equal(0, sim.Q("part.junction.C6.prop.twisted"));
+    }
+
+    [Fact]
+    public void Wet_C7_with_the_iron_on_and_a_wired_fuse_burns_then_twisting_holds()
+    {
+        // 검토 1번의 C7 경로: 젖은 C7 분기함, 인두 켬, 퓨즈 대용 철사 → 배선이 탄다. 꼬아 잇기 절차(말리기, 인두 끄기, 퓨즈로 바꾸기)로 빠져나간다.
+        var sim = TestData.NewSim(setup: TestData.Setup(s =>
+        {
+            s.Switches["C7"] = true;
+            s.Devices["soldering_iron"] = true;
+            s.Parts = new() { new() { Part = "fuse.C7", Prop = "wire", Value = 1 } };
+        }));
+        sim.Inject("ELC-03", "junction.C7");
+        var ev = new List<SimEvent>();
+        for (int i = 0; i < TestData.Ticks(5); i++) { sim.Step(); ev.AddRange(sim.DrainEvents()); }
+        Assert.Contains(ev, e => e.Kind == SimEventKind.WiringBurnt && e.Subject == "junction.C7");
+        var fix = Follow(sim, "proc.junction.twist", "C7");
+        NoHarm(fix);
+        Assert.Equal("normal", sim.QS("part.junction.C7.state"));
+        Assert.Equal(0, sim.Q("part.junction.C7.prop.trapped"));
+        Assert.Equal(0, sim.Q("part.fuse.C7.prop.wire"));
+        Assert.Equal(0, sim.Q("device.soldering_iron.enabled"));
+        var after = new List<SimEvent>();
+        for (int i = 0; i < TestData.Ticks(60); i++) { sim.Step(); after.AddRange(sim.DrainEvents()); }
+        Assert.DoesNotContain(after, e => e.Kind is SimEventKind.WiringBurnt or SimEventKind.FuseBlown);
+        Assert.Equal(1, sim.Q("circuit.C7.energized"));
+        // 그 뒤 인두를 켜도(다른 회로를 다시 이을 때) C7은 버틴다.
+        sim.Cmd("device.soldering_iron.on");
+        sim.Run(30);
+        Assert.Equal(1, sim.Q("device.soldering_iron.running"));
+        Assert.Equal(0, sim.Q("part.junction.C7.prop.burnt"));
+    }
+
+    [Fact]
+    public void Twisting_a_sound_cable_is_refused_without_talk_of_solder()
+    {
+        var sim = TestData.NewSim(setup: TestData.Setup(s => s.Parts = new()
+        {
+            new() { Part = "junction.C6", Prop = "coverOpen", Value = 1 }, new() { Part = "junction.C6", Prop = "screw1", Value = 0 },
+            new() { Part = "junction.C6", Prop = "screw2", Value = 0 },
+        }));
+        var ev = Do(sim, new[] { "switch.C6.off", "tool.hand", "junction.C6.cable.twist" });
+        Assert.Equal("done", Rejected(ev, "junction.C6.cable.twist"));
+        var burnt = Burnt("C6");
+        ev = Do(burnt, new[] { "switch.C6.off", "toolboard.return.mallet", "toolboard.take.screwdriver", "tool.screwdriver",
+            "junction.C6.screw.1.loosen", "junction.C6.screw.2.loosen", "tool.hand", "junction.C6.cover.open", "junction.C6.cable.twist" });
+        Assert.Equal("twist_not_stripped", Rejected(ev, "junction.C6.cable.twist"));
+    }
+
+    [Fact]
+    public void Wiping_a_rewired_box_unwraps_the_joint_and_leaves_it_bare()
+    {
+        var sim = Burnt("C4");
+        sim.Step();
+        NoHarm(Follow(sim, "proc.junction.rewire", "C4"));
+        Assert.Equal(1, sim.Q("part.junction.C4.prop.insulated"));
+        // 테이프가 떨어져 다시 감지 못한 채 닦기만 하고 닫았다.
+        Do(sim, new[] { "switch.C4.off", "tool.screwdriver", "junction.C4.screw.1.loosen", "junction.C4.screw.2.loosen", "tool.hand", "junction.C4.cover.open",
+            "toolboard.return.scrub_brush", "toolboard.take.rag", "tool.rag", "junction.C4.box.dry", "tool.hand", "junction.C4.cover.close",
+            "tool.screwdriver", "junction.C4.screw.1.tighten", "junction.C4.screw.2.tighten", "tool.hand", "switch.C4.on" });
+        Assert.Equal(0, sim.Q("part.junction.C4.prop.insulated"));
+        Assert.True(sim.Q("circuit.C4.leak") > 0, "테이프를 풀어 낸 맨 이음은 누전한다");
+    }
+
+    [Fact]
+    public void Wiring_a_fuse_on_a_still_leaking_circuit_burns_the_junction_at_the_test_step()
+    {
+        // proc.fuse.wire의 시험 단계: 누전이 남은 회로에서 철사를 꽂고 스위치를 올리면 배선이 탄다(퓨즈는 끊기지 않는다).
+        var sim = TestData.NewSim();
+        sim.Inject("ELC-03", "junction.C1");
+        sim.Run(5);
+        Assert.Equal("blown", sim.QS("circuit.C1.fuse"));
+        var cmds = ProcedureRunner.ExpandWithBelt(sim, TestData.Data.Procedure("proc.fuse.wire"), Bind("C1")).Select(c => c.Cmd).ToList();
+        Assert.Equal("switch.C1.on", cmds[^1]);
+        NoHarm(Do(sim, cmds.Take(cmds.Count - 1)));
+        var ev = Do(sim, new[] { cmds[^1] });
+        for (int i = 0; i < TestData.Ticks(3); i++) { sim.Step(); ev.AddRange(sim.DrainEvents()); }
+        Assert.Contains(ev, e => e.Kind == SimEventKind.WiringBurnt && e.Subject == "junction.C1");
+        Assert.Contains(ev, e => e.Kind == SimEventKind.Spark && e.Subject == "junction.C1");
+        Assert.DoesNotContain(ev, e => e.Kind == SimEventKind.FuseBlown);
     }
 
     [Fact]
     public void Isolate_steps_only_switch_things_off()
     {
         // 위험 건너뛰기 하네스는 차단(Isolate) 단계를 뺀다. 전원을 켜는 단계가 차단으로 적혀 있으면 오판한다.
-        foreach (var p in TestData.Data.Procedures)
+        // WP8 절차만 본다 (다른 계통의 차단 규칙은 본선이 정한다).
+        foreach (var p in TestData.Data.Procedures.Where(p => p.Id == "proc.fuse.wire" || p.Id.StartsWith("proc.junction.", StringComparison.Ordinal)))
             foreach (var st in p.Steps.Where(st => st.Type == "Isolate"))
                 Assert.True(st.Cmd == null || st.Cmd.EndsWith(".off", StringComparison.Ordinal), $"{p.Id}: 차단 단계 '{st.Cmd}'");
     }
