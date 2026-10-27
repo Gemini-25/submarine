@@ -45,6 +45,8 @@ public sealed partial class DrillSolver
                 return null;
             }
         }
+        // 전령기: 손잡이는 한 눈금씩 움직인다. 지금 눈금에서 목표 쪽으로 한 눈금씩 내고, 낼 때마다 다시 읽는다.
+        if (cmd == "propulsion.set" && _book.TelegraphNotches.Count > 0) return Telegraph(op);
         // 이미 그 자리: 손 자리 값을 보면 할 필요가 없는 명령은 건너뛴다 (거부 'already'를 내지 않는다).
         if (AlreadyThere(cmd))
         {
@@ -70,6 +72,38 @@ public sealed partial class DrillSolver
         }
         _s.Agenda.RemoveAt(0);
         return Emit(PlanKind.Do, Hand, cmd: cmd, value: op.Value, value2: op.Value2, job: JobName(op.Job), jobStep: op.Step, note: op.Note ?? op.Origin);
+    }
+
+    PlanStep? Telegraph(Op op)
+    {
+        var notches = _book.TelegraphNotches;
+        double now = _q.Number("reading.telegraph"), target = op.Value;
+        if (Math.Abs(now - target) < 1e-9)
+        {
+            _s.Agenda.RemoveAt(0);
+            return op.Tries == 0 ? Emit(PlanKind.Skip, 0, cmd: op.Cmd, value: target, job: JobName(op.Job), jobStep: op.Step, note: "already") : null;
+        }
+        int at = 0;
+        for (int k = 1; k < notches.Count; k++)
+            if (Math.Abs(notches[k] - now) < Math.Abs(notches[at] - now)) at = k;
+        if (Math.Abs(notches[at] - now) > 1e-9 && op.Tries == 0 && JobOf(op.Job) is { } job)
+            _s.Findings.Add(new DrillFinding(Now, job.Pair, job.Verdict, BindText(job.Bind), "off_notch"));
+        // 한 눈금: 지금 눈금(눈금 밖이면 가장 가까운 눈금)에서 목표 쪽으로. 목표가 눈금 사이면 마지막은 목표 값 그대로.
+        double next;
+        if (target > now)
+        {
+            int k = at;
+            while (k < notches.Count && notches[k] <= now + 1e-9) k++;
+            next = k < notches.Count && notches[k] < target ? notches[k] : target;
+        }
+        else
+        {
+            int k = at;
+            while (k >= 0 && notches[k] >= now - 1e-9) k--;
+            next = k >= 0 && notches[k] > target ? notches[k] : target;
+        }
+        op.Tries++;
+        return Emit(PlanKind.Do, Hand, cmd: "propulsion.set", value: next, job: JobName(op.Job), jobStep: op.Step, note: op.Note ?? op.Origin);
     }
 
     bool AlreadyThere(string cmd)
@@ -363,7 +397,9 @@ public sealed partial class DrillSolver
         }
         else if (a.Restore == "throttle")
         {
-            // 전령기 눈금은 동력(WP11)이 들어올 때 붙는다. 그 전에는 할 일이 없다.
+            // 일을 시작할 때 읽은 전령기 값으로 되돌린다 (눈금마다 한 번씩: 위의 전령기 다듬기).
+            if (!double.IsNaN(job.Telegraph) && Math.Abs(_q.Number("reading.telegraph") - job.Telegraph) > 1e-9)
+                ops.Add(new Op { Kind = "cmd", Cmd = "propulsion.set", Value = job.Telegraph, Origin = origin, Step = op.Step, Job = job.Id });
         }
         else if (a.Align == "gyro") ops.AddRange(CommandsToOps(NavDrill.AlignCommands(_q, _book), origin, job.Id));
         else if (a.Reset == "navcomp") ops.AddRange(CommandsToOps(NavDrill.ResetCommands(_q, _book), origin, job.Id));

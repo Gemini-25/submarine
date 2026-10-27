@@ -15,6 +15,7 @@ public class DrillTests
     /// <summary>드릴마다 고친 판정 (쌍/판정 묶음 값)과 허용하는 메모.</summary>
     public static readonly IReadOnlyDictionary<string, (string[] Fixed, string[] Notes)> Expected = new Dictionary<string, (string[], string[])>
     {
+        ["m2-power-a"] = (new[] { "motor.sparks/PWR-02", "voltage.low/PWR-01 cell=3" }, new[] { "heading.off/unsettled" }),
         ["m2-switchboard-a"] = (new[] { "junction.burnt/burnt_wiring c=C6", "fuse.blown/ELC-03 c=C1" }, Array.Empty<string>()),
         ["m2-air-a"] = (new[] { "co2.rising/AIR-01", "co2.rising/AIR-02" }, Array.Empty<string>()),
         ["m2-water-a"] = (new[] { "pump.noflow/WTR-01", "pump.hot/WTR-02" }, Array.Empty<string>()),

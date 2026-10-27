@@ -1,0 +1,77 @@
+// 동력 (교범 03쪽 '축전지 셀, 전동기 브러시').
+{
+  "pairs": {
+    "voltage.low": {
+      "no": 3,
+      "priority": 40,
+      "page": "03-진단-표-전기와-동력.md",
+      "section": "축전지 셀, 전동기 브러시",
+      "sees": [
+        [ { "q": "panel.gauge.voltage", "unit": "V", "for": 20, "below": 117, "typical": 113, "says": "약 113V" } ]
+      ],
+      "checks": [
+        {
+          "each": { "cell": "cells" },
+          "pick": "only",
+          "prep": [ { "tool": "hand", "cmd": "battery.deck.open" }, { "cmd": "tool.voltmeter" } ],
+          "undo": [ { "tool": "hand", "cmd": "battery.deck.close" } ],
+          "all": [ { "measure": "voltmeter", "target": "cell.{cell}", "unit": "V", "below": 16, "typical": 13, "says": "한 셀만 약 13V" } ],
+          "verdict": "PWR-01"
+        }
+      ],
+      "verdicts": {
+        "PWR-01": {
+          "fault": "PWR-01",
+          "says": "축전지 셀 열화",
+          "do": [
+            { "procedure": "proc.cell.replace", "bind": { "cell": "{cell}" }, "if": [ { "q": "inventory.spare_cell", "unit": "none", "above": 0.5 } ] },
+            { "restore": "switches" },
+            { "restore": "throttle" }
+          ],
+          "verify": { "all": [ { "q": "panel.gauge.voltage", "unit": "V", "above": 117 } ], "within": 120, "hold": 10 }
+        }
+      },
+      "exposure": { "setup": { "depthM": 300, "throttle": 0.75 }, "seconds": 60 },
+      "cases": [
+        { "expect": "PWR-01", "bind": { "cell": "3" }, "inject": [ { "fault": "PWR-01", "part": "cell.3" } ] },
+        { "expect": "PWR-01", "bind": { "cell": "3" }, "inject": [ { "fault": "PWR-01", "part": "cell.3" }, { "fault": "PWR-02" } ] },
+        { "expect": "none" }
+      ]
+    },
+    "motor.sparks": {
+      "no": 4,
+      "priority": 30,
+      "page": "03-진단-표-전기와-동력.md",
+      "section": "축전지 셀, 전동기 브러시",
+      "sees": [
+        [ { "q": "cue.motor.sparks", "unit": "cue", "above": 0.3, "says": "푸른 불꽃" } ],
+        [ { "q": "cue.motor.ozone", "unit": "cue", "above": 0.3, "says": "오존 냄새" } ]
+      ],
+      "checks": [
+        {
+          "prep": [ { "cmd": "tool.stethoscope" } ],
+          "undo": [ { "cmd": "tool.hand" } ],
+          "all": [ { "measure": "stethoscope", "target": "motor.brushes", "unit": "cue", "above": 0.6, "says": "치직거린다" } ],
+          "verdict": "PWR-02"
+        }
+      ],
+      "verdicts": {
+        "PWR-02": {
+          "fault": "PWR-02",
+          "says": "전동기 브러시 마모",
+          "do": [
+            { "procedure": "proc.brush.replace", "if": [ { "q": "inventory.brush_set", "unit": "none", "above": 0.5 } ] },
+            { "procedure": "proc.brush.spring", "if": [ { "q": "inventory.brush_set", "unit": "none", "below": 0.5 } ] },
+            { "restore": "throttle" }
+          ],
+          "verify": { "all": [ { "q": "cue.motor.sparks", "unit": "cue", "below": 0.1 } ], "within": 60, "hold": 10 }
+        }
+      },
+      "exposure": { "setup": { "depthM": 300, "throttle": 0.75 }, "seconds": 30 },
+      "cases": [
+        { "expect": "PWR-02", "inject": [ { "fault": "PWR-02" } ] },
+        { "expect": "none" }
+      ]
+    }
+  }
+}

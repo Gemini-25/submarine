@@ -50,6 +50,10 @@
       ],
       "checks": [
         {
+          "all": [ { "q": "cue.motor.sparks", "unit": "cue", "above": 0.3, "says": "전동기에 불꽃" } ],
+          "verdict": "PWR-02"
+        },
+        {
           "prep": [ { "cmd": "tool.stethoscope" } ],
           "undo": [ { "cmd": "tool.hand" } ],
           "all": [
@@ -60,6 +64,7 @@
         }
       ],
       "verdicts": {
+        "PWR-02": { "fault": "PWR-02", "says": "전동기 브러시 마모", "same": "motor.sparks" },
         "NAV-02": {
           "fault": "NAV-02",
           "says": "(NAV-02)",
@@ -70,6 +75,7 @@
       "exposure": { "setup": { "depthM": 120, "throttle": 0.5 }, "seconds": 300 },
       "cases": [
         { "expect": "NAV-02", "inject": [ { "fault": "NAV-02" } ] },
+        { "expect": "PWR-02", "inject": [ { "fault": "PWR-02" } ], "via": "motor.sparks" },
         { "expect": "none" }
       ]
     }

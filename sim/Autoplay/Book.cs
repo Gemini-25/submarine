@@ -68,7 +68,7 @@ public sealed class Book
             TicksPerSecond = data.Tuning.TicksPerSecond,
             DeviationCard = nav?.DeviationCard.Select(x => x.ToArray()).ToArray() ?? Array.Empty<double[]>(),
             AdvancePerRevM = nav?.AdvancePerRevM ?? 0,
-            TelegraphNotches = Array.Empty<double>(),
+            TelegraphNotches = data.Tuning.Power?.TelegraphNotches.ToArray() ?? Array.Empty<double>(),
             MissionId = m.Id,
             MissionName = m.Name,
             Briefing = m.Briefing.ToArray(),
