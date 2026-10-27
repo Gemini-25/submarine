@@ -19,14 +19,6 @@
           "verdict": "ELC-03"
         },
         {
-          "each": { "c": "C3" },
-          "all": [
-            { "q": "cue.fuse.{c}.blackened", "unit": "cue", "above": 0.5 },
-            { "q": "cue.pump.grind", "unit": "cue", "above": 0.3, "says": "뜨겁고 갈리는 소리가 난다" }
-          ],
-          "verdict": "WTR-02"
-        },
-        {
           "each": { "c": "circuits" },
           "prep": [ { "cmd": "tool.voltmeter" } ],
           "undo": [ { "cmd": "tool.hand" } ],
@@ -55,7 +47,6 @@
             "within": 60, "hold": 5
           }
         },
-        "WTR-02": { "fault": "WTR-02", "says": "장비 과부하", "same": "pump.hot" },
         "ELC-01": {
           "fault": "ELC-01",
           "says": "그 회로 퓨즈 단선",
@@ -77,7 +68,6 @@
       "cases": [
         { "expect": "ELC-03", "bind": { "c": "C1" }, "inject": [ { "fault": "ELC-03", "part": "junction.C1" } ] },
         { "expect": "ELC-01", "bind": { "c": "C2" }, "inject": [ { "fault": "ELC-01", "part": "fuse.C2" } ] },
-        { "expect": "WTR-02", "bind": { "c": "C3" }, "inject": [ { "fault": "WTR-02" } ], "seconds": 300 },
         { "expect": "none" }
       ]
     },

@@ -51,7 +51,7 @@ public sealed partial class DrillSolver
         if (AlreadyThere(cmd))
         {
             _s.Agenda.RemoveAt(0);
-            return Emit(PlanKind.Skip, 0, cmd: cmd, job: JobName(op.Job), jobStep: op.Step, note: "already");
+            return Emit(PlanKind.Skip, 0, cmd: cmd, text: "already", job: JobName(op.Job), jobStep: op.Step, note: op.Origin);
         }
         // 바닥에서 줍기: 공구판으로 가지러 갈 도구가 바닥에 있으면 줍는다.
         if (cmd.StartsWith("toolboard.take.", StringComparison.Ordinal))
@@ -81,7 +81,7 @@ public sealed partial class DrillSolver
         if (Math.Abs(now - target) < 1e-9)
         {
             _s.Agenda.RemoveAt(0);
-            return op.Tries == 0 ? Emit(PlanKind.Skip, 0, cmd: op.Cmd, value: target, job: JobName(op.Job), jobStep: op.Step, note: "already") : null;
+            return op.Tries == 0 ? Emit(PlanKind.Skip, 0, cmd: op.Cmd, value: target, text: "already", job: JobName(op.Job), jobStep: op.Step, note: op.Origin) : null;
         }
         int at = 0;
         for (int k = 1; k < notches.Count; k++)

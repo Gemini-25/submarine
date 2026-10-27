@@ -38,12 +38,17 @@ public static partial class ManualText
     [GeneratedRegex(@"\{\{([a-z0-9]+):([^{}|]+?)(?:\|(\d))?\}\}")]
     private static partial Regex Placeholder();
 
+    /// <summary>진단 쌍 표지 줄 (WP16): `&lt;!-- pair:&lt;쌍 ID&gt; --&gt;`. 렌더할 때 그 줄과 뒤따르는 빈 줄 하나를 지운다.</summary>
+    [GeneratedRegex(@"^[ \t]*<!--[ \t]*pair:([A-Za-z0-9_.\-]+)[ \t]*-->[ \t]*\r?\n(?:[ \t]*\r?\n)?", RegexOptions.Multiline)]
+    public static partial Regex PairMarker();
+
     static readonly ConditionalWeakTable<GameData, JsonObject> Trees = new();
 
     /// <summary>자리표시자를 모두 채운다. 하나라도 틀리면 ManualTextException (모든 오류를 모아서).</summary>
     public static string Render(string markdown, GameData data)
     {
         var errors = new List<string>();
+        markdown = PairMarker().Replace(markdown, "");
         string result = Placeholder().Replace(markdown, m =>
         {
             try

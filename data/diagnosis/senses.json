@@ -49,7 +49,7 @@
         {
           "each": { "tube": "1..2" },
           "pick": "only",
-          "all": [ { "q": "cue.hydrophone.tube.{tube}.glow", "unit": "cue", "below": 0.5, "says": "한 필라멘트만 흐리거나 꺼져 있다" } ],
+          "all": [ { "q": "cue.hydrophone.tube.{tube}.glow", "unit": "cue", "below": 0.6, "says": "한 필라멘트만 흐리거나 꺼져 있다" } ],
           "verdict": "SNS-03"
         }
       ],

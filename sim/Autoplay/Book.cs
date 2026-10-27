@@ -40,10 +40,11 @@ public sealed class Book
 
     public int Ticks(double seconds) => (int)Math.Round(seconds * TicksPerSecond);
 
-    public static Book From(GameData data, string missionId)
+    /// <summary>missionId가 null이면 임무 없이 (진단 사례처럼 노출 설정만으로 돌 때).</summary>
+    public static Book From(GameData data, string? missionId)
     {
         var dx = data.Diagnosis ?? throw new InvalidOperationException("진단 자료(data/diagnosis.json)가 없다");
-        var m = data.Mission(missionId);
+        var m = missionId == null ? new MissionDef { Id = "", Name = "" } : data.Mission(missionId);
         var each = new SortedDictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal);
         foreach (var p in dx.Pairs)
             foreach (var c in p.Checks)

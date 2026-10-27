@@ -51,7 +51,7 @@
         {
           "prep": [ { "cmd": "tool.stethoscope" } ],
           "undo": [ { "cmd": "tool.hand" } ],
-          "all": [ { "measure": "stethoscope", "target": "motor.brushes", "unit": "cue", "above": 0.6, "says": "치직거린다" } ],
+          "all": [ { "measure": "stethoscope", "target": "motor.brushes", "unit": "cue", "above": 0.3, "says": "치직거린다" } ],
           "verdict": "PWR-02"
         }
       ],

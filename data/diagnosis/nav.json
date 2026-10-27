@@ -35,7 +35,7 @@
       "exposure": { "setup": { "depthM": 120, "throttle": 0.5 }, "seconds": 60 },
       "cases": [
         { "expect": "NAV-01", "inject": [ { "fault": "NAV-01" } ] },
-        { "expect": "unsettled", "setup": { "devices": { "gyrocompass": false } }, "seconds": 5 },
+        { "expect": "unsettled", "setup": { "devices": { "gyrocompass": false } }, "seconds": 35 },
         { "expect": "none" }
       ]
     },

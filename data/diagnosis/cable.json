@@ -17,14 +17,14 @@
           "verdict": "CBL-01"
         },
         {
-          "all": [ { "q": "cue.winch.lining.thin", "unit": "cue", "below": 0.1 }, { "q": "cue.winch.creep", "unit": "cue", "above": 0.3 } ],
+          "all": [ { "q": "cue.winch.lining.thin", "unit": "cue", "below": 0.2 }, { "q": "cue.winch.creep", "unit": "cue", "above": 0.3 } ],
           "verdict": "turnbuckle_loose"
         }
       ],
       "verdicts": {
         "CBL-01": {
           "fault": "CBL-01",
-          "says": "윈치 브레이크 마모",
+          "says": "라이닝 마모",
           "do": [ { "procedure": "proc.winch.reline" } ],
           "verify": {
             "all": [ { "q": "reading.winch.line", "unit": "m", "trend": 30, "below": 0.1 }, { "q": "panel.lamp.cable", "is": "off" } ],

@@ -184,7 +184,8 @@ public sealed partial class DrillSolver
         {
             _s.Evaluated = true;
             var pair = Pairs().First();
-            _s.SeesStood = SeesStand(pair) ? 1 : 0;
+            // 증상 없이 정기 점검으로만 도는 쌍은 점검 차례가 된 것으로 본다.
+            _s.SeesStood = pair.Sees.Count == 0 && pair.Round != null || SeesStand(pair) ? 1 : 0;
             Begin(pair, 0);
         }
         while (_s.Agenda.Count > 0)
