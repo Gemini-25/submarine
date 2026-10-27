@@ -103,8 +103,8 @@ public partial class DeskCalculator : Node3D
         Handle("gadget.calculator.clear.setting", "설정 지우기 손잡이", this, new Vector3(-0.072f, 0.004f, 0.0f), Machine.ClearSetting);
 
         // 캐리지 옮김 단추: 뒤 모서리 둘. 오른쪽 단추가 캐리지를 오른쪽으로(한 바퀴가 열 배).
-        Button("gadget.calculator.shift.right", "캐리지 오른쪽", new Vector3(0.072f, 0.003f, -0.05f), "→", () => Machine.ShiftUp());
-        Button("gadget.calculator.shift.left", "캐리지 왼쪽", new Vector3(-0.072f, 0.003f, -0.05f), "←", () => Machine.ShiftDown());
+        Button("gadget.calculator.shift.right", "캐리지 오른쪽 단추", new Vector3(0.072f, 0.003f, -0.05f), "→", () => Machine.ShiftUp());
+        Button("gadget.calculator.shift.left", "캐리지 왼쪽 단추", new Vector3(-0.072f, 0.003f, -0.05f), "←", () => Machine.ShiftDown());
 
         // 손잡이: 오른쪽 옆면. 축은 X, 팔은 위로 서서 쉰다.
         var hub = new Node3D { Name = "Crank", Position = new Vector3(0.097f, -0.035f, 0.0f) };

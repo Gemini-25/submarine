@@ -1,0 +1,18 @@
+{
+  "shaftGland": {
+    "nominalNotches": 4,
+    "leakPerNotch": 0.15,
+    "minFactor": 0.05,
+    "maxFactor": 1.6,
+    "ambientC": 12,
+    "riseC": 28,
+    "overTightFrom": 5,
+    "overTightRiseC": 15,
+    "cockedFactor": 4,
+    "relaxPerSecond": 0.02,
+    "burnC": 90,
+    "burnIntegrityPerSecond": 0.0005,
+    "squealFromC": 60,
+    "squealNoise": 8
+  }
+}

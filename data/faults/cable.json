@@ -1,0 +1,26 @@
+{
+  "CBL-01": {
+    "name": "윈치 브레이크 마모",
+    "system": "cable",
+    "partKind": "winch_brake",
+    "defaultPart": "winch.brake",
+    "state": "Fault",
+    "set": {
+      "lining": 0.3
+    },
+    "baseRatePerHour": 0
+  },
+  "CBL-02": {
+    "name": "사이펀 막힘",
+    "system": "cable",
+    "partKind": "siphon_pen",
+    "defaultPart": "siphon.pen",
+    "state": "Fault",
+    "set": {
+      "clog": 0.8,
+      "ink": 0.15
+    },
+    "clearedWhen": "self.clog < 0.1 && self.ink > 0.5 && self.primed >= 0.5",
+    "baseRatePerHour": 0
+  }
+}

@@ -21,13 +21,28 @@ public sealed class GadgetHost
 
     public void Send(string cmd, double value = 0, double value2 = 0) => Main()?.Runner.Send(cmd, value, value2);
 
+    /// <summary>잴 수 없다고 한 번 확인한 (도구, 대상). 데이터가 바뀌면 비운다. 누름 키를 누른 동안 프레임마다 예외를 던지지 않게.</summary>
+    readonly HashSet<string> _unmeasurable = new(StringComparer.Ordinal);
+    object? _unmeasurableData;
+
     /// <summary>도구로 잰 값. 잴 수 없는 대상(이 데이터에 없는 부품, 케이블)은 끊긴 것처럼 +∞, Main이 없으면 NaN.</summary>
     public double Measure(string tool, string target)
     {
         var m = Main();
         if (m == null) return double.NaN;
+        if (!ReferenceEquals(_unmeasurableData, m.Runner.Data))
+        {
+            _unmeasurable.Clear();
+            _unmeasurableData = m.Runner.Data;
+        }
+        string key = tool + "|" + target;
+        if (_unmeasurable.Contains(key)) return double.PositiveInfinity;
         try { return m.Runner.Sim.Measure(tool, target); }
-        catch (ArgumentException) { return double.PositiveInfinity; }
+        catch (ArgumentException)
+        {
+            _unmeasurable.Add(key);
+            return double.PositiveInfinity;
+        }
     }
 
     /// <summary>헤드리스(자동 확인)에서는 소리를 만들지 않는다.</summary>

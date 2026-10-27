@@ -1,0 +1,33 @@
+{
+  "name": "단독 훈련: 항법",
+  "briefing": [
+    "모선 아르고스호 → 모스호 기관사. 수심 120m, 일정 침로로 반속 항진 훈련.",
+    "자이로 중계기가 자기 나침반과 맞지 않고, 항법 계산기의 거리 계수기가 축 회전계와 어긋난다는 보고가 있다. 교범(Tab)의 진단 표와 항법 장을 보고 원인을 찾아 고칠 것.",
+    "중계기를 참 침로에 1도 안으로, 거리 계수기를 지나온 거리에 0.05km 안으로 맞춘 채 1분 동안 유지하면 훈련을 마친다. 셈은 항법 책상의 탁상 계산기로 한다."
+  ],
+  "seed": 1414,
+  "setup": {
+    "depthM": 120,
+    "throttle": 0.5
+  },
+  "events": [
+    {
+      "atSeconds": 0,
+      "fault": "NAV-01"
+    },
+    {
+      "atSeconds": 0,
+      "fault": "NAV-02"
+    }
+  ],
+  "success": {
+    "assert": "nav.headingError < 1 && nav.counterError < 0.05 && nav.settled == 1 && part.gyro.bearing.prop.drag < 0.1 && part.navcomp.gear.prop.slip < 0.1 && part.gyro.case.prop.capOff == 0 && part.navcomp.case.prop.coverOpen == 0",
+    "holdSeconds": 60,
+    "objectives": [
+      "자이로 중계기를 참 침로(나침반 − 자차)에 1도 안으로 맞춘다",
+      "거리 계수기를 지나온 거리에 0.05km 안으로 맞춘다",
+      "그 상태를 1분 동안 유지한다"
+    ]
+  },
+  "timeLimitSeconds": 1800
+}

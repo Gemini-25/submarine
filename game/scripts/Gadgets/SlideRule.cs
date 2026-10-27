@@ -18,6 +18,11 @@ public partial class SlideRule : Node3D
     public const float Length = 0.25f;
     /// <summary>손 1픽셀이 움직이는 거리(m). 작업 시점에서 손과 자가 함께 움직이는 정도.</summary>
     public const float MetersPerPixel = 0.00025f;
+    /// <summary>
+    /// 슬라이드가 왼쪽으로 빠질 수 있는 끝. 슬라이드 왼쪽 끝이 탁상 계산기 몸통(x 6.09)에 닿는 자리다.
+    /// 그보다 왼쪽으로 빼야 하는 셈(오른쪽 1을 쓰는 곱하기, C로 하는 나누기)은 교범이 CI 눈금으로 하게 한다.
+    /// </summary>
+    public const double SlideMin = -0.28;
     const float StockLength = 0.29f;
     /// <summary>몸체 위 판(뒤), 슬라이드, 몸체 아래 판(앞)의 경계.</summary>
     const float ZBack = -0.021f, ZSlideBack = -0.008f, ZSlideFront = 0.007f, ZFront = 0.021f;
@@ -80,7 +85,7 @@ public partial class SlideRule : Node3D
         var slide = _host.Add(Interactable.Create(_slide, "gadget.sliderule.slide", "계산자 슬라이드", new Vector3(StockLength - 0.01f, 0.006f, ZSlideFront - ZSlideBack), new Vector3(0, 0.0005f, (ZSlideBack + ZSlideFront) / 2), st));
         slide.AimPoint = new Vector3(X(0.6), 0.0005f, (ZSlideBack + ZSlideFront) / 2);
         slide.GestureFor = _ => GestureKind.DragPlane;
-        slide.PlaneMove = rel => Rule.Slide += rel.X * MetersPerPixel / Length;
+        slide.PlaneMove = rel => Rule.Slide = Math.Max(Rule.Slide + rel.X * MetersPerPixel / Length, SlideMin);
         var cursor = _host.Add(Interactable.Create(_cursor, "gadget.sliderule.cursor", "계산자 커서", new Vector3(0.018f, 0.008f, ZFront - ZBack + 0.01f), new Vector3(0, 0.002f, (ZBack + ZFront) / 2), st));
         cursor.AimPoint = new Vector3(0, 0.002f, ZFront + 0.004f);
         cursor.GestureFor = _ => GestureKind.DragPlane;

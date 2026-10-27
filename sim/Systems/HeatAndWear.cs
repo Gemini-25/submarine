@@ -68,6 +68,8 @@ static class WearSystem
                 double rate = part.Def.WearPerSecond;
                 if (rate <= 0) continue;
                 if (debris && part.Kind == "bearing") rate *= w.T.Repair.BasketMissingWearMultiplier;
+                // 펌프 베어링 뚜껑 볼트가 풀린 채 돌면 기름이 새서 빨리 닳는다 (WP10). 규칙이 없으면 정확히 1배.
+                if (d == w.Pump && part.Id == PumpBearing.PartId) rate *= PumpBearing.WearScale(w);
                 double before = part.Wear;
                 part.Wear = Math.Min(1, part.Wear + rate * w.Dt * ds.LoadFactor * env * part.QualityFactor(wt));
                 if (before < wt.FaultAt && part.Wear >= wt.FaultAt && part.Def.WearFault != null && part.ActiveFault.Length == 0)

@@ -26,6 +26,41 @@ public sealed class Tuning
     public List<string> Tools { get; set; } = new();
     /// <summary>공구판과 공구띠 (M2). 없으면 M1처럼 모든 도구를 바로 쥘 수 있다.</summary>
     [Optional] public ToolBoardTuning? ToolBoard { get; set; }
+    /// <summary>항법 모듈 (M2 WP14). 자이로와 항법 계산기 상태 부품이 있으면 필요하다.</summary>
+    [Optional] public NavTuning? Nav { get; set; }
+    /// <summary>케이블 장비: 윈치와 사이펀 기록기 (M2 WP15, data/tuning/cable.json). 상태 부품이 없으면 쓰지 않는다.</summary>
+    [Optional] public CableTuning? Cable { get; set; }
+    /// <summary>흡수통의 죔쇠와 뚜껑 (M2 WP9, data/tuning/air.json). 없으면 죔쇠를 열어 둔 흡수통도 다 흡수한다.</summary>
+    [Optional] public ScrubberTuning? Scrubber { get; set; }
+    /// <summary>송풍 팬 (M2 WP9, data/tuning/air.json). 없으면 멎은 팬은 데워지지 않는다.</summary>
+    [Optional] public FanTuning? Fan { get; set; }
+    /// <summary>펌프 베어링의 기름칠과 뚜껑 (M2 WP10, data/tuning/water.json). 없으면 베어링은 M1처럼 wear 곡선만 따른다.</summary>
+    [Optional] public PumpBearingTuning? PumpBearing { get; set; }
+    /// <summary>축 패킹 누름판 (M2 HUL-03). 없으면 축 패킹 지점도 다른 누수 지점처럼 integrity로만 샌다.</summary>
+    [Optional] public ShaftGlandTuning? ShaftGland { get; set; }
+}
+
+/// <summary>펌프 베어링 (WTR-02). 기름 잔의 기름은 저항(drag)을 줄이고, 뚜껑 볼트가 풀린 채 돌면 기름이 새고 빨리 닳는다.</summary>
+public sealed class PumpBearingTuning
+{
+    /// <summary>기름 잔이 차 있을 때(lube 1) 줄어드는 저항의 비율. 실제 저항 = drag × (1 − 이 값 × lube).</summary>
+    public double LubeDragCut { get; set; }
+    /// <summary>뚜껑이 닫혀 있는데 볼트가 하나라도 풀려 있을 때 베어링 wear 배율 (기름이 샌다).</summary>
+    public double LooseCapWearMultiplier { get; set; }
+}
+
+/// <summary>송풍 팬 (AIR-01).</summary>
+public sealed class FanTuning
+{
+    /// <summary>C2에 전기가 오는데 날개가 멎어 있을 때(구속) 전동기에 드는 열 (W). 만지면 따뜻하다.</summary>
+    public double StallHeatW { get; set; }
+}
+
+/// <summary>흡수통 (AIR-02). 상태는 부품 scrubber.canister의 상태 값 clamp1Open, clamp2Open, lidOpen, present.</summary>
+public sealed class ScrubberTuning
+{
+    /// <summary>죔쇠가 하나라도 열려 있으면 공기가 흡수제를 비켜 가서 흡수가 이 배율로 준다.</summary>
+    public double BypassAbsorption { get; set; }
 }
 
 /// <summary>손 수리 동작의 수치 (M1). 손동작 하나가 명령 하나다.</summary>
@@ -301,4 +336,31 @@ public sealed class RandomFaultTuning
     public double DepthReferenceM { get; set; }
     /// <summary>발생률 배율에 더하는 wear 가중 = 1 + wearGain × wear.</summary>
     public double WearGain { get; set; }
+}
+
+/// <summary>
+/// 축 패킹 누름판 (HUL-03, data/tuning/hull.json). 누름판 너트 A, B의 칸 수가 새는 양과 마찰열을 정한다.
+/// 누수 배율 g = clamp(1 − leakPerNotch × (A + B − nominalNotches), minFactor, maxFactor).
+/// 열의 목표 = ambientC + 축 속도 × (riseC + overTightRiseC × max(0, A + B − overTightFrom)²) × (1 + |A − B| ÷ 2) × (누름판이 비뚤면 cockedFactor).
+/// 열은 목표를 향해 초당 relaxPerSecond의 비율로 다가가고, burnC를 넘으면 패킹이 타서 integrity가 준다.
+/// </summary>
+public sealed class ShaftGlandTuning
+{
+    public double NominalNotches { get; set; }
+    public double LeakPerNotch { get; set; }
+    public double MinFactor { get; set; }
+    public double MaxFactor { get; set; }
+    /// <summary>축이 서 있을 때의 패킹 상자 온도 (°C). 축 패킹 부품의 heat 초기값과 같아야 한다.</summary>
+    public double AmbientC { get; set; }
+    /// <summary>제대로 조인 패킹이 전속(스로틀 1)으로 돌 때 오르는 온도.</summary>
+    public double RiseC { get; set; }
+    public double OverTightFrom { get; set; }
+    public double OverTightRiseC { get; set; }
+    public double CockedFactor { get; set; }
+    public double RelaxPerSecond { get; set; }
+    public double BurnC { get; set; }
+    public double BurnIntegrityPerSecond { get; set; }
+    /// <summary>끽끽 소리(계속 나는 소음): 축이 돌고 열이 squealFromC를 넘으면 오르기 시작해 burnC에서 squealNoise.</summary>
+    public double SquealFromC { get; set; }
+    public double SquealNoise { get; set; }
 }

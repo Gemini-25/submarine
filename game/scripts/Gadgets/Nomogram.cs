@@ -86,8 +86,8 @@ public partial class Nomogram : Node3D
         mk.Torus(ArtMat.RedInk, Kit.AlongAxis(Vector3.Back, new Vector3(0, 0, 0.0052f)), 0.005f, 0.0008f, 16, 4);
         mk.Instance(_mark, "Ring", GeometryInstance3D.ShadowCastingSetting.Off);
 
-        _pinA = Pin("gadget.nomogram.end.a", "도표 자 왼쪽 끝", true);
-        _pinB = Pin("gadget.nomogram.end.b", "도표 자 오른쪽 끝", false);
+        _pinA = Pin("gadget.nomogram.end.a", "도표 자 왼쪽 핀", true);
+        _pinB = Pin("gadget.nomogram.end.b", "도표 자 오른쪽 핀", false);
     }
 
     Node3D Pin(string id, string label, bool a)

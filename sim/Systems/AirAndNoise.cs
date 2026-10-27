@@ -1,5 +1,6 @@
 using DeepLine.Sim.Core;
 using DeepLine.Sim.Faults;
+using DeepLine.Sim.Parts;
 
 namespace DeepLine.Sim.Systems;
 
@@ -22,9 +23,10 @@ static class AirSystem
         air.Co2 += a.PersonCo2PerMin * min;
         var canister = w.Part("scrubber.canister");
         double saturation = canister.Get("saturation");
-        if (fan && saturation < 1)
+        double flow = ScrubberFlow(w);
+        if (fan && saturation < 1 && flow > 0)
         {
-            double absorb = Math.Min(a.ScrubCo2PerMin * min, Math.Max(0, air.Co2 - a.Co2FloorPct));
+            double absorb = Math.Min(a.ScrubCo2PerMin * flow * min, Math.Max(0, air.Co2 - a.Co2FloorPct));
             absorb = Math.Min(absorb, (1 - saturation) * a.CanisterCapacityPct);
             air.Co2 -= absorb;
             saturation += absorb / a.CanisterCapacityPct;
@@ -39,6 +41,8 @@ static class AirSystem
                 canister.Set("saturation", saturation);
             }
         }
+
+        StalledMotorHeat(w);
 
         air.O2 -= a.PersonO2PerMin * min;
         if (air.CandleRemaining > 0)
@@ -59,6 +63,33 @@ static class AirSystem
         air.Co2 = Math.Max(0, air.Co2);
         air.Cl2 = Math.Max(0, air.Cl2);
         air.H2 = Math.Max(0, air.H2);
+    }
+
+    /// <summary>
+    /// 멎은 팬의 구속 발열 (M2 WP9). C2에 전기가 오고 장치가 켜져 있는데 날개가 멎어 있으면 전동기에 tuning.fan.stallHeatW가 든다.
+    /// 식는 쪽은 HeatSystem이 이미 한다. tuning.fan이나 팬의 WP9 상태 값(bearingWorn)이 없는 데이터(M0·M1)에서는 아무것도 하지 않는다.
+    /// </summary>
+    static void StalledMotorHeat(SimWorld w)
+    {
+        if (w.T.Fan is not { StallHeatW: > 0 } fan) return;
+        var motor = w.Part("fan.motor");
+        if (!PropRef.Resolve(motor, "bearingWorn").Exists || motor.Get("stalled") < 0.5) return;
+        var ds = w.Devices[w.Fan];
+        var def = w.Data.Devices[w.Fan];
+        if (!DeviceRules.Powered(w, w.Fan) || def.HeatCapacityJPerC <= 0) return;
+        ds.TempC += fan.StallHeatW / def.HeatCapacityJPerC * w.Dt;
+    }
+
+    /// <summary>
+    /// 흡수제를 지나는 공기의 몫 (M2 WP9). 통이 빠졌거나 뚜껑이 열려 있으면 0, 죔쇠가 하나라도 열려 있으면
+    /// tuning.scrubber.bypassAbsorption, 아니면 1. 흡수통의 상태 값이 없는 데이터(M0·M1)에서는 늘 1이다.
+    /// </summary>
+    public static double ScrubberFlow(SimWorld w)
+    {
+        var canister = w.Part("scrubber.canister");
+        if (PropRef.Resolve(canister, "present").Get(1) < 0.5 || PropRef.Resolve(canister, "lidOpen").Get(0) >= 0.5) return 0;
+        bool bypass = PropRef.Resolve(canister, "clamp1Open").Get(0) >= 0.5 || PropRef.Resolve(canister, "clamp2Open").Get(0) >= 0.5;
+        return bypass ? w.T.Scrubber?.BypassAbsorption ?? 1 : 1;
     }
 
     public static bool LightCandle(SimWorld w)
@@ -89,6 +120,7 @@ static class NoiseSystem
             if (w.Data.Devices[d].Kind == Data.DeviceKind.Throttle) level *= ds.Throttle;
             n += level;
         }
+        n += ShaftGland.SquealNoise(w); // 축 패킹을 너무 조이면 끽끽 소리 (M2 HUL-03)
 
         var actions = w.Noise.Actions;
         for (int i = actions.Count - 1; i >= 0; i--)

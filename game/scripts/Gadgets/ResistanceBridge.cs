@@ -47,6 +47,8 @@ public partial class ResistanceBridge : Node3D
     public double Target { get; private set; }
     /// <summary>바늘이 지금 가리키는 편향(감쇠한 값).</summary>
     public float Needle { get; private set; }
+    /// <summary>검류계 (배치가 지은 계기). 없으면 null.</summary>
+    public KitGauge? Gauge => _gauge;
 
     GadgetHost _host = null!;
     KitGauge? _gauge;
@@ -77,6 +79,9 @@ public partial class ResistanceBridge : Node3D
         desk.AddChild(b);
         b._host = host;
         b._gauge = desk.GetNodeOrNull<KitGauge>("Dial/Gauge");
+        // 배치는 검류계를 위로 눕히며 눈금판 위쪽을 책상 앞(−Z)으로 두었다. 책상 앞에 선 사람에게는 거꾸로 보이고
+        // 편향 +가 왼쪽으로 간다. 받침을 돌려 눈금판 위쪽이 사람에게서 먼 쪽(+Z), 오른쪽(+X)이 사람의 오른쪽(−X)을 보게 한다.
+        if (b._gauge?.GetParent() is Node3D mount) mount.RotationDegrees = new Vector3(-90, 180, 0);
         b.Make();
         host.OnUpdate((_, dt) => b.Tick(dt));
         return b;

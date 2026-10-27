@@ -1,5 +1,4 @@
 using DeepLine.Game.Interaction;
-using DeepLine.Sim.Core;
 using Godot;
 using Lib = DeepLine.Instruments;
 
@@ -8,32 +7,20 @@ namespace DeepLine.Game.Testing;
 /// <summary>
 /// 계산 도구 확인 묶음 instruments (M2 WP22, 설계 시험 계획). 장치 앞에 서서 겨냥하고 손동작만으로:
 /// 계산기 123456 × 789와 나눗셈 하나가 정확하고, 계산자가 1% 안, 도표가 공식의 3% 안, 브리지가 다이얼 한 칸 안에서 평형이다.
-/// 계산기 손잡이는 한 바퀴마다 noise.emit을 보내고, 시뮬레이션이 그것을 거부하지 않는다.
+/// 계산기 손잡이는 한 바퀴마다 소음 3을 0.4초 동안 더하고(시뮬레이션의 현재 소음으로 본다), 잡은 채 여러 바퀴 돌리면 바퀴마다 한 번씩 셈한다.
+/// 브리지 검류계의 바늘은 편향 +일 때 책상 앞에 선 사람의 오른쪽으로 간다.
 /// </summary>
 public partial class AutoPlayer
 {
-    int _noiseRejected;
-
     async Task InstrumentsSuite()
     {
         if (Snap.Tick != 0) _main.Restart();
-        _main.Runner.EventRaised += CountNoiseRejections;
-        try
-        {
-            await CalculatorChecks();
-            await SlideRuleChecks();
-            await NomogramChecks();
-            await BridgeChecks();
-        }
-        finally
-        {
-            _main.Runner.EventRaised -= CountNoiseRejections;
-        }
-    }
-
-    void CountNoiseRejections(SimEvent e)
-    {
-        if (e.Kind == SimEventKind.CommandRejected && e.Subject.StartsWith("noise.", StringComparison.Ordinal)) _noiseRejected++;
+        await CalculatorChecks();
+        await SlideRuleChecks();
+        await NomogramChecks();
+        await BridgeChecks();
+        // 브리지 확인이 분기함을 적셨으므로 처음 상태로 되돌린다.
+        _main.Restart();
     }
 
     StandPoints.Stand Stand(string name) => StandPoints.All.First(s => s.Name == name);
@@ -102,10 +89,52 @@ public partial class AutoPlayer
         Check(calc.Machine.BellCount - bells == scratch.BellCount, $"나눗셈에서 벨이 {calc.Machine.BellCount - bells}번 울렸다 (기대 {scratch.BellCount})");
         GD.Print($"AUTOTEST: 계산기 1234 ÷ 65 = 0.001 × {calc.Machine.Counter}, 나머지 {calc.Machine.Result} (벨 {scratch.BellCount}번)");
 
-        // 손잡이의 소음 명령이 시뮬레이션에 닿는다.
-        Step(0.2);
-        Check(_noiseRejected == 0, $"손잡이의 noise.emit이 {_noiseRejected}번 거부되었다");
+        // 손잡이의 소음이 시뮬레이션에 닿는다: 한 바퀴에 소음 3이 0.4초 동안 더해진다.
+        Step(0.5);
+        double n0 = Snap.NoiseCurrent;
+        await Crank(st, true);
+        Step(1.0 / Data.Tuning.TicksPerSecond);
+        Check(Math.Abs(Snap.NoiseCurrent - n0 - Gadgets.DeskCalculator.CrankNoise) < 1e-6,
+            $"손잡이 한 바퀴의 소음 {Gadgets.DeskCalculator.CrankNoise}이 sim에 들어가지 않았다 (현재 소음 {n0} → {Snap.NoiseCurrent})");
+        Step(Gadgets.DeskCalculator.CrankNoiseSeconds + 0.1);
+        Check(Math.Abs(Snap.NoiseCurrent - n0) < 1e-6, $"{Gadgets.DeskCalculator.CrankNoiseSeconds}초가 지났는데 손잡이 소음이 남아 있다 ({Snap.NoiseCurrent})");
+
+        // Wheel: 한 번 잡은 채 여러 바퀴, 잡은 채 방향 바꾸기.
         await CalcStep(st, new Lib.CalcAction(Lib.CalcStep.ClearAll));
+        await CalcStep(st, new Lib.CalcAction(Lib.CalcStep.Set, 7));
+        int t0 = calc.CrankTurns;
+        await CrankHeld(st, 3 + 15.0 / 360);
+        Check(calc.CrankTurns - t0 == 3 && calc.Machine.Result == 21, $"손잡이를 한 번 잡고 세 바퀴 돌렸는데 {calc.CrankTurns - t0}번 돌았다 (결과 창 {calc.Machine.Result})");
+        await CrankHeld(st, 1, -2);
+        Check(calc.Machine.Result == 14, $"잡은 채 방향을 바꿨는데 더하기와 빼기가 맞지 않는다 (결과 창 {calc.Machine.Result}, 기대 14)");
+        await CalcStep(st, new Lib.CalcAction(Lib.CalcStep.ClearAll));
+    }
+
+    /// <summary>손잡이를 한 번 잡은 채 이어서 원을 그린다. 바퀴 수가 +면 앞으로(시계 방향), −면 뒤로.</summary>
+    async Task CrankHeld(StandPoints.Stand st, params double[] turns)
+    {
+        var it = await Aim(st, "gadget.calculator.crank");
+        if (it == null) return;
+        var hands = _main.Hands;
+        hands.PointerDown(it);
+        float r = InteractionController.RotateRadius;
+        double angle = 0;
+        var prev = Vector2.Zero;
+        void MoveTo(double a)
+        {
+            var pt = new Vector2(Mathf.Cos((float)a), -Mathf.Sin((float)a)) * r;
+            hands.PointerMove(pt - prev);
+            prev = pt;
+        }
+        MoveTo(angle);
+        foreach (double t in turns)
+        {
+            // 시계 방향(앞으로)은 화면에서 각이 줄어드는 쪽이다. 한 걸음에 15도씩.
+            int steps = (int)Math.Round(Math.Abs(t) * 24);
+            double d = -Math.Sign(t) * Math.Tau / 24;
+            for (int k = 0; k < steps; k++) MoveTo(angle += d);
+        }
+        hands.PointerUp();
     }
 
     async Task CalcStep(StandPoints.Stand st, Lib.CalcAction a)
@@ -193,24 +222,28 @@ public partial class AutoPlayer
             GD.Print($"AUTOTEST: 계산자 {what} → D {got:F3} (참값 {m:F4})");
         }
 
-        // 곱하기 2.4 × 3.7: 커서를 D의 2.4에, C의 1을 커서에, 커서를 C의 3.7에.
+        // 교범 09쪽의 세 셈. 슬라이드는 계산기 몸통에 닿는 끝(SlideMin)보다 왼쪽으로 가지 않는다.
+        // 곱하기 2.4 × 3.7: 커서를 D의 2.4에, C의 왼쪽 1을 커서에, 커서를 C의 3.7에.
         await Cursor(P(2.4));
         await Slide(rule.Cursor);
-        if (rule.Slide + P(3.7) > 1) await Slide(rule.Cursor - 1);
         await Cursor(rule.Slide + P(3.7));
         Expect("2.4 × 3.7", rule.D, 2.4 * 3.7);
 
-        // 나누기 120 ÷ 62: 커서를 D의 1.2에, C의 6.2를 커서 아래로, 커서를 몸체 위의 기준으로.
-        await Cursor(P(1.2));
-        await Slide(rule.Cursor - P(6.2));
-        await Cursor(rule.Slide < 0 ? rule.Slide + 1 : rule.Slide);
-        Expect("120 ÷ 62", rule.D, 120.0 / 62);
+        // CI 곱하기 4 × 3.7 (곱이 10을 넘는다): 커서를 D의 4에, CI의 3.7을 커서 아래로, 커서를 C의 왼쪽 1에.
+        await Cursor(P(4));
+        await Slide(rule.Cursor - (1 - P(3.7)));
+        await Cursor(rule.Slide);
+        Expect("4 × 3.7 (CI)", rule.D, 4 * 3.7);
 
-        // CI 곱하기 2.5 × 3.2: 커서를 D의 2.5에, CI의 3.2를 커서 아래로, 커서를 기준으로.
-        await Cursor(P(2.5));
-        await Slide(rule.Cursor - (1 - P(3.2)));
-        await Cursor(rule.Slide < 0 ? rule.Slide + 1 : rule.Slide);
-        Expect("2.5 × 3.2 (CI)", rule.D, 2.5 * 3.2);
+        // 나누기 120 ÷ 62: C의 왼쪽 1을 D의 1.2에, 커서를 CI의 6.2에.
+        await Slide(P(1.2));
+        await Cursor(rule.Slide + (1 - P(6.2)));
+        Expect("120 ÷ 62 (CI)", rule.D, 120.0 / 62);
+
+        // 슬라이드를 왼쪽 끝 너머로 끌어도 계산기 몸통을 뚫지 않는다.
+        await Cursor(0);
+        await Slide(-1);
+        Check(rule.Slide >= Gadgets.SlideRule.SlideMin - 1e-9, $"슬라이드가 계산기 몸통 쪽으로 {rule.Slide:F3}까지 빠졌다");
 
         await Slide(0);
         await Cursor(0);
@@ -237,7 +270,15 @@ public partial class AutoPlayer
             var (l, r, what) = cases[page];
             await MovePin(st, "gadget.nomogram.end.a", () => nomo.EndA, chart.Left.Point(l));
             await MovePin(st, "gadget.nomogram.end.b", () => nomo.EndB, chart.Right.Point(r));
-            double want = chart.Solve(l, r), got = nomo.Reading;
+            // 기대값은 장치의 도표가 아니라 게임 데이터의 공식으로 따로 셈한다(튜닝을 잘못 이어도 잡히게).
+            var tu = Data.Tuning;
+            double want = page switch
+            {
+                0 => 60 * tu.Water.LeakK * r * Math.Sqrt(l),
+                1 => l / r,
+                _ => (tu.Water.BatterySubmergeStartL - l) / r,
+            };
+            double got = nomo.Reading;
             Check(Math.Abs(got / want - 1) <= 0.03, $"도표 '{chart.Title}' {what}: {got:F3} (공식 {want:F3}, 3% 안)");
             GD.Print($"AUTOTEST: 도표 '{chart.Title}' {what} → {got:F3}{chart.Middle.Unit} (공식 {want:F3})");
         }
@@ -260,25 +301,29 @@ public partial class AutoPlayer
         var bridge = Sub.Bridge;
         if (!await StandAt(st)) return;
 
+        // 검류계 바늘의 방향: 다이얼이 0000이면 편향이 +이고, 바늘은 책상 앞에 선 사람의 오른쪽(세계 −X)으로 간다.
+        await CheckGaugeDirection(st);
+
         // 시험 A: 상자 안의 고정 저항.
         await BalanceBridge(st, 0);
 
-        // 스위치를 내린 회로의 분기함 절연. 다 올라가 있으면 하나를 내렸다가 끝에 올린다.
+        // 스위치를 내린 회로의 분기함 절연. 다 올라가 있으면 하나를 내린다(끝에 다시 시작해 되돌린다).
         int c = Snap.Circuits.ToList().FindIndex(x => !x.SwitchOn);
-        string? restore = null;
         if (c < 0)
         {
             c = Snap.Circuits.Count - 1;
-            restore = Snap.Circuits[c].Id;
-            await Perform($"switch.{restore}.off");
+            await Perform($"switch.{Snap.Circuits[c].Id}.off");
             Step(HandSeconds);
             if (!await StandAt(st)) return;
         }
         string circuit = Snap.Circuits[c].Id;
         int lead = Array.FindIndex(Gadgets.ResistanceBridge.Leads, x => x.Target == $"insulation.{circuit}");
+        var insulation = Data.Measure!.Bridge.InsulationMOhm;
+
+        // 마른 분기함: 교범대로 ×1M에서 읽히고 '마름' 기준을 넘는다.
         await BalanceBridge(st, lead);
-        double mohm = _main.Runner.Sim.Measure("bridge", $"insulation.{circuit}");
-        Check(Math.Abs(bridge.Rx - mohm * 1e6) < 1e-6 * mohm * 1e6, $"브리지가 읽는 {circuit} 절연 {bridge.Rx}Ω, Measure {mohm}MΩ");
+        Check(bridge.Dials.Range == 2 && bridge.Rx > insulation[2][1] * 1e6,
+            $"마른 분기함 {circuit}이 교범대로 ×1M에서 {insulation[2][1]}MΩ 넘게 읽히지 않는다 ({bridge.Rx:G4}Ω, 범위 {bridge.Dials.Range})");
 
         // 살아 있는 회로의 절연은 읽히지 않는다: 바늘이 떤다(NaN).
         int live = Snap.Circuits.ToList().FindIndex(x => x.SwitchOn);
@@ -287,12 +332,46 @@ public partial class AutoPlayer
             await DialAt(st, "bridge.lead", Array.FindIndex(Gadgets.ResistanceBridge.Leads, x => x.Target == $"insulation.{Snap.Circuits[live].Id}") - bridge.Lead);
             Check(double.IsNaN(await Press(st)), $"살아 있는 {Snap.Circuits[live].Id}의 절연을 눌러 쟀는데 바늘이 떨지 않는다");
         }
-        if (restore != null)
-        {
-            await Perform($"switch.{restore}.on");
-            Step(HandSeconds);
-        }
+
+        // 젖은 분기함 (ELC-03, 습기 0.9): 다이얼 칸에 떨어지지 않는 값을 ×1k로 재고, 교범의 젖음 기준 아래로 읽는다.
+        _main.Runner.Sim.Inject("ELC-03", $"junction.{circuit}", new Dictionary<string, double> { ["moisture"] = 0.9 });
+        Step(1.0 / Data.Tuning.TicksPerSecond);
+        await BalanceBridge(st, lead);
+        Check(bridge.Dials.Range == 1, $"젖은 분기함을 ×1k 범위 키로 재지 않았다 (범위 {bridge.Dials.Range})");
+        Check(bridge.Rx < insulation[4][1] * 1e6, $"젖은 분기함이 교범의 젖음 기준({insulation[4][1]}MΩ) 아래로 읽히지 않는다 ({bridge.Rx:G4}Ω)");
+
+        // 케이블 단자: 이어지지 않아 다이얼을 끝까지 올려도 바늘이 오른쪽 끝에 붙는다.
+        await DialAt(st, "bridge.lead", Gadgets.ResistanceBridge.Leads.Length - 1 - bridge.Lead);
+        await ClickAt(st, "gadget.bridge.range.3");
+        for (int i = 0; i < bridge.Dials.Decades; i++)
+            await DialAt(st, $"gadget.bridge.dial.{i + 1}", 9 - bridge.Dials.Dial(i));
+        double cable = await Press(st);
+        Check(cable > 0.99, $"이어지지 않은 케이블 단자에서 바늘이 오른쪽 끝에 붙지 않는다 ({cable:F3})");
         await DialAt(st, "bridge.lead", -bridge.Lead);
+    }
+
+    /// <summary>시험 A, 다이얼 0000에서 누름 키를 누르고 있는 동안 바늘 끝이 사람의 오른쪽(세계 −X)에 선다.</summary>
+    async Task CheckGaugeDirection(StandPoints.Stand st)
+    {
+        var bridge = Sub.Bridge;
+        Check(bridge.Gauge != null, "브리지가 검류계(배치의 CommDesk/Dial/Gauge)를 찾지 못했다");
+        if (bridge.Gauge == null) return;
+        await DialAt(st, "bridge.lead", -bridge.Lead);
+        for (int i = 0; i < bridge.Dials.Decades; i++)
+            await DialAt(st, $"gadget.bridge.dial.{i + 1}", -bridge.Dials.Dial(i));
+        var key = await Aim(st, "gadget.bridge.key");
+        if (key == null) return;
+        _main.Hands.PointerDown(key);
+        await ToSignal(GetTree().CreateTimer(0.6), SceneTreeTimer.SignalName.Timeout);
+        var needle = bridge.Gauge.Needle;
+        var axis = needle.GlobalPosition;
+        var tip = needle.GlobalTransform * new Vector3(0, 0.03f, 0);
+        var cam = _main.Player.Camera;
+        bool right = cam.UnprojectPosition(tip).X > cam.UnprojectPosition(axis).X;
+        Check(bridge.Target > 0.5 && tip.X < axis.X && right,
+            $"다이얼 0000에서 편향 {bridge.Target:F2}인데 바늘 끝이 사람의 오른쪽에 있지 않다 (축 x {axis.X:F3}, 끝 x {tip.X:F3}, 화면 오른쪽 {right})");
+        _main.Hands.PointerUp();
+        await Frame(2);
     }
 
     /// <summary>리드를 고르고, 교범 순서로 범위 키와 다이얼을 맞춘 뒤 누름 키로 평형을 본다.</summary>

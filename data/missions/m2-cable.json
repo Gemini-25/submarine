@@ -1,0 +1,30 @@
+{
+  "name": "단독 훈련: 케이블 장비",
+  "briefing": [
+    "모선 아르고스호 → 모스호 기관사. 수심 300m 정박 훈련. 후방 윈치에 시험 하중 180kg을 매달아 두었다.",
+    "윈치 브레이크가 하중을 잡는지, 전방 통신 책상의 사이펀 기록기가 시험 신호를 제대로 그리는지 확인하고, 이상이 있으면 교범을 보고 고칠 것. 기록기는 시험 키로 시험한다.",
+    "줄이 다 풀리면 하중을 잃는다. 두 장비를 정상으로 되돌린 뒤 멈춤쇠를 풀고 조종 레버를 멈춤에 두어 하중을 1분 동안 잡아 두면 훈련을 마친다."
+  ],
+  "seed": 1515,
+  "setup": {
+    "depthM": 300,
+    "parts": [
+      { "part": "winch.drum", "prop": "load", "value": 180 },
+      { "part": "winch.drum", "prop": "lineOut", "value": 30 }
+    ]
+  },
+  "events": [
+    { "atSeconds": 0, "fault": "CBL-01" },
+    { "atSeconds": 0, "fault": "CBL-02" }
+  ],
+  "success": {
+    "assert": "part.winch.drum.prop.load > 0 && part.winch.drum.prop.control == 1 && part.winch.drum.prop.slip == 0 && part.winch.pawl.prop.engaged == 0 && part.winch.brake.prop.present == 1 && part.winch.brake.prop.lining > 0.9 && part.winch.brake.prop.adjust >= 6 && part.winch.brake.prop.adjust <= 8 && part.winch.brake.prop.coverOpen == 0 && part.winch.brake.prop.bolt1 == 1 && part.winch.brake.prop.bolt2 == 1 && part.siphon.pen.prop.clog < 0.1 && part.siphon.pen.prop.ink > 0.5 && part.siphon.pen.prop.primed == 1 && part.siphon.pen.prop.armUp == 0",
+    "holdSeconds": 60,
+    "objectives": [
+      "조종 레버를 멈춤에 두면 윈치 브레이크가 시험 하중을 잡게 한다",
+      "사이펀 기록기가 시험 신호를 끊김 없이 그리게 한다",
+      "멈춤쇠를 푼 채 하중을 1분 동안 잡아 둔다"
+    ]
+  },
+  "timeLimitSeconds": 1500
+}

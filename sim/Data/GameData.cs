@@ -262,7 +262,7 @@ public sealed partial class GameData
     }
     /// <summary>
     /// 누수 지점의 부품 정의: partTemplate 위에 kindTemplates[kind]를 얹는다. props와 wearCurves는 종류 쪽이 이기고,
-    /// 타이머와 바다 경로는 이어 붙이고, wearPerSecond는 종류 쪽이 0이 아닐 때, wearFault는 종류 쪽이 있을 때 종류 쪽이다.
+    /// 타이머, 바다 경로, visible은 이어 붙이고, wearPerSecond는 종류 쪽이 0이 아닐 때, wearFault는 종류 쪽이 있을 때 종류 쪽이다.
     /// </summary>
     static PartDef LeakPart(HullFile hull, LeakPointDef leak)
     {
@@ -278,6 +278,7 @@ public sealed partial class GameData
             WearCurves = new SortedDictionary<string, List<double[]>>(t.WearCurves, StringComparer.Ordinal),
             Timers = t.Timers.ToList(),
             SeaPaths = t.SeaPaths.ToList(),
+            Visible = t.Visible.ToList(),
         };
         if (!hull.KindTemplates.TryGetValue(leak.Kind, out var k)) return part;
         if (k.WearPerSecond != 0) part.WearPerSecond = k.WearPerSecond;
@@ -287,6 +288,7 @@ public sealed partial class GameData
         foreach (var (name, c) in k.WearCurves) part.WearCurves[name] = c;
         part.Timers.AddRange(k.Timers);
         part.SeaPaths.AddRange(k.SeaPaths);
+        part.Visible.AddRange(k.Visible.Where(v => !part.Visible.Contains(v)));
         return part;
     }
 

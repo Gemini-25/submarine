@@ -1,0 +1,205 @@
+{
+  "proc.fan.spin": {
+    "title": "팬을 손으로 돌려 기동",
+    "fault": "AIR-01",
+    "grade": "temporary",
+    "steps": [
+      {
+        "type": "Inspect",
+        "text": "팬 소리가 없고 보호망의 종이 리본이 늘어져 있다. 산소 화로 점화기 창이 붉게 빛나면 C2에 전기가 온다. 퓨즈가 아니라 팬이 멎은 것이다."
+      },
+      {
+        "type": "Open",
+        "text": "빈손으로 보호망의 나비 너트 두 개를 반시계 방향으로 돌려 푼다.",
+        "cmd": "fan.guard.nut.{n}.loosen",
+        "tool": "hand",
+        "repeat": 2
+      },
+      {
+        "type": "Open",
+        "text": "보호망을 아래로 내려 연다.",
+        "cmd": "fan.guard.open",
+        "tool": "hand"
+      },
+      {
+        "type": "Work",
+        "text": "날개 끝을 잡고 한 바퀴 힘껏 돌린 뒤 손을 뗀다. 전동기가 이어받아 돌기 시작한다.",
+        "cmd": "fan.blades.spin",
+        "tool": "hand",
+        "requires": "C2 스위치가 올라가 있을 것. 날개가 멎어 있을 것",
+        "hazard": "도는 날개에 손을 대면 끼인다."
+      },
+      {
+        "type": "Close",
+        "text": "보호망을 올려 닫는다.",
+        "cmd": "fan.guard.close",
+        "tool": "hand"
+      },
+      {
+        "type": "Fasten",
+        "text": "나비 너트 두 개를 시계 방향으로 돌려 조인다.",
+        "cmd": "fan.guard.nut.{n}.tighten",
+        "tool": "hand",
+        "repeat": 2
+      },
+      {
+        "type": "Test",
+        "text": "팬 소리가 돌아오고 종이 리본이 바람에 날리는지 본다. 이산화탄소 계기가 내려가기 시작한다."
+      }
+    ]
+  },
+  "proc.fan.bearing": {
+    "title": "팬 베어링 교체",
+    "fault": "AIR-01",
+    "grade": "proper",
+    "steps": [
+      {
+        "type": "Inspect",
+        "text": "팬 소리가 없고 보호망의 종이 리본이 늘어져 있다. 산소 화로 점화기 창이 붉게 빛나고 C2 부하 단자에 약 120V가 걸리면 퓨즈가 아니라 팬이다.",
+        "tool": "voltmeter"
+      },
+      {
+        "type": "Isolate",
+        "text": "배전반에서 C2 칼날 스위치를 내린다. 산소 화로 점화기도 함께 꺼진다.",
+        "cmd": "switch.C2.off",
+        "tool": "hand",
+        "requires": "없음",
+        "hazard": "스위치를 내리지 않고 베어링을 빼거나 넣으면 감전된다."
+      },
+      {
+        "type": "Open",
+        "text": "빈손으로 보호망의 나비 너트 두 개를 반시계 방향으로 돌려 푼다.",
+        "cmd": "fan.guard.nut.{n}.loosen",
+        "tool": "hand",
+        "repeat": 2
+      },
+      {
+        "type": "Open",
+        "text": "보호망을 아래로 내려 연다.",
+        "cmd": "fan.guard.open",
+        "tool": "hand"
+      },
+      {
+        "type": "Remove",
+        "text": "렌치로 날개 한가운데의 허브 너트를 푼다.",
+        "cmd": "fan.hub.loosen",
+        "tool": "wrench",
+        "requires": "팬이 멎어 있을 것",
+        "hazard": "도는 허브에 렌치를 대면 손이 끼인다."
+      },
+      {
+        "type": "Remove",
+        "text": "날개를 잡고 베어링째 축에서 뽑아낸다.",
+        "cmd": "fan.bearing.pull",
+        "tool": "hand",
+        "requires": "C2 스위치가 내려가 있을 것",
+        "hazard": "전동기 단자가 살아 있으면 감전된다. 팬이 돌고 있으면 손이 끼인다."
+      },
+      {
+        "type": "Remove",
+        "text": "날개에서 닳은 베어링을 빼어 폐기함에 버린다.",
+        "cmd": "hand.drop"
+      },
+      {
+        "type": "Install",
+        "text": "후방 예비품 사물함에서 새 팬 베어링을 꺼낸다.",
+        "cmd": "locker.take.fan_bearing"
+      },
+      {
+        "type": "Install",
+        "text": "새 베어링을 날개에 끼워 축에 끝까지 밀어 넣는다.",
+        "cmd": "fan.bearing.insert",
+        "requires": "C2 스위치가 내려가 있을 것",
+        "hazard": "전동기 단자가 살아 있으면 감전된다."
+      },
+      {
+        "type": "Fasten",
+        "text": "허브 너트를 렌치로 끝까지 조인다. 풀린 채 두면 허브가 덜걱거리다 약 5분 뒤 팬이 다시 멎는다.",
+        "cmd": "fan.hub.tighten",
+        "tool": "wrench",
+        "requires": "C2 스위치가 내려가 있을 것",
+        "hazard": "도는 허브에 렌치를 대면 손이 끼인다."
+      },
+      {
+        "type": "Close",
+        "text": "보호망을 올려 닫는다.",
+        "cmd": "fan.guard.close",
+        "tool": "hand"
+      },
+      {
+        "type": "Fasten",
+        "text": "나비 너트 두 개를 시계 방향으로 돌려 조인다.",
+        "cmd": "fan.guard.nut.{n}.tighten",
+        "tool": "hand",
+        "repeat": 2
+      },
+      {
+        "type": "Test",
+        "text": "C2 스위치를 올린다. 팬 소리가 돌아오고 종이 리본이 바람에 날리는지 본다. 이산화탄소 계기가 내려가기 시작한다.",
+        "cmd": "switch.C2.on"
+      }
+    ]
+  },
+  "proc.canister.replace": {
+    "title": "흡수통 교체",
+    "fault": "AIR-02",
+    "grade": "proper",
+    "steps": [
+      {
+        "type": "Inspect",
+        "text": "팬이 돌고 종이 리본이 날리는데 이산화탄소가 오른다. 흡수통 지시약 창이 흰색에서 보라색으로 변했으면 흡수제가 다 찬 것이다."
+      },
+      {
+        "type": "Open",
+        "text": "뚜껑의 죔쇠 두 개를 위로 젖혀 연다.",
+        "cmd": "scrubber.clamp.{n}.open",
+        "tool": "hand",
+        "repeat": 2
+      },
+      {
+        "type": "Open",
+        "text": "뚜껑을 들어 올린다.",
+        "cmd": "scrubber.lid.open",
+        "tool": "hand"
+      },
+      {
+        "type": "Remove",
+        "text": "다 쓴 흡수제 통을 두 손으로 들어낸다. 무거워서 도구를 함께 쥘 수 없다.",
+        "cmd": "scrubber.canister.pull",
+        "tool": "hand"
+      },
+      {
+        "type": "Remove",
+        "text": "다 쓴 통을 폐기함에 버린다.",
+        "cmd": "hand.drop"
+      },
+      {
+        "type": "Install",
+        "text": "중앙 사물함 옆, 폐기함 앞 바닥 받침에서 새 흡수제 통을 두 손으로 꺼낸다.",
+        "cmd": "locker.take.canister"
+      },
+      {
+        "type": "Install",
+        "text": "새 통을 자리에 끝까지 내려 앉힌다.",
+        "cmd": "scrubber.canister.insert"
+      },
+      {
+        "type": "Close",
+        "text": "뚜껑을 내려 닫는다.",
+        "cmd": "scrubber.lid.close",
+        "tool": "hand"
+      },
+      {
+        "type": "Fasten",
+        "text": "죔쇠 두 개를 모두 아래로 눌러 잠근다. 하나라도 열려 있으면 공기가 흡수제를 비켜 가서 흡수가 크게 준다.",
+        "cmd": "scrubber.clamp.{n}.close",
+        "tool": "hand",
+        "repeat": 2
+      },
+      {
+        "type": "Test",
+        "text": "지시약 창이 흰색인지, 죔쇠 두 개가 모두 눌려 있는지 본다. 팬이 돌면 뚜껑 둘레에서 바람 새는 소리가 나지 않는다. 이산화탄소 계기가 내려가기 시작한다."
+      }
+    ]
+  }
+}

@@ -99,6 +99,8 @@ static class SimQuery
                     "load" => x => QueryValue.Of(x.Devices[d].LoadFactor),
                     "cutout" => x => QueryValue.Of(x.Devices[d].CutOut),
                     "overheated" => x => QueryValue.Of(x.Devices[d].Overheated),
+                    // 전기가 실제로 장비에 가는가: 켜짐, 회로 살아 있음, 버스 전압이 최소 전압 이상, 과열 정지 아님 (DeviceRules.Powered)
+                    "powered" => DevicePowered(w, d),
                     _ => throw Unknown(),
                 };
             }
@@ -112,6 +114,9 @@ static class SimQuery
                     "totalL" => x => QueryValue.Of(x.Water.PumpedOutL),
                     // 펌프가 밀어냈는데 배관에서 되돌아온 양 (역류 소리)
                     "backflow" => x => QueryValue.Of(x.Water.PumpGrossLps - x.Water.PumpNetLps),
+                    // 베어링 저항 (기름 잔이 차 있으면 준 값)과 뚜껑 둘레에서 기름이 새는 곳의 수 (WP10)
+                    "drag" => x => QueryValue.Of(PumpBearing.Drag(x)),
+                    "weep" => x => QueryValue.Of(PumpBearing.Weep(x)),
                     _ => throw Unknown(),
                 };
 
@@ -191,6 +196,9 @@ static class SimQuery
                     "wedge" => x => QueryValue.Of(x.LeakParts[i].Get("wedge")),
                     "shore" => x => QueryValue.Of(x.LeakParts[i].Get("shore")),
                     "caulk" => x => QueryValue.Of(x.LeakParts[i].Get("caulk")),
+                    // 그 지점 부품의 바다 경로(축 패킹을 뽑은 자리 등)로 드는 물, 그리고 누수와의 합 (M2)
+                    "seaInflow" => x => QueryValue.Of(LeakSeaInflow(x, i)),
+                    "totalInflow" => x => QueryValue.Of(x.Leaks[i].InflowLps + LeakSeaInflow(x, i)),
                     _ => throw Unknown(),
                 };
             }
@@ -205,6 +213,7 @@ static class SimQuery
                     "h2" => x => QueryValue.Of(x.Air.H2),
                     "candleSeconds" => x => QueryValue.Of(x.Air.CandleRemaining),
                     "canister" => x => QueryValue.Of(x.Part("scrubber.canister").Get("saturation")),
+                    "scrubberFlow" => x => QueryValue.Of(Systems.AirSystem.ScrubberFlow(x)),
                     _ => throw Unknown(),
                 };
 
@@ -392,9 +401,19 @@ static class SimQuery
                 return x => QueryValue.Of(m(x));
             }
 
+            // 항법 (M2 WP14): 자이로와 항법 계산기의 파생 값. 상태 부품이 없으면 모르는 경로다.
+            case "nav":
+                End(2);
+                return Navigation.Compile(w, At(1)) ?? throw Unknown();
+
             default:
                 throw Unknown();
         }
+    }
+
+    static Func<SimWorld, QueryValue> DevicePowered(SimWorld w, int d)
+    {
+        return x => QueryValue.Of(Systems.DeviceRules.Powered(x, d));
     }
 
     static int IndexOfItem(SimWorld w, string item)
@@ -417,6 +436,17 @@ static class SimQuery
         double sum = 0;
         for (int i = 0; i < w.Cells.Length; i++)
             sum += w.Cells[i].Charge * cap * w.CellParts[i].Get("health");
+        return sum;
+    }
+
+    /// <summary>누수 지점 i의 부품에 달린 바다 경로로 지금 드는 물 (L/s).</summary>
+    static double LeakSeaInflow(SimWorld w, int leak)
+    {
+        if (!w.Mechanics.HasSeaPaths) return 0;
+        double sum = 0;
+        var part = w.LeakParts[leak];
+        foreach (var p in w.Mechanics.SeaPaths)
+            if (ReferenceEquals(p.Part, part)) sum += SeaPaths.Lps(w, p);
         return sum;
     }
 }

@@ -70,13 +70,13 @@ public static class StandPoints
 
         // ── 후방 ──
         new("motor", At(1.75f, 0.2f), false, [ "motor.cover", "motor.cover.bolt.1", "motor.cover.bolt.2" ], None),
-        new("shaft", At(0.3f, -0.2f), true, [ "shaft.follower", "shaft.nut.A", "shaft.nut.B", "shaft.collar" ], None),
+        new("shaft", At(0.3f, -0.2f), true, [ "shaft.follower", "shaft.nut.A", "shaft.nut.B", "shaft.collar", "shaft.packing" ], None),
         new("accumulator", At(2.05f, 0.15f), false,
             [ "steam.stop", "steam.bleed", ..Four("steam.flange.bolt"), "steam.joint" ], [ "hatch.closed" ]),
         new("winch", At(1.45f, 0.25f), false,
-            [ "winch.control", "winch.brake", "winch.pawl", "winch.cover", "winch.cover.bolt.1", "winch.cover.bolt.2", "winch.adjust" ], None),
+            [ "winch.control", "winch.brake", "winch.pawl", "winch.cover", "winch.cover.bolt.1", "winch.cover.bolt.2", "winch.adjust", "winch.lining" ], None),
         new("pump", At(1.0f, -0.3f), false,
-            [ "pump.cap", ..Four("pump.cap.bolt"), "pump.oilcup", "pump.body", "checkvalve.bonnet", ..Four("checkvalve.bolt"), "pump.discharge" ], None),
+            [ "pump.cap", ..Four("pump.cap.bolt"), "pump.bearing", "pump.oilcup", "pump.body", "checkvalve.bonnet", ..Four("checkvalve.bolt"), "pump.discharge" ], None),
         new("locker.aft", At(1.5f, -0.35f), false, World.Submarine.AftShelves.SelectMany(s => s).Select(i => $"locker.{i}").ToArray(), None),
         new("locker.top", At(3.75f, -0.25f), false, World.Submarine.MidUpperShelves.SelectMany(s => s).Select(i => $"locker.{i}").ToArray(), None),
 
@@ -84,8 +84,8 @@ public static class StandPoints
         new("toolboard", At(3.4f, -0.45f), false, Tools(), None),
         new("ballast", At(3.45f, 0.5f), false,
             [ "ballast.fore.flood", "ballast.aft.flood", "ballast.fore.gland", "ballast.aft.gland", "ballast.fore.body", "ballast.aft.body", "pump.suction" ], None),
-        new("scrubber", At(3.05f, -0.35f), false, [ "scrubber.lid", "scrubber.clamp.1", "scrubber.clamp.2" ], None),
-        new("fan", At(3.85f, 0.25f), false, [ "fan.guard", "fan.guard.nut.1", "fan.guard.nut.2", "fan.motor" ], None),
+        new("scrubber", At(3.05f, -0.35f), false, [ "scrubber.lid", "scrubber.clamp.1", "scrubber.clamp.2", "scrubber.canister" ], None),
+        new("fan", At(3.85f, 0.25f), false, [ "fan.guard", "fan.guard.nut.1", "fan.guard.nut.2", "fan.motor", "fan.hub", "fan.bearing", "fan.blades" ], None),
         new("junctions", At(3.65f, 0.5f), true, [ ..Junction("C1"), ..Junction("C2"), ..Junction("C6"), ..Junction("C7") ], None),
         new("furnace", At(4.6f, 0.3f), true, [ "o2.furnace.door", "o2.furnace.latch", "o2.furnace.vent", "candle", "o2.furnace" ], None),
         new("chamber", At(4.0f, 0.65f), false, [ "chamber.hatch", ..Four("chamber.hatch.dog"), "chamber.squeeze" ], None),
@@ -99,7 +99,7 @@ public static class StandPoints
         new("viewport.2", At(7.5f, 0.45f), false, Viewport(2), None),
         new("battery", At(5.7f, 0f), true, Cells(), [ "battery.deck" ]),
         new("navdesk", At(6.0f, -0.35f), false,
-            [ "navcomp.cover", "navcomp.cover.screw.1", "navcomp.cover.screw.2", "navcomp.reset", "navcomp.power",
+            [ "navcomp.cover", "navcomp.cover.screw.1", "navcomp.cover.screw.2", "navcomp.reset", "navcomp.power", "navcomp.gear",
               "gadget.compass", "gadget.calculator", "gadget.sliderule" ], None),
         new("nomogram", At(6.65f, -0.4f), false, [ "gadget.nomogram", "gadget.nomogram.end.a", "gadget.nomogram.end.b" ], None),
         // 계산 도구 (WP22): 탁상 계산기, 계산자, 저항 측정 브리지는 가까이 보는 작업 시점이 따로 있다.
@@ -107,13 +107,14 @@ public static class StandPoints
         new("sliderule", At(6.3f, -0.35f), false, [ "gadget.sliderule", "gadget.sliderule.slide", "gadget.sliderule.cursor" ], None),
         new("bridge", At(6.45f, 0.35f), false,
             [ ..Four("gadget.bridge.dial"), "bridge.lead", "gadget.bridge.range.1", "gadget.bridge.range.2", "gadget.bridge.range.3", "gadget.bridge.key", "gadget.bridge" ], None),
-        new("gyro", At(7.1f, -0.35f), false, [ "gyro.lid", ..Four("gyro.case.screw"), "gyro.switch", "gyro.align", "gyro.case" ], None),
+        new("gyro", At(7.1f, -0.35f), false, [ "gyro.lid", ..Four("gyro.case.screw"), "gyro.switch", "gyro.align", "gyro.case", "gyro.bearing" ], None),
         new("commdesk", At(6.4f, 0.35f), false,
             [ "gadget.bridge", "siphon.ink", "siphon.bulb", "siphon.testkey", "siphon.arm", "siphon.pen", "siphon.tube.1" ], None),
         new("hydrophone", At(6.45f, 0.35f), false,
             [ "hydrophone.door", "hydrophone.door.screw.1", "hydrophone.door.screw.2", "hydrophone", "sonar.tube.1", "gadget.headphones" ], None),
 
         // ── 손이 닿는지만 보는 자리 ──
+        new("canister.stand", At(4.6f, -0.15f), false, [ "locker.canister" ], None, WorkView: false),
         new("strainer.open", At(1.55f, -0.3f), true, [ "strainer.basket" ], [ "strainer.cover" ], WorkView: false),
         new("junction.C8", At(0.3f, -0.2f), false, Junction("C8"), None, WorkView: false),
         new("aft.port", At(2.0f, -0.2f), false, [ "discard.aft", ..Junction("C3") ], None, WorkView: false),
