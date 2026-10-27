@@ -15,8 +15,10 @@
 | `sim/` | 시뮬레이션 코어 `DeepLine.Sim`. 순수 .NET 8, Godot 참조 없음 |
 | `sim.tests/` | xUnit 테스트. 시나리오는 `sim.tests/scenarios/*.json` |
 | `data/` | 튜닝 값과 콘텐츠 (JSON) |
+| `data/fixtures/` | 손이 닿는 장치의 정의 (M2 장치 엔진). 물건 정보는 `data/items.json` |
 | `tools/DeepLine.SimCli/` | 시나리오를 돌려 시계열을 뽑는 개발 도구 |
 | `audio/` | 상태 기반 절차적 소리 합성 라이브러리 `DeepLine.Audio`와 시험 (M5 준비, 아직 게임에 연결 전) |
+| `instruments/` | 선내 계산 도구의 역학 `DeepLine.Instruments` (탁상 계산기, 계산자, 노모그램, 저항 브리지)와 시험. 화면 표시 전용 |
 | `tools/DeepLine.AudioRender/` | 소리 데모를 WAV로 뽑는 도구. 데모는 `docs/reports/audio/` |
 | `docs/drafts/story/` | 이야기 글 초안 (지시서, 결산, 기록물, 거짓 신호, 조난과 결말) |
 | `data/manual/` | 게임 속 정비 교범 (마크다운) |
