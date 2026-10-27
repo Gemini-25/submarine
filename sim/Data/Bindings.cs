@@ -19,7 +19,7 @@ public static class Bindings
     public static readonly IReadOnlyDictionary<string, string[]> Parts = new Dictionary<string, string[]>(StringComparer.Ordinal)
     {
         ["fan.motor"] = new[] { "stalled" },
-        ["pump.intake"] = new[] { "clog" },
+        ["pump.intake"] = new[] { "clog", "coverOpen", "basketOut" },
         ["pump.bearing"] = new[] { "drag" },
         ["pump.check_valve"] = new[] { "stuck" },
         ["scrubber.canister"] = new[] { "saturation" },
@@ -29,7 +29,8 @@ public static class Bindings
     public static readonly IReadOnlyDictionary<string, string[]> PartKinds = new Dictionary<string, string[]>(StringComparer.Ordinal)
     {
         ["cell"] = new[] { "health", "jumpered" },
-        ["fuse"] = new[] { "blown" },
+        ["fuse"] = new[] { "blown", "present" },
+        ["rivet"] = new[] { "integrity", "patchFactor", "patchDurability", "wedge", "shore", "caulk" },
         ["junction"] = new[] { "moisture" },
     };
 
@@ -40,6 +41,10 @@ public static class Bindings
             ["ELC-01"] = ("fuse", "blown", 1),          // 과전류로 퓨즈가 끊길 때
             ["AIR-02"] = ("canister", "saturation", 1), // 흡수통이 스스로 포화될 때
         };
+
+    /// <summary>코드가 이름으로 다루는 도구와 사물함 예비품.</summary>
+    public static readonly IReadOnlyList<string> Tools = Array.AsReadOnly(new[] { "hand", "wrench", "mallet", "caulking_set", "voltmeter", "scrub_brush" });
+    public static readonly IReadOnlyList<string> LockerItems = Array.AsReadOnly(new[] { "fuse", "timber_shore", "wood_wedge" });
 
     /// <summary>상황판 표시등 이름. PanelSystems와 같은 순서.</summary>
     public static readonly IReadOnlyList<string> PanelLamps = Array.AsReadOnly(new[] { "power", "switchboard", "air", "water", "hull", "senses", "nav", "cable" });

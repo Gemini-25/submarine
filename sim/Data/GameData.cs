@@ -29,6 +29,10 @@ public sealed class GameData
     public IReadOnlyList<LeakPointDef> LeakPoints { get; }
     /// <summary>빌지 칸 ID. 칸이 덮는 구역의 앞뒤 순서이고, 이웃한 칸끼리 이어진다.</summary>
     public IReadOnlyList<string> BilgeOrder { get; }
+    public IReadOnlyList<ProcedureDef> Procedures { get; }
+    public IReadOnlyList<MissionDef> Missions { get; }
+    /// <summary>사물함 예비품 ID (서수 순서). 상태 배열의 순서다.</summary>
+    public IReadOnlyList<string> LockerItems { get; }
 
     public GameData(
         Tuning tuning,
@@ -36,9 +40,13 @@ public sealed class GameData
         IEnumerable<DeviceDef> devices,
         IEnumerable<PartDef> parts,
         IEnumerable<FaultDef> faults,
-        IEnumerable<LeakPointDef> leakPoints)
+        IEnumerable<LeakPointDef> leakPoints,
+        IEnumerable<ProcedureDef>? procedures = null,
+        IEnumerable<MissionDef>? missions = null)
     {
         Tuning = tuning;
+        Procedures = (procedures ?? Array.Empty<ProcedureDef>()).OrderBy(p => p.Id, StringComparer.Ordinal).ToArray();
+        Missions = (missions ?? Array.Empty<MissionDef>()).OrderBy(m => m.Id, StringComparer.Ordinal).ToArray();
         Circuits = circuits.OrderBy(c => c.Id, StringComparer.Ordinal).ToArray();
         Devices = devices.OrderBy(d => d.Id, StringComparer.Ordinal).ToArray();
         Parts = parts.OrderBy(p => p.Id, StringComparer.Ordinal).ToArray();
@@ -54,6 +62,8 @@ public sealed class GameData
         foreach (var f in Faults)
             f.Set = new SortedDictionary<string, double>(f.Set, StringComparer.Ordinal);
         tuning.Water.Bilges = new SortedDictionary<string, BilgeDef>(tuning.Water.Bilges, StringComparer.Ordinal);
+        tuning.Inventory.Locker = new SortedDictionary<string, int>(tuning.Inventory.Locker, StringComparer.Ordinal);
+        LockerItems = tuning.Inventory.Locker.Keys.ToArray();
 
         BilgeOrder = tuning.Water.Bilges
             .OrderBy(kv => kv.Value.Zones.Count == 0 ? int.MaxValue : kv.Value.Zones.Min(ZoneIndexOrMax))
@@ -137,7 +147,22 @@ public sealed class GameData
             });
         }
 
-        return new GameData(tuning, circuits, devices, allParts, faults, leaks);
+        var procedures = File.Exists(Path.Combine(dataDir, "procedures.json"))
+            ? WithIds(Read<SortedDictionary<string, ProcedureDef>>("procedures.json"), (d, id) => d.Id = id)
+            : new List<ProcedureDef>();
+        var missions = new List<MissionDef>();
+        var missionDir = Path.Combine(dataDir, "missions");
+        if (Directory.Exists(missionDir))
+        {
+            foreach (var file in Directory.GetFiles(missionDir, "*.json").OrderBy(f => f, StringComparer.Ordinal))
+            {
+                var m = Read<MissionDef>(Path.Combine("missions", Path.GetFileName(file)));
+                m.Id = Path.GetFileNameWithoutExtension(file);
+                missions.Add(m);
+            }
+        }
+
+        return new GameData(tuning, circuits, devices, allParts, faults, leaks, procedures, missions);
     }
 
     static List<T> WithIds<T>(IDictionary<string, T> map, Action<T, string> setId)
@@ -150,6 +175,12 @@ public sealed class GameData
         }
         return list;
     }
+
+    public MissionDef Mission(string id) =>
+        Missions.FirstOrDefault(m => m.Id == id) ?? throw new KeyNotFoundException($"임무 '{id}'가 없습니다.");
+
+    public ProcedureDef Procedure(string id) =>
+        Procedures.FirstOrDefault(p => p.Id == id) ?? throw new KeyNotFoundException($"절차 '{id}'가 없습니다.");
 
     /// <summary>저장소 안 어디서 실행해도 data 폴더를 찾는다 (테스트와 도구용).</summary>
     public static string FindDataDirectory(string? start = null)

@@ -21,6 +21,32 @@ public sealed class Tuning
     public FailureTuning Failure { get; set; } = new();
     public InventoryTuning Inventory { get; set; } = new();
     public RandomFaultTuning RandomFaults { get; set; } = new();
+    public RepairTuning Repair { get; set; } = new();
+    /// <summary>손에 들 수 있는 도구 ID. 순서가 단축키 1~9 순서다. 첫 도구는 빈손이다.</summary>
+    public List<string> Tools { get; set; } = new();
+}
+
+/// <summary>손 수리 동작의 수치 (M1). 손동작 하나가 명령 하나다.</summary>
+public sealed class RepairTuning
+{
+    /// <summary>흡입 거름망 덮개 볼트 수.</summary>
+    public int StrainerBolts { get; set; }
+    /// <summary>바구니를 솔로 한 번 문지를 때 줄어드는 막힘.</summary>
+    public double ScrubCleanPerStroke { get; set; }
+    /// <summary>덮개를 닫았는데 풀린 볼트 하나당 줄어드는 펌프 배출 비율 (흡입 쪽으로 공기가 샌다).</summary>
+    public double LooseBoltAirLeak { get; set; }
+    /// <summary>바구니 없이 펌프를 돌릴 때 베어링 wear 배율 (이물질이 들어간다).</summary>
+    public double BasketMissingWearMultiplier { get; set; }
+    /// <summary>쐐기를 다 박기까지의 나무망치 타격 수, 그때의 누수 면적 배율과 패치 내구도.</summary>
+    public int WedgeStrikes { get; set; }
+    public double WedgePatchFactor { get; set; }
+    public double WedgePatchDurability { get; set; }
+    /// <summary>버팀목을 대면 누수 면적 배율과 패치 내구도.</summary>
+    public double ShorePatchFactor { get; set; }
+    public double ShorePatchDurability { get; set; }
+    /// <summary>코킹을 마치기까지의 타격 수와 그 뒤의 integrity.</summary>
+    public int CaulkStrikes { get; set; }
+    public double CaulkIntegrity { get; set; }
 }
 
 public sealed class BatteryTuning
@@ -195,6 +221,12 @@ public sealed class PanelTuning
 
 public sealed class CrewTuning
 {
+    /// <summary>숨은 체력. 감전과 끼임이 깎고 서서히 회복한다. 0이 되면 행동 불능(임무 실패). 화면에는 숫자로 보이지 않는다.</summary>
+    public double ShockVitalityLoss { get; set; }
+    public double ShockStunSeconds { get; set; }
+    public double PinchVitalityLoss { get; set; }
+    public double PinchStunSeconds { get; set; }
+    public double VitalityRecoveryPerMin { get; set; }
     public double[] Co2Levels { get; set; } = Array.Empty<double>();
     public double[] O2Levels { get; set; } = Array.Empty<double>();
     public double[] Cl2Levels { get; set; } = Array.Empty<double>();
@@ -212,6 +244,8 @@ public sealed class InventoryTuning
 {
     public int OxygenCandles { get; set; }
     public int SpareCanisters { get; set; }
+    /// <summary>사물함의 손에 드는 예비품 재고 (퓨즈, 쐐기, 버팀목 …).</summary>
+    public SortedDictionary<string, int> Locker { get; set; } = new(StringComparer.Ordinal);
 }
 
 public sealed class RandomFaultTuning

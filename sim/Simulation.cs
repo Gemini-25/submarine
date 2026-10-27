@@ -59,8 +59,45 @@ public sealed class Simulation : ISimulation
 
     static MissionSetup CopySetup(MissionSetup setup) => SetupFromJson(SetupJson(setup))!;
 
-    /// <summary>임무를 시작 상태로 되돌린다 (같은 데이터, 시드, 시작 설정).</summary>
-    public void Reset() => Load(Data, _seed, _setup);
+    /// <summary>미리 짠 임무를 시작한다. 시드와 시작 설정은 임무 정의에서 온다.</summary>
+    public void StartMission(GameData data, string missionId)
+    {
+        var m = data.Mission(missionId);
+        Load(data, m.Seed, m.Setup);
+        MissionScript.Attach(W, m);
+    }
+
+    /// <summary>임무를 시작 상태로 되돌린다 (같은 데이터, 시드, 시작 설정, 임무).</summary>
+    public void Reset()
+    {
+        string mission = _world?.Mission.Id ?? "";
+        Load(Data, _seed, _setup);
+        if (mission.Length > 0) MissionScript.Attach(W, Data.Mission(mission));
+    }
+
+    /// <summary>진행 중인 임무 정의. 임무 없이 돌면 null.</summary>
+    public MissionDef? Mission => W.MissionDef;
+
+    /// <summary>
+    /// 도구로 잰 값. 상태를 바꾸지 않는다. 지금은 전압계(voltmeter)만:
+    ///   bus — 버스 전압, circuit.C3 — 그 회로 부하 쪽 전압, fuse.C3 — 퓨즈 양단 전압(끊긴 퓨즈나 빈 소켓이면 전원 전압이 걸린다).
+    /// 표현 층은 이 값으로 전압계 바늘을 움직인다.
+    /// </summary>
+    public double Measure(string tool, string target)
+    {
+        var w = W;
+        if (tool != "voltmeter") throw new ArgumentException($"잴 수 없는 도구 '{tool}'");
+        if (target == "bus") return w.BusVoltage;
+        var p = target.Split('.');
+        if (p.Length == 2 && w.TryCircuitIndex(p[1], out int c))
+        {
+            var cs = w.Circuits[c];
+            bool live = cs.SwitchOn && w.BusVoltage > 0;
+            if (p[0] == "circuit") return cs.Energized ? w.BusVoltage : 0;
+            if (p[0] == "fuse") return live && !cs.Energized ? w.BusVoltage : 0;
+        }
+        throw new ArgumentException($"전압계로 잴 수 없는 대상 '{target}'");
+    }
 
     public void Apply(Command command) => W.Enqueue(CommandProcessor.Parse(W, command));
 
@@ -115,6 +152,7 @@ public sealed class Simulation : ISimulation
         var setup = SetupFromJson(br.ReadString());
         var world = new SimWorld(Data, seed, setup);
         world.Io(StateIO.ForRead(br));
+        MissionScript.Reattach(world);
         _seed = seed;
         _setup = setup;
         _world = world;

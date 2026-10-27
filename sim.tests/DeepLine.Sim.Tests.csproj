@@ -22,6 +22,7 @@
   <!-- 데이터와 시나리오를 테스트 출력 폴더로 복사한다 -->
   <ItemGroup>
     <None Include="..\data\**\*.json" LinkBase="data" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\data\**\*.md" LinkBase="data" CopyToOutputDirectory="PreserveNewest" />
     <None Include="scenarios\**\*.json" LinkBase="scenarios" CopyToOutputDirectory="PreserveNewest" />
     <None Include="fixtures\**\*" LinkBase="fixtures" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>

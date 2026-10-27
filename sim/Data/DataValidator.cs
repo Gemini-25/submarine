@@ -166,6 +166,10 @@ static class DataValidator
             foreach (var p in d.Parts.Where(x => x.Kind == kind))
                 foreach (var prop in props)
                     Check(p.Props.ContainsKey(prop), $"parts.{p.Id}.props에 규칙이 읽는 '{prop}'가 없다");
+        foreach (var tool in Bindings.Tools)
+            Check(t.Tools.Contains(tool), $"tuning.tools에 규칙이 붙는 도구 '{tool}'가 없다");
+        foreach (var item in Bindings.LockerItems)
+            Check(t.Inventory.Locker.ContainsKey(item), $"tuning.inventory.locker에 규칙이 붙는 예비품 '{item}'가 없다");
         foreach (var (id, (kind, prop, value)) in Bindings.Faults)
         {
             var f = d.Faults.FirstOrDefault(x => x.Id == id);
@@ -188,6 +192,51 @@ static class DataValidator
             if (partById.TryGetValue(l.Id, out var lp))
                 Check(lp.Props.ContainsKey("integrity") && lp.Props.ContainsKey("patchFactor") && lp.Props.ContainsKey("patchDurability"),
                     $"hull.partTemplate.props에 integrity, patchFactor, patchDurability가 있어야 한다");
+        }
+
+        // 손 수리 (M1)
+        var r = t.Repair;
+        Check(r.StrainerBolts > 0 && r.WedgeStrikes > 0 && r.CaulkStrikes > 0, "tuning.repair: 볼트 수와 타격 수 > 0");
+        Check(r.ScrubCleanPerStroke > 0, "tuning.repair.scrubCleanPerStroke > 0");
+        Check(r.WedgePatchFactor is > 0 and <= 1 && r.ShorePatchFactor is > 0 and <= 1, "tuning.repair 패치 배율은 0~1");
+        Check(r.CaulkIntegrity is > 0 and <= 1, "tuning.repair.caulkIntegrity는 0~1");
+        Check(t.Tools.Count > 0 && t.Tools[0] == "hand", "tuning.tools의 첫 도구는 빈손(hand)이어야 한다");
+        Check(t.Tools.Count <= 9 && t.Tools.Distinct().Count() == t.Tools.Count, "tuning.tools는 9개 이하, 중복 없음");
+        foreach (var (item, count) in t.Inventory.Locker)
+            Check(count >= 0, $"tuning.inventory.locker.{item} >= 0");
+        Check(t.Crew.ShockVitalityLoss >= 0 && t.Crew.PinchVitalityLoss >= 0 && t.Crew.VitalityRecoveryPerMin >= 0, "tuning.crew 체력 수치 >= 0");
+        if (partById.TryGetValue("pump.intake", out var intake))
+            for (int b = 1; b <= r.StrainerBolts; b++)
+                Check(intake.Props.ContainsKey($"bolt{b}"), $"parts.pump.intake.props에 bolt{b}가 없다 (tuning.repair.strainerBolts)");
+
+        string[] stepTypes = { "Inspect", "Isolate", "Open", "Remove", "Work", "Install", "Fasten", "Close", "Test" };
+        foreach (var p in d.Procedures)
+        {
+            Check(faultIds.Contains(p.Fault), $"procedures.{p.Id}.fault '{p.Fault}' 없음");
+            Check(p.Grade is "proper" or "temporary", $"procedures.{p.Id}.grade는 proper 또는 temporary");
+            Check(p.Steps.Count > 0, $"procedures.{p.Id}.steps가 비어 있음");
+            foreach (var step in p.Steps)
+            {
+                Check(stepTypes.Contains(step.Type), $"procedures.{p.Id}: 알 수 없는 단계 종류 '{step.Type}'");
+                Check(step.Tool == null || t.Tools.Contains(step.Tool), $"procedures.{p.Id}: 알 수 없는 도구 '{step.Tool}'");
+                Check(step.Repeat >= 1, $"procedures.{p.Id}: repeat >= 1");
+                Check(step.Text.Length > 0, $"procedures.{p.Id}: 단계 설명(text)이 비어 있음");
+            }
+        }
+
+        foreach (var m in d.Missions)
+        {
+            Check(m.TimeLimitSeconds > 0, $"missions.{m.Id}.timeLimitSeconds > 0");
+            Check(m.Success.Assert.Length > 0 && m.Success.HoldSeconds >= 0, $"missions.{m.Id}.success");
+            foreach (var e in m.Events)
+            {
+                var f = d.Faults.FirstOrDefault(x => x.Id == e.Fault);
+                Check(f != null, $"missions.{m.Id}: 알 수 없는 고장 '{e.Fault}'");
+                string? part = e.Part ?? f?.DefaultPart;
+                Check(f == null || (part != null && partById.TryGetValue(part, out var pd) && pd.Kind == f.PartKind),
+                    $"missions.{m.Id}: 고장 {e.Fault}의 대상 부품 '{part}'가 없거나 종류가 다르다");
+                Check(e.AtSeconds >= 0 && e.AtSeconds < m.TimeLimitSeconds, $"missions.{m.Id}: 고장 {e.Fault}의 시각이 범위 밖");
+            }
         }
 
         if (errors.Count > 0)

@@ -38,9 +38,11 @@ static class HullSystem
                 durability -= h.PatchWearPerSecond * s * w.Dt;
                 if (durability <= 0)
                 {
-                    // 응급 패치가 밀려나 원래 누수로 돌아간다.
+                    // 응급 패치가 밀려나 원래 누수로 돌아간다. 쐐기와 버팀목도 빠진다.
                     part.Set("patchDurability", 0);
                     part.Set("patchFactor", 1);
+                    if (part.HasProp("wedge")) part.Set("wedge", 0);
+                    if (part.HasProp("shore")) part.Set("shore", 0);
                     w.Emit(SimEventKind.PatchFailed, def.Id);
                 }
                 else
@@ -100,9 +102,8 @@ static class WaterSystem
         var pump = w.Devices[w.Pump];
         if (pump.Running)
         {
-            double clog = w.Part("pump.intake").Get("clog");
             double stuck = w.Part("pump.check_valve").Get("stuck");
-            water.PumpGrossLps = wt.PumpRatedLps * Curve.Clamp01(1 - clog);
+            water.PumpGrossLps = wt.PumpRatedLps * Curve.Clamp01(1 - PumpStarvation(w));
             double net = water.PumpGrossLps * Curve.Clamp01(1 - stuck);
             double removed = Math.Min(water.Bilge[w.PumpBilge], net * dt);
             water.Bilge[w.PumpBilge] -= removed;
@@ -162,6 +163,19 @@ static class WaterSystem
         for (int z = 0; z < zones; z++) floorTotal += water.Floor[z];
         if (floorTotal > w.T.Failure.SwampedFloorWaterL)
             w.Fail("swamped");
+    }
+
+    /// <summary>
+    /// 흡입 쪽이 물을 못 빨아들이는 정도 0~1. 덮개가 열려 있으면 공기를 빨아 1, 바구니가 있으면 막힘만큼,
+    /// 덮개를 닫았는데 볼트가 풀려 있으면 그 틈으로 공기가 샌다 (숨은 결함).
+    /// </summary>
+    public static double PumpStarvation(SimWorld w)
+    {
+        var intake = w.Part("pump.intake");
+        if (intake.Get("coverOpen") >= 0.5) return 1;
+        double clog = intake.Get("basketOut") >= 0.5 ? 0 : intake.Get("clog");
+        double air = Repair.HandActions.LooseBolts(w) * w.T.Repair.LooseBoltAirLeak;
+        return Curve.Clamp01(clog + air);
     }
 
     public static double Capacity(SimWorld w, int bilge) => w.T.Water.Bilges[w.BilgeIds[bilge]].CapacityL;

@@ -89,7 +89,7 @@
     "patchWearPerSecond": 0.0005,
     "wrapLoad": 0,
     "currentFactor": 1,
-    "zoneAlarmInflowLps": 0.02,
+    "zoneAlarmInflowLps": 0.05,
     "zoneAlarmFloorWaterL": 1
   },
   "air": {
@@ -153,6 +153,26 @@
       "caulk": {
         "level": 45,
         "seconds": 3
+      },
+      "mallet": {
+        "level": 18,
+        "seconds": 0.4
+      },
+      "shore": {
+        "level": 10,
+        "seconds": 1.0
+      },
+      "scrub": {
+        "level": 10,
+        "seconds": 0.6
+      },
+      "cover": {
+        "level": 4,
+        "seconds": 0.8
+      },
+      "locker": {
+        "level": 2,
+        "seconds": 0.5
       }
     },
     "maxEmitSeconds": 60
@@ -187,6 +207,11 @@
     }
   },
   "crew": {
+    "shockVitalityLoss": 0.25,
+    "shockStunSeconds": 2.5,
+    "pinchVitalityLoss": 0.15,
+    "pinchStunSeconds": 1.5,
+    "vitalityRecoveryPerMin": 0.02,
     "co2Levels": [
       2,
       4,
@@ -210,12 +235,38 @@
   },
   "inventory": {
     "oxygenCandles": 4,
-    "spareCanisters": 2
+    "spareCanisters": 2,
+    "locker": {
+      "fuse": 12,
+      "timber_shore": 6,
+      "wood_wedge": 8
+    }
   },
   "randomFaults": {
     "rollEveryTicks": 20,
     "depthGain": 1,
     "wearGain": 4,
     "depthReferenceM": 1000
+  },
+  "tools": [
+    "hand",
+    "wrench",
+    "mallet",
+    "caulking_set",
+    "voltmeter",
+    "scrub_brush"
+  ],
+  "repair": {
+    "strainerBolts": 4,
+    "scrubCleanPerStroke": 0.25,
+    "looseBoltAirLeak": 0.25,
+    "basketMissingWearMultiplier": 5,
+    "wedgeStrikes": 3,
+    "wedgePatchFactor": 0.35,
+    "wedgePatchDurability": 0.5,
+    "shorePatchFactor": 0.1,
+    "shorePatchDurability": 1.0,
+    "caulkStrikes": 8,
+    "caulkIntegrity": 0.9
   }
 }

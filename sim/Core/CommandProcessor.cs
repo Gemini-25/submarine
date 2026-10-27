@@ -1,4 +1,5 @@
 using DeepLine.Sim.Data;
+using DeepLine.Sim.Repair;
 using DeepLine.Sim.Systems;
 
 namespace DeepLine.Sim.Core;
@@ -51,16 +52,94 @@ static class CommandProcessor
                 if (!(c.Value2 > 0 && c.Value2 <= w.T.Noise.MaxEmitSeconds)) throw Bad($"시간은 0초보다 크고 {w.T.Noise.MaxEmitSeconds}초 이하");
                 return new ParsedCommand(CommandKind.NoiseEmit, 0, false, c.Value, c.Value2);
 
+            case "tool" when parts.Length == 2:
+            {
+                int tool = w.T.Tools.IndexOf(parts[1]);
+                if (tool < 0) throw Bad($"도구 '{parts[1]}'가 없다");
+                return new ParsedCommand(CommandKind.ToolSelect, tool, false, 0, 0);
+            }
+
+            case "locker" when parts.Length == 3 && parts[1] == "take":
+            {
+                int item = IndexOf(w.Data.LockerItems, parts[2]);
+                if (item < 0) throw Bad($"사물함에 '{parts[2]}'가 없다");
+                return new ParsedCommand(CommandKind.LockerTake, item, false, 0, 0);
+            }
+
+            case "hand" when parts.Length == 2 && parts[1] == "drop":
+                return new ParsedCommand(CommandKind.HandDrop, 0, false, 0, 0);
+
+            case "fuse" when parts.Length == 3:
+            {
+                if (!w.TryCircuitIndex(parts[1], out int fc)) throw Bad($"회로 '{parts[1]}'가 없다");
+                return new ParsedCommand(parts[2] switch
+                {
+                    "pull" => CommandKind.FusePull,
+                    "insert" => CommandKind.FuseInsert,
+                    _ => throw Bad("'pull' 또는 'insert'여야 한다"),
+                }, fc, false, 0, 0);
+            }
+
+            case "strainer" when parts.Length == 4 && parts[1] == "bolt":
+            {
+                if (!int.TryParse(parts[2], System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out int bolt)
+                    || bolt < 1 || bolt > w.T.Repair.StrainerBolts)
+                    throw Bad($"볼트 번호는 1~{w.T.Repair.StrainerBolts}");
+                return new ParsedCommand(CommandKind.StrainerBolt, bolt, OnOff(parts[3], "loosen", "tighten", Bad), 0, 0);
+            }
+
+            case "strainer" when parts.Length == 3 && parts[1] == "cover":
+                return new ParsedCommand(CommandKind.StrainerCover, 0, OnOff(parts[2], "open", "close", Bad), 0, 0);
+
+            case "strainer" when parts.Length == 3 && parts[1] == "basket":
+                return new ParsedCommand(CommandKind.StrainerBasket, parts[2] switch
+                {
+                    "remove" => 0,
+                    "insert" => 1,
+                    "scrub" => 2,
+                    _ => throw Bad("'remove', 'insert', 'scrub' 중 하나여야 한다"),
+                }, false, 0, 0);
+
+            case "leak" when parts.Length >= 3:
+            {
+                string id = string.Join('.', parts, 0, parts.Length - 1);
+                int leak = -1;
+                for (int i = 0; i < w.LeakParts.Length; i++) if (w.LeakParts[i].Id == id) leak = i;
+                if (leak < 0) throw Bad($"누수 지점 '{id}'가 없다");
+                return new ParsedCommand(parts[^1] switch
+                {
+                    "wedge" => CommandKind.LeakWedge,
+                    "shore" => CommandKind.LeakShore,
+                    "caulk" => CommandKind.LeakCaulk,
+                    _ => throw Bad("'wedge', 'shore', 'caulk' 중 하나여야 한다"),
+                }, leak, false, 0, 0);
+            }
+
             default:
                 throw Bad("알 수 없는 명령");
         }
     }
+
+    static int IndexOf(IReadOnlyList<string> list, string value)
+    {
+        for (int i = 0; i < list.Count; i++)
+            if (string.Equals(list[i], value, StringComparison.Ordinal)) return i;
+        return -1;
+    }
+
+    /// <summary>손을 쓰는 명령. 감전이나 끼임으로 기절해 있으면 거부한다.</summary>
+    static bool NeedsHands(CommandKind k) => k != CommandKind.NoiseEmit;
 
     static bool OnOff(string word, string yes, string no, Func<string, ArgumentException> bad) =>
         word == yes ? true : word == no ? false : throw bad($"'{yes}' 또는 '{no}'여야 한다");
 
     public static void Execute(SimWorld w, ParsedCommand c)
     {
+        if (NeedsHands(c.Kind) && w.Crew.StunTicks > 0)
+        {
+            w.Emit(SimEventKind.CommandRejected, c.Kind.ToString(), 0, "stunned");
+            return;
+        }
         switch (c.Kind)
         {
             case CommandKind.Switch:
@@ -113,6 +192,21 @@ static class CommandProcessor
             case CommandKind.NoiseEmit:
                 w.AddActionNoise(c.Value, c.Value2);
                 break;
+
+            case CommandKind.ToolSelect: HandActions.SelectTool(w, c.Index); break;
+            case CommandKind.LockerTake: HandActions.TakeFromLocker(w, c.Index); break;
+            case CommandKind.HandDrop: HandActions.Drop(w); break;
+            case CommandKind.FusePull: HandActions.PullFuse(w, c.Index); break;
+            case CommandKind.FuseInsert: HandActions.InsertFuse(w, c.Index); break;
+            case CommandKind.StrainerBolt: HandActions.StrainerBolt(w, c.Index, c.Flag); break;
+            case CommandKind.StrainerCover: HandActions.StrainerCover(w, c.Flag); break;
+            case CommandKind.StrainerBasket:
+                if (c.Index == 2) HandActions.ScrubBasket(w);
+                else HandActions.StrainerBasket(w, remove: c.Index == 0);
+                break;
+            case CommandKind.LeakWedge: HandActions.Wedge(w, c.Index); break;
+            case CommandKind.LeakShore: HandActions.Shore(w, c.Index); break;
+            case CommandKind.LeakCaulk: HandActions.Caulk(w, c.Index); break;
         }
     }
 }

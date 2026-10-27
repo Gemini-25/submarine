@@ -15,6 +15,13 @@ namespace DeepLine.Sim.Core;
 ///   sonar.ping
 ///   candle.light
 ///   noise.emit (value = 소음 크기, value2 = 초)
+/// 손 수리 (M1):
+///   tool.wrench (tuning.tools의 도구로 바꿔 든다)
+///   locker.take.fuse | hand.drop
+///   fuse.C3.pull | fuse.C3.insert
+///   strainer.bolt.2.loosen | strainer.bolt.2.tighten | strainer.cover.open | strainer.cover.close
+///   strainer.basket.remove | strainer.basket.insert | strainer.basket.scrub
+///   leak.rivet.09.wedge | leak.rivet.09.shore | leak.rivet.09.caulk (타격 한 번이 명령 하나)
 /// </summary>
 public sealed record Command(
     [property: JsonPropertyName("cmd")] string Cmd,
@@ -37,6 +44,17 @@ enum CommandKind
     SonarPing,
     CandleLight,
     NoiseEmit,
+    ToolSelect,
+    LockerTake,
+    HandDrop,
+    FusePull,
+    FuseInsert,
+    StrainerBolt,
+    StrainerCover,
+    StrainerBasket,
+    LeakWedge,
+    LeakShore,
+    LeakCaulk,
 }
 
 /// <summary>검증을 마친 명령. 인덱스는 GameData 목록의 위치.</summary>

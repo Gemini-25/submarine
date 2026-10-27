@@ -32,6 +32,9 @@ public sealed record SimSnapshot
     public int Co2Level { get; init; }
     public int O2Level { get; init; }
     public int Cl2Level { get; init; }
+    public CrewView Crew { get; init; } = new();
+    public StrainerView Strainer { get; init; } = new();
+    public MissionView Mission { get; init; } = new();
 
     internal static SimSnapshot From(SimWorld w)
     {
@@ -49,12 +52,13 @@ public sealed record SimSnapshot
                 i + 1, c.Charge, w.CellParts[i].Get("health"), c.TempC, c.Submerged, w.CellParts[i].Get("jumpered") >= 0.5)).ToArray(),
             Circuits = w.Circuits.Select((c, i) => new CircuitView(
                 w.Data.Circuits[i].Id, c.SwitchOn, c.Energized, w.Fuses[i].Get("blown") >= 0.5, c.Current, c.PowerW,
-                w.Data.Circuits[i].FuseRating, c.LeakCurrent, w.Junctions[i].Get("moisture"))).ToArray(),
+                w.Data.Circuits[i].FuseRating, c.LeakCurrent, w.Junctions[i].Get("moisture"), w.Fuses[i].Get("present") >= 0.5)).ToArray(),
             Devices = w.Devices.Select((d, i) => new DeviceView(
                 w.Data.Devices[i].Id, d.Enabled, d.Running, d.LoadFactor, d.PowerW, d.Current, d.TempC, d.CutOut, d.Overheated)).ToArray(),
             Leaks = w.Leaks.Select((l, i) => new LeakView(
                 w.Data.LeakPoints[i].Id, w.Data.LeakPoints[i].Zone, l.InflowLps, w.LeakParts[i].Get("integrity"),
-                w.LeakParts[i].Get("patchFactor") < 1)).ToArray(),
+                w.LeakParts[i].Get("patchFactor") < 1, (int)w.LeakParts[i].Get("wedge"), w.LeakParts[i].Get("shore") >= 0.5,
+                (int)w.LeakParts[i].Get("caulk"))).ToArray(),
             Water = new WaterView
             {
                 FloorL = w.Water.Floor.ToArray(),
@@ -89,6 +93,44 @@ public sealed record SimSnapshot
             Co2Level = w.Crew.Co2Level,
             O2Level = w.Crew.O2Level,
             Cl2Level = w.Crew.Cl2Level,
+            Crew = new CrewView
+            {
+                Tool = w.T.Tools[w.Crew.Tool],
+                Hand = w.Crew.Hand,
+                Vitality = w.Crew.Vitality,
+                Stunned = w.Crew.StunTicks > 0,
+                Locker = w.Data.LockerItems.Select((id, i) => (id, w.Crew.Locker[i])).ToDictionary(x => x.id, x => x.Item2, StringComparer.Ordinal),
+            },
+            Strainer = StrainerOf(w),
+            Mission = MissionOf(w),
+        };
+    }
+
+    static StrainerView StrainerOf(SimWorld w)
+    {
+        var p = w.Part("pump.intake");
+        return new StrainerView
+        {
+            BoltsTight = Enumerable.Range(1, w.T.Repair.StrainerBolts).Select(b => p.Get($"bolt{b}") >= 0.5).ToArray(),
+            CoverOpen = p.Get("coverOpen") >= 0.5,
+            BasketOut = p.Get("basketOut") >= 0.5,
+            Clog = p.Get("clog"),
+        };
+    }
+
+    static MissionView MissionOf(SimWorld w)
+    {
+        var m = w.MissionDef;
+        if (m == null) return new MissionView();
+        return new MissionView
+        {
+            Id = m.Id,
+            Name = m.Name,
+            Briefing = m.Briefing.ToArray(),
+            Objectives = m.Success.Objectives.ToArray(),
+            TimeLimitSeconds = m.TimeLimitSeconds,
+            HoldSeconds = w.Mission.HoldTicks * w.Dt,
+            HoldNeededSeconds = m.Success.HoldSeconds,
         };
     }
 }
@@ -96,11 +138,44 @@ public sealed record SimSnapshot
 public readonly record struct CellView(int Number, double Charge, double Health, double TempC, bool Submerged, bool Jumpered);
 /// <summary>LeakCurrent와 JunctionMoisture는 분기함 결로와 감전 위험 같은 현장 단서용이다.</summary>
 public readonly record struct CircuitView(string Id, bool SwitchOn, bool Energized, bool FuseBlown, double Current, double PowerW, double FuseRating,
-    double LeakCurrent, double JunctionMoisture);
+    double LeakCurrent, double JunctionMoisture, bool FusePresent);
 /// <summary>Overheated는 연기와 냄새 같은 현장 단서용이다.</summary>
 public readonly record struct DeviceView(string Id, bool Enabled, bool Running, double LoadFactor, double PowerW, double Current, double TempC, bool CutOut,
     bool Overheated);
-public readonly record struct LeakView(string Id, string Zone, double InflowLps, double Integrity, bool Patched);
+/// <summary>Wedge는 쐐기 타격 진행(0~tuning.repair.wedgeStrikes), Caulk는 코킹 타격 진행.</summary>
+public readonly record struct LeakView(string Id, string Zone, double InflowLps, double Integrity, bool Patched, int Wedge, bool Shore, int Caulk);
+
+/// <summary>손에 든 도구와 물건, 숨은 체력(화면 효과용), 사물함 재고.</summary>
+public sealed record CrewView
+{
+    public string Tool { get; init; } = "hand";
+    public string Hand { get; init; } = "";
+    public double Vitality { get; init; } = 1;
+    public bool Stunned { get; init; }
+    public IReadOnlyDictionary<string, int> Locker { get; init; } = new Dictionary<string, int>();
+}
+
+/// <summary>펌프 흡입 거름망. BoltsTight는 볼트 1번부터.</summary>
+public sealed record StrainerView
+{
+    public IReadOnlyList<bool> BoltsTight { get; init; } = Array.Empty<bool>();
+    public bool CoverOpen { get; init; }
+    public bool BasketOut { get; init; }
+    /// <summary>바구니의 막힘 0~1 (바구니를 꺼내 보면 보이는 양).</summary>
+    public double Clog { get; init; }
+}
+
+/// <summary>미리 짠 임무. Id가 비어 있으면 임무 없이 도는 중이다. 상태는 SimSnapshot.Status.</summary>
+public sealed record MissionView
+{
+    public string Id { get; init; } = "";
+    public string Name { get; init; } = "";
+    public IReadOnlyList<string> Briefing { get; init; } = Array.Empty<string>();
+    public IReadOnlyList<string> Objectives { get; init; } = Array.Empty<string>();
+    public double TimeLimitSeconds { get; init; }
+    public double HoldSeconds { get; init; }
+    public double HoldNeededSeconds { get; init; }
+}
 public readonly record struct AirView(double Co2, double O2, double Cl2, double H2, double CandleSecondsLeft, int CandlesLeft, double CanisterSaturation);
 
 public sealed record WaterView

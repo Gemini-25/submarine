@@ -61,10 +61,13 @@ static class WearSystem
             var ds = w.Devices[d];
             if (!ds.Running) continue;
             double env = ds.Overheated ? w.T.Heat.OverheatWearMultiplier : 1;
+            // 거름망 바구니 없이 펌프를 돌리면 이물질이 들어가 베어링이 빨리 닳는다.
+            bool debris = d == w.Pump && w.Part("pump.intake").Get("basketOut") >= 0.5;
             foreach (var part in w.DeviceParts[d])
             {
                 double rate = part.Def.WearPerSecond;
                 if (rate <= 0) continue;
+                if (debris && part.Kind == "bearing") rate *= w.T.Repair.BasketMissingWearMultiplier;
                 double before = part.Wear;
                 part.Wear = Math.Min(1, part.Wear + rate * w.Dt * ds.LoadFactor * env * part.QualityFactor(wt));
                 if (before < wt.FaultAt && part.Wear >= wt.FaultAt && part.Def.WearFault != null && part.ActiveFault.Length == 0)

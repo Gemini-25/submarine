@@ -4,7 +4,7 @@ namespace DeepLine.Sim.Core;
 
 // 시뮬레이션의 가변 상태. 모든 클래스는 Io 하나로 해시, 저장, 복원된다.
 
-public enum MissionStatus { Running = 0, Failed = 1 }
+public enum MissionStatus { Running = 0, Failed = 1, Succeeded = 2 }
 
 public enum LampState { Off = 0, Warning = 1, Fault = 2 }
 
@@ -207,12 +207,44 @@ sealed class CrewState
     public int Co2Level;
     public int O2Level;
     public int Cl2Level;
+    /// <summary>손에 든 도구 (tuning.tools의 인덱스). 0은 빈손.</summary>
+    public int Tool;
+    /// <summary>손에 든 물건 (사물함 예비품 ID, fuse_blown, strainer_basket). 없으면 빈 문자열.</summary>
+    public string Hand = "";
+    /// <summary>숨은 체력 0~1. 화면에는 숫자로 보이지 않는다.</summary>
+    public double Vitality = 1;
+    /// <summary>감전이나 끼임으로 손을 못 쓰는 남은 틱.</summary>
+    public int StunTicks;
+    /// <summary>사물함 예비품 재고. GameData.LockerItems 순서.</summary>
+    public int[] Locker = Array.Empty<int>();
 
     public void Io(StateIO io)
     {
         io.I(ref Co2Level);
         io.I(ref O2Level);
         io.I(ref Cl2Level);
+        io.I(ref Tool);
+        io.S(ref Hand);
+        io.D(ref Vitality);
+        io.I(ref StunTicks);
+        for (int i = 0; i < Locker.Length; i++) io.I(ref Locker[i]);
+    }
+}
+
+/// <summary>미리 짠 임무의 진행 상태.</summary>
+sealed class MissionState
+{
+    /// <summary>임무 ID. 임무 없이 돌면 빈 문자열.</summary>
+    public string Id = "";
+    public int NextEvent;
+    /// <summary>성공 조건이 연달아 참인 틱 수.</summary>
+    public int HoldTicks;
+
+    public void Io(StateIO io)
+    {
+        io.S(ref Id);
+        io.I(ref NextEvent);
+        io.I(ref HoldTicks);
     }
 }
 

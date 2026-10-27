@@ -1,0 +1,303 @@
+using DeepLine.Sim.Core;
+using DeepLine.Sim.Faults;
+using DeepLine.Sim.Parts;
+
+namespace DeepLine.Sim.Repair;
+
+/// <summary>
+/// 자유형 손 수리 (SPEC 6절). 판정은 절차의 단계가 아니라 물체의 상태와 행동마다의 전제 조건으로 한다.
+/// 할 수 없는 행동(빈 소켓에서 퓨즈 빼기, 볼트가 조여진 덮개 열기)은 CommandRejected로 거부하고,
+/// 할 수는 있지만 위험한 행동(살아 있는 회로의 퓨즈 빼기)은 hazard를 일으킨 뒤 진행한다.
+/// </summary>
+static class HandActions
+{
+    public const string FuseItem = "fuse";
+    public const string BlownFuseItem = "fuse_blown";
+    public const string WedgeItem = "wood_wedge";
+    public const string ShoreItem = "timber_shore";
+    public const string BasketItem = "strainer_basket";
+
+    static bool Reject(SimWorld w, string command, string reason)
+    {
+        w.Emit(SimEventKind.CommandRejected, command, 0, reason);
+        return false;
+    }
+
+    static string ToolName(SimWorld w) => w.T.Tools[w.Crew.Tool];
+
+    static bool Holding(SimWorld w, string item) => w.Crew.Hand == item;
+
+    // ── 도구와 사물함 ─────────────────────────────────────
+
+    public static void SelectTool(SimWorld w, int tool) => w.Crew.Tool = tool;
+
+    public static bool TakeFromLocker(SimWorld w, int item)
+    {
+        string id = w.Data.LockerItems[item];
+        if (w.Crew.Hand.Length > 0) return Reject(w, $"locker.take.{id}", "hand_full");
+        if (w.Crew.Locker[item] <= 0) return Reject(w, $"locker.take.{id}", "out_of_stock");
+        w.Crew.Locker[item]--;
+        w.Crew.Hand = id;
+        w.AddActionNoise("locker");
+        return true;
+    }
+
+    /// <summary>손에 든 것을 폐기함에 버린다. 거름망 바구니는 버릴 수 없다.</summary>
+    public static bool Drop(SimWorld w)
+    {
+        if (w.Crew.Hand.Length == 0) return Reject(w, "hand.drop", "hand_empty");
+        if (w.Crew.Hand == BasketItem) return Reject(w, "hand.drop", "cannot_discard");
+        w.Crew.Hand = "";
+        return true;
+    }
+
+    // ── 퓨즈 (ELC-01) ───────────────────────────────────
+
+    /// <summary>스위치가 올라가 있고 축전지 전압이 있으면 소켓이 살아 있다 (퓨즈와 상관없이 전원 쪽 단자에 전기가 온다).</summary>
+    static bool SocketLive(SimWorld w, int circuit) => w.Circuits[circuit].SwitchOn && w.BusVoltage > 0;
+
+    public static bool PullFuse(SimWorld w, int c)
+    {
+        var fuse = w.Fuses[c];
+        string cmd = $"fuse.{w.Data.Circuits[c].Id}.pull";
+        if (fuse.Get("present") < 0.5) return Reject(w, cmd, "socket_empty");
+        if (w.Crew.Hand.Length > 0) return Reject(w, cmd, "hand_full");
+        if (ToolName(w) != "hand") return Reject(w, cmd, "need_bare_hand");
+
+        bool blown = fuse.Get("blown") >= 0.5;
+        if (SocketLive(w, c))
+        {
+            // 살아 있는 소켓에서 성한 퓨즈를 빼면 부하 전류가 끊기며 아크가 튄다.
+            if (!blown && w.Circuits[c].Current > 0) w.Spark($"fuse.{w.Data.Circuits[c].Id}");
+            Hazards.Shock(w, cmd);
+        }
+        fuse.Set("present", 0);
+        // 손으로 뺀 것이지 퓨즈가 끊긴 것이 아니다 (FuseBlown 사건을 내지 않는다).
+        w.Circuits[c].FuseBlownSeen = true;
+        w.Crew.Hand = blown ? BlownFuseItem : FuseItem;
+        w.AddActionNoise("fuse");
+        return true;
+    }
+
+    public static bool InsertFuse(SimWorld w, int c)
+    {
+        var fuse = w.Fuses[c];
+        string cmd = $"fuse.{w.Data.Circuits[c].Id}.insert";
+        if (fuse.Get("present") >= 0.5) return Reject(w, cmd, "socket_full");
+        bool good = Holding(w, FuseItem);
+        if (!good && !Holding(w, BlownFuseItem)) return Reject(w, cmd, "need_fuse");
+
+        if (SocketLive(w, c))
+        {
+            w.Spark($"fuse.{w.Data.Circuits[c].Id}");
+            Hazards.Shock(w, cmd);
+        }
+        fuse.Set("present", 1);
+        if (good)
+        {
+            // 새 퓨즈: 부품이 새것이 된다.
+            fuse.Set("blown", 0);
+            Clear(w, fuse);
+        }
+        else
+        {
+            fuse.Set("blown", 1);
+        }
+        w.Crew.Hand = "";
+        w.AddActionNoise("fuse");
+        return true;
+    }
+
+    // ── 흡입 거름망 (WTR-01) ─────────────────────────────
+
+    static Part Intake(SimWorld w) => w.Part("pump.intake");
+
+    public static bool StrainerBolt(SimWorld w, int bolt, bool loosen)
+    {
+        var p = Intake(w);
+        string cmd = $"strainer.bolt.{bolt}.{(loosen ? "loosen" : "tighten")}";
+        if (ToolName(w) != "wrench") return Reject(w, cmd, "need_wrench");
+        if (p.Get("coverOpen") >= 0.5) return Reject(w, cmd, "cover_open");
+        string key = $"bolt{bolt}";
+        bool tight = p.Get(key) >= 0.5;
+        if (tight != loosen) return Reject(w, cmd, loosen ? "already_loose" : "already_tight");
+        p.Set(key, loosen ? 0 : 1);
+        w.AddActionNoise("wrench");
+        return true;
+    }
+
+    public static int LooseBolts(SimWorld w)
+    {
+        var p = Intake(w);
+        int n = 0;
+        for (int b = 1; b <= w.T.Repair.StrainerBolts; b++)
+            if (p.Get($"bolt{b}") < 0.5) n++;
+        return n;
+    }
+
+    public static bool StrainerCover(SimWorld w, bool open)
+    {
+        var p = Intake(w);
+        string cmd = $"strainer.cover.{(open ? "open" : "close")}";
+        if (ToolName(w) != "hand") return Reject(w, cmd, "need_bare_hand");
+        bool isOpen = p.Get("coverOpen") >= 0.5;
+        if (isOpen == open) return Reject(w, cmd, open ? "already_open" : "already_closed");
+        if (open && LooseBolts(w) < w.T.Repair.StrainerBolts) return Reject(w, cmd, "bolts_tight");
+        p.Set("coverOpen", open ? 1 : 0);
+        w.AddActionNoise("cover");
+        return true;
+    }
+
+    /// <summary>바구니를 빼거나 넣을 때 펌프가 돌고 있으면 흡입구에 손이 끌려 들어간다.</summary>
+    public static bool StrainerBasket(SimWorld w, bool remove)
+    {
+        var p = Intake(w);
+        string cmd = $"strainer.basket.{(remove ? "remove" : "insert")}";
+        if (p.Get("coverOpen") < 0.5) return Reject(w, cmd, "cover_closed");
+        bool isOut = p.Get("basketOut") >= 0.5;
+        if (remove)
+        {
+            if (isOut) return Reject(w, cmd, "basket_out");
+            if (w.Crew.Hand.Length > 0) return Reject(w, cmd, "hand_full");
+        }
+        else
+        {
+            if (!isOut) return Reject(w, cmd, "basket_in");
+            if (!Holding(w, BasketItem)) return Reject(w, cmd, "need_basket");
+        }
+        if (w.Devices[w.Pump].Running) Hazards.Pinch(w, cmd);
+        p.Set("basketOut", remove ? 1 : 0);
+        w.Crew.Hand = remove ? BasketItem : "";
+        if (!remove && p.Get("clog") <= 1e-9 && p.ActiveFault == "WTR-01") Clear(w, p);
+        w.AddActionNoise("cover");
+        return true;
+    }
+
+    public static bool ScrubBasket(SimWorld w)
+    {
+        var p = Intake(w);
+        const string cmd = "strainer.basket.scrub";
+        if (!Holding(w, BasketItem)) return Reject(w, cmd, "need_basket");
+        if (ToolName(w) != "scrub_brush") return Reject(w, cmd, "need_brush");
+        p.Set("clog", Math.Max(0, p.Get("clog") - w.T.Repair.ScrubCleanPerStroke));
+        w.AddActionNoise("scrub");
+        return true;
+    }
+
+    // ── 리벳 이음 누수 (HUL-01) ───────────────────────────
+
+    public static bool Wedge(SimWorld w, int leak)
+    {
+        var p = w.LeakParts[leak];
+        var r = w.T.Repair;
+        string cmd = $"{p.Id}.wedge";
+        if (p.Kind != "rivet") return Reject(w, cmd, "not_rivet");
+        if (ToolName(w) != "mallet") return Reject(w, cmd, "need_mallet");
+        int progress = (int)p.Get("wedge");
+        if (progress >= r.WedgeStrikes) return Reject(w, cmd, "already_wedged");
+        if (progress == 0)
+        {
+            // 첫 타격에 쐐기를 이음새에 대고 박는다.
+            if (!Holding(w, WedgeItem)) return Reject(w, cmd, "need_wedge");
+            w.Crew.Hand = "";
+        }
+        progress++;
+        p.Set("wedge", progress);
+        w.AddActionNoise("mallet");
+        if (progress >= r.WedgeStrikes)
+        {
+            p.Set("patchFactor", Math.Min(p.Get("patchFactor"), r.WedgePatchFactor));
+            p.Set("patchDurability", Math.Max(p.Get("patchDurability"), r.WedgePatchDurability));
+            p.Quality = Quality.Temporary;
+            w.Emit(SimEventKind.LeakPatched, p.Id, r.WedgePatchFactor, "wedge");
+        }
+        return true;
+    }
+
+    public static bool Shore(SimWorld w, int leak)
+    {
+        var p = w.LeakParts[leak];
+        var r = w.T.Repair;
+        string cmd = $"{p.Id}.shore";
+        if (p.Kind != "rivet") return Reject(w, cmd, "not_rivet");
+        if (p.Get("wedge") < r.WedgeStrikes) return Reject(w, cmd, "need_wedge_first");
+        if (p.Get("shore") >= 0.5) return Reject(w, cmd, "already_shored");
+        if (!Holding(w, ShoreItem)) return Reject(w, cmd, "need_shore");
+        w.Crew.Hand = "";
+        p.Set("shore", 1);
+        p.Set("patchFactor", Math.Min(p.Get("patchFactor"), r.ShorePatchFactor));
+        p.Set("patchDurability", Math.Max(p.Get("patchDurability"), r.ShorePatchDurability));
+        p.Quality = Quality.Temporary;
+        w.AddActionNoise("shore");
+        w.Emit(SimEventKind.LeakPatched, p.Id, r.ShorePatchFactor, "shore");
+        return true;
+    }
+
+    /// <summary>코킹: 정식 수리. 다 마치면 이음새가 다시 메워지고 응급 패치는 걷어낸다.</summary>
+    public static bool Caulk(SimWorld w, int leak)
+    {
+        var p = w.LeakParts[leak];
+        var r = w.T.Repair;
+        string cmd = $"{p.Id}.caulk";
+        if (p.Kind != "rivet") return Reject(w, cmd, "not_rivet");
+        if (ToolName(w) != "caulking_set") return Reject(w, cmd, "need_caulking_set");
+        int progress = (int)p.Get("caulk") + 1;
+        p.Set("caulk", progress);
+        w.AddActionNoise("caulk");
+        if (progress >= r.CaulkStrikes)
+        {
+            p.Set("integrity", Math.Max(p.Get("integrity"), r.CaulkIntegrity));
+            p.Set("patchFactor", 1);
+            p.Set("patchDurability", 0);
+            p.Set("wedge", 0);
+            p.Set("shore", 0);
+            p.Set("caulk", 0);
+            Clear(w, p);
+        }
+        return true;
+    }
+
+    /// <summary>수리로 부품이 새것처럼 되면 고장 표시를 지운다.</summary>
+    static void Clear(SimWorld w, Part p)
+    {
+        string fault = p.ActiveFault;
+        p.InjectedState = PartState.Normal;
+        p.ActiveFault = "";
+        p.Quality = Quality.Proper;
+        if (p.Kind == "fuse") p.Wear = 0;
+        w.Emit(SimEventKind.PartRepaired, p.Id, 0, fault);
+    }
+}
+
+/// <summary>손 수리의 위험. 체력은 숨은 값이고 표현 층은 화면 효과로만 보여준다.</summary>
+static class Hazards
+{
+    public static void Shock(SimWorld w, string cause)
+    {
+        var c = w.T.Crew;
+        Hurt(w, c.ShockVitalityLoss, c.ShockStunSeconds);
+        w.Emit(SimEventKind.Shock, cause, w.Crew.Vitality);
+    }
+
+    public static void Pinch(SimWorld w, string cause)
+    {
+        var c = w.T.Crew;
+        Hurt(w, c.PinchVitalityLoss, c.PinchStunSeconds);
+        w.Emit(SimEventKind.Pinch, cause, w.Crew.Vitality);
+    }
+
+    static void Hurt(SimWorld w, double loss, double stunSeconds)
+    {
+        w.Crew.Vitality = Math.Max(0, w.Crew.Vitality - loss);
+        w.Crew.StunTicks = Math.Max(w.Crew.StunTicks, (int)Math.Round(stunSeconds * w.T.TicksPerSecond));
+        if (w.Crew.Vitality <= 0) w.Fail("incapacitated");
+    }
+
+    /// <summary>틱마다: 기절 시간을 줄이고 체력을 서서히 회복한다.</summary>
+    public static void Update(SimWorld w)
+    {
+        if (w.Crew.StunTicks > 0) w.Crew.StunTicks--;
+        if (w.Status == MissionStatus.Running && w.Crew.Vitality < 1)
+            w.Crew.Vitality = Math.Min(1, w.Crew.Vitality + w.T.Crew.VitalityRecoveryPerMin / 60.0 * w.Dt);
+    }
+}

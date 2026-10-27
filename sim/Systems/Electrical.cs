@@ -51,7 +51,8 @@ static class Electrical
         for (int c = 0; c < w.Circuits.Length; c++)
         {
             var cs = w.Circuits[c];
-            bool blown = w.Fuses[c].Get("blown") >= 0.5;
+            // 소켓이 비었거나 퓨즈가 끊겼으면 회로가 열린다.
+            bool blown = w.Fuses[c].Get("blown") >= 0.5 || w.Fuses[c].Get("present") < 0.5;
             // 퓨즈가 어떤 경로로든(과전류, 주입, 무작위) 통전 중에 끊기면 같은 증상(사건, 불꽃)이 난다.
             if (!settle && blown && !cs.FuseBlownSeen && cs.Energized)
             {
@@ -239,9 +240,10 @@ static class DeviceRules
         if (d == w.Pump)
         {
             var pr = w.T.Pump;
-            double clog = w.Part("pump.intake").Get("clog");
             double drag = PartEffects.Effective(w, w.Part("pump.bearing"), "drag");
-            return Math.Max(0, 1 - pr.ClogLoadDrop * clog + pr.DragLoadGain * drag);
+            // 덮개가 열려 공기를 빨면 막힌 것처럼 헛돈다. 바구니가 없으면 막힘도 없다.
+            double starve = Systems.WaterSystem.PumpStarvation(w);
+            return Math.Max(0, 1 - pr.ClogLoadDrop * starve + pr.DragLoadGain * drag);
         }
         return 1;
     }

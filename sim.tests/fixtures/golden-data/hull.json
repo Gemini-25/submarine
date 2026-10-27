@@ -2,9 +2,12 @@
   "partTemplate": {
     "wearPerSecond": 0,
     "props": {
+      "caulk": 0,
       "integrity": 1.0,
+      "patchDurability": 0,
       "patchFactor": 1.0,
-      "patchDurability": 0
+      "shore": 0,
+      "wedge": 0
     }
   },
   "points": {

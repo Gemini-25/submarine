@@ -57,6 +57,10 @@ sealed class SimWorld
     public readonly NoiseState Noise = new();
     public readonly PanelState PanelState = new();
     public readonly CrewState Crew = new();
+    public readonly MissionState Mission = new();
+    /// <summary>진행 중인 임무 정의와 성공 조건 (상태 아님. Mission.Id에서 다시 만든다).</summary>
+    public MissionDef? MissionDef;
+    public Faults.Assertion? MissionGoal;
     public readonly int[] EventCounts = new int[Enum.GetValues<SimEventKind>().Length];
 
     readonly List<ParsedCommand> _pending = new();
@@ -160,6 +164,7 @@ sealed class SimWorld
         Air.CandlesLeft = T.Inventory.OxygenCandles;
         Air.CanistersLeft = T.Inventory.SpareCanisters;
         Air.Charging = setup.Charging;
+        Crew.Locker = data.LockerItems.Select(i => T.Inventory.Locker[i]).ToArray();
 
         DepthM = setup.DepthM ?? T.DefaultDepthM;
         RandomFaultsEnabled = setup.RandomFaults;
@@ -270,6 +275,8 @@ sealed class SimWorld
     /// <summary>고정 틱 1회. 순서가 결과를 정하므로 바꾸면 리플레이 기준 해시를 다시 만들어야 한다.</summary>
     public void Step()
     {
+        if (Status == MissionStatus.Running)
+            MissionScript.InjectDue(this);
         foreach (var c in _pending)
             CommandProcessor.Execute(this, c);
         _pending.Clear();
@@ -292,11 +299,14 @@ sealed class SimWorld
 
         PanelSystem.Update(this, emitEvents: true);
         CrewSystem.Update(this, emitEvents: true);
+        Repair.Hazards.Update(this);
         if (RandomFaultsEnabled && Status == MissionStatus.Running)
             RandomFaults.Roll(this);
         PartStates.EmitChanges(this);
 
         Tick++;
+        if (Status == MissionStatus.Running)
+            MissionScript.CheckGoal(this);
     }
 
     // ── 해시와 저장 ──────────────────────────────────────
@@ -324,6 +334,7 @@ sealed class SimWorld
         Noise.Io(io);
         PanelState.Io(io);
         Crew.Io(io);
+        Mission.Io(io);
         for (int i = 0; i < EventCounts.Length; i++) io.I(ref EventCounts[i]);
         int pending = _pending.Count;
         io.I(ref pending);

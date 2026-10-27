@@ -80,6 +80,7 @@ static class SimQuery
                     "rating" => x => QueryValue.Of(x.Data.Circuits[c].FuseRating),
                     "fuse" => x => QueryValue.Of(x.Fuses[c].Get("blown") >= 0.5 ? "blown" : "ok"),
                     "moisture" => x => QueryValue.Of(x.Junctions[c].Get("moisture")),
+                    "fusePresent" => x => QueryValue.Of(x.Fuses[c].Get("present") >= 0.5),
                     _ => throw Unknown(),
                 };
             }
@@ -185,6 +186,9 @@ static class SimQuery
                     "integrity" => x => QueryValue.Of(x.LeakParts[i].Get("integrity")),
                     "patchFactor" => x => QueryValue.Of(x.LeakParts[i].Get("patchFactor")),
                     "patchDurability" => x => QueryValue.Of(x.LeakParts[i].Get("patchDurability")),
+                    "wedge" => x => QueryValue.Of(x.LeakParts[i].Get("wedge")),
+                    "shore" => x => QueryValue.Of(x.LeakParts[i].Get("shore")),
+                    "caulk" => x => QueryValue.Of(x.LeakParts[i].Get("caulk")),
                     _ => throw Unknown(),
                 };
             }
@@ -203,11 +207,24 @@ static class SimQuery
                 };
 
             case "inventory":
+            {
+                End(2);
+                if (At(1) == "candles") return x => QueryValue.Of(x.Air.CandlesLeft);
+                if (At(1) == "canisters") return x => QueryValue.Of(x.Air.CanistersLeft);
+                int item = -1;
+                for (int k = 0; k < w.Data.LockerItems.Count; k++) if (w.Data.LockerItems[k] == At(1)) item = k;
+                if (item < 0) throw Unknown();
+                return x => QueryValue.Of(x.Crew.Locker[item]);
+            }
+
+            case "strainer":
                 End(2);
                 return At(1) switch
                 {
-                    "candles" => x => QueryValue.Of(x.Air.CandlesLeft),
-                    "canisters" => x => QueryValue.Of(x.Air.CanistersLeft),
+                    "cover" => x => QueryValue.Of(x.Part("pump.intake").Get("coverOpen") >= 0.5 ? "open" : "closed"),
+                    "basket" => x => QueryValue.Of(x.Part("pump.intake").Get("basketOut") >= 0.5 ? "out" : "in"),
+                    "looseBolts" => x => QueryValue.Of(Repair.HandActions.LooseBolts(x)),
+                    "starvation" => x => QueryValue.Of(WaterSystem.PumpStarvation(x)),
                     _ => throw Unknown(),
                 };
 
@@ -254,6 +271,10 @@ static class SimQuery
                 End(2);
                 return At(1) switch
                 {
+                    "vitality" => x => QueryValue.Of(x.Crew.Vitality),
+                    "stunned" => x => QueryValue.Of(x.Crew.StunTicks > 0),
+                    "hand" => x => QueryValue.Of(x.Crew.Hand),
+                    "tool" => x => QueryValue.Of(x.T.Tools[x.Crew.Tool]),
                     "co2" => x => QueryValue.Of(x.Crew.Co2Level),
                     "o2" => x => QueryValue.Of(x.Crew.O2Level),
                     "cl2" => x => QueryValue.Of(x.Crew.Cl2Level),
@@ -264,8 +285,15 @@ static class SimQuery
                 End(2);
                 return At(1) switch
                 {
-                    "status" => x => QueryValue.Of(x.Status == MissionStatus.Running ? "running" : "failed"),
+                    "status" => x => QueryValue.Of(x.Status switch
+                    {
+                        MissionStatus.Running => "running",
+                        MissionStatus.Succeeded => "succeeded",
+                        _ => "failed",
+                    }),
                     "reason" => x => QueryValue.Of(x.FailReason),
+                    "hold" => x => QueryValue.Of(x.Mission.HoldTicks * x.Dt),
+                    "id" => x => QueryValue.Of(x.Mission.Id),
                     _ => throw Unknown(),
                 };
 

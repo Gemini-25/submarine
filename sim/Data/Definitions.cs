@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using DeepLine.Sim.Core;
 
 namespace DeepLine.Sim.Data;
 
@@ -114,4 +115,71 @@ public sealed class HullFile
     /// <summary>모든 누수 지점이 공유하는 부품 정의 (wear, props). 부품 종류는 지점의 kind를 쓴다.</summary>
     public PartDef PartTemplate { get; set; } = new();
     public SortedDictionary<string, LeakPointDef> Points { get; set; } = new(StringComparer.Ordinal);
+}
+
+/// <summary>
+/// 수리 절차 (data/procedures.json). 자유형 수리에서 코어는 절차로 판정하지 않는다.
+/// 절차는 매뉴얼, 자동 플레이어, 숨은 결함 판정의 기준이다. 명령의 {이름}은 bind로 채운다.
+/// </summary>
+public sealed class ProcedureDef
+{
+    [JsonIgnore] public string Id { get; set; } = "";
+    public string Title { get; set; } = "";
+    /// <summary>매뉴얼 분류용 고장 ID.</summary>
+    public string Fault { get; set; } = "";
+    /// <summary>proper 또는 temporary.</summary>
+    public string Grade { get; set; } = "";
+    /// <summary>채워야 하는 이름 (예: circuit, point).</summary>
+    [Optional] public List<string> Bind { get; set; } = new();
+    public List<ProcedureStep> Steps { get; set; } = new();
+}
+
+public sealed class ProcedureStep
+{
+    /// <summary>Inspect, Isolate, Open, Remove, Work, Install, Fasten, Close, Test (SPEC 6절).</summary>
+    public string Type { get; set; } = "";
+    /// <summary>매뉴얼에 쓰는 설명.</summary>
+    public string Text { get; set; } = "";
+    /// <summary>이 단계의 명령. Inspect처럼 상태를 바꾸지 않는 단계는 없다. {n}은 반복 번호(1부터), 나머지 {이름}은 bind 값.</summary>
+    [Optional] public string? Cmd { get; set; }
+    /// <summary>명령 전에 손에 들 도구.</summary>
+    [Optional] public string? Tool { get; set; }
+    /// <summary>같은 명령을 몇 번 하는지 (볼트 4개, 타격 3번 …).</summary>
+    [Optional] public int Repeat { get; set; } = 1;
+    /// <summary>매뉴얼용: 지켜야 할 전제 조건과 어겼을 때의 위험.</summary>
+    [Optional] public string? Requires { get; set; }
+    [Optional] public string? Hazard { get; set; }
+}
+
+/// <summary>미리 짠 임무 (data/missions/*.json). M1은 위기 훈련 하나.</summary>
+public sealed class MissionDef
+{
+    [JsonIgnore] public string Id { get; set; } = "";
+    public string Name { get; set; } = "";
+    /// <summary>지시서 문단들.</summary>
+    public List<string> Briefing { get; set; } = new();
+    public int Seed { get; set; }
+    public MissionSetup Setup { get; set; } = new();
+    /// <summary>정해진 시각에 주입하는 고장.</summary>
+    public List<MissionEvent> Events { get; set; } = new();
+    public MissionGoal Success { get; set; } = new();
+    /// <summary>이 시간(게임 초)이 지나면 시간 초과로 실패.</summary>
+    public double TimeLimitSeconds { get; set; }
+}
+
+public sealed class MissionEvent
+{
+    public double AtSeconds { get; set; }
+    public string Fault { get; set; } = "";
+    [Optional] public string? Part { get; set; }
+}
+
+public sealed class MissionGoal
+{
+    /// <summary>시나리오 assert와 같은 문법.</summary>
+    public string Assert { get; set; } = "";
+    /// <summary>이 시간 동안 내내 참이면 성공.</summary>
+    public double HoldSeconds { get; set; }
+    /// <summary>표현 층이 보여줄 목표 설명.</summary>
+    public List<string> Objectives { get; set; } = new();
 }
