@@ -79,7 +79,13 @@ public class ShaftPackingTests
         run.Run(600);
         Assert.InRange(Prop(run, "heat"), G.AmbientC + G.RiseC - 1, G.AmbientC + G.RiseC + 1e-6);
         Assert.Equal(1, run.Q($"{Packing}.integrity"));
+        Assert.Equal(DeviceNoise(run), run.Q("noise.current"), 9); // 끽끽 소리 없음
     }
+
+    /// <summary>지금 도는 장비의 소음 합 (추진은 스로틀만큼).</summary>
+    static double DeviceNoise(Simulation sim) =>
+        TestData.Data.Devices.Where(d => sim.Q($"device.{d.Id}.running") == 1)
+            .Sum(d => d.Noise * (d.Kind == DeviceKind.Throttle ? sim.World.Devices[sim.World.Propulsion].Throttle : 1));
 
     // ── 증상 ────────────────────────────────────────────
 
@@ -122,6 +128,8 @@ public class ShaftPackingTests
         var q = new ObservableQuery(sim);
         sim.Run(60);
         Assert.True(q.Number("cue.shaft.squeal") > 0.3, "끽끽 소리가 없다");
+        // 끽끽 소리는 계속 나는 소음이다: 추진 전동기 소음에 더해진다.
+        Assert.Equal(DeviceNoise(sim) + G.SquealNoise * Math.Min(1, (Prop(sim, "heat") - G.SquealFromC) / (G.BurnC - G.SquealFromC)), sim.Q("noise.current"), 6);
         sim.Run(240);
         Assert.True(Prop(sim, "heat") > G.BurnC);
         Assert.True(q.Number("cue.shaft.smoke") > 0.3, "연기가 없다");

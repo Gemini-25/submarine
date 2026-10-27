@@ -50,6 +50,23 @@ static class ShaftGland
         return (t.RiseC + t.OverTightRiseC * over * over) * (1 + Math.Abs(a - b) / 2) * (cocked ? t.CockedFactor : 1);
     }
 
+    /// <summary>
+    /// 끽끽 소리의 소음 (계속 나는 소음, NoiseSystem이 더한다). 축이 돌 때 열이 squealFromC에서 burnC까지 오르는 만큼 squealNoise까지.
+    /// 축이 서 있거나 열이 낮으면 정확히 0.
+    /// </summary>
+    public static double SquealNoise(SimWorld w)
+    {
+        if (w.T.ShaftGland is not { } t || t.SquealNoise <= 0 || ShaftSpeed(w) <= 0) return 0;
+        double sum = 0;
+        foreach (var part in w.LeakParts)
+        {
+            if (part.Kind != Kind) continue;
+            double heat = PropRef.Resolve(part, "heat").Get(t.AmbientC);
+            if (heat > t.SquealFromC) sum += t.SquealNoise * Math.Min(1, (heat - t.SquealFromC) / (t.BurnC - t.SquealFromC));
+        }
+        return sum;
+    }
+
     /// <summary>축 속도 0~1: 추진 전동기가 돌면 스로틀, 아니면 0.</summary>
     public static double ShaftSpeed(SimWorld w)
     {

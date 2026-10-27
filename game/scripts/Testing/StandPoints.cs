@@ -63,14 +63,14 @@ public static class StandPoints
 
         // ── 후방 ──
         new("motor", At(1.75f, 0.2f), false, [ "motor.cover", "motor.cover.bolt.1", "motor.cover.bolt.2" ], None),
-        new("shaft", At(0.3f, -0.2f), true, [ "shaft.follower", "shaft.nut.A", "shaft.nut.B", "shaft.collar" ], None),
+        new("shaft", At(0.3f, -0.2f), true, [ "shaft.follower", "shaft.nut.A", "shaft.nut.B", "shaft.collar", "shaft.packing" ], None),
         new("accumulator", At(2.05f, 0.15f), false,
             [ "steam.stop", "steam.bleed", ..Four("steam.flange.bolt"), "steam.joint" ], [ "hatch.closed" ]),
         new("winch", At(1.45f, 0.25f), false,
             [ "winch.control", "winch.brake", "winch.pawl", "winch.cover", "winch.cover.bolt.1", "winch.cover.bolt.2", "winch.adjust" ], None),
         new("pump", At(1.0f, -0.3f), false,
             [ "pump.cap", ..Four("pump.cap.bolt"), "pump.oilcup", "pump.body", "checkvalve.bonnet", ..Four("checkvalve.bolt"), "pump.discharge" ], None),
-        new("locker.aft", At(1.5f, -0.35f), false, [ "locker.aft.shelf.1", "locker.aft.shelf.2", "locker.aft.shelf.3" ], None),
+        new("locker.aft", At(1.5f, -0.35f), false, [ "locker.aft.shelf.1", "locker.aft.shelf.2", "locker.aft.shelf.3", "locker.packing_cord" ], None),
 
         // ── 중앙 ──
         new("toolboard", At(3.4f, -0.45f), false, Tools(), None),

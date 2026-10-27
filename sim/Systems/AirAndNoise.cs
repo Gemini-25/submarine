@@ -89,6 +89,7 @@ static class NoiseSystem
             if (w.Data.Devices[d].Kind == Data.DeviceKind.Throttle) level *= ds.Throttle;
             n += level;
         }
+        n += ShaftGland.SquealNoise(w); // 축 패킹을 너무 조이면 끽끽 소리 (M2 HUL-03)
 
         var actions = w.Noise.Actions;
         for (int i = actions.Count - 1; i >= 0; i--)

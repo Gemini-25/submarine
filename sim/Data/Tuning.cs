@@ -327,4 +327,7 @@ public sealed class ShaftGlandTuning
     public double RelaxPerSecond { get; set; }
     public double BurnC { get; set; }
     public double BurnIntegrityPerSecond { get; set; }
+    /// <summary>끽끽 소리(계속 나는 소음): 축이 돌고 열이 squealFromC를 넘으면 오르기 시작해 burnC에서 squealNoise.</summary>
+    public double SquealFromC { get; set; }
+    public double SquealNoise { get; set; }
 }

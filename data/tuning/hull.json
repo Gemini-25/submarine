@@ -11,6 +11,8 @@
     "cockedFactor": 3,
     "relaxPerSecond": 0.02,
     "burnC": 90,
-    "burnIntegrityPerSecond": 0.0005
+    "burnIntegrityPerSecond": 0.0005,
+    "squealFromC": 45,
+    "squealNoise": 8
   }
 }
