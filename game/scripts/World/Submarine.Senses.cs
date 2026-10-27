@@ -52,7 +52,7 @@ public partial class Submarine
             // 테: 둥근 쇠테. 잡히는 곳은 위쪽 손잡이 턱이라 테 가운데로 전구가 겨냥된다.
             RemoveMarker($"panel.bezel.{lamps[i]}");
             var bezel = Add(Binder.Bind(m, $"panel.bezel.{lamps[i]}", new Vector3(0.07f, 0.025f, 0.02f), new Vector3(x, 1.765f, 0.112f), "panel"));
-            var ring = new Node3D { Name = $"Bezel_{lamps[i]}", Position = new Vector3(x, 1.73f, 0.086f) }; // 배치의 테 자리와 겹친다
+            var ring = new Node3D { Name = $"Bezel_{lamps[i]}", Position = new Vector3(x, 1.73f, 0.086f) };
             m.AddChild(ring);
             var mb = new MeshBuilder();
             mb.Torus(ArtMat.Brass, Kit.AlongAxis(Vector3.Back, Vector3.Zero), 0.042f, 0.007f, 20, 6);
@@ -124,7 +124,7 @@ public partial class Submarine
             BoltVisual(screw, head, 0.006f);
         }
 
-        // 문: 왼쪽 경첩에 달린 유리창 문. 잡는 곳은 오른쪽 손잡이.
+        // 문: 오른쪽 경첩(벽을 마주 보고)에 달린 유리창 문. 잡는 곳은 왼쪽 손잡이.
         RemoveMarker("hydrophone.door");
         var hinge = new Node3D { Name = "DoorHinge", Position = new Vector3(6.225f, 1.45f, 0.966f) };
         n.AddChild(hinge);
@@ -145,8 +145,9 @@ public partial class Submarine
         Add(Binder.Bind(n, "hydrophone", new Vector3(0.2f, 0.02f, 0.01f), new Vector3(6.35f, 1.632f, 1.01f), hy));
 
         // 진공관 둘: 앞판의 소켓에 가로로 꽂혀 있다. 문 유리 너머로 필라멘트가 보인다.
-        Tube(n, "hydrophone.tube.1", new Vector3(6.30f, 1.45f, 1.0f), Vector3.Forward, hy);
-        Tube(n, "hydrophone.tube.2", new Vector3(6.40f, 1.45f, 1.0f), Vector3.Forward, hy);
+        // 벽을 마주 보고 왼쪽(x가 큰 쪽)이 1번이다. 문 나사 번호와 같은 방향.
+        Tube(n, "hydrophone.tube.1", new Vector3(6.40f, 1.45f, 1.0f), Vector3.Forward, hy);
+        Tube(n, "hydrophone.tube.2", new Vector3(6.30f, 1.45f, 1.0f), Vector3.Forward, hy);
 
         // 소나 진공관: 소나 상자 앞면에 드러나 있다. sonar.는 내장 명령의 머리라서 장치 ID는 sonarset.
         RemoveMarker("sonarset.tube.1");
@@ -163,28 +164,41 @@ public partial class Submarine
         Geo.Box(n, new Vector3(0.03f, 0.03f, 0.008f), new Vector3(6.35f, 1.585f, 1.014f), Geo.Bakelite);
         var toggle = new Node3D { Name = "Toggle", Position = new Vector3(6.35f, 1.585f, 1.01f) };
         n.AddChild(toggle);
-        Geo.Box(toggle, new Vector3(0.006f, 0.022f, 0.006f), new Vector3(0, 0.011f, 0), Geo.Brass);
+        Geo.Box(toggle, new Vector3(0.006f, 0.006f, 0.022f), new Vector3(0, 0, -0.011f), Geo.Brass);
         float drag = float.NaN, tilt = 0;
         sw.Preview = v => drag = v;
         int hydrophone = _data.Devices.ToList().FindIndex(d => d.Id == "hydrophone");
         OnUpdate((s, dt) =>
         {
             bool on = s.Devices[hydrophone].Enabled;
-            float target = on ? -35 : 35;
-            if (!float.IsNaN(drag)) target -= 70 * Math.Clamp(drag, -1, 1);
+            float target = on ? 35 : -35;
+            if (!float.IsNaN(drag)) target += 70 * Math.Clamp(drag, -1, 1);
             tilt = Approach(tilt, Math.Clamp(target, -35, 35), 300, dt);
             toggle.RotationDegrees = new Vector3(tilt, 0, 0);
         });
 
-        // 헤드폰: 걸이에서 쓰고 벗는다 (명령 없음).
+        // 헤드폰: 걸이에서 쓰고 벗는다 (명령 없음). 쓰고 있으면 걸이가 비고 이름표가 바뀐다.
         RemoveMarker("gadget.headphones");
-        var phones = Add(Interactable.Create(n, "gadget.headphones", "헤드폰", new Vector3(0.12f, 0.1f, 0.04f), new Vector3(6.45f, 1.22f, 1.12f), hy));
+        var phones = Add(Interactable.Create(n, "gadget.headphones", UI.Texts.Get("gadget.headphones", "헤드폰"), new Vector3(0.12f, 0.1f, 0.04f), new Vector3(6.45f, 1.22f, 1.12f), hy));
         phones.GestureFor = _ => GestureKind.Click;
         phones.CommandFor = (_, mo) =>
         {
             if (mo == Motion.Click) Headphones = !Headphones;
             return null;
         };
+        var set = new Node3D { Name = "Headphones" };
+        n.AddChild(set);
+        var hp = new MeshBuilder();
+        hp.Torus(ArtMat.Bakelite, Kit.AlongAxis(Vector3.Back, new Vector3(6.45f, 1.22f, 1.15f)), 0.05f, 0.008f, 16, 5);
+        foreach (float dx in new[] { -0.05f, 0.05f }) hp.Cylinder(ArtMat.Bakelite, Kit.AlongAxis(Vector3.Right, new Vector3(6.45f + dx, 1.18f, 1.15f)), 0.025f, 0.02f, 12, 0.004f);
+        hp.Instance(set, "Set", NoShadow);
+        string onLabel = UI.Texts.Get("gadget.headphones.on", "헤드폰 (쓰고 있다)"), offLabel = phones.Label;
+        OnUpdate((s, _) =>
+        {
+            if (s.Tick == 0) Headphones = false; // 다시 시작하면 걸이에 걸려 있다
+            set.Visible = !Headphones;
+            phones.Label = Headphones ? onLabel : offLabel;
+        });
     }
 
     /// <summary>진공관 하나: 유리관, 소켓, 필라멘트(단서 &lt;장치&gt;.glow의 세기로 빛난다). 빠지면 유리관과 필라멘트가 사라진다.</summary>

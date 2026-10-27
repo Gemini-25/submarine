@@ -5,6 +5,7 @@
       "sense": "Sight",
       "anchor": "panel.bulb.{l}",
       "q": "part.panel.bulb.{l}.prop.burnt",
+      "while": "part.panel.bulb.{l}.prop.present",
       "map": [[0, 0], [1, 1]],
       "caption": "cue.bulb.black"
     },

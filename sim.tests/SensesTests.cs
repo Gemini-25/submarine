@@ -217,6 +217,7 @@ public class SensesTests
         sim.Run(2);
         foreach (var c in new[] { "tool.hand", "panel.bezel.water.loosen", "panel.bulb.water.pull" }) { sim.Cmd(c); sim.Run(Pace); }
         Assert.Equal("bulb_burnt", sim.QS("crew.hand"));
+        Assert.Equal(0, sim.Q("cue.panel.bulb.water.black"), 9); // 빈 소켓에는 그을린 전구가 없다
         foreach (var c in new[] { "panel.bulb.water.insert", "panel.bezel.water.tighten" }) { sim.Cmd(c); sim.Run(Pace); }
         Assert.Equal("off", sim.QS("panel.lamp.water"));
         Assert.Equal("SNS-01", sim.QS("part.panel.bulb.water.fault"));
@@ -320,6 +321,107 @@ public class SensesTests
         sim.Run(2);
         Assert.Equal(1, sim.Q("device.siphon_recorder.running"));
         Assert.Equal("off", sim.QS("panel.lamp.cable"));
+    }
+
+    [Fact]
+    public void Weak_filament_holds_while_the_hydrophone_is_off()
+    {
+        var sim = TestData.NewSim();
+        sim.Run(2);
+        sim.Cmd("device.hydrophone.off");
+        sim.Step();
+        sim.Inject("SNS-03");
+        sim.Run(600);
+        Assert.Equal(0.3, sim.Q("part.hydrophone.tube.1.prop.filament"), 9);
+        sim.Cmd("device.hydrophone.on");
+        double fade = 0.3 / TestData.T.Senses!.FilamentDecayPerSecond;
+        sim.Run(fade - 10);
+        Assert.Equal(1, sim.Q("device.hydrophone.running"));
+        sim.Run(20);
+        Assert.Equal(0, sim.Q("device.hydrophone.running"));
+    }
+
+    [Fact]
+    public void Pulling_the_siphon_tube_with_the_recorder_on_shocks()
+    {
+        // 교범 39쪽: C6가 살아 있는 채로 뽑으면 감전된다 (A_missing_tube_stops_its_device는 먼저 꺼서 위험이 없다)
+        var sim = TestData.NewSim();
+        sim.Run(2);
+        sim.Cmd("tool.hand");
+        sim.Step();
+        sim.Cmd("siphon.tube.1.pull");
+        sim.Step();
+        Assert.Contains(sim.DrainEvents(), e => e.Kind == SimEventKind.Shock && e.Subject == "siphon.tube.1.pull");
+    }
+
+    // 헛수리: 헷갈리는 쌍 '청음기 잡음·침묵' (청음기 진공관 소손 대 C4 퓨즈)
+
+    [Fact]
+    public void Replacing_the_C4_fuse_for_a_weak_tube_leaves_the_hiss()
+    {
+        var sim = TestData.NewSim();
+        sim.Inject("SNS-03");
+        sim.Run(30);
+        var events = new List<SimEvent>();
+        foreach (var c in ProcedureRunner.ExpandWithBelt(sim, TestData.Data.Procedure("proc.fuse.replace"), new Dictionary<string, string> { ["circuit"] = "C4" }))
+        {
+            sim.Apply(c);
+            sim.Run(Pace);
+            events.AddRange(sim.DrainEvents());
+        }
+        Assert.DoesNotContain(events, e => e.Kind is SimEventKind.Shock or SimEventKind.Pinch or SimEventKind.Hurt);
+        Assert.Equal(new[] { "fuse.C4" }, events.Where(e => e.Kind == SimEventKind.PartRepaired).Select(e => e.Subject).ToArray());
+        Assert.Equal("SNS-03", sim.QS("part.hydrophone.tube.1.fault"));
+        Assert.True(sim.Q("cue.hydrophone.hiss") >= 0.6);
+        sim.Run(300);
+        Assert.Equal(0, sim.Q("device.hydrophone.running"));
+    }
+
+    [Fact]
+    public void Replacing_a_tube_for_a_blown_C4_fuse_leaves_the_hydrophone_silent()
+    {
+        var sim = TestData.NewSim();
+        sim.Inject("ELC-01", "fuse.C4");
+        sim.Run(30);
+        var events = Follow(sim, "proc.tube.replace", Tube("1"));
+        Assert.DoesNotContain(events, e => Harm.Contains(e.Kind));
+        Assert.Equal(new[] { "hydrophone.tube.1" }, events.Where(e => e.Kind == SimEventKind.PartRepaired).Select(e => e.Subject).ToArray());
+        sim.Run(5);
+        Assert.Equal(0, sim.Q("device.hydrophone.running"));
+        Assert.Equal(0, sim.Q("panel.on"));
+        Assert.Equal("ELC-01", sim.QS("part.fuse.C4.fault"));
+    }
+
+    [Fact]
+    public void Bezels_and_door_screws_answer_in_their_own_words()
+    {
+        var sim = TestData.NewSim();
+        sim.Cmd("tool.hand");
+        sim.Cmd("panel.bezel.water.tighten");
+        sim.Step();
+        Assert.Contains(sim.DrainEvents(), e => e.Kind == SimEventKind.CommandRejected && e.Detail == "bezel_tight");
+        sim.Cmd("panel.bezel.water.loosen");
+        sim.Cmd("panel.bezel.water.loosen");
+        sim.Step();
+        Assert.Contains(sim.DrainEvents(), e => e.Kind == SimEventKind.CommandRejected && e.Detail == "bezel_loose");
+        sim.Cmd("toolboard.return.scrub_brush");
+        sim.Cmd("toolboard.take.screwdriver");
+        sim.Cmd("tool.screwdriver");
+        sim.Cmd("hydrophone.door.screw.1.tighten");
+        sim.Step();
+        Assert.Contains(sim.DrainEvents(), e => e.Kind == SimEventKind.CommandRejected && e.Detail == "screw_tight");
+    }
+
+    [Fact]
+    public void Good_tube_threshold_matches_the_fade_threshold()
+    {
+        // 뽑은 관이 성한 관인가(장치 params.goodTube)와 약해지기 시작하는 문턱(tuning.senses)은 같은 값이다 (검증기가 막는다)
+        var f = TestData.Data.Fixtures.Instances.First(i => i.Id == "hydrophone.tube.1");
+        Assert.Equal(TestData.T.Senses!.TubeWeakFilament, f.Params["goodTube"]);
+        var e = Assert.Throws<DataValidationException>(() => DataValidationTests.LoadModified(Path.Combine("tuning", "senses.json"), n => n["senses"]!["tubeWeakFilament"] = 0.4));
+        Assert.Contains(e.Errors, x => x.Contains("goodTube"));
+        e = Assert.Throws<DataValidationException>(() => DataValidationTests.LoadModified(Path.Combine("tuning", "senses.json"), n => n["senses"]!["bulbFlickerSeconds"] = 0));
+        Assert.Contains(e.Errors, x => x.Contains("bulbFlickerSeconds"));
     }
 
     // ---------- SNS-03 수리
@@ -474,25 +576,26 @@ public class SensesTests
         Assert.Equal("SNS-03", sim.QS("part.hydrophone.tube.1.fault"));
         Assert.Equal(0, sim.Q("device.hydrophone.running"));
 
-        // 소나에서 빼 쓴다 (빈 소켓과 문은 그대로 이어 받는다: 처음부터 다시 따른다)
-        sim = TestData.NewSim();
-        Warm(sim);
-        foreach (var c in new[] { "locker.take.vacuum_tube", "hand.drop", "locker.take.vacuum_tube", "hand.drop" }) { sim.Cmd(c); sim.Step(); }
-        sim.Inject("SNS-03", "hydrophone.tube.1");
-        sim.Run(310);
+        // 셋째 시도 뒤: 손은 비었고(탄 관은 버렸다), 소켓은 비었고, 문은 닫혀 있다
+        Assert.Equal("", sim.QS("crew.hand"));
+        Assert.Equal(0, sim.Q("part.hydrophone.tube.1.prop.present"));
+        Assert.Equal(0, sim.Q("part.hydrophone.case.prop.doorOpen"));
+
+        // 같은 판에서 이어서 소나의 관을 빼 쓴다. 탄 관은 이미 뽑아 버렸으니 그 두 단계는 건너뛴다.
         sim.Apply(new Command("sonar.ping"));
         sim.Step();
         Assert.Equal(1, sim.Q("device.sonar.running"));
         sim.Run(3);
-        var salvage = Follow(sim, "proc.tube.salvage", Tube("1"));
+        var salvage = Follow(sim, "proc.tube.salvage", Tube("1"), skip: c => c is "hydrophone.tube.1.pull" or "hand.drop");
         Assert.DoesNotContain(salvage, e => Harm.Contains(e.Kind));
         Assert.Equal("", sim.QS("part.hydrophone.tube.1.fault"));
+        Assert.Equal(0, sim.Q("inventory.vacuum_tube"));
         sim.Run(5);
         Assert.Equal(1, sim.Q("device.hydrophone.running"));
         Assert.Equal(0, sim.Q("part.sonar.tube.1.prop.present"));
         sim.Apply(new Command("sonar.ping"));
         sim.Step();
-        Assert.Equal(0, sim.Q("device.sonar.running")); // 소나는 이제 울리지 않는다
+        Assert.Equal(0, sim.Q("device.sonar.running")); // 소나는 이제 발신하지 못한다
         Assert.Equal(0, sim.Q("cue.sonarset.tube.1.glow"), 9);
     }
 

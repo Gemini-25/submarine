@@ -19,6 +19,13 @@ public partial class AutoPlayer
     {
         _main.Runner.Start(Data, "m2-senses-a");
         _main.Restart();
+        // 감전, 끼임, 화상(Hurt)을 모두 센다. 진공관 절차의 문서화된 위험은 화상이다.
+        int hurts = 0;
+        void OnEvent(SimEvent e)
+        {
+            if (e.Kind is SimEventKind.Shock or SimEventKind.Pinch or SimEventKind.Hurt) hurts++;
+        }
+        _main.Runner.EventRaised += OnEvent;
         try
         {
             var q = new ObservableQuery(_main.Runner.Sim);
@@ -68,12 +75,13 @@ public partial class AutoPlayer
                 await Frame();
             }
             var s = Snap;
-            GD.Print($"AUTOTEST: 감각 훈련 {s.TimeSeconds / 60:F1}분에 {s.Status} {s.FailReason}, 손동작 {_gestures}번, 감전 {_main.Shocks}");
+            GD.Print($"AUTOTEST: 감각 훈련 {s.TimeSeconds / 60:F1}분에 {s.Status} {s.FailReason}, 손동작 {_gestures}번, 다침 {hurts}");
             Check(s.Status == MissionStatus.Succeeded, $"감각 훈련이 성공하지 않았다: {s.Status} {s.FailReason}");
-            Check(_main.Shocks == 0 && _main.Pinches == 0, "절차대로 했는데 다쳤다");
+            Check(hurts == 0, $"절차대로 했는데 다쳤다 ({hurts}번)");
         }
         finally
         {
+            _main.Runner.EventRaised -= OnEvent;
             _main.Runner.Start(Data, "m1-crisis");
             _main.Restart();
         }

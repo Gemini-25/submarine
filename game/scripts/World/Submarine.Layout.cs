@@ -713,7 +713,7 @@ public partial class Submarine
         for (int i = 0; i < lamps.Count; i++)
         {
             float x = -0.77f + i * 0.22f;
-            mb.Torus(ArtMat.Brass, Kit.AlongAxis(Vector3.Back, new Vector3(x, 1.73f, 0.085f)), 0.04f, 0.006f, 20, 6);
+            // 표시등 테는 감각 계통이 돌리는 모습과 함께 짓는다 (Submarine.Senses.cs).
             Marker(m, $"panel.bezel.{lamps[i]}", $"{LampLabels[i]} 표시등 테", new Vector3(x, 1.73f, 0.115f), new Vector3(0.08f, 0.08f, 0.02f), "panel");
         }
         foreach (var (gi, id) in DriftGauges)
@@ -1006,11 +1006,10 @@ public partial class Submarine
         // 위쪽 벽: 청음기, 소나, 헤드폰 걸이
         mb.Box(ArtMat.Machinery, new Vector3(6.35f, 1.5f, 1.11f), new Vector3(0.3f, 0.3f, 0.18f), 0.01f);
         mb.Box(ArtMat.Machinery, new Vector3(6.35f, 1.45f, 1.017f), new Vector3(0.24f, 0.18f, 0.006f), 0.003f);
-        foreach (float x in new[] { 6.25f, 6.45f }) Bolt(mb, new Vector3(x, 1.585f, 1.018f), Vector3.Forward, 0.013f);
+        // 청음기 문 나사는 감각 계통이 짓는다 (Submarine.Senses.cs).
         mb.Box(ArtMat.Machinery, new Vector3(6.72f, 1.5f, 1.11f), new Vector3(0.2f, 0.3f, 0.18f), 0.01f);
         mb.Box(ArtMat.BareSteel, new Vector3(6.45f, 1.3f, 1.17f), new Vector3(0.02f, 0.02f, 0.06f), 0.004f);
-        mb.Torus(ArtMat.Bakelite, Kit.AlongAxis(Vector3.Back, new Vector3(6.45f, 1.22f, 1.15f)), 0.05f, 0.008f, 16, 5);
-        foreach (float dx in new[] { -0.05f, 0.05f }) mb.Cylinder(ArtMat.Bakelite, Kit.AlongAxis(Vector3.Right, new Vector3(6.45f + dx, 1.18f, 1.15f)), 0.025f, 0.02f, 12, 0.004f);
+        // 걸이의 헤드폰은 감각 계통이 짓는다 (쓰면 걸이에서 사라진다, Submarine.Senses.cs).
         mb.Instance(n, "Desk");
         Geo.Blocker(n, new Vector3(0.65f, 0.04f, 0.5f), new Vector3(6.425f, top - 0.02f, z));
         var glass = new MeshBuilder();

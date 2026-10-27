@@ -13,8 +13,8 @@
       "prop": "bezel",
       "group": "bezel",
       "verbs": {
-        "loosen": { "tool": "hand", "noise": "tap" },
-        "tighten": { "tool": "hand", "noise": "tap" }
+        "loosen": { "tool": "hand", "noise": "tap", "rejectIf": [ { "if": "self.bezel < 0.5", "reason": "bezel_loose" } ] },
+        "tighten": { "tool": "hand", "noise": "tap", "rejectIf": [ { "if": "self.bezel >= 0.5", "reason": "bezel_tight" } ] }
       }
     },
     {
@@ -53,8 +53,8 @@
       "prop": "screw{n}",
       "group": "door",
       "verbs": {
-        "loosen": { "tool": "screwdriver", "noise": "screwdriver" },
-        "tighten": { "tool": "screwdriver", "noise": "screwdriver" }
+        "loosen": { "tool": "screwdriver", "noise": "screwdriver", "rejectIf": [ { "if": "self.screw{n} < 0.5", "reason": "screw_loose" } ] },
+        "tighten": { "tool": "screwdriver", "noise": "screwdriver", "rejectIf": [ { "if": "self.screw{n} >= 0.5", "reason": "screw_tight" } ] }
       }
     },
     {

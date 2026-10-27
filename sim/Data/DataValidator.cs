@@ -247,6 +247,7 @@ static class DataValidator
         Repair.FixtureValidator.Validate(d, errors);
         Repair.CrewValidator.Validate(d, errors);
         Parts.MechanicsValidator.Validate(d, errors);
+        Systems.SensesValidator.Validate(d, errors);
 
         if (errors.Count > 0)
             throw new DataValidationException(errors);

@@ -31,5 +31,11 @@
   "cue.tube.glow": "진공관 필라멘트가 주황빛으로 빛난다.",
   "cue.hydrophone.hiss": "헤드폰에서 쉬익거리는 잡음이 커진다.",
   "cue.hydrophone.listen": "헤드폰에서 바닷물 소리가 낮게 울린다.",
-  "reason.door_screws_tight": "나사가 문을 물고 있어 열리지 않는다."
+  "reason.door_screws_tight": "나사가 문을 물고 있어 열리지 않는다.",
+  "reason.bezel_loose": "테가 이미 풀려 있다.",
+  "reason.bezel_tight": "테가 이미 끝까지 조여져 있다.",
+  "reason.screw_loose": "나사가 이미 풀려 있다.",
+  "reason.screw_tight": "나사가 이미 조여져 있다.",
+  "gadget.headphones": "헤드폰",
+  "gadget.headphones.on": "헤드폰 (쓰고 있다)"
 }

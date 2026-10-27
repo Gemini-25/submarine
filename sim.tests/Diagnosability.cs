@@ -210,11 +210,11 @@ public class SensesDiagnosability
 {
     static readonly (string Fault, string? Part)[] Faults = { ("SNS-01", null), ("SNS-03", null) };
 
-    static SortedDictionary<string, DiagnosisHarness.Element> Run(string? fault, string? part)
+    static SortedDictionary<string, DiagnosisHarness.Element> Run(string? fault, string? part, double t = 60)
     {
         var sim = TestData.NewSim(setup: TestData.Setup(s => s.Bilges["bilge.aft"] = 150));
         if (fault != null) sim.Inject(fault, part);
-        sim.Run(60);
+        sim.Run(t);
         return DiagnosisHarness.Observe(new ObservableQuery(sim), TestData.Data);
     }
 
@@ -244,9 +244,27 @@ public class SensesDiagnosability
         Assert.True(v["SNS-01"]["measure.lamptest.panel"].Differs(b["measure.lamptest.panel"]), $"SNS-01 measure.lamptest.panel: {v["SNS-01"]["measure.lamptest.panel"]} / {b["measure.lamptest.panel"]}");
         Assert.True(v["SNS-01"]["panel.lamp.water"].Differs(b["panel.lamp.water"]), $"SNS-01 panel.lamp.water: {v["SNS-01"]["panel.lamp.water"]} / {b["panel.lamp.water"]}");
         Assert.True(v["SNS-01"]["cue.panel.bulb.water.black"].Differs(b["cue.panel.bulb.water.black"]), $"SNS-01 cue.panel.bulb.water.black: {v["SNS-01"]["cue.panel.bulb.water.black"]} / {b["cue.panel.bulb.water.black"]}");
-        // 청음기 잡음: 한 필라멘트만 흐리다 (교범 05, 39). C4 퓨즈라면 상황판도 꺼진다.
+        // 청음기 잡음: 한 필라멘트만 흐리다 (교범 05, 39).
         Assert.True(v["SNS-03"]["cue.hydrophone.hiss"].Differs(b["cue.hydrophone.hiss"]), $"SNS-03 cue.hydrophone.hiss: {v["SNS-03"]["cue.hydrophone.hiss"]} / {b["cue.hydrophone.hiss"]}");
         Assert.True(v["SNS-03"]["cue.hydrophone.tube.1.glow"].Differs(v["SNS-03"]["cue.hydrophone.tube.2.glow"]), $"SNS-03 cue.hydrophone.tube.1.glow: {v["SNS-03"]["cue.hydrophone.tube.1.glow"]} / {v["SNS-03"]["cue.hydrophone.tube.2.glow"]}");
         Assert.False(v["SNS-03"]["panel.on"].Differs(b["panel.on"]), $"SNS-03 panel.on: {v["SNS-03"]["panel.on"]} / {b["panel.on"]}");
+    }
+
+    /// <summary>
+    /// 소리가 끊긴 뒤(320초)의 SNS-03과 헷갈리는 C4 퓨즈: C4 퓨즈라면 상황판도 꺼지고 두 필라멘트가 다 꺼진다 (교범 05, 39 '가르기').
+    /// </summary>
+    [Fact]
+    public void Silent_hydrophone_splits_from_a_blown_C4_fuse()
+    {
+        const double late = 320;
+        var baseLate = Run(null, null, late);
+        var sns = Run("SNS-03", null, late);
+        var c4 = Run("ELC-01", "fuse.C4", late);
+        // C4 퓨즈라면 상황판도 꺼진다
+        Assert.True(sns["panel.on"].Differs(c4["panel.on"]), $"{sns["panel.on"]} / {c4["panel.on"]}");
+        Assert.True(sns["cue.hydrophone.tube.2.glow"].Differs(c4["cue.hydrophone.tube.2.glow"]));
+        Assert.True(sns["panel.lamp.senses"].Differs(baseLate["panel.lamp.senses"]), $"{sns["panel.lamp.senses"]} / {baseLate["panel.lamp.senses"]}");
+        foreach (var k in DiagnosisHarness.Separating(sns, baseLate))
+            Assert.True(DiagnosisHarness.Documented(k, TestData.Data), $"소리가 끊긴 SNS-03을 드러내는 '{k}'에 문구가 없다");
     }
 }

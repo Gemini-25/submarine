@@ -100,3 +100,34 @@ public static class Tubes
         }
     }
 }
+
+/// <summary>감각 데이터의 검증 (DataValidator가 부른다). 틀린 값은 로드 오류다.</summary>
+static class SensesValidator
+{
+    public static void Validate(GameData d, List<string> errors)
+    {
+        void Check(bool ok, string message)
+        {
+            if (!ok) errors.Add(message);
+        }
+        bool hasTubes = d.Parts.Any(p => p.Kind == Tubes.Kind);
+        bool hasBulbs = d.Parts.Any(p => p.Id.StartsWith("panel.bulb.", StringComparison.Ordinal));
+        var st = d.Tuning.Senses;
+        if (st == null)
+        {
+            Check(!hasTubes && !hasBulbs, "tuning.senses가 없다 (진공관이나 상황판 전구 부품이 있으면 필요하다)");
+            return;
+        }
+        Check(st.BulbFlickerSeconds > 0, "tuning.senses.bulbFlickerSeconds > 0");
+        Check(st.BulbFlickerOffFraction >= 0 && st.BulbFlickerOffFraction <= 1, "tuning.senses.bulbFlickerOffFraction은 0~1");
+        Check(st.FilamentDecayPerSecond > 0, "tuning.senses.filamentDecayPerSecond > 0");
+        Check(st.TubeWeakFilament > 0 && st.TubeWeakFilament <= 1, "tuning.senses.tubeWeakFilament은 0 초과 1 이하");
+        // 뽑은 관이 성한 관인지 가르는 문턱(장치 params.goodTube)은 약해지기 시작하는 문턱과 같아야 한다.
+        // 다르면 약해지는 중인 관이 새 관으로 나와 다시 꽂을 때 되살아나거나, 성한 관이 탄 관으로 나온다.
+        var parts = d.Parts.ToDictionary(p => p.Id, StringComparer.Ordinal);
+        foreach (var f in d.Fixtures.Instances)
+            if (parts.TryGetValue(f.PartId, out var p) && p.Kind == Tubes.Kind && f.Params.TryGetValue("goodTube", out double good))
+                Check(Math.Abs(good - st.TubeWeakFilament) < 1e-12,
+                    $"{f.File}: params.goodTube({good})는 tuning.senses.tubeWeakFilament({st.TubeWeakFilament})와 같아야 한다");
+    }
+}
