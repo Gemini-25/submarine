@@ -94,7 +94,7 @@ static class Navigation
             var card = t.DeviationCard;
             if (card.Count < 2 || card.Any(p => p.Length != 2) || card[0][0] != 0 || card[^1][0] != 360 || card[0][1] != card[^1][1]
                 || card.Zip(card.Skip(1)).Any(z => z.Second[0] <= z.First[0]))
-                errors.Add("tuning.nav.deviationCard: [침로, 편차] 점들이 0에서 360까지 늘어나야 하고 0과 360의 편차가 같아야 한다");
+                errors.Add("tuning.nav.deviationCard: [침로, 자차] 점들이 0에서 360까지 늘어나야 하고 0과 360의 자차가 같아야 한다");
         }
         if (comp)
         {
@@ -236,7 +236,7 @@ static class Navigation
         return x < 0 ? x + 360 : x;
     }
 
-    /// <summary>편차표의 편차 (도). 나침반 = 참 침로 + 편차.</summary>
+    /// <summary>자차표의 자차 (도). 나침반 = 참 침로 + 자차.</summary>
     public static double Deviation(NavTuning t, double trueDeg) => Curve.Eval(t.DeviationCard, Wrap(trueDeg));
 
     /// <summary>

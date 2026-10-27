@@ -30,12 +30,12 @@
         "loosen": {
           "tool": "screwdriver",
           "noise": "screwdriver",
-          "rejectIf": [ { "if": "self.capOff >= 0.5", "reason": "cover_open" } ]
+          "rejectIf": [ { "if": "self.capOff >= 0.5", "reason": "screw_cover_open" } ]
         },
         "tighten": {
           "tool": "screwdriver",
           "noise": "screwdriver",
-          "rejectIf": [ { "if": "self.capOff >= 0.5", "reason": "cover_open" } ]
+          "rejectIf": [ { "if": "self.capOff >= 0.5", "reason": "screw_cover_open" } ]
         }
       }
     },
@@ -130,12 +130,12 @@
         "loosen": {
           "tool": "screwdriver",
           "noise": "screwdriver",
-          "rejectIf": [ { "if": "self.coverOpen >= 0.5", "reason": "cover_open" } ]
+          "rejectIf": [ { "if": "self.coverOpen >= 0.5", "reason": "screw_cover_open" } ]
         },
         "tighten": {
           "tool": "screwdriver",
           "noise": "screwdriver",
-          "rejectIf": [ { "if": "self.coverOpen >= 0.5", "reason": "cover_open" } ]
+          "rejectIf": [ { "if": "self.coverOpen >= 0.5", "reason": "screw_cover_open" } ]
         }
       }
     },

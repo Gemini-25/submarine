@@ -32,11 +32,14 @@ public class NavigationTests
     /// 사람 속도(손동작 0.6초)로 명령을 따른다. 명령 전에 NavDrill.Ready가 참이 될 때까지 기다린다(회전자가 서기, 자리 잡기).
     /// 기다림 없이(wait = false) 하면 위험을 건너뛴 사람이 된다.
     /// </summary>
-    static void Follow(Simulation sim, IEnumerable<Command> commands, List<SimEvent> log, bool wait = true)
+    static void Follow(Simulation sim, IEnumerable<Command> commands, List<SimEvent> log, bool wait = true, bool waitStun = false)
     {
         var q = new ObservableQuery(sim);
         foreach (var c in commands)
         {
+            // 위험을 건너뛴 사람도 끼인 뒤에는 손이 돌아올 때까지 기다린다 (기절 중의 손동작은 거부된다).
+            if (waitStun)
+                for (int i = 0; i < TestData.Ticks(10) && q.Number("crew.stunned") >= 0.5; i++) sim.Step();
             if (wait)
             {
                 for (int i = 0; i < TestData.Ticks(900) && !NavDrill.Ready(q, c.Cmd); i++) sim.Step();
@@ -62,6 +65,29 @@ public class NavigationTests
 
     static void NoHarm(IEnumerable<SimEvent> log) =>
         Assert.DoesNotContain(log, e => e.Kind is SimEventKind.CommandRejected or SimEventKind.Shock or SimEventKind.Pinch or SimEventKind.Hurt);
+
+    /// <summary>교범 11쪽 소음 등급표의 '조용' 상한.</summary>
+    const double QuietClass = 5;
+
+    /// <summary>펼친 절차의 손동작 소음 중 가장 큰 것 (장치 동사의 noise 키, 사물함, 공구판).</summary>
+    static double PeakActionNoise(IEnumerable<Command> commands)
+    {
+        var fx = TestData.Data.Fixtures;
+        double max = 0;
+        foreach (var c in commands)
+        {
+            string? key = null;
+            if (fx.TryRow(c.Cmd, out int row))
+            {
+                var r = fx.Rows[row];
+                if (r.Verb != FixtureCatalog.TouchVerb) key = fx.Instances[r.Instance].Def.Verbs[r.Verb].Noise;
+            }
+            else if (c.Cmd.StartsWith("locker.", StringComparison.Ordinal)) key = "locker";
+            else if (c.Cmd.StartsWith("toolboard.", StringComparison.Ordinal)) key = "toolboard";
+            if (key != null && TestData.T.Noise.Actions.TryGetValue(key, out var n)) max = Math.Max(max, n.Level);
+        }
+        return max;
+    }
 
     /// <summary>중계기가 참 침로에서 벗어난 각도를 관찰로 (교범의 셈).</summary>
     static double Gap(Simulation sim) => NavDrill.RepeaterOffset(new ObservableQuery(sim), TestData.Data);
@@ -267,7 +293,9 @@ public class NavigationTests
         sim.Run(120);
         var log = new List<SimEvent>();
         int stock = (int)sim.Q("inventory.gyro_bearing");
-        Follow(sim, Proc(sim, "proc.gyro.bearing"), log);
+        var cmds = Proc(sim, "proc.gyro.bearing");
+        Assert.InRange(PeakActionNoise(cmds), 0, QuietClass); // 교범 42쪽 '조용한 수리다'
+        Follow(sim, cmds, log);
         Assert.Equal("", sim.QS("part.gyro.bearing.fault"));
         Assert.Equal("normal", sim.QS("part.gyro.bearing.state"));
         Assert.Equal(stock - 1, sim.Q("inventory.gyro_bearing"));
@@ -290,37 +318,46 @@ public class NavigationTests
         sim.Inject("NAV-02");
         sim.Run(120);
         var log = new List<SimEvent>();
-        Follow(sim, Proc(sim, "proc.navcomp.gear"), log);
+        int stock = (int)sim.Q("inventory.nav_gear");
+        var cmds = Proc(sim, "proc.navcomp.gear");
+        Assert.InRange(PeakActionNoise(cmds), 0, QuietClass); // 교범 43쪽 '조용한 수리다'
+        Follow(sim, cmds, log);
         Assert.Equal("", sim.QS("part.navcomp.gear.fault"));
+        Assert.Equal("normal", sim.QS("part.navcomp.gear.state"));
         Assert.Equal(0, sim.Q("part.navcomp.gear.prop.slip"));
+        Assert.Equal(stock - 1, sim.Q("inventory.nav_gear"));
+        Assert.Contains(log, e => e.Kind == SimEventKind.PartRepaired && e.Subject == "navcomp.gear" && e.Detail == "NAV-02");
         ResetCounter(sim, log);
         NoHarm(log);
-        for (int m = 0; m < 5; m++)
+        for (int i = 0; i < TestData.Ticks(300); i++)
         {
-            sim.Run(60);
-            Assert.True(sim.Q("nav.counterError") < 0.05, $"맞춘 뒤 {m + 1}분에 {sim.Q("nav.counterError"):F3}km");
+            sim.Step();
+            Assert.Equal(0, sim.Q("cue.navcomp.stall"));
+            Assert.Equal(0, sim.Q("cue.navcomp.click"));
         }
-        Assert.Equal(0, sim.Q("cue.navcomp.stall"));
+        Assert.True(sim.Q("nav.counterError") < 0.05, $"맞춘 뒤 5분에 {sim.Q("nav.counterError"):F3}km");
     }
 
     // ── 위험 건너뛰기 ─────────────────────────────────────
 
     [Fact]
-    public void Skipping_the_gyro_switch_pinches_at_the_rotor_cap()
+    public void Skipping_the_gyro_switch_pinches_at_every_rotor_step()
     {
         var sim = UnderWay();
         sim.Inject("NAV-01");
         var log = new List<SimEvent>();
         var cmds = Proc(sim, "proc.gyro.bearing").Where(c => c.Cmd != "gyro.switch.off").ToList();
-        int cap = cmds.FindIndex(c => c.Cmd == "gyro.lid.open");
-        Follow(sim, cmds.Take(cap), log, wait: false);
+        int lid = cmds.FindIndex(c => c.Cmd == "gyro.lid.open");
+        Follow(sim, cmds.Take(lid), log, wait: false);
         Assert.DoesNotContain(log, e => e.Kind == SimEventKind.Pinch);
-        Follow(sim, cmds.Skip(cap).Take(1), log, wait: false);
-        Assert.Contains(log, e => e.Kind == SimEventKind.Pinch && e.Subject == "gyro.lid.open");
+        // 끝까지 (끼인 뒤에는 손이 돌아올 때까지만 기다린다). 베어링을 뽑으면 자이로가 서지만 약 40초는 더 돈다.
+        Follow(sim, cmds.Skip(lid), log, wait: false, waitStun: true);
+        var pinched = log.Where(e => e.Kind == SimEventKind.Pinch).Select(e => e.Subject).ToHashSet();
+        Assert.Superset(new HashSet<string> { "gyro.lid.open", "gyro.bearing.pull", "gyro.bearing.insert" }, pinched);
     }
 
     [Fact]
-    public void Opening_the_rotor_cap_before_the_whine_stops_pinches_even_with_the_switch_off()
+    public void Opening_the_lid_before_the_whine_stops_pinches_even_with_the_switch_off()
     {
         var sim = UnderWay();
         var log = new List<SimEvent>();
@@ -331,7 +368,7 @@ public class NavigationTests
     }
 
     [Fact]
-    public void Skipping_the_nav_computer_lever_pinches_at_the_gear()
+    public void Skipping_the_nav_computer_lever_pinches_at_both_gear_steps()
     {
         var sim = UnderWay();
         sim.Inject("NAV-02");
@@ -340,8 +377,10 @@ public class NavigationTests
         int pull = cmds.FindIndex(c => c.Cmd == "navcomp.gear.pull");
         Follow(sim, cmds.Take(pull), log);
         Assert.DoesNotContain(log, e => e.Kind == SimEventKind.Pinch);
-        Follow(sim, cmds.Skip(pull).Take(1), log);
-        Assert.Contains(log, e => e.Kind == SimEventKind.Pinch && e.Subject == "navcomp.gear.pull");
+        // 계산기는 톱니가 없어도 레버만 올라가 있으면 돈다 (Navigation.CanRun).
+        Follow(sim, cmds.Skip(pull), log, waitStun: true);
+        var pinched = log.Where(e => e.Kind == SimEventKind.Pinch).Select(e => e.Subject).ToHashSet();
+        Assert.Superset(new HashSet<string> { "navcomp.gear.pull", "navcomp.gear.insert" }, pinched);
     }
 
     // ── 숨은 결함 ─────────────────────────────────────────
@@ -382,7 +421,7 @@ public class NavigationTests
     }
 
     [Fact]
-    public void Reinserting_the_worn_parts_fixes_nothing()
+    public void Reinserting_the_worn_gear_fixes_nothing()
     {
         var sim = UnderWay();
         sim.Inject("NAV-02");
@@ -393,6 +432,25 @@ public class NavigationTests
         Follow(sim, new[] { "navcomp.gear.insert", "navcomp.cover.close", "navcomp.power.on" }.Select(c => new Command(c)), log);
         Assert.Equal("NAV-02", sim.QS("part.navcomp.gear.fault"));
         Assert.Equal(0.6, sim.Q("part.navcomp.gear.prop.slip"), 9);
+    }
+
+    [Fact]
+    public void Reinserting_the_worn_gyro_bearing_leaves_the_drift()
+    {
+        var sim = UnderWay();
+        sim.Inject("NAV-01");
+        var log = new List<SimEvent>();
+        var cmds = Proc(sim, "proc.gyro.bearing").Where(c => c.Cmd is not ("hand.drop" or "locker.take.gyro_bearing")).ToList();
+        int insert = cmds.FindIndex(c => c.Cmd == "gyro.bearing.insert");
+        Follow(sim, cmds.Take(insert), log);
+        Assert.Equal("gyro_bearing_worn", sim.QS("crew.hand"));
+        Follow(sim, cmds.Skip(insert), log);
+        Align(sim, log);
+        Assert.Equal("NAV-01", sim.QS("part.gyro.bearing.fault"));
+        Assert.Equal(1, sim.Q("inventory.gyro_bearing"));
+        double a = Gap(sim);
+        sim.Run(120);
+        Assert.True(Gap(sim) - a > 1.5, "헌 베어링을 다시 넣었는데 표류가 멎었다");
     }
 
     // ── 헛수리 ───────────────────────────────────────────
@@ -408,6 +466,41 @@ public class NavigationTests
         sim.Run(120);
         Assert.True(Gap(sim) - a > 1.5, "다른 후보의 절차를 했는데 표류가 멎었다");
         Assert.Equal("NAV-01", sim.QS("part.gyro.bearing.fault"));
+        // 건드린 부품만 새것이다.
+        Assert.Equal(1, sim.Q("inventory.nav_gear"));
+        Assert.Equal("normal", sim.QS("part.navcomp.gear.state"));
+        Assert.Equal(1, sim.Q("inventory.gyro_bearing"));
+        Assert.Equal(1.0, sim.Q("part.gyro.bearing.prop.drag"), 2);
+    }
+
+    [Fact]
+    public void Aligning_a_worn_gyro_without_the_swap_drifts_again()
+    {
+        var sim = UnderWay();
+        sim.Inject("NAV-01");
+        sim.Run(180);
+        var log = new List<SimEvent>();
+        Align(sim, log);
+        Assert.InRange(Math.Abs(Gap(sim)), 0, 0.3);
+        sim.Run(120);
+        Assert.True(Gap(sim) > 1.5, $"맞춘 뒤 2분에 {Gap(sim):F2}도뿐이다");
+        Assert.Equal("NAV-01", sim.QS("part.gyro.bearing.fault"));
+        Assert.Equal(1, sim.Q("inventory.gyro_bearing"));
+    }
+
+    [Fact]
+    public void Resetting_the_counter_without_the_gear_swap_slips_again()
+    {
+        var sim = UnderWay();
+        sim.Inject("NAV-02");
+        sim.Run(300);
+        var log = new List<SimEvent>();
+        ResetCounter(sim, log);
+        Assert.True(sim.Q("nav.counterError") < 0.05);
+        sim.Run(600);
+        Assert.True(sim.Q("nav.counterError") > 0.05, $"되돌린 뒤 10분에 {sim.Q("nav.counterError"):F3}km뿐이다");
+        Assert.Equal("NAV-02", sim.QS("part.navcomp.gear.fault"));
+        Assert.Equal(2, sim.Q("inventory.nav_gear"));
     }
 
     [Fact]
@@ -418,6 +511,10 @@ public class NavigationTests
         var log = new List<SimEvent>();
         Follow(sim, Proc(sim, "proc.gyro.bearing"), log);
         Assert.Equal("NAV-02", sim.QS("part.navcomp.gear.fault"));
+        Assert.Equal(0, sim.Q("inventory.gyro_bearing"));
+        Assert.True(sim.Q("part.gyro.bearing.prop.drag") < 0.001, "새 베어링이 끌린다");
+        Assert.Equal(2, sim.Q("inventory.nav_gear"));
+        Assert.Equal(0.6, sim.Q("part.navcomp.gear.prop.slip"), 9);
         int stalls = 0;
         for (int i = 0; i < TestData.Ticks(60); i++) { sim.Step(); if (sim.Q("cue.navcomp.stall") >= 0.5) stalls++; }
         Assert.True(stalls > TestData.Ticks(20), "다른 후보의 절차를 했는데 계수기가 멎지 않는다");
@@ -453,15 +550,20 @@ public class NavigationTests
     // ── 저장과 해시 ───────────────────────────────────────
 
     [Fact]
-    public void Save_and_restore_mid_spin_down_with_the_cap_tools_and_slip_continues_hash_identical()
+    public void Save_and_restore_mid_repair_with_the_cover_open_a_part_in_hand_and_the_gyro_spinning_down()
     {
         var a = UnderWay();
         a.Inject("NAV-01");
         a.Inject("NAV-02");
         a.Run(30);
-        a.Cmd("gyro.switch.off");
-        a.Cmd("navcomp.power.off");
-        a.Run(20);
+        void Do(Simulation s, params string[] cmds)
+        {
+            foreach (var c in cmds) { s.Cmd(c); s.Run(0.6); }
+        }
+        Do(a, "gyro.switch.off", "navcomp.power.off", "toolboard.return.wrench", "toolboard.take.screwdriver", "tool.screwdriver",
+            "navcomp.cover.screw.1.loosen", "navcomp.cover.screw.2.loosen", "tool.hand", "navcomp.cover.open", "navcomp.gear.pull");
+        Assert.Equal("nav_gear_worn", a.QS("crew.hand"));
+        Assert.Contains("screwdriver", Enumerable.Range(1, 5).Select(n => a.QS($"crew.belt.{n}")));
         Assert.InRange(a.Q("nav.gyroSpin"), 0.05, 0.95);
         var saved = a.SaveState();
         var b = new Simulation(TestData.Data, 1);
@@ -469,13 +571,13 @@ public class NavigationTests
         Assert.Equal(a.StateHash(), b.StateHash());
         foreach (var s in new[] { a, b })
         {
-            s.Cmd("navcomp.power.on");
-            s.Run(240);
-            s.Cmd("gyro.switch.on");
+            Do(s, "hand.drop", "locker.take.nav_gear", "navcomp.gear.insert", "navcomp.cover.close", "tool.screwdriver",
+                "navcomp.cover.screw.1.tighten", "navcomp.cover.screw.2.tighten", "tool.hand", "navcomp.power.on", "gyro.switch.on");
             s.Run(300);
         }
         Assert.Equal(a.StateHash(), b.StateHash());
         Assert.Equal(a.Q("reading.navcomp.counter"), b.Q("reading.navcomp.counter"));
+        Assert.Equal("", a.QS("part.navcomp.gear.fault"));
     }
 
     // ── 훈련 m2-nav ───────────────────────────────────────
@@ -511,12 +613,27 @@ public class NavigationTests
     {
         var sim = new Simulation();
         sim.StartMission(TestData.Data, "m2-nav");
+        sim.Run(180); // 표류와 계수 오차가 먼저 쌓인다
+        var q = new ObservableQuery(sim);
+        Assert.NotEmpty(NavDrill.AlignCommands(q, TestData.Data));
+        Assert.NotEmpty(NavDrill.ResetCommands(q, TestData.Data));
         var log = new List<SimEvent>();
+        Align(sim, log);
         ResetCounter(sim, log);
-        sim.Run(1);
-        Align(sim, log); // 자리 잡은 채 시작하므로 바로 맞출 수 있다
-        sim.Run(120);
+        sim.Run(120); // holdSeconds(60)보다 넉넉히
         Assert.Equal(MissionStatus.Running, sim.Status);
-        Assert.True(sim.Q("nav.headingError") >= 1 || sim.Q("nav.counterError") >= 0.05);
+        Assert.True(sim.Q("nav.headingError") >= 1, $"맞추기만 했는데 침로 오차 {sim.Q("nav.headingError"):F2}도");
+        Assert.True(sim.Q("nav.counterError") >= 0.05, $"되돌리기만 했는데 계수 오차 {sim.Q("nav.counterError"):F3}km");
+    }
+
+    [Fact]
+    public void The_nav_drill_fails_when_nothing_is_done()
+    {
+        var m = TestData.Data.Mission("m2-nav");
+        var sim = new Simulation();
+        sim.StartMission(TestData.Data, "m2-nav");
+        while (sim.Status == MissionStatus.Running && sim.Q("time") <= m.TimeLimitSeconds + 1) sim.Step();
+        Assert.Equal(MissionStatus.Failed, sim.Status);
+        Assert.Equal("timeout", sim.QS("mission.reason"));
     }
 }

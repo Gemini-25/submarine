@@ -518,12 +518,15 @@ public class PartMechanicsTests
     [Fact]
     public void Modules_are_off_without_their_state_parts()
     {
+        // 얼린 기준 데이터에는 모듈 상태 부품이 하나도 없다.
+        var golden = GameData.LoadFromDirectory(Path.Combine(TestData.FixtureDir, "golden-data"));
+        var g = NewSim(golden).World.Mechanics;
+        Assert.False(g.Steam || g.Attitude || g.Senses || g.Nav || g.Cable);
+        Assert.False(g.HasSeaPaths);
+        Assert.False(g.HasTimers);
+        // 실제 데이터: 항법 모듈은 상태 부품이 있을 때만 켜진다 (WP14).
         var m = NewSim(TestData.Data).World.Mechanics;
-        // 항법 모듈은 data/parts/nav.json의 상태 부품으로 켜진다 (WP14). 나머지는 아직 상태 부품이 없다.
-        Assert.False(m.Steam || m.Attitude || m.Senses || m.Cable);
-        Assert.True(m.Nav);
-        Assert.False(m.HasSeaPaths);
-        Assert.False(m.HasTimers);
+        Assert.Equal(TestData.Data.Parts.Any(p => p.Id is "gyro.unit" or "navcomp.unit"), m.Nav);
     }
 
     [Fact]

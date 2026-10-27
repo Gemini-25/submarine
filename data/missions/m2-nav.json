@@ -24,7 +24,7 @@
     "assert": "nav.headingError < 1 && nav.counterError < 0.05 && nav.settled == 1 && part.gyro.bearing.prop.drag < 0.1 && part.navcomp.gear.prop.slip < 0.1 && part.gyro.case.prop.capOff == 0 && part.navcomp.case.prop.coverOpen == 0",
     "holdSeconds": 60,
     "objectives": [
-      "자이로 중계기를 참 침로(나침반 − 편차)에 1도 안으로 맞춘다",
+      "자이로 중계기를 참 침로(나침반 − 자차)에 1도 안으로 맞춘다",
       "거리 계수기를 지나온 거리에 0.05km 안으로 맞춘다",
       "그 상태를 1분 동안 유지한다"
     ]

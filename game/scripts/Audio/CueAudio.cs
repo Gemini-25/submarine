@@ -32,6 +32,10 @@ public static class CueAudio
         string? shared = null, string? spot = null, float db = 0, float range = 6) where T : Voice =>
         new(frame, seed => make(seed), (v, c) => drive((T)v, c), shared, spot, db, range);
 
+    /// <summary>항법 계산기 튐 소리를 붙잡아 둘 때까지의 시각과, 지금 펄스가 이어지는 중인가 (navcomp.click 줄).</summary>
+    static double _navClickUntil;
+    static bool _navClickHeld;
+
     public static readonly Row[] Rows =
     {
         // 배수 펌프 묶음 (WTR-01/02/03): 한 자리에서 나는 소리 하나. 회전음 높이와 부하는 단서에 없어 스냅숏에서 읽는다.
@@ -71,7 +75,12 @@ public static class CueAudio
         }, spot: "battery", db: -6, range: 3),
 
         // 자이로컴퍼스 (NAV-01, WP14): 회전자 윙 소리(서면 목소리가 스스로 천천히 내려간다)와 닳은 베어링의 떨림.
-        R("gyro.hum", s => new GyroVoice(s), (v, c) => v.Running = c.V > 0.05f, shared: "gyro", spot: "gyro", db: -6, range: 5),
+        // 세기는 회전을 따르되, 끼임 문턱(회전 0.05) 위에서는 또렷이 들리게 바닥을 둔다. 음높이는 목소리의 켜짐과 꺼짐만 따른다.
+        R("gyro.hum", s => new GyroVoice(s), (v, c) =>
+        {
+            v.Running = c.V > 0.05f;
+            v.Gain = 0.35f + 0.65f * c.V;
+        }, shared: "gyro", spot: "gyro", db: -6, range: 5),
         R("gyro.warble", s => new GyroVoice(s), (v, c) => v.BearingWear = c.V, shared: "gyro", spot: "gyro", db: -6, range: 5),
         // 항법 계산기 (NAV-02, WP14): 탈진기 째깍 소리(빠르기 = 축 회전), 톱니가 튈 때 미끄러지는 소리.
         R("navcomp.tick", s => new NavComputerVoice(s), (v, c) =>
@@ -79,7 +88,14 @@ public static class CueAudio
             v.Running = c.V > 0;
             v.Speed = c.V;
         }, shared: "navcomp", spot: "navcomp", db: -8, range: 4),
-        R("navcomp.click", s => new NavComputerVoice(s), (v, c) => v.Slip = c.V, shared: "navcomp", spot: "navcomp", db: -8, range: 4),
+        // 튐 펄스(0.5초)가 시작되는 순간 미끄러짐을 1초 붙잡는다. 목소리는 틱마다 Slip 확률로 미끄러지므로 짧은 펄스로는 자주 빠진다.
+        R("navcomp.click", s => new NavComputerVoice(s), (v, c) =>
+        {
+            double now = c.S.TimeSeconds;
+            if (c.V > 0 && !_navClickHeld && now >= _navClickUntil) _navClickUntil = now + 1.0;
+            _navClickHeld = c.V > 0;
+            v.Slip = now < _navClickUntil ? 1 : 0;
+        }, shared: "navcomp", spot: "navcomp", db: -8, range: 4),
     };
 
     /// <summary>Submarine.SoundSpots에 없는 소리 자리. 송풍 팬은 장면에 장비 물체가 없어 소리 쪽이 자리를 정한다(M1부터).</summary>

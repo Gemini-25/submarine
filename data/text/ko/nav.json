@@ -1,13 +1,13 @@
 {
   "cue.gyro.hum": "자이로 회전자가 도는 윙 소리",
   "cue.gyro.settleLamp": "자이로 함의 안정 표시등이 켜져 있다",
-  "cue.gyro.warble": "자이로 장에서 떨리며 갈리는 소리",
+  "cue.gyro.warble": "자이로 함에서 떨리며 갈리는 소리",
   "cue.navcomp.click": "항법 계산기에서 톱니가 딸깍한다",
   "cue.navcomp.stall": "거리 계수기가 멎어 있다",
   "cue.navcomp.tick": "항법 계산기의 탈진기가 째깍거린다",
   "fixture.gyro.align": "자이로 맞춤 손잡이",
   "fixture.gyro.bearing": "자이로 회전자 베어링",
-  "fixture.gyro.case": "자이로 장",
+  "fixture.gyro.case": "자이로 함",
   "fixture.gyro.case.screw.{n}": "자이로 뚜껑 나사 {n}",
   "fixture.gyro.lid": "자이로 뚜껑",
   "fixture.gyro.switch": "자이로 전원 스위치",
@@ -23,8 +23,9 @@
   "reading.shaft.revs": "축 회전계 (누적 회전수)",
   "reading.speedlog": "속력계",
   "reading.tachometer": "축 회전계 (회전 속도)",
-  "reason.need_bearing": "꽂을 베어링을 쥐고 있지 않다.",
+  "reason.need_bearing": "끼울 베어링을 쥐고 있지 않다.",
   "reason.need_gear": "끼울 톱니를 쥐고 있지 않다.",
-  "reason.need_screwdriver": "맨손으로는 나사가 돌아가지 않는다.",
-  "reason.not_settled": "맞춤 손잡이가 잠겨 돌지 않는다."
+  "reason.need_screwdriver": "드라이버 없이는 나사가 돌아가지 않는다.",
+  "reason.not_settled": "맞춤 손잡이가 잠겨 돌지 않는다.",
+  "reason.screw_cover_open": "덮개가 열려 있어 나사가 헛돈다."
 }

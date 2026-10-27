@@ -3,7 +3,7 @@ using DeepLine.Sim.Data;
 namespace DeepLine.Sim.Autoplay;
 
 /// <summary>
-/// 항법 훈련(m2-nav)을 사람처럼 푸는 데 필요한 셈 (WP14). 관찰할 수 있는 것(ObservableQuery)과 교범에 적힌 수(편차표,
+/// 항법 훈련(m2-nav)을 사람처럼 푸는 데 필요한 셈 (WP14). 관찰할 수 있는 것(ObservableQuery)과 교범에 적힌 수(자차표,
 /// 한 바퀴 전진 거리, 눈금)만 쓴다. sim 시험과 Godot 확인 묶음 drill-nav가 함께 쓴다.
 /// 절차에는 '기다린다' 단계가 명령으로 없어서, 명령을 내기 전에 기다릴 조건을 여기서 정한다.
 /// </summary>
@@ -26,7 +26,7 @@ public static class NavDrill
         return true;
     }
 
-    /// <summary>참 침로 = 나침반 − 편차 (편차는 나침반 값에서 편차표를 비례로 읽는다, 교범 09쪽).</summary>
+    /// <summary>참 침로 = 나침반 − 자차 (자차는 나침반 값에서 자차표를 비례로 읽는다, 교범 09쪽).</summary>
     public static double TrueFromCompass(GameData d, double compassDeg)
     {
         var t = d.Tuning.Nav ?? throw new InvalidOperationException("tuning.nav가 없다");

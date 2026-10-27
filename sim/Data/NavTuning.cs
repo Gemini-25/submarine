@@ -8,7 +8,7 @@ public sealed class NavTuning
 {
     /// <summary>참 침로 (도). M2에서는 바뀌지 않는다.</summary>
     public double CourseDeg { get; set; }
-    /// <summary>자기 나침반 편차표: [참 침로(도), 편차(도)] 점들. 나침반 = 참 침로 + 편차. 0과 360에서 값이 같아야 한다.</summary>
+    /// <summary>자기 나침반 자차표: [참 침로(도), 자차(도)] 점들. 나침반 = 참 침로 + 자차. 0과 360에서 값이 같아야 한다.</summary>
     public List<double[]> DeviationCard { get; set; } = new();
     /// <summary>스로틀 1에서의 축 회전수 (rpm). 실제 회전수 = maxRpm × 추진 전동기 부하율.</summary>
     public double MaxRpm { get; set; }
