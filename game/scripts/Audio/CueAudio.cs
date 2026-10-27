@@ -162,6 +162,20 @@ public static class CueAudio
         R("siphon.ink.line", s => new SiphonRecorderVoice(s), (v, c) =>
             v.Clog = PartVal(c.S, "siphon.state", "signal") > 0.5 && PartVal(c.S, "siphon.pen", "armUp") < 0.5 ? 1 - c.V : 0,
             shared: "siphon", spot: "siphon", db: -6, range: 3),
+        // 추진 전동기 (WP11): 회전음은 축 회전계(전속 300회/분)를 따르고, 브러시가 닳으면 회전계와 함께 흔들린다.
+        R("propulsion.hum", s => new MotorVoice(s), (v, c) =>
+        {
+            v.Running = c.V > 0.02f;
+            // 세기 = 전동기 회전수 / 300(추력 × 버스 전압, PWR-02 때 브러시가 닳아 흔들린다). 셀이 열화하면 음이 낮아지고, 브러시가 닳으면 음이 흔들린다.
+            v.ShaftHz = 10f + 36f * c.V;
+        }, spot: "motor", db: -4, range: 10),
+        // 정류자 불꽃 (PWR-02): 브러시 불꽃 세기만큼 탁탁 튄다. 회전음 위에 겹친다.
+        R("motor.crackle", s => new CommutatorSparkVoice(s), (v, c) =>
+        {
+            v.Running = c.V > 0;
+            v.ShaftHz = 10f + 36f * (float)c.S.Cues.FirstOrDefault(x => x.Id == "propulsion.hum").Value;
+            v.BrushWear = 0.4f + 0.6f * c.V;
+        }, spot: "motor", range: 6),
         // 젖은 분기함의 누설 (ELC-03): 희미한 지직거림. 키트에 전용 목소리가 없어 칼날 스위치 지직거림을 작게 쓴다.
         R("junction.{c}.sizzle", s => new KnifeSwitchCrackleVoice(s), (v, c) =>
         {

@@ -1,0 +1,37 @@
+{
+  "battery.deck": {
+    "kind": "deck",
+    "visible": [
+      "open"
+    ],
+    "props": {
+      "open": 0
+    }
+  },
+  "motor.brushes": {
+    "kind": "brush_gear",
+    "wearPerSecond": 0.000015,
+    "wearFault": "PWR-02",
+    "spare": true,
+    "visible": [
+      "bolt1",
+      "bolt2",
+      "coverOpen",
+      "present",
+      "spring"
+    ],
+    "props": {
+      "bolt1": 1,
+      "bolt2": 1,
+      "coverOpen": 0,
+      "present": 1,
+      "spring": 0.6
+    }
+  },
+  "motor.commutator": {
+    "kind": "commutator",
+    "props": {
+      "rough": 0
+    }
+  }
+}

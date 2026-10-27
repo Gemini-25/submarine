@@ -80,6 +80,15 @@ public partial class HeldItemView : Node3D
             if (k % 2 == 0)
                 Geo.Text(v, $"{k * 25}", new Vector3(-Mathf.Sin(a) * 0.068f, -0.025f + Mathf.Cos(a) * 0.068f, 0.028f), 0.011f, Geo.Bakelite);
         }
+        // 안쪽 둘째 눈금 0~30V (붉은 글씨): 축전지 셀 하나를 잴 때 쓴다 (M2 WP11).
+        var red = Geo.Mat(new Color(0.55f, 0.08f, 0.05f), 0.8f, 0);
+        for (int k = 0; k <= 3; k++)
+        {
+            float a = Mathf.DegToRad(50 - 100 * k / 3f);
+            var tick = Geo.Box(v, new Vector3(0.0015f, 0.006f, 0.001f), new Vector3(-Mathf.Sin(a) * 0.044f, -0.025f + Mathf.Cos(a) * 0.044f, 0.028f), red);
+            tick.Rotation = new Vector3(0, 0, a);
+            Geo.Text(v, $"{k * 10}", new Vector3(-Mathf.Sin(a) * 0.035f, -0.025f + Mathf.Cos(a) * 0.035f, 0.028f), 0.008f, new Color(0.55f, 0.08f, 0.05f));
+        }
         Geo.Text(v, "V", new Vector3(0, -0.012f, 0.028f), 0.012f, Geo.Bakelite);
         _needle = new Node3D { Position = new Vector3(0, -0.025f, 0.029f) };
         v.AddChild(_needle);
@@ -128,8 +137,10 @@ public partial class HeldItemView : Node3D
         foreach (var (id, n) in _items) n.Visible = id == crew.Hand;
         _basketMat.AlbedoColor = new Color(0.7f, 0.7f, 0.66f).Lerp(new Color(0.25f, 0.2f, 0.12f), (float)Math.Clamp(_runner.Snapshot.Strainer.Clog, 0, 1));
 
-        // 바늘: 0V가 왼쪽 끝(+50도), 150V가 오른쪽 끝(-50도). 계기 바늘의 관성.
-        float f = (float)Math.Clamp(_hands.ProbeVolts / 150.0, 0, 1);
+        // 바늘: 0V가 왼쪽 끝(+50도), 눈금 끝이 오른쪽 끝(-50도). 계기 바늘의 관성.
+        // 셀 하나를 잴 때는 안쪽 30V 눈금으로 읽는다(셀 단자의 낮은 전압용 단자).
+        double scale = _hands.Probing.StartsWith("cell.", StringComparison.Ordinal) ? 30.0 : 150.0;
+        float f = (float)Math.Clamp(_hands.ProbeVolts / scale, 0, 1);
         _needleAngle += (f - _needleAngle) * Math.Min(1, dt * 6);
         _needle.Rotation = new Vector3(0, 0, Mathf.DegToRad(50 - 100 * _needleAngle));
 

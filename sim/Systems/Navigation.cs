@@ -188,6 +188,8 @@ static class Navigation
     static double Rpm(SimWorld w, NavTuning t)
     {
         var p = w.Devices[w.Propulsion];
+        // 동력 규칙(WP11)이 있으면 축 회전은 추진 전동기의 것을 따른다: 추력 × 버스 전압, 브러시가 닳으면 흔들린다(PWR-02).
+        if (w.T.Power is { } pt) return BrushGear.Rpm(w) * t.MaxRpm / pt.Brushes.NominalRpm;
         return p.Running ? t.MaxRpm * p.LoadFactor : 0;
     }
 

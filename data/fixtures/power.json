@@ -1,0 +1,260 @@
+{
+  "params": {
+    "filePerStroke": 0.25
+  },
+  "fixtures": [
+    {
+      "id": "battery.deck",
+      "part": "battery.deck",
+      "kind": "cover",
+      "zone": "fore",
+      "prop": "open",
+      "verbs": {
+        "open": { "tool": "hand", "noise": "cover" },
+        "close": { "tool": "hand", "noise": "cover" }
+      }
+    },
+    {
+      "id": "battery.cell.{n}.nut.{k}",
+      "bind": { "n": "cells", "k": "1..2" },
+      "part": "cell.{n}",
+      "kind": "fastener",
+      "zone": "fore",
+      "prop": "nut{k}",
+      "group": "terminals",
+      "verbs": {
+        "loosen": {
+          "tool": "wrench",
+          "noise": "wrench",
+          "rejectIf": [
+            { "if": "part.battery.deck.prop.open < 0.5", "reason": "deck_closed" },
+            { "if": "self.present < 0.5", "reason": "cell_absent" }
+          ],
+          "hazards": [
+            { "if": "self.jumpered < 0.5 && power.total > 0", "hazard": "spark" }
+          ]
+        },
+        "tighten": {
+          "tool": "wrench",
+          "noise": "wrench",
+          "rejectIf": [
+            { "if": "part.battery.deck.prop.open < 0.5", "reason": "deck_closed" },
+            { "if": "self.present < 0.5", "reason": "cell_absent" }
+          ]
+        }
+      }
+    },
+    {
+      "id": "battery.cell.{n}",
+      "bind": { "n": "cells" },
+      "part": "cell.{n}",
+      "kind": "socket",
+      "zone": "fore",
+      "needReason": "need_cell",
+      "verbs": {
+        "pull": {
+          "tool": "hand",
+          "noise": "cell_lift",
+          "rejectIf": [
+            { "if": "part.battery.deck.prop.open < 0.5", "reason": "deck_closed" },
+            { "if": "self.nut1 >= 0.5", "reason": "cell_nuts_tight" },
+            { "if": "self.nut2 >= 0.5", "reason": "cell_nuts_tight" },
+            { "if": "cell.{n}.submerged == 1", "reason": "cell_submerged" }
+          ],
+          "gives": [
+            { "if": "self.health < 0.05", "item": "cell_flat" },
+            { "if": "self.health >= 0.9", "item": "cell_used" },
+            { "item": "cell_dead" }
+          ],
+          "set": { "health": 0 }
+        },
+        "insert": {
+          "noise": "cell_lift",
+          "rejectIf": [
+            { "if": "part.battery.deck.prop.open < 0.5", "reason": "deck_closed" }
+          ],
+          "accepts": {
+            "spare_cell": { "set": { "health": 1, "fresh": 1 }, "renew": true },
+            "cell_used": { "set": { "health": 1 } },
+            "cell_dead": { "set": { "health": 0.3 } },
+            "cell_flat": { "set": { "health": 0.01 } }
+          },
+          "effects": [
+            { "if": "self.fresh >= 0.5", "hook": "cellInstalled" },
+            { "set": "fresh", "to": 0 }
+          ]
+        }
+      },
+      "touch": {
+        "temp": "cell.{n}.temp",
+        "wet": "cell.{n}.submerged == 1"
+      }
+    },
+    {
+      "id": "battery.link.{n}",
+      "bind": { "n": "cells" },
+      "part": "cell.{n}",
+      "kind": "work",
+      "zone": "fore",
+      "verbs": {
+        "fit": {
+          "gesture": "rotate",
+          "tool": "wrench",
+          "hold": "jumper_bar",
+          "noise": "wrench",
+          "rejectIf": [
+            { "if": "part.battery.deck.prop.open < 0.5", "reason": "deck_closed" },
+            { "if": "self.jumpered >= 0.5", "reason": "link_fitted" }
+          ],
+          "hazards": [
+            { "if": "power.total > 0", "hazard": "spark" }
+          ],
+          "effects": [
+            { "set": "jumpered", "to": 1 },
+            { "consume": true },
+            { "if": "self.health < 0.9", "quality": "temporary" }
+          ]
+        },
+        "remove": {
+          "gesture": "rotate",
+          "tool": "wrench",
+          "noise": "wrench",
+          "rejectIf": [
+            { "if": "part.battery.deck.prop.open < 0.5", "reason": "deck_closed" },
+            { "if": "self.jumpered < 0.5", "reason": "link_empty" },
+            { "if": "crew.hand != ''", "reason": "hand_full" }
+          ],
+          "hazards": [
+            { "if": "power.total > 0", "hazard": "spark" }
+          ],
+          "effects": [
+            { "set": "jumpered", "to": 0 },
+            { "give": "jumper_bar" }
+          ]
+        }
+      }
+    },
+    {
+      "id": "motor.cover.bolt.{n}",
+      "bind": { "n": "1..2" },
+      "part": "motor.brushes",
+      "kind": "fastener",
+      "zone": "aft",
+      "prop": "bolt{n}",
+      "group": "cover",
+      "verbs": {
+        "loosen": { "tool": "wrench", "noise": "wrench" },
+        "tighten": { "tool": "wrench", "noise": "wrench" }
+      }
+    },
+    {
+      "id": "motor.cover",
+      "part": "motor.brushes",
+      "kind": "cover",
+      "zone": "aft",
+      "prop": "coverOpen",
+      "heldBy": "cover",
+      "verbs": {
+        "open": { "tool": "hand", "noise": "cover" },
+        "close": { "tool": "hand", "noise": "cover" }
+      }
+    },
+    {
+      "id": "motor.brushes",
+      "part": "motor.brushes",
+      "kind": "socket",
+      "zone": "aft",
+      "needReason": "need_brush_set",
+      "verbs": {
+        "pull": {
+          "tool": "hand",
+          "noise": "latch",
+          "rejectIf": [
+            { "if": "self.coverOpen < 0.5", "reason": "cover_closed" }
+          ],
+          "hazards": [
+            { "if": "circuit.C8.energized == 1", "hazard": "shock" },
+            { "if": "device.propulsion.running == 1", "hazard": "pinch" }
+          ],
+          "gives": [
+            { "if": "part.motor.brushes.wear < 0.01", "item": "brush_set" },
+            { "item": "brush_set_worn" }
+          ],
+          "set": { "spring": 0.3 }
+        },
+        "insert": {
+          "tool": "hand",
+          "noise": "latch",
+          "rejectIf": [
+            { "if": "self.coverOpen < 0.5", "reason": "cover_closed" }
+          ],
+          "hazards": [
+            { "if": "circuit.C8.energized == 1", "hazard": "shock" }
+          ],
+          "accepts": {
+            "brush_set": { "renew": true },
+            "brush_set_worn": {}
+          }
+        }
+      }
+    },
+    {
+      "id": "motor.commutator",
+      "part": "motor.commutator",
+      "kind": "work",
+      "zone": "aft",
+      "verbs": {
+        "file": {
+          "gesture": "scrub",
+          "tool": "file",
+          "noise": "file",
+          "rejectIf": [
+            { "if": "part.motor.brushes.prop.coverOpen < 0.5", "reason": "cover_closed" },
+            { "if": "part.motor.brushes.prop.present >= 0.5", "reason": "brushes_in" }
+          ],
+          "hazards": [
+            { "if": "circuit.C8.energized == 1", "hazard": "shock" }
+          ],
+          "effects": [
+            { "add": "rough", "by": "-$filePerStroke", "min": 0, "max": 1 }
+          ]
+        }
+      }
+    },
+    {
+      "id": "motor.brush.spring",
+      "part": "motor.brushes",
+      "kind": "adjuster",
+      "zone": "aft",
+      "prop": "spring",
+      "min": 0.3,
+      "max": 0.9,
+      "step": 0.1,
+      "verbs": {
+        "up": {
+          "tool": "screwdriver",
+          "noise": "screwdriver",
+          "rejectIf": [
+            { "if": "self.present < 0.5", "reason": "no_brushes" }
+          ],
+          "hazards": [
+            { "if": "device.propulsion.running == 1", "hazard": "pinch" }
+          ],
+          "effects": [
+            { "if": "part.motor.brushes.wear >= 0.8", "quality": "temporary" }
+          ]
+        },
+        "down": {
+          "tool": "screwdriver",
+          "noise": "screwdriver",
+          "rejectIf": [
+            { "if": "self.present < 0.5", "reason": "no_brushes" }
+          ],
+          "hazards": [
+            { "if": "device.propulsion.running == 1", "hazard": "pinch" }
+          ]
+        }
+      }
+    }
+  ]
+}

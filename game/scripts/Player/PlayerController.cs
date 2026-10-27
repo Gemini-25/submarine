@@ -41,7 +41,7 @@ public partial class PlayerController : CharacterBody3D
     public override void _Ready()
     {
         CollisionLayer = 4;
-        CollisionMask = World.Geo.WallLayer;
+        CollisionMask = World.Geo.WallLayer | World.Submarine.PlayerOnlyLayer; // 사람만 밟는 판 (열린 축전지 우물 위, WP11)
         _shape = new CapsuleShape3D { Radius = Radius, Height = StandHeight };
         _collider = new CollisionShape3D { Shape = _shape, Position = new Vector3(0, StandHeight / 2, 0) };
         AddChild(_collider);

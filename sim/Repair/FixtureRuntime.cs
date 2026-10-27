@@ -24,6 +24,14 @@ static class FixtureHooks
             int c = Array.IndexOf(w.Fuses, v.Part);
             if (c >= 0) w.Circuits[c].FuseBlownSeen = true;
         },
+        // 새 셀을 우물에 끼웠다 (PWR-01 교체): 충전된 채 오고 우물 온도다.
+        ["cellInstalled"] = (w, v) =>
+        {
+            int i = Array.IndexOf(w.CellParts, v.Part);
+            if (i < 0) return;
+            w.Cells[i].Charge = w.T.Power!.Cells.InstalledCharge;
+            w.Cells[i].TempC = w.T.Heat.AmbientC;
+        },
         // 걸레로 분기함을 한 번 닦는다 (WP8): 습기가 tuning.junctions.ragDry만큼 준다. 습도 모듈이 있으면 공기의 목표 아래로는
         // 내리지 못하지만, 닦기 전보다 젖게 하지는 않는다(목표가 닦기 전보다 높으면 닦기 전 그대로).
         ["ragDry"] = (w, v) =>

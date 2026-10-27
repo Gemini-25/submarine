@@ -40,7 +40,7 @@ public static class StandPoints
     {
         var ids = new List<string>();
         for (int i = 1; i <= 6; i++) ids.AddRange(new[] { $"battery.cell.{i}", $"battery.cell.{i}.nut.1", $"battery.cell.{i}.nut.2", $"battery.link.{i}" });
-        ids.Add("battery.jumper");
+        ids.Add("locker.jumper_bar"); // 점퍼 걸이 (WP11)
         return ids.ToArray();
     }
 
@@ -62,7 +62,7 @@ public static class StandPoints
               ..DriftGauges.Select(g => $"gauge.{g}.zero"), "panel.lamptest", "propulsion.telegraph", "searchlight.switch" ], None),
 
         // ── 후방 ──
-        new("motor", At(1.75f, 0.2f), false, [ "motor.cover", "motor.cover.bolt.1", "motor.cover.bolt.2" ], None),
+        new("motor", At(1.75f, 0.2f), false, [ "motor.cover", "motor.cover.bolt.1", "motor.cover.bolt.2", "motor.brush.spring" ], None),
         new("shaft", At(0.3f, -0.2f), true, [ "shaft.follower", "shaft.nut.A", "shaft.nut.B", "shaft.collar", "shaft.packing" ], None),
         new("accumulator", At(2.05f, 0.15f), false,
             [ "steam.stop", "steam.bleed", ..Four("steam.flange.bolt"), "steam.joint" ], [ "hatch.closed" ]),
@@ -110,6 +110,7 @@ public static class StandPoints
         new("junction.C5", At(6.0f, -0.2f), true, Junction("C5"), None, WorkView: false),
         new("battery.deck", At(5.7f, 0f), false, [ "battery.deck" ], None, WorkView: false),
         new("crate", At(5.7f, 0.3f), false, [ "locker.spare_cell", "discard.crate" ], None, WorkView: false),
+        new("motor.open", At(1.75f, 0.2f), false, [ "motor.brushes", "motor.commutator" ], [ "motor.cover" ], WorkView: false),
     };
 
     public static IEnumerable<Stand> WorkViews => All.Where(s => s.WorkView);
