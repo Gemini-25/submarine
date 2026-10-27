@@ -9,6 +9,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\sim\DeepLine.Sim.csproj" />
+    <!-- 소리 키트: 목소리 합성 (Godot을 참조하지 않는다). -->
+    <ProjectReference Include="..\audio\DeepLine.Audio\DeepLine.Audio.csproj" />
   </ItemGroup>
 
 </Project>

@@ -26,11 +26,16 @@
 
 ### Godot
 
+본선의 배치(WP6)와 소리(WP7)를 합친 뒤 그 위에 지었다.
+
 - `game/scripts/World/Submarine.Air.cs`
-  - 천장 팬: 전동기, 네 날개(팬이 돌 때 돈다), 허브 너트(풀리면 아래로 내려옴), 베어링(빠지면 날개와 함께 사라짐), 보호망(경첩으로 아래로 열림), 나비 너트 두 개, 종이 리본(단서 `fan.streamer` 세기로 날림). 작업 시점 `fan`.
-  - 흡수통: 위가 열린 상자, 흡수제 통(소켓), 뚜껑(뒤 경첩, 앞이 들림), 죔쇠 두 개(레버), 지시약 창(단서 `scrubber.indicator`로 흰색 → 보라색). 작업 시점 `scrubber`.
-  - 예비품 칸: 중앙 사물함 맨 아래의 흡수제 통 칸, 후방 예비품 사물함 자리의 팬 베어링 칸. WP6 배치가 같은 ID의 칸을 이미 만들었으면 짓지 않는다.
-- `Submarine.cs`: `Build()`에 `BuildAir();` 한 줄. `BuildFurniture()`의 장식 흡수통 상자 두 줄을 지웠다(진짜 흡수통이 그 자리에 선다).
+  - 배치 표지 `fan.guard.nut.1-2`, `fan.guard`, `fan.motor`, `scrubber.lid`, `scrubber.clamp.1-2`를 `RemoveMarker`로 지우고 같은 ID로 `Binder.Bind`를 붙였다. 자리와 크기는 배치도(`docs/reports/m2-layout.md`)를 따른다. 환풍기는 (3.85, 2.05, −0.2)에 있다.
+  - 배치가 한 덩어리 메시로 지은 환풍기와 흡수통 뚜껑은 감추고(명판은 둔다), 같은 모양을 아트 키트로 다시 지었다. 움직이지 않는 부분(받침, 전동기, 통 몸통)과 움직이는 부분을 나눴다. 움직이는 부분은 보호망(경첩, 통로 쪽이 아래로 열림), 날개(팬이 돌 때 돎), 허브 너트(풀리면 내려옴), 베어링(빠지면 날개와 함께 사라짐), 나비 너트 둘, 종이 띠(`fan.streamer` 세기로 날림), 뚜껑(앞이 들림), 죔쇠 둘(바깥으로 젖힘), 표시 창(`scrubber.indicator`로 흰색 → 보라색)이다.
+  - 덮개 안쪽의 새 물체 `fan.hub`, `fan.bearing`, `fan.blades`, `scrubber.canister`를 더하고 `StandPoints.cs`의 fan, scrubber 자리 대상에 넣었다.
+  - M1 장식 흡수통 상자(`Submarine.cs`의 `BuildFurniture` 두 줄)를 지우고 같은 크기의 위가 열린 상자로 바꿨다. 닫힌 상자는 벽 층이라 통을 겨냥하는 조준선을 막는다.
+  - 예비품: 후방 예비품 사물함의 표지 `locker.aft.shelf.1`을 `locker.fan_bearing` 칸으로 바꿨다(자리 표도 바꿈). 흡수제 통은 중앙 사물함에 칸이 셋뿐이라 사물함 앞 바닥 받침(`locker.canister`, 작업 시점 없음, 자리 표 `canister.rack`)에 눕혀 두었다.
+- `Submarine.cs`의 `Build()`: `BuildLayout()` 뒤에 `BuildAir();` 한 줄(표지를 바꾸므로 배치 다음이다).
+- `game/scripts/Audio/CueAudio.cs`: `fan.hum` 줄을 `fan.stall`, `fan.rattle`과 한 목소리(`shared: "fan"`)로 묶고 자리를 환풍기로 옮겼다. `scrubber.whistle` 줄을 더했다.
 - 확인 묶음 `drill-air` (`game/scripts/Testing/AutoPlayer.Air.cs`): 임무 m2-air-a를 열고, 팬과 흡수통 작업 시점에서 물체를 모두 가리킬 수 있는지 본 뒤, 단서(팬 소리, 점화기 창, 지시약)로 원인을 갈라 절차를 `ExpandWithBelt`로 펼쳐 `Perform`으로 푼다. 끝나면 원래 임무로 되돌린다. `AutoPlayer.Suites()`에 한 줄, `tools/godot-check.sh` 머리 주석에 이름을 적었다.
 
 ### 교범
@@ -56,11 +61,11 @@
 - `Diagnosability.cs`: 헷갈리는 쌍 검사에 셋을 더했다(ELC-01/AIR-01을 `cue.fan.stall`로, AIR-01/AIR-02를 `cue.fan.streamer`와 `cue.scrubber.indicator`로). 새 단서 넷은 진단 벡터에 저절로 들어가고, 고장 9종은 여전히 서로 구별되며 구별 원소에 모두 문구가 있다.
 - `dotnet test` (루트): sim **513** (시작 491, +22), 소리 139, 계산 도구 93. 모두 통과.
 - 기준 해시(golden-data, golden-scenarios, golden-hand, mission-m1-crisis)는 다시 만들지 않았고 그대로 맞는다. M0 시나리오의 기대도 바뀌지 않았다.
-- Godot (`tools/fetch-godot.sh`, 4.7.2 .NET): `tools/godot-check.sh` 묶음 전부(crisis, hands, workviews, fixtures, tools, drill-air) 통과. 공기 훈련은 손동작으로 2.4분에 성공, 감전 0, 끼임 0. 장치 19개, 명령 36개를 손동작으로 확인했다.
+- Godot (`tools/fetch-godot.sh`, 4.7.2 .NET): 본선(배치, 소리)을 합친 뒤 `tools/godot-check.sh` 묶음 전부(crisis, hands, reach, workviews, fixtures, tools, drill-air) 통과. reach는 306/306, 작업 시점 28곳. 공기 훈련은 손동작으로 2.4분에 성공, 감전 0, 끼임 0. 장치 19개, 명령 36개를 손동작으로 확인했다.
 
 ## 명세와 다르게 한 점과 이유
 
-1. **팬 자리는 (3.8, 2.05, 0.2)다** (명세 (4.0, 2.05, 0)). 중앙 천장 등이 (4.05, 2.1, 0)에 있어 팬과 겹친다. 허용 범위 ±0.2m 안에서 옮겼다. 작업 시점도 같이 옮겼다(눈 (3.8, 1.45, 0.65)). 팬 소리 자리(`ProceduralAudio`의 (4.0, 2.1, 0))는 소리 파일이라 고치지 않았다. WP7 연결 때 `SoundSpots["fan"]`으로 맞추면 된다.
+1. **팬 자리는 배치도의 (3.85, 2.05, −0.2)다** (명세 (4.0, 2.05, 0)). 중앙 천장 등과 겹쳐서 배치(WP6)가 옮겼다. 소리 자리도 같이 옮겼다(`SoundSpots["fan"]`).
 2. **상태 값 이름**: 베어링은 소켓 규칙대로 `present`(1 = 끼워져 있음)다. 명세의 `bearingOut`과 뜻이 반대다. 죔쇠는 `clamp1Open`, `clamp2Open`(1 = 열림), 통은 `present`를 쓴다. 명세의 `out`과 같은 뜻의 반대다.
 3. **응급 수리 수명에 `(1 − drag)`가 없다.** 팬 부품에 `drag` 값이 없다. 수명은 장치 파일 `params.spinLife` 480초(8분)로 고정했다. 팬이 도는 동안만 줄어든다.
 4. **허브 너트 결함의 '마모 ×3'은 넣지 않았다.** 팬의 마모 속도(초당 2e-6)로는 세 배여도 몇십 시간 동안 드러나지 않는다. 드러나는 증상(덜걱거림, 5분 뒤 다시 멎음)만 넣었다. 다시 멎을 때 고장을 새로 주입하지 않는다. 겉보기에는 고친 부품이 그냥 멎는다.
@@ -68,25 +73,27 @@
 6. **흡수통에서 통을 빼면 `saturation 0`으로 둔다.** 빈 자리의 지시약은 흰색이다. 다 쓴 통을 도로 끼우면 1. 성한 통을 빼면 `canister`로 나온다(포화 0.05 미만).
 7. **뚜껑이 열려 있으면 흡수가 0이다.** 명세에는 죔쇠만 있다. 뚜껑을 연 채 두는 경우도 물리적으로 공기가 비켜 간다.
 8. **소음 키는 기존 것을 썼다.** 나비 너트와 죔쇠 `latch`(4), 보호망·뚜껑·통 `cover`(4), 허브 너트 `wrench`(3), 베어링 `fuse`(2), 날개 돌리기 `switch`(2). `tuning.json`의 `noise.actions`를 고치지 않으려고 했다. 그래서 흡수통 교체의 가장 큰 소음은 명세대로 4이고, 팬 수리도 보호망 때문에 4다.
-9. **예비품 칸을 임시로 지었다.** 사물함에는 아직 퓨즈, 쐐기, 버팀목 칸뿐이라 `locker.take.canister`와 `locker.take.fan_bearing`을 손동작으로 낼 물체가 없었다. WP6가 같은 ID로 칸을 만들면 내 칸은 지어지지 않는다(`Interactables.ContainsKey`로 막았다). 본선이 합칠 때 WP6 칸이 먼저 지어지게 `Build()` 순서를 확인하면 된다.
+9. **예비품 칸**: 팬 베어링은 후방 사물함 첫 칸 표지를 `locker.fan_bearing`으로 바꿔 썼다. 흡수제 통은 중앙 사물함에 칸이 없어 사물함 앞 바닥 받침에 두었다. 사물함 칸이 늘면 그쪽으로 옮기면 된다(같은 ID가 이미 있으면 짓지 않는다).
 10. **공통 파일을 조금 고쳤다.**
     - `FixtureBinder.cs`: 레버를 끝 자리에서 더 끌면 아무 명령도 내지 않던 것을, 그 자리 동사를 보내 시뮬레이션이 '이미 그 자리'로 답하게 했다. 두 자리 레버(죔쇠)의 `close`가 fixtures 묶음에서 손동작으로 나오지 않았다. 설계의 '맞는 것이 없으면 가장 가까운 동사' 규칙과 같다.
-    - `Submarine.cs`: 장식 흡수통 두 줄을 지웠다.
+    - `Submarine.cs`: 장식 흡수통 두 줄을 지웠다(위가 열린 같은 크기 상자로 바꿈).
+    - `StandPoints.cs`: fan, scrubber 자리에 덮개 안 물체를 더하고, 후방 사물함 첫 칸을 `locker.fan_bearing`으로, 바닥 받침 자리 `canister.rack`을 더했다.
+    - `CueAudio.cs`: 기존 `fan.hum` 줄에 `shared: "fan"`을 붙이고 자리를 환풍기로 바꿨다. 팬 소리 셋이 한 목소리여야 해서다. `ExtraSpots`의 `vent_fan`은 이제 쓰이지 않는다.
     - `sim.tests/ObservationTests.cs`: 잘못된 단서 붙일 곳의 예로 쓰던 `fan.blades`가 이제 진짜 장치라서 `fan.propeller`로 바꿨다.
     - `sim.tests/PartMechanicsTests.cs`: 실제 데이터에 부품 타이머가 없다고 확인하던 줄을, '타이머가 있는 부품이 있을 때만 켜진다'로 바꿨다. 타이머는 모듈이 아니다.
 11. **교범 05쪽은 자리표시 한 줄 외에 공기 표 두 줄도 고쳤다.** '팬 자체 고장은 이 판에 없음', '이 판에 없음'이 이제 틀린 말이라서 '송풍 팬', '흡수통 교체'로 바꿨다. 이 두 줄은 공기 계통만의 줄이다.
 12. **시험 파일 이름은 `AirRepairTests.cs`다.** M0의 `AirNoisePanelTests.cs`에 이미 `AirTests` 클래스가 있다.
 13. **07쪽과 다른 점 하나**: 07쪽은 '무거운 헌 부품은 전방 상자에 넣는다'고 한다. 흡수통 교체 절차는 다 쓴 통을 중앙 폐기함에 버린다(시뮬레이션은 어디서든 `hand.drop`이다). 07쪽은 내 쪽이 아니라 고치지 않았다. 본선이 한쪽으로 맞추면 된다.
 
-## 단서 → 목소리 (본선이 WP7 뒤에 연결할 것)
+## 단서 → 목소리 (`CueAudio.cs`에 연결함)
 
 | 단서 | 목소리와 변수 | 자리 |
 | --- | --- | --- |
-| `fan.hum` | `FanVoice.Running` (세기) | 팬 (3.8, 2.05, 0.2) |
-| `fan.stall` | `FanVoice.Stalled` (세기) | 팬 |
-| `fan.rattle` | `FanVoice.BearingWear` (세기를 덜걱거림으로) | 팬 허브 |
-| `scrubber.whistle` | 높은 쉿 소리. `LeakHissVoice`를 높은 음으로 | 흡수통 뚜껑 (3.0, 0.62, −1.0) |
-| `scrubber.indicator` | 없음 (보이는 단서). 숨소리는 `BreathVoice.Co2Stage`가 `air.co2`를 따른다 | — |
+| `fan.hum` | `FanVoice.Running`, `RotationHz`는 버스 전압을 따른다 (팬 셋이 한 목소리) | 환풍기 (3.85, 2.05, −0.2) |
+| `fan.stall` | `FanVoice.Stalled` | 환풍기 |
+| `fan.rattle` | `FanVoice.BearingWear` (덜걱거림 자리표시) | 환풍기 |
+| `scrubber.whistle` | `LeakHissVoice` 가는 쉿 소리 (전용 목소리가 없어 자리표시) | 흡수통 뚜껑 |
+| `scrubber.indicator` | 없음 (보이는 단서). 숨소리는 기존 `BreathVoice`가 이산화탄소를 따른다 | — |
 | `fan.streamer` | 없음 (보이는 단서) | — |
 
 ## 결정 (본선이 DECISIONS.md로 옮길 줄)
@@ -96,5 +103,5 @@
 - **팬의 숨은 결함**: 허브 너트가 풀린 채 팬이 5분 돌면 다시 멎는다. 고장은 새로 생기지 않는다. 그동안 덜걱거림 단서가 난다.
 - **흡수통**: 죔쇠 두 개(레버) → 뚜껑 → 흡수제 통 소켓. 흡수 몫은 통이 없거나 뚜껑이 열리면 0, 죔쇠가 하나라도 열리면 `tuning.scrubber.bypassAbsorption`(0.5), 아니면 1(`air.scrubberFlow`). 흡수통 상태 값이 없는 데이터에서는 늘 1이다.
 - **흡수제 재고**: 사물함의 `canister`(두 손 물건)만 쓴다. `AirState.CanistersLeft`는 쓰지 않는다. 다 쓴 통은 `canister_spent`(헌 부품, 두 손)이고, 성한 통을 잘못 빼면 `canister`로 나온다.
-- **팬 자리**: (3.8, 2.05, 0.2). 중앙 천장 등을 피한다.
+- **공기 장비 배치**: 환풍기와 흡수통은 배치(WP6)의 자리와 모습을 쓰고, 움직이는 부분만 따로 지어 모양 갱신기에 맡긴다. 팬 베어링 예비품은 후방 사물함 첫 칸, 흡수제 통은 중앙 사물함 앞 바닥 받침에 둔다.
 - **레버 손동작**: 끝 자리에서 더 끌면 그 자리 동사를 보낸다. 시뮬레이션이 '이미 그 자리'로 답한다.

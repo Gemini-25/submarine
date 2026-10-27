@@ -155,9 +155,10 @@ public partial class Submarine
         var root = new Node3D { Name = "Switchboard", Position = new Vector3(4.1f, 0, HalfWidth - 0.01f) };
         AddChild(root);
         Geo.Face(root, Vector3.Forward);
-        Geo.Box(root, new Vector3(1.88f, 1.18f, 0.04f), new Vector3(0, 1.4f, 0.02f), Geo.Mat(new Color(0.2f, 0.17f, 0.14f), 0.6f, 0));
+        // 판은 아래로 y 0.77까지: 회로별 전류계(y 0.86) 자리 (M2 배치, Submarine.Layout).
+        Geo.Box(root, new Vector3(1.88f, 1.22f, 0.04f), new Vector3(0, 1.38f, 0.02f), Geo.Mat(new Color(0.2f, 0.17f, 0.14f), 0.6f, 0));
         Geo.Text(root, "배전반", new Vector3(0, 1.94f, 0.045f), 0.05f);
-        Geo.Blocker(root, new Vector3(1.9f, 1.2f, 0.05f), new Vector3(0, 1.4f, 0.025f));
+        Geo.Blocker(root, new Vector3(1.9f, 1.24f, 0.05f), new Vector3(0, 1.38f, 0.025f));
         Stations["switchboard"] = (GlobalOf(root, new Vector3(0, 1.45f, 1.0f)), GlobalOf(root, new Vector3(0, 1.38f, 0)));
 
         // 버스 바: 칼날 스위치 위쪽 접점으로 이어지는 구리 막대
