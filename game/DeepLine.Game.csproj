@@ -11,6 +11,8 @@
     <ProjectReference Include="..\sim\DeepLine.Sim.csproj" />
     <!-- 소리 키트: 목소리 합성 (Godot을 참조하지 않는다). -->
     <ProjectReference Include="..\audio\DeepLine.Audio\DeepLine.Audio.csproj" />
+    <!-- 선내 계산 도구의 역학 (WP21). Godot의 장치(game/scripts/Gadgets)가 몸체만 만든다. -->
+    <ProjectReference Include="..\instruments\DeepLine.Instruments\DeepLine.Instruments.csproj" />
   </ItemGroup>
 
 </Project>

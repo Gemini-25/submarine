@@ -65,6 +65,7 @@ public partial class Submarine : Node3D
         BuildLayout();
         BindToolBoard(); // 배치가 놓은 공구판 윤곽에 동작을 붙인다
         BuildSpareCompartments(); // 예비품 칸 (중앙 벽장, 후방 사물함)
+        BuildGadgets(); // 계산 도구: 탁상 계산기, 계산자, 계산 도표, 저항 측정 브리지 (WP22)
     }
 
     /// <summary>표현 층이 매 프레임 부른다.</summary>
