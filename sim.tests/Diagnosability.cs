@@ -109,6 +109,8 @@ public class Diagnosability
     {
         ("PWR-01", "cell.3"), ("ELC-01", "fuse.C2"), ("ELC-03", "junction.C3"), ("AIR-01", null), ("AIR-02", null),
         ("WTR-01", null), ("WTR-02", null), ("WTR-03", null), ("HUL-01", "leak.rivet.09"),
+        // M2 계통 작업이 더한 고장 (같은 하네스, 같은 노출 설정)
+        ("HUL-03", null),
     };
 
     /// <summary>노출 설정: 배수 펌프를 돌리고 후방 빌지에 물을 둔다 (펌프 고장이 드러나게). 수심은 기본 300m.</summary>
@@ -192,6 +194,9 @@ public class Diagnosability
         Splits("ELC-03", "ELC-01", "cue.junction.C3.dew");
         // 열화 셀: 그 셀만 전압이 낮다
         Splits("PWR-01", "ELC-01", "measure.voltmeter.cell.3");
+        // 축 패킹과 후방 리벳 이음: 둘 다 후방 경고등. 축 고리 둘레의 물과 이음새의 쉿 소리로 가른다 (교범 04 '축 패킹').
+        Splits("HUL-03", "HUL-01", "cue.shaft.stream");
+        Splits("HUL-03", "HUL-01", "cue.leak.rivet.09.hiss");
     }
 
     [Fact]

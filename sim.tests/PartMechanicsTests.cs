@@ -455,9 +455,10 @@ public class PartMechanicsTests
         var data = Load(new Mut
         {
             NoMech = true,
-            Hull = h => h["kindTemplates"] = JsonNode.Parse("""
-                { "viewport": { "props": { "deadlight": 1, "integrity": 0.9 },
-                                "seaPaths": [ { "areaCm2": 0.4, "when": "self.deadlight < 0.5" } ] } }
+            // 실제 데이터의 다른 종류 틀(축 패킹 등)은 그대로 두고 현창 틀만 더한다.
+            Hull = h => (h["kindTemplates"] ??= new JsonObject())["viewport"] = JsonNode.Parse("""
+                { "props": { "deadlight": 1, "integrity": 0.9 },
+                  "seaPaths": [ { "areaCm2": 0.4, "when": "self.deadlight < 0.5" } ] }
                 """),
         });
         var vp = data.Parts.Single(p => p.Id == "leak.viewport.1");
@@ -527,9 +528,9 @@ public class PartMechanicsTests
         // 실제 데이터: 항법 모듈은 상태 부품이 있을 때만 켜진다 (WP14).
         var m = NewSim(TestData.Data).World.Mechanics;
         Assert.Equal(TestData.Data.Parts.Any(p => p.Id is "gyro.unit" or "navcomp.unit"), m.Nav);
-        Assert.False(m.HasSeaPaths);
-        // 부품 타이머는 모듈이 아니다. 계통 데이터(송풍 팬의 응급 수리 수명, 펌프 베어링의 기름 타이머)가 있으면 켜진다.
+        // 부품 타이머와 바다 경로는 모듈이 아니다. 계통 데이터(송풍 팬의 응급 수리 수명, 펌프 베어링의 기름 타이머, 축 패킹)가 있으면 켜진다.
         Assert.True(m.HasTimers);
+        Assert.True(m.HasSeaPaths);
     }
 
     [Fact]

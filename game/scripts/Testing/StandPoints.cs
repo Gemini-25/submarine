@@ -63,7 +63,7 @@ public static class StandPoints
 
         // ── 후방 ──
         new("motor", At(1.75f, 0.2f), false, [ "motor.cover", "motor.cover.bolt.1", "motor.cover.bolt.2" ], None),
-        new("shaft", At(0.3f, -0.2f), true, [ "shaft.follower", "shaft.nut.A", "shaft.nut.B", "shaft.collar" ], None),
+        new("shaft", At(0.3f, -0.2f), true, [ "shaft.follower", "shaft.nut.A", "shaft.nut.B", "shaft.collar", "shaft.packing" ], None),
         new("accumulator", At(2.05f, 0.15f), false,
             [ "steam.stop", "steam.bleed", ..Four("steam.flange.bolt"), "steam.joint" ], [ "hatch.closed" ]),
         new("winch", At(1.45f, 0.25f), false,

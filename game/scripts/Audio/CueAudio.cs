@@ -83,6 +83,18 @@ public static class CueAudio
             v.DepthM = (float)c.S.DepthM;
         }, range: 3),
 
+        // 축 패킹 (HUL-03). 물이 튀는 소리는 전용 목소리가 없어 역류 목소리의 물방울과 출렁임으로,
+        // 과조임의 끽끽 소리는 전동기 목소리의 베어링 고음(3.1kHz)으로 자리를 채운다. 회전음은 추진 스로틀을 따른다.
+        R("shaft.spray", s => new BackflowVoice(s), (v, c) => v.Amount = Math.Min(1f, 0.85f * c.V), range: 4),
+        R("shaft.squeal", s => new MotorVoice(s), (v, c) =>
+        {
+            var d = Device(c.S, DeepLine.Sim.Data.Bindings.Propulsion);
+            v.Running = c.V > 0;
+            v.ShaftHz = 12f + 18f * (d is { } dv ? (float)dv.LoadFactor : 0);
+            v.Load = 0.4f;
+            v.BearingWear = 0.5f + 0.5f * c.V;
+        }, db: -10, range: 5),
+
         // 축전지 셀이 끓는 소리 (PWR-01 자리표시: 키트에 전용 목소리가 없어 물방울 섞인 낮은 쉿 소리로).
         R("cell.{n}.fizz", s => new LeakHissVoice(s), (v, c) =>
         {

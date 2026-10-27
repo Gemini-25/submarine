@@ -69,6 +69,7 @@ public partial class Submarine : Node3D
         BuildPumpBearing(); // WP10: 배치의 펌프 표지 자리에 베어링 뚜껑, 볼트, 기름 컵, 몸통
         BuildNav(); // WP14: 배치의 항법 책상과 자이로 함에 동작을 붙인다
         BuildCable();
+        BuildShaftGlandFixtures(); // 선체: 축 패킹 상자 (Submarine.Hull)
     }
 
     /// <summary>표현 층이 매 프레임 부른다.</summary>
