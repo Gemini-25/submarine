@@ -3,71 +3,357 @@
     "title": "퓨즈 대용 철사",
     "fault": "ELC-01",
     "grade": "temporary",
-    "bind": ["circuit"],
+    "bind": [
+      "circuit"
+    ],
     "steps": [
-      { "type": "Inspect", "text": "예비 퓨즈가 떨어졌을 때만 쓴다. 끊긴 퓨즈는 퓨즈 교체 장의 방법으로 찾는다." },
-      { "type": "Isolate", "text": "그 회로의 칼날 스위치를 내린다.", "cmd": "switch.{circuit}.off", "tool": "hand", "hazard": "스위치를 내리지 않고 퓨즈를 만지면 감전된다." },
-      { "type": "Remove", "text": "끊긴 퓨즈를 소켓에서 뽑는다.", "cmd": "fuse.{circuit}.pull", "tool": "hand", "requires": "회로 스위치가 내려가 있을 것", "hazard": "감전 (잠시 손을 못 쓰고 몸이 상한다)" },
-      { "type": "Remove", "text": "끊긴 퓨즈를 폐기함에 버린다.", "cmd": "hand.drop" },
-      { "type": "Install", "text": "사물함에서 퓨즈 대용 철사를 꺼낸다.", "cmd": "locker.take.fuse_wire" },
-      { "type": "Install", "text": "철사를 감은 퓨즈 몸통을 소켓에 끝까지 밀어 넣는다.", "cmd": "fuse.{circuit}.insert", "requires": "회로 스위치가 내려가 있을 것", "hazard": "살아 있는 소켓에 꽂으면 불꽃이 튀고 감전된다. 수소가 차 있으면 폭발한다." },
-      { "type": "Test", "text": "스위치를 올리고 표시등과 장비가 살아나는지 본다. 철사는 끊기지 않으므로 과전류가 2초 넘게 흐르면 분기함 배선이 탄다.", "cmd": "switch.{circuit}.on", "hazard": "누전이나 과부하가 남아 있으면 분기함 배선이 타고 불꽃이 튄다." }
+      {
+        "type": "Inspect",
+        "text": "예비 퓨즈가 떨어졌을 때만 쓴다. 끊긴 퓨즈는 '퓨즈 교체'의 순서 1대로 전압계로 찾는다."
+      },
+      {
+        "type": "Isolate",
+        "text": "그 회로의 칼날 스위치를 내린다.",
+        "cmd": "switch.{circuit}.off",
+        "tool": "hand",
+        "hazard": "스위치를 내리지 않고 퓨즈를 만지면 감전된다."
+      },
+      {
+        "type": "Remove",
+        "text": "끊긴 퓨즈를 소켓에서 뽑는다.",
+        "cmd": "fuse.{circuit}.pull",
+        "tool": "hand",
+        "requires": "회로 스위치가 내려가 있을 것",
+        "hazard": "감전 (잠시 손을 못 쓰고 몸이 상한다)"
+      },
+      {
+        "type": "Remove",
+        "text": "끊긴 퓨즈를 폐기함에 버린다.",
+        "cmd": "hand.drop"
+      },
+      {
+        "type": "Install",
+        "text": "사물함에서 퓨즈 대용 철사를 꺼낸다.",
+        "cmd": "locker.take.fuse_wire"
+      },
+      {
+        "type": "Install",
+        "text": "퓨즈 대용 철사를 소켓에 끝까지 밀어 넣는다.",
+        "cmd": "fuse.{circuit}.insert",
+        "requires": "회로 스위치가 내려가 있을 것",
+        "hazard": "살아 있는 소켓에 꽂으면 불꽃이 튀고 감전된다. 수소가 차 있으면 폭발한다."
+      },
+      {
+        "type": "Test",
+        "text": "스위치를 올리고 표시등과 장비가 살아나는지 본다. 철사는 끊기지 않으므로 과전류가 2초 넘게 흐르면 분기함 배선이 탄다.",
+        "cmd": "switch.{circuit}.on",
+        "hazard": "누전이나 과부하가 남아 있으면 분기함 배선이 타고 불꽃이 튄다."
+      }
     ]
   },
   "proc.junction.rewire": {
     "title": "탄 배선 다시 잇기",
     "fault": "ELC-01",
     "grade": "proper",
-    "bind": ["circuit"],
+    "bind": [
+      "circuit"
+    ],
     "steps": [
-      { "type": "Inspect", "text": "분기함에서 연기와 타는 냄새가 나고, 스위치가 올라가 있는데 회로가 죽어 있다. 퓨즈 양단 전압은 0이다." },
-      { "type": "Isolate", "text": "그 회로의 칼날 스위치를 내린다.", "cmd": "switch.{circuit}.off", "tool": "hand", "hazard": "스위치를 내리지 않고 배선을 만지면 감전된다." },
-      { "type": "Open", "text": "드라이버로 분기함 덮개 나사 두 개를 푼다.", "cmd": "junction.{circuit}.screw.{n}.loosen", "tool": "screwdriver", "repeat": 2 },
-      { "type": "Open", "text": "덮개를 연다.", "cmd": "junction.{circuit}.cover.open", "tool": "hand" },
-      { "type": "Work", "text": "칼로 탄 피복을 두 번 벗겨 낸다.", "cmd": "junction.{circuit}.cable.strip", "tool": "knife", "repeat": 2, "requires": "회로 스위치가 내려가 있을 것", "hazard": "감전" },
-      { "type": "Isolate", "text": "공구 회로(C7) 스위치를 올린다. 납땜인두의 전원이 여기서 온다.", "cmd": "switch.C7.on", "tool": "hand" },
-      { "type": "Isolate", "text": "납땜인두를 켠다.", "cmd": "device.soldering_iron.on" },
-      { "type": "Work", "text": "인두로 이음을 두 번 땜질한다. 인두를 댈 때마다 불꽃이 튄다.", "cmd": "junction.{circuit}.cable.solder", "tool": "soldering_iron", "repeat": 2, "requires": "인두가 켜져 있을 것, 수소가 없을 것", "hazard": "불꽃 (수소가 차 있으면 폭발한다)" },
-      { "type": "Isolate", "text": "납땜인두를 끈다.", "cmd": "device.soldering_iron.off", "tool": "hand" },
-      { "type": "Install", "text": "사물함에서 절연 테이프를 꺼낸다.", "cmd": "locker.take.insulating_tape" },
-      { "type": "Work", "text": "절연 테이프로 이음을 세 번 감는다. 맨 이음을 남기면 누전한다.", "cmd": "junction.{circuit}.cable.wrap", "repeat": 3 },
-      { "type": "Close", "text": "덮개를 닫는다.", "cmd": "junction.{circuit}.cover.close" },
-      { "type": "Fasten", "text": "덮개 나사 두 개를 조인다.", "cmd": "junction.{circuit}.screw.{n}.tighten", "tool": "screwdriver", "repeat": 2 },
-      { "type": "Remove", "text": "철사를 감은 퓨즈를 뽑는다.", "cmd": "fuse.{circuit}.pull", "tool": "hand", "requires": "회로 스위치가 내려가 있을 것", "hazard": "감전" },
-      { "type": "Remove", "text": "쓴 철사를 폐기함에 버린다.", "cmd": "hand.drop" },
-      { "type": "Install", "text": "사물함에서 새 퓨즈를 꺼낸다.", "cmd": "locker.take.fuse" },
-      { "type": "Install", "text": "새 퓨즈를 소켓에 끝까지 밀어 넣는다.", "cmd": "fuse.{circuit}.insert" },
-      { "type": "Test", "text": "스위치를 올리고 회로 표시등과 장비가 살아나는지, 연기가 멎었는지 본다.", "cmd": "switch.{circuit}.on" }
+      {
+        "type": "Inspect",
+        "text": "분기함에서 연기와 타는 냄새가 나고, 스위치가 올라가 있는데 회로가 죽어 있다. 전압계를 퓨즈 소켓에 대면 0이다. 공구 회로(C7)에는 쓰지 않는다. C7이 탔으면 꼬아 잇기를 한다."
+      },
+      {
+        "type": "Isolate",
+        "text": "그 회로의 칼날 스위치를 내린다.",
+        "cmd": "switch.{circuit}.off",
+        "tool": "hand",
+        "hazard": "스위치를 내리지 않고 배선을 만지면 감전된다."
+      },
+      {
+        "type": "Open",
+        "text": "드라이버로 분기함 덮개 나사 두 개를 푼다.",
+        "cmd": "junction.{circuit}.screw.{n}.loosen",
+        "tool": "screwdriver",
+        "repeat": 2
+      },
+      {
+        "type": "Open",
+        "text": "덮개를 연다.",
+        "cmd": "junction.{circuit}.cover.open",
+        "tool": "hand"
+      },
+      {
+        "type": "Work",
+        "text": "칼로 탄 피복을 두 번 벗겨 낸다.",
+        "cmd": "junction.{circuit}.cable.strip",
+        "tool": "knife",
+        "repeat": 2,
+        "requires": "회로 스위치가 내려가 있을 것",
+        "hazard": "감전"
+      },
+      {
+        "type": "Work",
+        "text": "공구 회로(C7) 스위치를 올린다. 납땜인두는 이 회로로 돈다.",
+        "cmd": "switch.C7.on",
+        "tool": "hand"
+      },
+      {
+        "type": "Work",
+        "text": "납땜인두를 켠다.",
+        "cmd": "device.soldering_iron.on"
+      },
+      {
+        "type": "Work",
+        "text": "인두로 이음을 두 번 땜질한다. 인두를 댈 때마다 불꽃이 튄다.",
+        "cmd": "junction.{circuit}.cable.solder",
+        "tool": "soldering_iron",
+        "repeat": 2,
+        "requires": "인두가 켜져 있을 것, 수소가 없을 것",
+        "hazard": "불꽃 (수소가 차 있으면 폭발한다)"
+      },
+      {
+        "type": "Work",
+        "text": "납땜인두를 끈다.",
+        "cmd": "device.soldering_iron.off",
+        "tool": "hand"
+      },
+      {
+        "type": "Install",
+        "text": "사물함에서 절연 테이프를 꺼낸다.",
+        "cmd": "locker.take.insulating_tape"
+      },
+      {
+        "type": "Work",
+        "text": "절연 테이프로 이음을 세 번 감는다. 맨 이음을 남기면 누전한다.",
+        "cmd": "junction.{circuit}.cable.wrap",
+        "repeat": 3
+      },
+      {
+        "type": "Close",
+        "text": "덮개를 닫는다.",
+        "cmd": "junction.{circuit}.cover.close"
+      },
+      {
+        "type": "Fasten",
+        "text": "덮개 나사 두 개를 조인다.",
+        "cmd": "junction.{circuit}.screw.{n}.tighten",
+        "tool": "screwdriver",
+        "repeat": 2
+      },
+      {
+        "type": "Remove",
+        "text": "철사를 감은 퓨즈를 뽑는다.",
+        "cmd": "fuse.{circuit}.pull",
+        "tool": "hand",
+        "requires": "회로 스위치가 내려가 있을 것",
+        "hazard": "감전"
+      },
+      {
+        "type": "Remove",
+        "text": "쓴 철사를 폐기함에 버린다.",
+        "cmd": "hand.drop"
+      },
+      {
+        "type": "Install",
+        "text": "사물함에서 새 퓨즈를 꺼낸다.",
+        "cmd": "locker.take.fuse"
+      },
+      {
+        "type": "Install",
+        "text": "새 퓨즈를 소켓에 끝까지 밀어 넣는다.",
+        "cmd": "fuse.{circuit}.insert"
+      },
+      {
+        "type": "Test",
+        "text": "스위치를 올리고 회로 표시등과 장비가 살아나는지, 연기가 멎었는지 본다.",
+        "cmd": "switch.{circuit}.on"
+      }
     ]
   },
   "proc.junction.isolate": {
     "title": "분기 차단",
     "fault": "ELC-03",
     "grade": "temporary",
-    "bind": ["circuit"],
+    "bind": [
+      "circuit"
+    ],
     "steps": [
-      { "type": "Inspect", "text": "같은 퓨즈가 거듭 끊기고, 그 회로 분기함에 이슬이 맺혀 있다." },
-      { "type": "Isolate", "text": "그 회로의 칼날 스위치를 내리고 내린 채 둔다. 누설 전류가 멎고 그 회로의 장비도 모두 멎는다.", "cmd": "switch.{circuit}.off", "tool": "hand" },
-      { "type": "Test", "text": "배전반 표시등을 보고, 그 회로 없이 버틸 수 있는지 판단한다. 말릴 틈이 나면 분기함 건조를 한다." }
+      {
+        "type": "Inspect",
+        "text": "같은 퓨즈가 거듭 끊기고, 그 회로 분기함에 이슬이 맺혀 있다."
+      },
+      {
+        "type": "Isolate",
+        "text": "그 회로의 칼날 스위치를 내리고 내린 채 둔다. 누설 전류가 멎고 그 회로의 장비도 모두 멎는다.",
+        "cmd": "switch.{circuit}.off",
+        "tool": "hand"
+      },
+      {
+        "type": "Test",
+        "text": "상황판 배전반 표시등이 꺼진다. 누전이 고쳐진 것은 아니다. 그 회로 없이 버틸 수 있는지는 '잃는 것' 표로 판단한다. 말릴 틈이 나면 분기함 건조를 한다."
+      }
     ]
   },
   "proc.junction.dry": {
     "title": "분기함 건조와 피복 감기",
     "fault": "ELC-03",
     "grade": "proper",
-    "bind": ["circuit"],
+    "bind": [
+      "circuit"
+    ],
     "steps": [
-      { "type": "Inspect", "text": "스위치를 내린 채 브리지로 그 분기함의 절연을 잰다. 1MΩ 아래면 젖은 것이다." },
-      { "type": "Isolate", "text": "그 회로의 칼날 스위치를 내린다.", "cmd": "switch.{circuit}.off", "tool": "hand", "hazard": "젖은 분기함을 살아 있는 채 열거나 만지거나 닦으면 감전된다." },
-      { "type": "Open", "text": "드라이버로 분기함 덮개 나사 두 개를 푼다.", "cmd": "junction.{circuit}.screw.{n}.loosen", "tool": "screwdriver", "repeat": 2 },
-      { "type": "Open", "text": "덮개를 연다.", "cmd": "junction.{circuit}.cover.open", "tool": "hand", "requires": "회로 스위치가 내려가 있을 것", "hazard": "감전" },
-      { "type": "Work", "text": "걸레로 상자 안을 네 번 닦아 말린다. 실내 공기가 축축하면 그보다 더 마르지는 않는다.", "cmd": "junction.{circuit}.box.dry", "tool": "rag", "repeat": 4, "requires": "회로 스위치가 내려가 있을 것", "hazard": "감전" },
-      { "type": "Install", "text": "사물함에서 절연 테이프를 꺼낸다.", "cmd": "locker.take.insulating_tape", "tool": "hand" },
-      { "type": "Work", "text": "절연 테이프로 케이블 이음을 세 번 감는다. 이슬이 남은 채 감으면 물기가 갇힌다.", "cmd": "junction.{circuit}.cable.wrap", "repeat": 3 },
-      { "type": "Close", "text": "덮개를 닫는다.", "cmd": "junction.{circuit}.cover.close" },
-      { "type": "Fasten", "text": "덮개 나사 두 개를 조인다. 풀린 나사로는 습기가 두 배로 빨리 든다.", "cmd": "junction.{circuit}.screw.{n}.tighten", "tool": "screwdriver", "repeat": 2 },
-      { "type": "Install", "text": "퓨즈가 끊겨 있으면 퓨즈 교체 장대로 새 퓨즈로 바꾼다." },
-      { "type": "Test", "text": "스위치를 올리고 그 회로 전류계가 장비 몫만 가리키는지 본다.", "cmd": "switch.{circuit}.on", "tool": "hand" }
+      {
+        "type": "Inspect",
+        "text": "분기함에 이슬이 맺혀 있는지 본다. 스위치를 내리고 브리지로 재면 2MΩ 아래로 읽힌다."
+      },
+      {
+        "type": "Isolate",
+        "text": "그 회로의 칼날 스위치를 내린다.",
+        "cmd": "switch.{circuit}.off",
+        "tool": "hand",
+        "hazard": "젖은 분기함을 살아 있는 채 열거나 만지거나 닦으면 감전된다."
+      },
+      {
+        "type": "Open",
+        "text": "드라이버로 분기함 덮개 나사 두 개를 푼다.",
+        "cmd": "junction.{circuit}.screw.{n}.loosen",
+        "tool": "screwdriver",
+        "repeat": 2
+      },
+      {
+        "type": "Open",
+        "text": "덮개를 연다.",
+        "cmd": "junction.{circuit}.cover.open",
+        "tool": "hand",
+        "requires": "회로 스위치가 내려가 있을 것",
+        "hazard": "감전"
+      },
+      {
+        "type": "Work",
+        "text": "감긴 테이프가 있으면 풀어 내고, 걸레로 상자 안을 네 번 닦아 말린다. 선내 공기가 축축하면 네 번 닦아도 다 마르지 않는다.",
+        "cmd": "junction.{circuit}.box.dry",
+        "tool": "rag",
+        "repeat": 4,
+        "requires": "회로 스위치가 내려가 있을 것",
+        "hazard": "감전"
+      },
+      {
+        "type": "Install",
+        "text": "사물함에서 절연 테이프를 꺼낸다.",
+        "cmd": "locker.take.insulating_tape",
+        "tool": "hand"
+      },
+      {
+        "type": "Work",
+        "text": "절연 테이프로 케이블 이음을 세 번 감는다. 이슬이 남은 채 감으면 물기가 갇힌다.",
+        "cmd": "junction.{circuit}.cable.wrap",
+        "repeat": 3,
+        "requires": "만져서 축축하지 않을 것",
+        "hazard": "물기가 테이프 안에 갇혀 몇 분 뒤 누전이 돌아온다"
+      },
+      {
+        "type": "Close",
+        "text": "덮개를 닫는다.",
+        "cmd": "junction.{circuit}.cover.close"
+      },
+      {
+        "type": "Fasten",
+        "text": "덮개 나사 두 개를 조인다. 나사가 하나라도 풀려 있으면 습기가 두 배 빨리 든다.",
+        "cmd": "junction.{circuit}.screw.{n}.tighten",
+        "tool": "screwdriver",
+        "repeat": 2
+      },
+      {
+        "type": "Install",
+        "text": "퓨즈가 끊겨 있으면 '퓨즈 교체' 장의 순서대로 새 퓨즈로 간다."
+      },
+      {
+        "type": "Test",
+        "text": "스위치를 올리고 그 회로 전류계가 장비 몫만 가리키는지 본다.",
+        "cmd": "switch.{circuit}.on",
+        "tool": "hand"
+      }
+    ]
+  },
+  "proc.junction.twist": {
+    "title": "탄 배선 꼬아 잇기",
+    "fault": "ELC-01",
+    "grade": "temporary",
+    "bind": [
+      "circuit"
+    ],
+    "steps": [
+      {
+        "type": "Inspect",
+        "text": "납땜인두를 쓸 수 없을 때 쓴다. 공구 회로(C7) 분기함이 타면 인두가 돌지 않는다."
+      },
+      {
+        "type": "Isolate",
+        "text": "그 회로의 칼날 스위치를 내린다.",
+        "cmd": "switch.{circuit}.off",
+        "tool": "hand",
+        "hazard": "스위치를 내리지 않고 배선을 만지면 감전된다."
+      },
+      {
+        "type": "Open",
+        "text": "드라이버로 분기함 덮개 나사 두 개를 푼다.",
+        "cmd": "junction.{circuit}.screw.{n}.loosen",
+        "tool": "screwdriver",
+        "repeat": 2
+      },
+      {
+        "type": "Open",
+        "text": "덮개를 연다.",
+        "cmd": "junction.{circuit}.cover.open",
+        "tool": "hand"
+      },
+      {
+        "type": "Work",
+        "text": "칼로 탄 피복을 두 번 벗겨 낸다.",
+        "cmd": "junction.{circuit}.cable.strip",
+        "tool": "knife",
+        "repeat": 2,
+        "requires": "회로 스위치가 내려가 있을 것",
+        "hazard": "감전"
+      },
+      {
+        "type": "Work",
+        "text": "맨손으로 드러난 선끼리 단단히 꼬아 잇는다.",
+        "cmd": "junction.{circuit}.cable.twist",
+        "tool": "hand",
+        "requires": "회로 스위치가 내려가 있을 것",
+        "hazard": "감전"
+      },
+      {
+        "type": "Install",
+        "text": "사물함에서 절연 테이프를 꺼낸다.",
+        "cmd": "locker.take.insulating_tape"
+      },
+      {
+        "type": "Work",
+        "text": "절연 테이프로 꼰 이음을 세 번 감는다. 맨 이음을 남기면 누전한다.",
+        "cmd": "junction.{circuit}.cable.wrap",
+        "repeat": 3
+      },
+      {
+        "type": "Close",
+        "text": "덮개를 닫는다.",
+        "cmd": "junction.{circuit}.cover.close"
+      },
+      {
+        "type": "Fasten",
+        "text": "덮개 나사 두 개를 조인다.",
+        "cmd": "junction.{circuit}.screw.{n}.tighten",
+        "tool": "screwdriver",
+        "repeat": 2
+      },
+      {
+        "type": "Test",
+        "text": "스위치를 올리고 회로 표시등과 장비가 살아나는지, 연기가 멎었는지 본다.",
+        "cmd": "switch.{circuit}.on",
+        "tool": "hand"
+      }
     ]
   }
 }

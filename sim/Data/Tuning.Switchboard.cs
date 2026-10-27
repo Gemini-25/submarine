@@ -38,4 +38,28 @@ public sealed class JunctionTuning
 {
     /// <summary>피복을 벗긴 채(insulated 0) 둔 이음은 이 습기의 상자처럼 누전한다.</summary>
     public double BareJointMoisture { get; set; }
+    /// <summary>걸레로 한 번 닦을 때 줄어드는 습기. 습도 모듈이 있으면 공기의 목표 아래로는(닦기 전이 더 낮으면 닦기 전 아래로는) 내려가지 않는다.</summary>
+    public double RagDry { get; set; }
+}
+
+/// <summary>습도와 분기함 절의 검증 (WP8). 틀린 데이터는 로드 오류다(실행 중에 멈추지 않게).</summary>
+static class SwitchboardTuningValidator
+{
+    public static void Validate(GameData d, List<string> errors)
+    {
+        if (d.Tuning.Humidity is { } h)
+        {
+            var parts = d.Parts.ToDictionary(p => p.Id, StringComparer.Ordinal);
+            foreach (var (id, zone) in h.Boxes)
+            {
+                string where = $"tuning.humidity.boxes.{id}";
+                if (!parts.TryGetValue(id, out var part)) errors.Add($"{where}: 부품이 없다");
+                else if (!part.Props.ContainsKey("moisture")) errors.Add($"{where}: 부품에 moisture가 없다");
+                if (GameData.ZoneIndex(zone) < 0) errors.Add($"{where}: 구역 '{zone}'은 {string.Join(", ", GameData.Zones)} 중 하나여야 한다");
+            }
+            if (h.RhTauSeconds <= 0) errors.Add("tuning.humidity.rhTauSeconds > 0");
+        }
+        if (d.Tuning.Junctions is { } j && (j.RagDry <= 0 || j.BareJointMoisture is < 0 or > 1))
+            errors.Add("tuning.junctions: ragDry > 0, bareJointMoisture 0~1");
+    }
 }

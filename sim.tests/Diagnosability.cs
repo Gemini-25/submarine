@@ -212,6 +212,15 @@ public class Diagnosability
             Assert.NotEmpty(DiagnosisHarness.Separating(burnt, _vectors.Value[other]));
         foreach (var path in new[] { "cue.junction.C2.smoke", "cue.junction.C2.burning", "measure.voltmeter.fuse.C2", "cue.fuse.C2.wire" })
             Assert.True(burnt[path].Differs(_vectors.Value["ELC-01"][path]), $"탄 배선과 C2 퓨즈 단선이 {path}로 갈리지 않는다");
+
+        // 같은 회로(C2)의 누전과도 교범 25쪽의 단서(연기, 이슬, 퓨즈 소켓 전압)로 갈린다.
+        var wet = Run("ELC-03", "junction.C2");
+        Assert.NotEmpty(DiagnosisHarness.Separating(burnt, wet));
+        foreach (var path in new[] { "cue.junction.C2.smoke", "cue.junction.C2.dew", "measure.voltmeter.fuse.C2" })
+        {
+            Assert.True(burnt[path].Differs(wet[path]), $"탄 배선과 C2 누전이 {path}로 갈리지 않는다 ({burnt[path]} / {wet[path]})");
+            Assert.True(DiagnosisHarness.Documented(path, TestData.Data), $"'{path}'에 문구가 없다");
+        }
     }
 
     [Fact]

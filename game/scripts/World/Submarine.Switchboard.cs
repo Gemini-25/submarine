@@ -21,6 +21,7 @@ public partial class Submarine
         if (!Binder.Has("junction.C1.cover")) return; // 분기함 장치가 없는 데이터(M1)
         foreach (var c in _data.Circuits) BindJunction(c.Id);
         BindAmmeters();
+        BuildFuseWireCoils();
         BuildIronSwitch();
         BuildBridgeLead(query);
     }
@@ -86,10 +87,15 @@ public partial class Submarine
             hb.Instance(heads[n], "Head");
         }
         // 이슬과 연기
+        // 이슬: 덮개 앞면의 구슬은 덮개와 함께 돌고(경첩 기준), 윗면 구슬은 상자에 남는다.
         var dew = new Node3D { Name = "Dew" };
         m.AddChild(dew);
+        var dewOnCover = new Node3D { Name = "DewOnCover" };
+        hinge.AddChild(dewOnCover);
         var dewMat = new StandardMaterial3D { AlbedoColor = new Color(0.8f, 0.85f, 0.9f, 0.55f), Transparency = BaseMaterial3D.TransparencyEnum.Alpha, Roughness = 0.05f };
-        foreach (var p in new[] { new Vector3(-0.03f, 0.05f, 0.08f), new Vector3(0.02f, 0.02f, 0.08f), new Vector3(0.04f, -0.04f, 0.08f), new Vector3(-0.045f, -0.02f, 0.08f), new Vector3(0.0f, 0.071f, 0.05f), new Vector3(0.05f, 0.071f, 0.02f) })
+        foreach (var p in new[] { new Vector3(-0.03f, 0.05f, 0.08f), new Vector3(0.02f, 0.02f, 0.08f), new Vector3(0.04f, -0.04f, 0.08f), new Vector3(-0.045f, -0.02f, 0.08f) })
+            Geo.Sphere(dewOnCover, 0.004f, p + new Vector3(0.06f, 0, -0.074f), dewMat);
+        foreach (var p in new[] { new Vector3(0.0f, 0.071f, 0.05f), new Vector3(0.05f, 0.071f, 0.02f) })
             Geo.Sphere(dew, 0.004f, p, dewMat);
         var smokeMat = new StandardMaterial3D { AlbedoColor = new Color(0.25f, 0.24f, 0.23f, 0.45f), Transparency = BaseMaterial3D.TransparencyEnum.Alpha, Roughness = 1 };
         var smoke = Geo.Sphere(m, 0.05f, new Vector3(0, 0.12f, 0.08f), smokeMat);
@@ -112,13 +118,33 @@ public partial class Submarine
             bare.Visible = !taped && PartProp(s, part, "insulated", 1) < 0.5;
             soot.Visible = PartProp(s, part, "burnt") >= 0.5;
             outerTape.Visible = taped;
-            dew.Visible = Cue(s, $"junction.{c}.dew") > 0.3;
+            // 이슬은 단서가 0보다 크면(습기 0.4부터) 보인다: 손으로 만져 축축한 기준, 물기가 갇히는 기준과 같다.
+            dew.Visible = dewOnCover.Visible = Cue(s, $"junction.{c}.dew") > 0;
             double smoking = Cue(s, $"junction.{c}.smoke");
             smoke.Visible = smoking > 0;
             t += dt;
             smoke.Position = new Vector3(0, 0.12f + 0.02f * Mathf.Sin(t * 1.7f), 0.08f);
         });
         SoundSpots[part] = GlobalOf(m, new Vector3(0, 0, 0.07f));
+    }
+
+    // ── 퓨즈 대용 철사 ──────────────────────────────────
+
+    /// <summary>철사를 감은 퓨즈(fuse.Cx의 wire)는 유리관에 구리 고리가 감겨 보인다. 단서 fuse.{c}.wire의 모습이다.</summary>
+    void BuildFuseWireCoils()
+    {
+        foreach (var c in _data.Circuits)
+        {
+            string part = $"fuse.{c.Id}";
+            var sock = Interactables[part];
+            var coil = new Node3D { Name = $"WireCoil{c.Id}", Position = sock.Position };
+            ((Node3D)sock.GetParent()).AddChild(coil);
+            var mb = new MeshBuilder();
+            for (int k = 0; k < 5; k++)
+                mb.Torus(ArtMat.Copper, Kit.AlongAxis(Vector3.Right, new Vector3(-0.03f + k * 0.015f, 0, 0)), 0.0175f, 0.0012f, 16, 4);
+            mb.Instance(coil, "Coil", NoShadow);
+            OnUpdate((s, _) => coil.Visible = PartProp(s, part, "wire") >= 0.5 && PartProp(s, part, "present", 1) >= 0.5);
+        }
     }
 
     // ── 배전반 전류계 ────────────────────────────────────
@@ -136,7 +162,10 @@ public partial class Submarine
             var size = ((BoxShape3D)marker.GetChild<CollisionShape3D>(0).Shape).Size;
             RemoveMarker(id);
             Add(Interactable.Create(parent, id, $"{c.Id} {c.Name} 전류계", size, pos, "switchboard"));
-            float full = (float)(c.FuseRating * 1.25 / NominalVolts), shown = 0;
+            // 눈금 끝: 퓨즈 정격의 1.25배보다 크거나 같은 둥근 값. 큰 눈금 다섯에 숫자를 쓴다.
+            float need = (float)(c.FuseRating * 1.25 / NominalVolts);
+            float full = new[] { 0.5f, 1, 2, 5, 10, 15, 20 }.First(v => v >= need - 1e-6f), shown = 0;
+            GaugeLabels(gauge, 0.032f, Enumerable.Range(0, 5).Select(i => Fmt(full * i / 4)).ToArray());
             OnUpdate((s, dt) =>
             {
                 float a = 0;
@@ -204,7 +233,9 @@ public partial class Submarine
         mb.Cylinder(ArtMat.Bakelite, Kit.AlongAxis(Vector3.Back, new Vector3(0, 0, 0.008f)), 0.018f, 0.016f, 12, 0.003f);
         mb.Box(ArtMat.Brass, new Vector3(0, 0.01f, 0.017f), new Vector3(0.004f, 0.02f, 0.003f), 0.001f);
         mb.Instance(knob, "Knob");
-        var label = Geo.Text(m, "떼어 둠", new Vector3(0.06f, 0, 0.002f), 0.012f, Geo.Cream);
+        var label = Geo.Text(m, "끊음", new Vector3(0, 0.032f, 0.002f), 0.012f, Geo.Cream);
+        // 검류계 눈금: f = (log10 MΩ + 2) / 4, 큰 눈금 0.01, 0.1, 1, 10, 100MΩ.
+        if (gauge != null) GaugeLabels(gauge, 0.035f, new[] { "0.01", "0.1", "1", "10", "100" });
         var leads = _data.Circuits.Select(c => c.Id).Append("").ToArray();
         var it = Add(Interactable.Create(m, "bridge.lead", "브리지 선택 손잡이", new Vector3(0.05f, 0.05f, 0.03f), new Vector3(0, 0, 0.012f), "commdesk"));
         it.CommandFor = (_, mo) =>
@@ -212,15 +243,33 @@ public partial class Submarine
             if (mo == Motion.Click) BridgeLead = leads[(Array.IndexOf(leads, BridgeLead) + 1) % leads.Length];
             return null;
         };
+        float t = 0;
         OnUpdate((s, dt) =>
         {
             int k = Array.IndexOf(leads, BridgeLead);
             knob.RotationDegrees = new Vector3(0, 0, -k * 30);
-            label.Text = BridgeLead.Length == 0 ? "떼어 둠" : $"분기함 {BridgeLead}";
+            label.Text = BridgeLead.Length == 0 ? "끊음" : $"분기함 {BridgeLead}";
             if (gauge == null) return;
-            double mohm = BridgeLead.Length == 0 ? double.NaN : query($"measure.bridge.insulation.{BridgeLead}");
-            float f = double.IsNaN(mohm) ? 0.5f : (float)Math.Clamp((Math.Log10(Math.Max(mohm, 1e-3)) + 1) / 3, 0, 1);
+            t += dt;
+            // 끊음이면 왼쪽 끝에 쉰다. 회로가 살아 있어 읽을 수 없으면(NaN) 바늘이 한 자리에 서지 않고 떤다(가운데는 평형으로 읽히므로).
+            double mohm = BridgeLead.Length == 0 ? 0 : query($"measure.bridge.insulation.{BridgeLead}");
+            float f = BridgeLead.Length == 0 ? 0
+                : double.IsNaN(mohm) ? 0.5f + 0.35f * Mathf.Sin(t * 9)
+                : (float)Math.Clamp((Math.Log10(Math.Max(mohm, 1e-3)) + 2) / 4, 0, 1);
             gauge.SetFraction(f);
         });
     }
+
+    /// <summary>계기 큰 눈금 숫자 (Kit.Gauge의 labels와 같은 자리).</summary>
+    static void GaugeLabels(KitGauge g, float radius, string[] labels)
+    {
+        for (int i = 0; i < labels.Length; i++)
+        {
+            float a = Mathf.DegToRad(g.StartDeg - g.SweepDeg * i / (labels.Length - 1));
+            float r = radius * 0.58f;
+            Kit.Text(g, labels[i], new Vector3(-Mathf.Sin(a) * r, Mathf.Cos(a) * r, 0.003f), radius * 0.2f, new Color(0.08f, 0.06f, 0.05f));
+        }
+    }
+
+    static string Fmt(float v) => v.ToString(v < 1 && v > 0 ? "0.##" : "0.#", System.Globalization.CultureInfo.InvariantCulture);
 }

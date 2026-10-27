@@ -1,6 +1,5 @@
 {
   "params": {
-    "ragDry": 0.2,
     "strokes": 2,
     "wraps": 3,
     "trapAbove": 0.4
@@ -104,7 +103,7 @@
           "rejectIf": [
             {
               "if": "self.coverOpen >= 0.5",
-              "reason": "cover_open"
+              "reason": "screw_cover_open"
             }
           ]
         }
@@ -148,7 +147,7 @@
           "gesture": "scrub",
           "tool": "rag",
           "noise": "rag",
-          "hook": "humidityFloor",
+          "hook": "ragDry",
           "rejectIf": [
             {
               "if": "self.coverOpen < 0.5",
@@ -163,9 +162,16 @@
           ],
           "effects": [
             {
-              "add": "moisture",
-              "by": "-$ragDry",
-              "min": 0
+              "set": "wrap",
+              "to": 0
+            },
+            {
+              "set": "taped",
+              "to": 0
+            },
+            {
+              "set": "trapped",
+              "to": 0
             }
           ]
         }
@@ -277,6 +283,43 @@
               "if": "self.soldered >= $strokes",
               "set": "burnt",
               "to": 0
+            }
+          ]
+        },
+        "twist": {
+          "gesture": "rotate",
+          "tool": "hand",
+          "rejectIf": [
+            {
+              "if": "self.coverOpen < 0.5",
+              "reason": "cover_closed"
+            },
+            {
+              "if": "self.stripped < $strokes",
+              "reason": "not_stripped"
+            },
+            {
+              "if": "self.burnt < 0.5",
+              "reason": "done"
+            }
+          ],
+          "hazards": [
+            {
+              "if": "circuit.{c}.on == 1 && battery.voltage > 0 && part.fuse.{c}.prop.blown < 0.5 && part.fuse.{c}.prop.present >= 0.5",
+              "hazard": "shock"
+            }
+          ],
+          "effects": [
+            {
+              "set": "burnt",
+              "to": 0
+            },
+            {
+              "set": "insulated",
+              "to": 0
+            },
+            {
+              "quality": "temporary"
             }
           ]
         },
@@ -362,7 +405,7 @@
           "rejectIf": [
             {
               "if": "self.coverOpen >= 0.5",
-              "reason": "cover_open"
+              "reason": "screw_cover_open"
             }
           ]
         }
@@ -406,7 +449,7 @@
           "gesture": "scrub",
           "tool": "rag",
           "noise": "rag",
-          "hook": "humidityFloor",
+          "hook": "ragDry",
           "rejectIf": [
             {
               "if": "self.coverOpen < 0.5",
@@ -421,9 +464,16 @@
           ],
           "effects": [
             {
-              "add": "moisture",
-              "by": "-$ragDry",
-              "min": 0
+              "set": "wrap",
+              "to": 0
+            },
+            {
+              "set": "taped",
+              "to": 0
+            },
+            {
+              "set": "trapped",
+              "to": 0
             }
           ]
         }
@@ -535,6 +585,43 @@
               "if": "self.soldered >= $strokes",
               "set": "burnt",
               "to": 0
+            }
+          ]
+        },
+        "twist": {
+          "gesture": "rotate",
+          "tool": "hand",
+          "rejectIf": [
+            {
+              "if": "self.coverOpen < 0.5",
+              "reason": "cover_closed"
+            },
+            {
+              "if": "self.stripped < $strokes",
+              "reason": "not_stripped"
+            },
+            {
+              "if": "self.burnt < 0.5",
+              "reason": "done"
+            }
+          ],
+          "hazards": [
+            {
+              "if": "circuit.{c}.on == 1 && battery.voltage > 0 && part.fuse.{c}.prop.blown < 0.5 && part.fuse.{c}.prop.present >= 0.5",
+              "hazard": "shock"
+            }
+          ],
+          "effects": [
+            {
+              "set": "burnt",
+              "to": 0
+            },
+            {
+              "set": "insulated",
+              "to": 0
+            },
+            {
+              "quality": "temporary"
             }
           ]
         },
@@ -620,7 +707,7 @@
           "rejectIf": [
             {
               "if": "self.coverOpen >= 0.5",
-              "reason": "cover_open"
+              "reason": "screw_cover_open"
             }
           ]
         }
@@ -664,7 +751,7 @@
           "gesture": "scrub",
           "tool": "rag",
           "noise": "rag",
-          "hook": "humidityFloor",
+          "hook": "ragDry",
           "rejectIf": [
             {
               "if": "self.coverOpen < 0.5",
@@ -679,9 +766,16 @@
           ],
           "effects": [
             {
-              "add": "moisture",
-              "by": "-$ragDry",
-              "min": 0
+              "set": "wrap",
+              "to": 0
+            },
+            {
+              "set": "taped",
+              "to": 0
+            },
+            {
+              "set": "trapped",
+              "to": 0
             }
           ]
         }
@@ -793,6 +887,43 @@
               "if": "self.soldered >= $strokes",
               "set": "burnt",
               "to": 0
+            }
+          ]
+        },
+        "twist": {
+          "gesture": "rotate",
+          "tool": "hand",
+          "rejectIf": [
+            {
+              "if": "self.coverOpen < 0.5",
+              "reason": "cover_closed"
+            },
+            {
+              "if": "self.stripped < $strokes",
+              "reason": "not_stripped"
+            },
+            {
+              "if": "self.burnt < 0.5",
+              "reason": "done"
+            }
+          ],
+          "hazards": [
+            {
+              "if": "circuit.{c}.on == 1 && battery.voltage > 0 && part.fuse.{c}.prop.blown < 0.5 && part.fuse.{c}.prop.present >= 0.5",
+              "hazard": "shock"
+            }
+          ],
+          "effects": [
+            {
+              "set": "burnt",
+              "to": 0
+            },
+            {
+              "set": "insulated",
+              "to": 0
+            },
+            {
+              "quality": "temporary"
             }
           ]
         },

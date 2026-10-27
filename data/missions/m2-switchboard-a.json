@@ -3,7 +3,7 @@
   "briefing": [
     "모선 아르고스호 → 모스호 기관사. 수심 200m 정박 훈련.",
     "앞 당번이 예비 퓨즈가 떨어진 줄 알고 C6 퓨즈 자리에 철사를 감아 두었고, 그 뒤 C6 회로가 죽었다. 중앙 구역 분기함 가운데 하나에 물기가 찼다는 보고도 있다.",
-    "상황판과 배전반, 분기함을 살펴 원인을 찾고 교범(Tab)대로 고칠 것. C1과 C6 회로가 철사 없이 살아 있는 채로 30초를 버티면 훈련을 마친다."
+    "상황판과 배전반, 분기함을 살펴 원인을 찾고 교범(Tab)대로 고칠 것. C1과 C6 회로가 철사 없이 30초 동안 살아 있으면 훈련을 마친다."
   ],
   "seed": 808,
   "setup": {
@@ -20,7 +20,7 @@
     "assert": "circuit.C1.energized == 1 && circuit.C6.energized == 1 && part.fuse.C6.prop.wire == 0 && part.junction.C1.prop.moisture < 0.6 && part.junction.C1.prop.coverOpen == 0 && part.junction.C6.prop.coverOpen == 0 && part.junction.C6.prop.insulated == 1",
     "holdSeconds": 30,
     "objectives": [
-      "C1 회로의 누전을 없애고 퓨즈를 살린다",
+      "C1 분기함을 말리고 새 퓨즈로 회로를 살린다",
       "C6 분기함의 탄 배선을 다시 잇고 철사 대신 퓨즈를 꽂는다",
       "두 회로가 30초 동안 살아 있게 한다"
     ]

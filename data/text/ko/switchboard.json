@@ -8,10 +8,11 @@
   "fixture.junction.{c}.cover": "분기함 {c} 덮개",
   "fixture.junction.{c}.screw.{n}": "분기함 {c} 나사 {n}",
   "reason.iron_cold": "인두가 차갑다.",
-  "reason.need_insulating_tape": "감을 테이프가 없다.",
-  "reason.need_knife": "칼이 있어야 한다.",
-  "reason.need_rag": "닦을 걸레가 없다.",
-  "reason.need_screwdriver": "드라이버가 있어야 한다.",
-  "reason.need_soldering_iron": "납땜인두가 있어야 한다.",
-  "reason.not_stripped": "피복이 그대로라 납이 붙지 않는다."
+  "reason.need_insulating_tape": "감을 절연 테이프를 쥐고 있지 않다.",
+  "reason.need_knife": "칼 없이는 피복이 벗겨지지 않는다.",
+  "reason.need_rag": "손에 걸레가 없다.",
+  "reason.need_screwdriver": "드라이버 없이는 나사가 돌아가지 않는다.",
+  "reason.need_soldering_iron": "인두 없이는 납이 녹지 않는다.",
+  "reason.not_stripped": "피복이 그대로라 납이 붙지 않는다.",
+  "reason.screw_cover_open": "덮개가 열려 있어 나사가 헛돈다."
 }

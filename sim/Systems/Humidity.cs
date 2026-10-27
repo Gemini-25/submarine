@@ -42,7 +42,7 @@ sealed class HumidityRuntime
         var boxes = new List<Box>();
         foreach (var (id, zone) in t.Boxes)
         {
-            if (!w.TryPart(id, out var p)) continue;
+            var p = w.Part(id); // 검증(SwitchboardTuningValidator)을 통과했으면 늘 있다
             boxes.Add(new Box
             {
                 Part = p,
