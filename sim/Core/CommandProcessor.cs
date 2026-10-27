@@ -69,17 +69,6 @@ static class CommandProcessor
             case "hand" when parts.Length == 2 && parts[1] == "drop":
                 return new ParsedCommand(CommandKind.HandDrop, 0, false, 0, 0);
 
-            case "fuse" when parts.Length == 3:
-            {
-                if (!w.TryCircuitIndex(parts[1], out int fc)) throw Bad($"회로 '{parts[1]}'가 없다");
-                return new ParsedCommand(parts[2] switch
-                {
-                    "pull" => CommandKind.FusePull,
-                    "insert" => CommandKind.FuseInsert,
-                    _ => throw Bad("'pull' 또는 'insert'여야 한다"),
-                }, fc, false, 0, 0);
-            }
-
             case "strainer" when parts.Length == 4 && parts[1] == "bolt":
             {
                 if (!int.TryParse(parts[2], System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out int bolt)
@@ -116,6 +105,9 @@ static class CommandProcessor
             }
 
             default:
+                // 내장 명령이 아니면 데이터로 정의한 장치의 명령이다 (data/fixtures).
+                if (w.Data.Fixtures.TryRow(c.Cmd, out int row))
+                    return new ParsedCommand(CommandKind.Fixture, row, false, 0, 0);
                 throw Bad("알 수 없는 명령");
         }
     }
@@ -137,7 +129,9 @@ static class CommandProcessor
     {
         if (NeedsHands(c.Kind) && w.Crew.StunTicks > 0)
         {
-            w.Emit(SimEventKind.CommandRejected, c.Kind.ToString(), 0, "stunned");
+            // 장치 명령은 명령 문자열로 알린다 (어느 장치인지 표현 층이 알 수 있게).
+            string subject = c.Kind == CommandKind.Fixture ? w.Data.Fixtures.Rows[c.Index].Command : c.Kind.ToString();
+            w.Emit(SimEventKind.CommandRejected, subject, 0, "stunned");
             return;
         }
         switch (c.Kind)
@@ -196,8 +190,7 @@ static class CommandProcessor
             case CommandKind.ToolSelect: HandActions.SelectTool(w, c.Index); break;
             case CommandKind.LockerTake: HandActions.TakeFromLocker(w, c.Index); break;
             case CommandKind.HandDrop: HandActions.Drop(w); break;
-            case CommandKind.FusePull: HandActions.PullFuse(w, c.Index); break;
-            case CommandKind.FuseInsert: HandActions.InsertFuse(w, c.Index); break;
+            case CommandKind.Fixture: FixtureActions.Execute(w, c.Index); break;
             case CommandKind.StrainerBolt: HandActions.StrainerBolt(w, c.Index, c.Flag); break;
             case CommandKind.StrainerCover: HandActions.StrainerCover(w, c.Flag); break;
             case CommandKind.StrainerBasket:

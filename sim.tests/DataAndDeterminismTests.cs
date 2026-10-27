@@ -57,7 +57,8 @@ public class DataValidationTests
         var sim = TestData.NewSim();
         sim.Run(1);
         var saved = sim.SaveState();
-        var other = LoadModified("tuning.json", n => n["inventory"]!["locker"]!["spare_gasket"] = 2);
+        // 사물함 예비품은 items.json에 있어야 하므로 이미 있는 물건을 하나 더 넣는다.
+        var other = LoadModified("tuning.json", n => n["inventory"]!["locker"]!["fuse_blown"] = 2);
         var restored = new Simulation(other, 1);
         Assert.Throws<InvalidDataException>(() => restored.RestoreState(saved));
     }

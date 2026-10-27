@@ -33,6 +33,10 @@ public sealed class GameData
     public IReadOnlyList<MissionDef> Missions { get; }
     /// <summary>사물함 예비품 ID (서수 순서). 상태 배열의 순서다.</summary>
     public IReadOnlyList<string> LockerItems { get; }
+    /// <summary>물건 정보 (data/items.json, 없으면 비어 있다).</summary>
+    public IReadOnlyDictionary<string, ItemDef> Items { get; }
+    /// <summary>손이 닿는 장치를 펼친 목록 (data/fixtures/*.json, 없으면 비어 있다).</summary>
+    public Repair.FixtureCatalog Fixtures { get; }
 
     public GameData(
         Tuning tuning,
@@ -42,7 +46,9 @@ public sealed class GameData
         IEnumerable<FaultDef> faults,
         IEnumerable<LeakPointDef> leakPoints,
         IEnumerable<ProcedureDef>? procedures = null,
-        IEnumerable<MissionDef>? missions = null)
+        IEnumerable<MissionDef>? missions = null,
+        IEnumerable<ItemDef>? items = null,
+        IReadOnlyList<(string File, FixtureFile Content)>? fixtureFiles = null)
     {
         Tuning = tuning;
         Procedures = (procedures ?? Array.Empty<ProcedureDef>()).OrderBy(p => p.Id, StringComparer.Ordinal).ToArray();
@@ -71,8 +77,24 @@ public sealed class GameData
             .Select(kv => kv.Key)
             .ToArray();
 
-        DataValidator.ThrowIfInvalid(this);
+        Items = (items ?? Array.Empty<ItemDef>()).ToDictionary(i => i.Id, StringComparer.Ordinal);
+        var fixtureErrors = new List<string>();
+        Fixtures = fixtureFiles is { Count: > 0 } ? Repair.FixtureCatalog.Build(this, fixtureFiles, fixtureErrors) : Repair.FixtureCatalog.Empty;
+
+        DataValidator.ThrowIfInvalid(this, fixtureErrors);
+
+        // 장치 조건과 clearedWhen은 조회 경로로 컴파일된다. 시험용 세계 하나에서 전부 컴파일해 보고, 틀리면 로드 오류다.
+        if (Fixtures.Rows.Count > 0 || Faults.Any(f => f.ClearedWhen is { Length: > 0 }))
+        {
+            var probe = new Core.SimWorld(this, 0);
+            var errors = new List<string>();
+            probe.Fixtures.CompileAll(errors);
+            if (errors.Count > 0) throw new DataValidationException(errors);
+        }
     }
+
+    /// <summary>폐기함에 버릴 수 있는 물건인가 (items.json의 discard; 정보가 없으면 버릴 수 있다).</summary>
+    public bool Discardable(string item) => !Items.TryGetValue(item, out var def) || def.Discard;
 
     static int ZoneIndexOrMax(string z)
     {
@@ -162,7 +184,16 @@ public sealed class GameData
             }
         }
 
-        return new GameData(tuning, circuits, devices, allParts, faults, leaks, procedures, missions);
+        var items = File.Exists(Path.Combine(dataDir, "items.json"))
+            ? WithIds(Read<SortedDictionary<string, ItemDef>>("items.json"), (d, id) => d.Id = id)
+            : new List<ItemDef>();
+        var fixtureFiles = new List<(string, FixtureFile)>();
+        var fixtureDir = Path.Combine(dataDir, "fixtures");
+        if (Directory.Exists(fixtureDir))
+            foreach (var file in Directory.GetFiles(fixtureDir, "*.json").OrderBy(f => f, StringComparer.Ordinal))
+                fixtureFiles.Add((Path.Combine("fixtures", Path.GetFileName(file)), Read<FixtureFile>(Path.Combine("fixtures", Path.GetFileName(file)))));
+
+        return new GameData(tuning, circuits, devices, allParts, faults, leaks, procedures, missions, items, fixtureFiles);
     }
 
     static List<T> WithIds<T>(IDictionary<string, T> map, Action<T, string> setId)

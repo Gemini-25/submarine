@@ -11,8 +11,6 @@ namespace DeepLine.Sim.Repair;
 /// </summary>
 static class HandActions
 {
-    public const string FuseItem = "fuse";
-    public const string BlownFuseItem = "fuse_blown";
     public const string WedgeItem = "wood_wedge";
     public const string ShoreItem = "timber_shore";
     public const string BasketItem = "strainer_basket";
@@ -42,71 +40,16 @@ static class HandActions
         return true;
     }
 
-    /// <summary>손에 든 것을 폐기함에 버린다. 거름망 바구니는 버릴 수 없다.</summary>
+    /// <summary>손에 든 것을 폐기함에 버린다. 버릴 수 없는 물건(거름망 바구니)은 items.json의 discard: false.</summary>
     public static bool Drop(SimWorld w)
     {
         if (w.Crew.Hand.Length == 0) return Reject(w, "hand.drop", "hand_empty");
-        if (w.Crew.Hand == BasketItem) return Reject(w, "hand.drop", "cannot_discard");
+        if (!w.Data.Discardable(w.Crew.Hand)) return Reject(w, "hand.drop", "cannot_discard");
         w.Crew.Hand = "";
         return true;
     }
 
-    // ── 퓨즈 (ELC-01) ───────────────────────────────────
-
-    /// <summary>스위치가 올라가 있고 축전지 전압이 있으면 소켓이 살아 있다 (퓨즈와 상관없이 전원 쪽 단자에 전기가 온다).</summary>
-    static bool SocketLive(SimWorld w, int circuit) => w.Circuits[circuit].SwitchOn && w.BusVoltage > 0;
-
-    public static bool PullFuse(SimWorld w, int c)
-    {
-        var fuse = w.Fuses[c];
-        string cmd = $"fuse.{w.Data.Circuits[c].Id}.pull";
-        if (fuse.Get("present") < 0.5) return Reject(w, cmd, "socket_empty");
-        if (w.Crew.Hand.Length > 0) return Reject(w, cmd, "hand_full");
-        if (ToolName(w) != "hand") return Reject(w, cmd, "need_bare_hand");
-
-        bool blown = fuse.Get("blown") >= 0.5;
-        if (SocketLive(w, c))
-        {
-            // 살아 있는 소켓에서 성한 퓨즈를 빼면 부하 전류가 끊기며 아크가 튄다.
-            if (!blown && w.Circuits[c].Current > 0) w.Spark($"fuse.{w.Data.Circuits[c].Id}");
-            Hazards.Shock(w, cmd);
-        }
-        fuse.Set("present", 0);
-        // 손으로 뺀 것이지 퓨즈가 끊긴 것이 아니다 (FuseBlown 사건을 내지 않는다).
-        w.Circuits[c].FuseBlownSeen = true;
-        w.Crew.Hand = blown ? BlownFuseItem : FuseItem;
-        w.AddActionNoise("fuse");
-        return true;
-    }
-
-    public static bool InsertFuse(SimWorld w, int c)
-    {
-        var fuse = w.Fuses[c];
-        string cmd = $"fuse.{w.Data.Circuits[c].Id}.insert";
-        if (fuse.Get("present") >= 0.5) return Reject(w, cmd, "socket_full");
-        bool good = Holding(w, FuseItem);
-        if (!good && !Holding(w, BlownFuseItem)) return Reject(w, cmd, "need_fuse");
-
-        if (SocketLive(w, c))
-        {
-            w.Spark($"fuse.{w.Data.Circuits[c].Id}");
-            Hazards.Shock(w, cmd);
-        }
-        fuse.Set("present", 1);
-        if (good)
-        {
-            // 새 퓨즈: 부품이 새것이 된다.
-            fuse.Set("blown", 0);
-            Clear(w, fuse);
-        }
-        else
-        {
-            fuse.Set("blown", 1);
-        }
-        w.Crew.Hand = "";
-        w.AddActionNoise("fuse");
-        return true;
-    }
+    // 퓨즈(ELC-01)는 M2에서 장치 엔진으로 옮겼다: data/fixtures/switchboard.json, FixtureActions.
 
     // ── 흡입 거름망 (WTR-01) ─────────────────────────────
 
@@ -257,16 +200,8 @@ static class HandActions
         return true;
     }
 
-    /// <summary>수리로 부품이 새것처럼 되면 고장 표시를 지운다.</summary>
-    static void Clear(SimWorld w, Part p)
-    {
-        string fault = p.ActiveFault;
-        p.InjectedState = PartState.Normal;
-        p.ActiveFault = "";
-        p.Quality = Quality.Proper;
-        if (p.Kind == "fuse") p.Wear = 0;
-        w.Emit(SimEventKind.PartRepaired, p.Id, 0, fault);
-    }
+    /// <summary>수리로 부품이 새것처럼 되면 고장 표시를 지운다 (거름망과 리벳: wear는 그대로).</summary>
+    static void Clear(SimWorld w, Part p) => FixtureEffects.Clear(w, p, resetWear: false);
 }
 
 /// <summary>손 수리의 위험. 체력은 숨은 값이고 표현 층은 화면 효과로만 보여준다.</summary>

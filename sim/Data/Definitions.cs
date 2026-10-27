@@ -96,6 +96,11 @@ public sealed class FaultDef
     public SortedDictionary<string, double> Set { get; set; } = new(StringComparer.Ordinal);
     /// <summary>주입할 때 wear를 이 값 이상으로 올린다 (없으면 그대로). wear가 스스로 임계를 넘어 생긴 고장에는 적용하지 않는다.</summary>
     [Optional] public double? Wear { get; set; }
+    /// <summary>
+    /// 제자리에서 고쳐졌다는 물리 조건(assert 문법, self.x는 그 부품의 상태 값). 그 부품에 장치 명령이 성공할 때마다 보고,
+    /// 참이 되면 고장 표시를 지운다. 고장 여부나 상황판은 쓸 수 없다.
+    /// </summary>
+    [Optional] public string? ClearedWhen { get; set; }
     /// <summary>무작위 발생률 (시간당, 수심 배율과 wear 배율 적용 전).</summary>
     public double BaseRatePerHour { get; set; }
 }

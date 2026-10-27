@@ -69,6 +69,8 @@ sealed class SimWorld
     public readonly List<string> SparksThisTick = new();
     /// <summary>상황판 센서 값을 담는 계산용 버퍼 (상태 아님. 매 틱 다시 채운다).</summary>
     public readonly SensorReadings Sensors;
+    /// <summary>장치 명령과 clearedWhen을 컴파일해 둔 것 (상태 아님).</summary>
+    public readonly Repair.FixtureRuntime Fixtures;
 
     public SimWorld(GameData data, int seed, MissionSetup? setup = null)
     {
@@ -108,6 +110,7 @@ sealed class SimWorld
         }
 
         Sensors = new SensorReadings(data.Circuits.Count, data.Devices.Count);
+        Fixtures = new Repair.FixtureRuntime(this);
         _deviceIndex = new Dictionary<string, int>(StringComparer.Ordinal);
         Devices = new DeviceState[data.Devices.Count];
         DeviceCircuit = new int[Devices.Length];

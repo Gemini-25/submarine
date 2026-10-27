@@ -1,0 +1,38 @@
+{
+  "fixtures": [
+    {
+      "id": "fuse.{c}",
+      "bind": { "c": "circuits" },
+      "part": "fuse.{c}",
+      "kind": "socket",
+      "zone": "mid",
+      "needReason": "need_fuse",
+      "verbs": {
+        "pull": {
+          "tool": "hand",
+          "noise": "fuse",
+          "hook": "fuseRemoved",
+          "hazards": [
+            { "if": "circuit.{c}.on == 1 && battery.voltage > 0 && circuit.{c}.current > 0 && self.blown < 0.5", "hazard": "spark" },
+            { "if": "circuit.{c}.on == 1 && battery.voltage > 0", "hazard": "shock" }
+          ],
+          "gives": [
+            { "if": "self.blown >= 0.5", "item": "fuse_blown" },
+            { "item": "fuse" }
+          ]
+        },
+        "insert": {
+          "noise": "fuse",
+          "hazards": [
+            { "if": "circuit.{c}.on == 1 && battery.voltage > 0", "hazard": "spark" },
+            { "if": "circuit.{c}.on == 1 && battery.voltage > 0", "hazard": "shock" }
+          ],
+          "accepts": {
+            "fuse": { "set": { "blown": 0 }, "renew": true },
+            "fuse_blown": { "set": { "blown": 1 } }
+          }
+        }
+      }
+    }
+  ]
+}

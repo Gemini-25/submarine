@@ -5,9 +5,9 @@ static class DataValidator
 {
     static readonly string[] States = { "Normal", "Warning", "Fault", "Broken" };
 
-    public static void ThrowIfInvalid(GameData d)
+    public static void ThrowIfInvalid(GameData d, IEnumerable<string>? earlier = null)
     {
-        var errors = new List<string>();
+        var errors = new List<string>(earlier ?? Array.Empty<string>());
         void Check(bool ok, string message)
         {
             if (!ok) errors.Add(message);
@@ -238,6 +238,8 @@ static class DataValidator
                 Check(e.AtSeconds >= 0 && e.AtSeconds < m.TimeLimitSeconds, $"missions.{m.Id}: 고장 {e.Fault}의 시각이 범위 밖");
             }
         }
+
+        Repair.FixtureValidator.Validate(d, errors);
 
         if (errors.Count > 0)
             throw new DataValidationException(errors);

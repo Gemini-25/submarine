@@ -47,14 +47,16 @@ enum CommandKind
     ToolSelect,
     LockerTake,
     HandDrop,
-    FusePull,
-    FuseInsert,
+    FusePull,   // M1. 장치 엔진으로 옮겨 쓰지 않는다 (번호를 지키려고 남긴다)
+    FuseInsert, // M1. 위와 같음
     StrainerBolt,
     StrainerCover,
     StrainerBasket,
     LeakWedge,
     LeakShore,
     LeakCaulk,
+    /// <summary>데이터로 정의한 장치의 명령 (Index = FixtureCatalog의 순번). M2.</summary>
+    Fixture,
 }
 
 /// <summary>검증을 마친 명령. 인덱스는 GameData 목록의 위치.</summary>
