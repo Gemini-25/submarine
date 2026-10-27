@@ -52,7 +52,7 @@ static class Modules
     {
         ["steam"] = new[] { "steam.accumulator" },
         ["attitude"] = new[] { "attitude", "ballast.tank.fore", "ballast.tank.aft" },
-        ["senses"] = new[] { "searchlight.rods" },
+        ["senses"] = new[] { "searchlight.rods", "hydrophone.tube.1", "hydrophone.tube.2", "sonar.tube.1", "siphon.tube.1" },
         ["nav"] = new[] { "gyro.unit", "navcomp.unit" },
         ["cable"] = new[] { "winch.drum", "siphon.state" },
         // 습도는 tuning.humidity도 있어야 돈다 (Systems.HumidityRuntime.Build).

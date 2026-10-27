@@ -255,6 +255,7 @@ static class DataValidator
         Repair.FixtureValidator.Validate(d, errors);
         Repair.CrewValidator.Validate(d, errors);
         Parts.MechanicsValidator.Validate(d, errors);
+        Systems.SensesValidator.Validate(d, errors);
         Systems.Navigation.Validate(d, errors);
         Systems.CableGear.Validate(d, errors);
         SwitchboardTuningValidator.Validate(d, errors);

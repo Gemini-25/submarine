@@ -102,6 +102,14 @@ public static class CueAudio
             v.DepthM = 0;
         }, spot: "battery", db: -6, range: 3),
 
+        // 청음기 (SNS-03): 헤드폰을 쓰면 크게, 벗으면 귀덮개에서 새는 소리만. 진공관이 약해지면 쉿 소리가 늘다가 끊긴다.
+        R("hydrophone.listen", s => new HydrophoneVoice(s), (v, c) =>
+        {
+            v.Powered = c.V >= 0.5f;
+            v.TubeHealth = HydrophoneTubes(c.S);
+            v.Gain = World.Submarine.Headphones ? 1f : 0.15f;
+        }, shared: "hydrophone", spot: "hydrophone", range: 3),
+        R("hydrophone.hiss", s => new HydrophoneVoice(s), (v, c) => v.TubeHealth = HydrophoneTubes(c.S), shared: "hydrophone", spot: "hydrophone", range: 3),
         // 자이로컴퍼스 (NAV-01, WP14): 회전자 윙 소리(서면 목소리가 스스로 천천히 내려간다)와 닳은 베어링의 떨림.
         // 세기는 회전을 따르되, 끼임 문턱(회전 0.05) 위에서는 또렷이 들리게 바닥을 둔다. 음높이는 목소리의 켜짐과 꺼짐만 따른다.
         R("gyro.hum", s => new GyroVoice(s), (v, c) =>
@@ -167,6 +175,16 @@ public static class CueAudio
             v.Current = c.V > 0 ? 0.3f : 0;
         }, db: -14, range: 2),
     };
+
+    /// <summary>청음기 진공관 건강 (SNS-03): 두 관 가운데 약한 쪽의 필라멘트. 빠진 관은 0. 보이는 부품 값에서 읽는다.</summary>
+    static float HydrophoneTubes(SimSnapshot s)
+    {
+        float h = 1;
+        foreach (var p in s.Parts)
+            if (p.Id.StartsWith("hydrophone.tube.", StringComparison.Ordinal))
+                h = Math.Min(h, p.Props.TryGetValue("present", out var on) && on < 0.5 ? 0 : (float)p.Props.GetValueOrDefault("filament", 1));
+        return h;
+    }
 
     /// <summary>Submarine.SoundSpots에 없는 소리 자리. vent_fan은 공기 장치가 없는 데이터(M1)에서만 쓰는 송풍 팬 대체 자리다.</summary>
     public static readonly IReadOnlyDictionary<string, Godot.Vector3> ExtraSpots = new Dictionary<string, Godot.Vector3>(StringComparer.Ordinal)

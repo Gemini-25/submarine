@@ -64,6 +64,7 @@ public partial class AutoPlayer : Node
         ["drill-hull"] = DrillHullSuite,
         ["drill-air"] = DrillAirSuite,
         ["drill-water"] = DrillWaterSuite,
+        ["drill-senses"] = SensesDrillSuite,
         ["drill-nav"] = DrillNavSuite,
         ["drill-cable"] = DrillCableSuite,
         ["drill-switchboard"] = DrillSwitchboardSuite,

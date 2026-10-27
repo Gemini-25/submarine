@@ -58,7 +58,7 @@ public static class StandPoints
             [ "strainer.cover", "strainer.bolt.1", "strainer.bolt.2", "strainer.bolt.3", "strainer.bolt.4", "wash_bucket" ], None),
         new("locker", At(3.75f, -0.25f), false, [ "locker.fuse", "locker.wood_wedge", "locker.timber_shore", "discard" ], None),
         new("panel", At(7.3f, -0.1f), false,
-            [ "panel", ..DeepLine.Sim.Data.Bindings.PanelLamps.Select(l => $"panel.bezel.{l}"), ..DriftGauges.Select(g => $"gauge.{g}.glass"),
+            [ "panel", ..DeepLine.Sim.Data.Bindings.PanelLamps.Select(l => $"panel.bezel.{l}"), ..DeepLine.Sim.Data.Bindings.PanelLamps.Select(l => $"panel.bulb.{l}"), ..DriftGauges.Select(g => $"gauge.{g}.glass"),
               ..DriftGauges.Select(g => $"gauge.{g}.zero"), "panel.lamptest", "propulsion.telegraph", "searchlight.switch" ], None),
 
         // ── 후방 ──
@@ -99,7 +99,8 @@ public static class StandPoints
         new("commdesk", At(6.4f, 0.35f), false,
             [ "gadget.bridge", "bridge.lead", "siphon.ink", "siphon.bulb", "siphon.testkey", "siphon.arm", "siphon.pen", "siphon.tube.1" ], None),
         new("hydrophone", At(6.45f, 0.35f), false,
-            [ "hydrophone.door", "hydrophone.door.screw.1", "hydrophone.door.screw.2", "hydrophone", "sonar.tube.1", "gadget.headphones" ], None),
+            [ "hydrophone.door", "hydrophone.door.screw.1", "hydrophone.door.screw.2", "hydrophone", "hydrophone.switch",
+              "hydrophone.tube.1", "hydrophone.tube.2", "sonarset.tube.1", "gadget.headphones" ], None),
 
         // ── 손이 닿는지만 보는 자리 ──
         new("canister.stand", At(4.6f, -0.15f), false, [ "locker.canister" ], None, WorkView: false),

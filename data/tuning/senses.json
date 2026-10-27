@@ -1,0 +1,8 @@
+{
+  "senses": {
+    "tubeWeakFilament": 0.5,
+    "filamentDecayPerSecond": 0.001,
+    "bulbFlickerSeconds": 0.25,
+    "bulbFlickerOffFraction": 0.4
+  }
+}

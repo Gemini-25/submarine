@@ -1,0 +1,58 @@
+{
+  "proc.bulb.replace": {
+    "title": "상황판 전구 교체",
+    "fault": "SNS-01",
+    "grade": "proper",
+    "bind": [ "lamp" ],
+    "steps": [
+      { "type": "Inspect", "text": "램프 시험 단추를 누르고 있는 동안 여덟 표시등이 모두 켜지는지 본다. 켜지지 않는 표시등의 전구가 탄 것이다." },
+      { "type": "Open", "text": "그 표시등의 테를 손으로 반시계로 돌려 푼다.", "cmd": "panel.bezel.{lamp}.loosen", "tool": "hand" },
+      { "type": "Remove", "text": "탄 전구를 뽑는다. 유리가 검게 그을려 있다.", "cmd": "panel.bulb.{lamp}.pull", "tool": "hand", "requires": "테를 풀었을 것", "hazard": "테가 덮고 있으면 전구가 빠지지 않는다." },
+      { "type": "Remove", "text": "탄 전구를 폐기함에 버린다.", "cmd": "hand.drop" },
+      { "type": "Install", "text": "예비품 사물함에서 상황판 전구를 꺼낸다.", "cmd": "locker.take.panel_bulb" },
+      { "type": "Install", "text": "새 전구를 소켓에 끝까지 밀어 넣는다.", "cmd": "panel.bulb.{lamp}.insert" },
+      { "type": "Fasten", "text": "테를 손으로 시계 방향으로 끝까지 돌려 조인다.", "cmd": "panel.bezel.{lamp}.tighten", "tool": "hand", "requires": "끝까지 조일 것", "hazard": "테가 헐거우면 전구가 깜박인다." },
+      { "type": "Test", "text": "램프 시험 단추를 눌러 여덟 표시등이 모두 고르게 켜지는지 본다." }
+    ]
+  },
+  "proc.tube.replace": {
+    "title": "청음기 진공관 교체",
+    "fault": "SNS-03",
+    "grade": "proper",
+    "bind": [ "tube" ],
+    "steps": [
+      { "type": "Inspect", "text": "청음기 문 유리 너머로 두 진공관의 필라멘트를 본다. 불빛이 흐리거나 꺼진 관이 탄 것이다." },
+      { "type": "Isolate", "text": "청음기를 끈다.", "cmd": "device.hydrophone.off" },
+      { "type": "Inspect", "text": "청음기 몸체를 맨손으로 만져 본다. 따뜻한 정도로 식을 때까지 기다린다.", "cmd": "hydrophone.touch", "tool": "hand" },
+      { "type": "Open", "text": "드라이버로 문 나사 두 개를 반시계로 돌려 푼다.", "cmd": "hydrophone.door.screw.{n}.loosen", "tool": "screwdriver", "repeat": 2 },
+      { "type": "Open", "text": "문을 연다.", "cmd": "hydrophone.door.open", "tool": "hand" },
+      { "type": "Remove", "text": "탄 진공관을 소켓에서 곧게 뽑는다.", "cmd": "hydrophone.tube.{tube}.pull", "tool": "hand", "requires": "청음기를 끄고 몸체가 식었을 것", "hazard": "켠 채로 뽑으면 감전된다. 뜨거울 때 뽑으면 손을 덴다." },
+      { "type": "Remove", "text": "탄 진공관을 폐기함에 버린다.", "cmd": "hand.drop" },
+      { "type": "Install", "text": "예비품 사물함에서 6호 진공관을 꺼낸다.", "cmd": "locker.take.vacuum_tube" },
+      { "type": "Install", "text": "새 진공관의 핀을 소켓 구멍에 맞추어 끝까지 꽂는다.", "cmd": "hydrophone.tube.{tube}.insert", "requires": "청음기가 꺼져 있을 것", "hazard": "켠 채로 꽂으면 감전된다." },
+      { "type": "Close", "text": "문을 닫는다.", "cmd": "hydrophone.door.close", "tool": "hand" },
+      { "type": "Fasten", "text": "드라이버로 문 나사 두 개를 시계 방향으로 조인다.", "cmd": "hydrophone.door.screw.{n}.tighten", "tool": "screwdriver", "repeat": 2 },
+      { "type": "Test", "text": "청음기를 켠다. 두 필라멘트가 함께 빛나는지 보고, 헤드폰의 잡음이 가라앉았는지 듣는다.", "cmd": "device.hydrophone.on" }
+    ]
+  },
+  "proc.tube.salvage": {
+    "title": "소나 진공관 빼 쓰기",
+    "fault": "SNS-03",
+    "grade": "proper",
+    "bind": [ "tube" ],
+    "steps": [
+      { "type": "Inspect", "text": "사물함의 6호 진공관 칸이 비었는지 확인한다. 소나의 진공관은 청음기의 것과 같은 6호 관이다." },
+      { "type": "Isolate", "text": "청음기를 끈다.", "cmd": "device.hydrophone.off" },
+      { "type": "Inspect", "text": "청음기 몸체를 맨손으로 만져 본다. 따뜻한 정도로 식을 때까지 기다린다.", "cmd": "hydrophone.touch", "tool": "hand" },
+      { "type": "Open", "text": "드라이버로 문 나사 두 개를 반시계로 돌려 푼다.", "cmd": "hydrophone.door.screw.{n}.loosen", "tool": "screwdriver", "repeat": 2 },
+      { "type": "Open", "text": "문을 연다.", "cmd": "hydrophone.door.open", "tool": "hand" },
+      { "type": "Remove", "text": "탄 진공관을 소켓에서 곧게 뽑는다.", "cmd": "hydrophone.tube.{tube}.pull", "tool": "hand", "requires": "청음기를 끄고 몸체가 식었을 것", "hazard": "켠 채로 뽑으면 감전된다. 뜨거울 때 뽑으면 손을 덴다." },
+      { "type": "Remove", "text": "탄 진공관을 폐기함에 버린다.", "cmd": "hand.drop" },
+      { "type": "Remove", "text": "소나 진공관을 뽑는다. 이때부터 소나는 발신하지 못한다.", "cmd": "sonarset.tube.1.pull", "tool": "hand", "requires": "소나가 발신하고 있지 않을 것", "hazard": "소나가 발신하는 동안 뽑으면 감전된다." },
+      { "type": "Install", "text": "뽑은 소나 진공관을 청음기 소켓에 끝까지 꽂는다.", "cmd": "hydrophone.tube.{tube}.insert", "requires": "청음기가 꺼져 있을 것", "hazard": "켠 채로 꽂으면 감전된다." },
+      { "type": "Close", "text": "문을 닫는다.", "cmd": "hydrophone.door.close", "tool": "hand" },
+      { "type": "Fasten", "text": "드라이버로 문 나사 두 개를 시계 방향으로 조인다.", "cmd": "hydrophone.door.screw.{n}.tighten", "tool": "screwdriver", "repeat": 2 },
+      { "type": "Test", "text": "청음기를 켠다. 두 필라멘트가 함께 빛나는지 보고, 헤드폰의 잡음이 가라앉았는지 듣는다.", "cmd": "device.hydrophone.on" }
+    ]
+  }
+}

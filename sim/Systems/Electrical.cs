@@ -273,6 +273,8 @@ static class DeviceRules
         foreach (var p in w.DeviceParts[d])
             if (p.State(w.T.Wear) >= PartState.Broken)
                 return false;
+        foreach (var p in w.DeviceParts[d])
+            if (!Tubes.Alive(p)) return false; // 빠졌거나 필라멘트가 끊긴 진공관 (SNS-03)
         // 항법 모듈: 자이로 전원 스위치와 베어링, 항법 계산기 전원 레버 (모듈이 없으면 늘 참).
         if (!Navigation.CanRun(w, d)) return false;
         if (d == w.Fan)

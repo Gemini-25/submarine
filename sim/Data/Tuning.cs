@@ -42,6 +42,8 @@ public sealed class Tuning
     [Optional] public PumpBearingTuning? PumpBearing { get; set; }
     /// <summary>축 패킹 누름판 (M2 HUL-03). 없으면 축 패킹 지점도 다른 누수 지점처럼 integrity로만 샌다.</summary>
     [Optional] public ShaftGlandTuning? ShaftGland { get; set; }
+    /// <summary>감각 계통: 진공관 필라멘트와 상황판 전구 (M2 WP13). 없으면 필라멘트가 약해지지 않는다.</summary>
+    [Optional] public SensesTuning? Senses { get; set; }
 }
 
 /// <summary>펌프 베어링 (WTR-02). 기름 잔의 기름은 저항(drag)을 줄이고, 뚜껑 볼트가 풀린 채 돌면 기름이 새고 빨리 닳는다.</summary>
@@ -65,6 +67,18 @@ public sealed class ScrubberTuning
 {
     /// <summary>죔쇠가 하나라도 열려 있으면 공기가 흡수제를 비켜 가서 흡수가 이 배율로 준다.</summary>
     public double BypassAbsorption { get; set; }
+}
+
+/// <summary>진공관과 상황판 전구의 수치 (data/tuning/senses.json).</summary>
+public sealed class SensesTuning
+{
+    /// <summary>필라멘트가 이 값 아래로 약해진 진공관은 장비가 도는 동안 계속 약해진다 (성한 관은 1).</summary>
+    public double TubeWeakFilament { get; set; }
+    /// <summary>약해진 필라멘트가 장비가 도는 동안 초당 줄어드는 양. 0이 되면 끊겨 장비가 멎는다.</summary>
+    public double FilamentDecayPerSecond { get; set; }
+    /// <summary>테가 헐거운 전구가 깜박이는 주기(초)와 그 가운데 꺼져 있는 몫.</summary>
+    public double BulbFlickerSeconds { get; set; }
+    public double BulbFlickerOffFraction { get; set; }
 }
 
 /// <summary>손 수리 동작의 수치 (M1). 손동작 하나가 명령 하나다.</summary>
