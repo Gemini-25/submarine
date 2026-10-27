@@ -115,15 +115,21 @@ public sealed class FixtureBinder
                 string path = $"part.{f.PartId}.prop.{f.Prop}";
                 int Now() => (int)Math.Round(_query(path));
                 // 레버는 한 번에 한 칸. 위로 끌면 다음 자리, 아래로 끌면 앞 자리.
+                // 끝 자리에서 더 밀면 그 자리의 명령을 보내 시뮬레이션이 'already'로 답하게 한다 (WP14).
                 it.CommandFor = (_, m) =>
                 {
-                    int next = Now() + (m == Motion.Up ? 1 : m == Motion.Down ? -1 : 0);
-                    return m is Motion.Up or Motion.Down && next >= 0 && next < positions.Count ? $"{id}.{positions[next]}" : null;
+                    if (m is not (Motion.Up or Motion.Down)) return null;
+                    int next = Math.Clamp(Now() + (m == Motion.Up ? 1 : -1), 0, positions.Count - 1);
+                    return $"{id}.{positions[next]}";
                 };
                 for (int k = 0; k < positions.Count; k++)
                 {
                     int target = k;
-                    _reverse[$"{id}.{positions[k]}"] = () => (id, target > Now() ? Motion.Up : Motion.Down);
+                    _reverse[$"{id}.{positions[k]}"] = () =>
+                    {
+                        int now = Now();
+                        return (id, target > now || (target == now && target == positions.Count - 1) ? Motion.Up : Motion.Down);
+                    };
                 }
                 break;
             }

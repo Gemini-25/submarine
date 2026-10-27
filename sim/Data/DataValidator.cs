@@ -18,6 +18,8 @@ static class DataValidator
         Check(t.Battery.Cells > 0, "tuning.battery.cells > 0 이어야 한다");
         Check(t.Battery.CapacityWh > 0, "tuning.battery.capacityWh > 0 이어야 한다");
         Check(t.Battery.InitialCharge is >= 0 and <= 1, "tuning.battery.initialCharge는 0~1");
+        if (t.Scrubber != null) Check(t.Scrubber.BypassAbsorption is > 0 and < 1, "tuning.scrubber.bypassAbsorption은 0보다 크고 1보다 작아야 한다");
+        if (t.Fan != null) Check(t.Fan.StallHeatW >= 0, "tuning.fan.stallHeatW >= 0 이어야 한다");
         var curve = t.Battery.VoltageCurve;
         Check(curve.Count >= 2, "tuning.battery.voltageCurve는 점 2개 이상");
         for (int i = 0; i < curve.Count; i++)

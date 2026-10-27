@@ -77,8 +77,8 @@ public static class StandPoints
         new("toolboard", At(3.4f, -0.45f), false, Tools(), None),
         new("ballast", At(3.45f, 0.5f), false,
             [ "ballast.fore.flood", "ballast.aft.flood", "ballast.fore.gland", "ballast.aft.gland", "ballast.fore.body", "ballast.aft.body", "pump.suction" ], None),
-        new("scrubber", At(3.05f, -0.35f), false, [ "scrubber.lid", "scrubber.clamp.1", "scrubber.clamp.2" ], None),
-        new("fan", At(3.85f, 0.25f), false, [ "fan.guard", "fan.guard.nut.1", "fan.guard.nut.2", "fan.motor" ], None),
+        new("scrubber", At(3.05f, -0.35f), false, [ "scrubber.lid", "scrubber.clamp.1", "scrubber.clamp.2", "scrubber.canister" ], None),
+        new("fan", At(3.85f, 0.25f), false, [ "fan.guard", "fan.guard.nut.1", "fan.guard.nut.2", "fan.motor", "fan.hub", "fan.bearing", "fan.blades" ], None),
         new("junctions", At(3.65f, 0.5f), true, [ ..Junction("C1"), ..Junction("C2"), ..Junction("C6"), ..Junction("C7"), "device.soldering_iron" ], None),
         new("furnace", At(4.6f, 0.3f), true, [ "o2.furnace.door", "o2.furnace.latch", "o2.furnace.vent", "candle", "o2.furnace" ], None),
         new("chamber", At(4.0f, 0.65f), false, [ "chamber.hatch", ..Four("chamber.hatch.dog"), "chamber.squeeze" ], None),
@@ -102,6 +102,7 @@ public static class StandPoints
             [ "hydrophone.door", "hydrophone.door.screw.1", "hydrophone.door.screw.2", "hydrophone", "sonar.tube.1", "gadget.headphones" ], None),
 
         // ── 손이 닿는지만 보는 자리 ──
+        new("canister.stand", At(4.6f, -0.15f), false, [ "locker.canister" ], None, WorkView: false),
         new("strainer.open", At(1.55f, -0.3f), true, [ "strainer.basket" ], [ "strainer.cover" ], WorkView: false),
         new("junction.C8", At(0.3f, -0.2f), false, Junction("C8"), None, WorkView: false),
         new("aft.port", At(2.0f, -0.2f), false, [ "discard.aft", ..Junction("C3") ], None, WorkView: false),

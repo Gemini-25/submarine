@@ -183,6 +183,10 @@ public class Diagnosability
         Splits("ELC-01", "AIR-01", "cue.igniter.glow");
         // 팬 정지와 흡수제 포화: 팬 소리 (교범 03 공기)
         Splits("AIR-01", "AIR-02", "cue.fan.hum");
+        // 교범 05 '송풍 팬과 흡수통' (WP9): 멎은 팬의 웅웅 소리, 종이 리본, 지시약 창
+        Splits("ELC-01", "AIR-01", "cue.fan.stall");
+        Splits("AIR-01", "AIR-02", "cue.fan.streamer");
+        Splits("AIR-01", "AIR-02", "cue.scrubber.indicator");
         // 누전과 퓨즈 단선: 분기함의 이슬
         Splits("ELC-03", "ELC-01", "cue.junction.C3.dew");
         // 열화 셀: 그 셀만 전압이 낮다
