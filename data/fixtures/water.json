@@ -1,0 +1,110 @@
+{
+  "params": {
+    "lubeLife": 600
+  },
+  "fixtures": [
+    {
+      "id": "pump.cap.bolt.{n}",
+      "bind": { "n": "1..4" },
+      "part": "pump.bearing",
+      "kind": "fastener",
+      "zone": "aft",
+      "prop": "capBolt{n}",
+      "group": "cap",
+      "verbs": {
+        "loosen": {
+          "tool": "wrench",
+          "noise": "wrench",
+          "rejectIf": [ { "if": "self.capOpen >= 0.5", "reason": "cover_open" } ]
+        },
+        "tighten": {
+          "tool": "wrench",
+          "noise": "wrench",
+          "rejectIf": [ { "if": "self.capOpen >= 0.5", "reason": "cover_open" } ]
+        }
+      }
+    },
+    {
+      "id": "pump.cap",
+      "part": "pump.bearing",
+      "kind": "cover",
+      "zone": "aft",
+      "prop": "capOpen",
+      "heldBy": "cap",
+      "verbs": {
+        "open": {
+          "tool": "hand",
+          "noise": "cover",
+          "hazards": [ { "if": "device.bilge_pump.temp >= 60", "hazard": "burn" } ]
+        },
+        "close": {
+          "tool": "hand",
+          "noise": "cover"
+        }
+      }
+    },
+    {
+      "id": "pump.bearing",
+      "part": "pump.bearing",
+      "kind": "socket",
+      "zone": "aft",
+      "needReason": "need_bearing",
+      "verbs": {
+        "pull": {
+          "tool": "hand",
+          "noise": "cover",
+          "rejectIf": [ { "if": "self.capOpen < 0.5", "reason": "cover_closed" } ],
+          "hazards": [ { "if": "device.bilge_pump.running == 1", "hazard": "pinch" } ],
+          "set": { "lube": 0, "lubeArmed": 0, "lubeLife": 0, "oil": 0 },
+          "gives": [
+            { "if": "part.pump.bearing.wear >= 0.5", "item": "pump_bearing_worn" },
+            { "item": "pump_bearing" }
+          ]
+        },
+        "insert": {
+          "noise": "cover",
+          "rejectIf": [ { "if": "self.capOpen < 0.5", "reason": "cover_closed" } ],
+          "hazards": [ { "if": "device.bilge_pump.running == 1", "hazard": "pinch" } ],
+          "accepts": {
+            "pump_bearing": { "renew": true },
+            "pump_bearing_worn": {}
+          }
+        }
+      }
+    },
+    {
+      "id": "pump.oilcup",
+      "part": "pump.bearing",
+      "kind": "work",
+      "zone": "aft",
+      "verbs": {
+        "oil": {
+          "tool": "oil_can",
+          "gesture": "stroke",
+          "noise": "oil",
+          "rejectIf": [
+            { "if": "self.present < 0.5", "reason": "no_bearing" },
+            { "if": "self.lube >= 1", "reason": "cup_full" }
+          ],
+          "effects": [
+            { "add": "oil", "by": 1, "max": 3 },
+            { "if": "self.oil >= 3", "set": "lube", "to": 1 },
+            { "if": "self.oil >= 3", "arm": "lubeLife", "to": "$lubeLife" },
+            { "if": "self.oil >= 3 && self.drag > 0", "quality": "temporary" },
+            { "if": "self.oil >= 3", "set": "oil", "to": 0 }
+          ]
+        }
+      }
+    },
+    {
+      "id": "pump.body",
+      "part": "pump.bearing",
+      "kind": "work",
+      "zone": "aft",
+      "touch": {
+        "temp": "device.bilge_pump.temp",
+        "vibrating": "device.bilge_pump.running == 1 && pump.drag >= 0.2"
+      }
+    }
+  ]
+}

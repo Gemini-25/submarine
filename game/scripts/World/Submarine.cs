@@ -58,6 +58,7 @@ public partial class Submarine : Node3D
         BuildToolBoard();
         BuildHandPump();
         BuildPumpAndStrainer();
+        BuildPumpBearing();
         BuildLeaks();
         BuildFurniture();
     }

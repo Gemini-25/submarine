@@ -112,6 +112,9 @@ static class SimQuery
                     "totalL" => x => QueryValue.Of(x.Water.PumpedOutL),
                     // 펌프가 밀어냈는데 배관에서 되돌아온 양 (역류 소리)
                     "backflow" => x => QueryValue.Of(x.Water.PumpGrossLps - x.Water.PumpNetLps),
+                    // 베어링 저항 (기름 잔이 차 있으면 준 값)과 뚜껑 둘레에서 기름이 새는 곳의 수 (WP10)
+                    "drag" => x => QueryValue.Of(PumpBearing.Drag(x)),
+                    "weep" => x => QueryValue.Of(PumpBearing.Weep(x)),
                     _ => throw Unknown(),
                 };
 
