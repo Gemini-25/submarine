@@ -195,3 +195,48 @@
 46. **[minor/godot]** `docs/reports/m2-wp8.md` — '결정' 절 (ammeter.Cx 표지 처리 없음); 코드: BindAmmeters `RemoveMarker(id); Add(Interactable.Create(parent, id, ...))`
    - 문제: 배치도(m2-layout.md)는 ammeter.Cx를 '배전반 더한 것 (ELC-02)' 줄, 곧 WP17의 몫으로 두었다. WP8은 이 표지 여덟 개를 지우고 바늘을 붙였는데, 보고서의 결정 절과 '명세와 다르게 한 점'에 적지 않았다. WP17이 배치도대로 RemoveMarker("ammeter.Cx")를 부르면 Submarine.RemoveMarker가 ArgumentException('표지가 아니다')을 던져 장면을 지을 때 멈춘다. 전류계 바늘도 둘이 생긴다.
    - 고칠 것: docs/reports/m2-wp8.md 결정 절에 한 줄을 더한다: '배전반 전류계(ammeter.C1~C8)의 표지는 WP8이 지우고 바늘을 붙였다(Submarine.Switchboard.cs BindAmmeters, 눈금 끝 = 퓨즈 정격×1.25). ELC-02(WP17)는 RemoveMarker("ammeter.Cx")를 부르지 말고 Interactables["ammeter.Cx"]와 이 바늘을 그대로 쓴다.' '명세와 다르게 한 점'에도 '명세상 WP17의 Godot 몫인 전류계를 WP8이 먼저 묶었다'를 적는다.
+
+## 2차 확인 (159b049)
+
+46건 가운데 43건은 고쳐졌습니다. 아래는 덜 고쳐진 것과 이번 수정에서 새로 생긴 것입니다. 모두 고쳐 주세요.
+
+### 덜 고쳐진 것
+
+- **15번 (partial)**: proc.fuse.wire의 시험 단계(누전이 남은 회로에서 철사를 꽂고 switch.on을 하면 WiringBurnt와 Spark가 난다)를 절차 경로로 확인하는 시험이 없다. 예를 들어 ELC-03을 junction.C1에 주입해 퓨즈가 끊기게 한 뒤 Follow(proc.fuse.wire, C1)를 돌리고, 마지막 switch.C1.on 단계 뒤에 WiringBurnt와 Spark(junction.C1)가 있고 FuseBlown은 없음을 단언한다. 기존 Overload 시험을 이 경로로 고쳐 써도 된다. 보고서의 15번 처리에도 이 항목을 적는다.
+  - 근거: (1) Drying_a_wet_live_box_shocks (SwitchboardTests.cs:287) and (2) Soldering_or_taping_a_bare_joint_on_a_live_feed_shocks (:649) were added: Shock and Spark at solder, then Shock at wrap. The quiet-repair noise assertions were added at :244 and :602. (3) is missing: the proc.fuse.wire Test step (switch.on with a leak still present → WiringBurnt and Spark) has no test. Overload_on_a_wired_fuse_burns_the_junction_wiring_instead (:539) is unchanged from a56b6af: it injects ELC-03 after the procedure has finished. The report's row for 15/22 does not mention (3).
+- **41번 (partial)**: 검류계 눈금판에 단위 'MΩ'를 Kit.Text로 써야 한다(숫자만 있음). BuildBridgeLead의 문서 주석(222~223행) '왼쪽 끝 0.1MΩ', '회로가 살아 있으면 바늘이 가운데에 선다'를 지금 동작(0.01~100MΩ, 살아 있으면 떨림, 끊음이면 왼쪽 끝)에 맞게 고쳐야 한다.
+  - 근거: Submarine.Switchboard.cs BuildBridgeLead lines 256-258: '끊음' gives f=0 and NaN gives 0.5+0.35*sin(t*9), so (1) is done. The log map is f=(log10 MΩ+2)/4, and GaugeLabels writes '0.01','0.1','1','10','100' with r=radius*0.58 and size radius*0.2 (radius 0.035 matches Layout Dial line 1021). No 'MΩ' text is written anywhere on the dial (grep finds MΩ only in comments). The doc comment at lines 222-223 still says '왼쪽 끝 0.1MΩ' and '회로가 살아 있으면 … 바늘이 가운데에 선다', which contradicts the new code. Part (3), leaving page 08 alone, was declined because it conflicts with major finding 7, which ordered page 08 rewritten for the current device plus a WP22 note. That decline holds up: page 08 line 41 now describes the selector and the 0.01–100MΩ scale, and report item 15 tells WP22 to rewrite it.
+- **46번 (partial)**: 보고서 '명세와 다르게 한 점'에 '명세상 WP17의 Godot 몫인 배전반 전류계(ammeter.C1~C8)를 WP8이 먼저 묶었다' 항목을 더해야 한다.
+  - 근거: The report's 결정 section (line 125) has the ammeter line: WP8 removed the markers and bound the needles, and WP17 must not call RemoveMarker("ammeter.Cx") and should use Interactables["ammeter.Cx"]. The '명세와 다르게 한 점과 이유' list (items 1-16) has no entry saying WP8 bound the ammeters that the spec gives to WP17; grep for WP17 finds only item 14, which is about contact drop.
+
+### 수정에서 새로 생긴 것
+
+1. **[major]** `sim.tests/SwitchboardTests.cs` — 693행 Isolate_steps_only_switch_things_off (TestData.Data.Procedures 전체를 돈다)
+   - 문제: 검토 14번을 따라 넣은 시험이 WP8 절차만이 아니라 모든 계통의 절차에 'Isolate 단계의 cmd는 .off로 끝나야 한다'를 강제한다. 아직 합치지 않은 다른 계통 브랜치에는 이 규칙에 맞지 않는 정당한 차단 단계가 이미 있다. 그래서 본선이 그 브랜치들을 합치는 순간 이 시험이 실패한다. 다른 계통을 깨는 공유 제약이다.
+   - 고칠 것: 시험 범위를 WP8 절차(proc.fuse.wire, proc.junction.*)로 좁힌다. 또는 '전원이나 동력을 켜는 명령(.on, device.*.on)이 Isolate에 오지 않는다'처럼 금지 목록 쪽으로 단언을 바꾼다. 보고서에는 다른 계통의 Isolate 규칙은 본선이 정한다고 적는다.
+2. **[major]** `data/procedures/switchboard.json` — proc.junction.twist (279행~), 마지막 Test 단계 switch.{circuit}.on (354행); 23쪽 '탄 배선 꼬아 잇기' 절
+   - 문제: 검토 1번이 말한 C7 경로는 C7 분기함 누전(ELC-03, 습기 0.95)에 인두를 켜고 퓨즈 대용 철사를 꽂은 상태다. 새 꼬아 잇기 절차는 이 경우에 바로 같은 일을 되풀이한다. 절차에는 상자를 말리는 단계, 인두를 끄는 단계, 철사를 퓨즈로 바꾸는 단계가 없다(다시 잇기에는 바꾸는 단계가 있다). 마지막에 C7을 올리면 켜진 채 남은 인두 80과 누설 약 61이 더해져 정격 100을 넘는다. 2초 뒤 철사 퓨즈 때문에 배선이 다시 탄다(BurnWiring). 젖은 채 감은 테이프에는 물기도 갇힌다(trapped). 인두를 꺼 두어도 교범대로 '다른 회로를 다시 잇기'에서 인두를 켜는 순간 C7이 또 탄다. 빠져나갈 길로 넣은 절차가 그 시나리오에서는 쓸모가 없다.
+   - 고칠 것: proc.junction.twist에 다음을 더한다. (1) 벗기기 앞에 '분기함이 젖어 있으면 걸레로 네 번 닦는다'(junction.{circuit}.box.dry ×4, 만져서 축축하지 않을 것)를 넣거나, Inspect에 '먼저 분기함 건조를 한다'를 넣는다. (2) 스위치를 올리기 전에 device.soldering_iron.off(Isolate, .off)를 둔다. (3) 예비 퓨즈가 있으면 다시 잇기처럼 철사를 뽑고 새 퓨즈를 꽂는다. 23쪽 절에도 같은 순서를 적는다. 시험을 더한다: ELC-03 junction.C7, fuse.C7 wire 1, 인두 켬 → WiringBurnt → 절차대로 → 60초 동안 WiringBurnt 없음, trapped 0.
+3. **[minor]** `data/fixtures/switchboard.json` — junction.{c}.cable.twist rejectIf `self.stripped < $strokes` → not_stripped (289·591·893행), data/text/ko/switchboard.json reason.not_stripped
+   - 문제: 꼬아 잇기는 땜질을 하지 않는데, 땜질용 거부 문구 '피복이 그대로라 납이 붙지 않는다.'를 그대로 쓴다. 게다가 FixtureBinder.Choose는 맨손에 빈손이면 이제 twist(점수 1)를 고른다. 그래서 덮개를 연 분기함의 멀쩡한 케이블에 맨손으로 손동작을 하기만 해도 '납이 붙지 않는다'가 뜬다. 고치기 전에는 strip으로 넘어가 '칼 없이는 피복이 벗겨지지 않는다.'가 떴다. 인두를 쥐지도 않았는데 납 이야기를 하는 셈이다.
+   - 고칠 것: twist의 rejectIf 순서를 cover_closed → `self.burnt < 0.5` done → not_stripped로 바꾼다. 그러면 멀쩡한 케이블에서는 '더 할 것 없음'이 먼저 나온다. 사유도 꼬기 전용 키로 나눈다(예: reason.twist_not_stripped: '피복이 그대로라 선을 꼴 수 없다.').
+4. **[minor]** `data/fixtures/switchboard.json` — twist effects `{"quality": "temporary"}`; data/missions/m2-switchboard-a.json 20행 assert
+   - 문제: 꼬아 잇기가 응급 수리라는 표시는 분기함 부품의 Quality 하나뿐이고, 이 값이 실제 이음 상태와 따로 논다. (1) 다시 잇기(strip, solder, wrap)는 Quality를 정식으로 돌려놓지 못한다. 그래서 꼰 뒤에 정식으로 다시 이어도 영원히 temporary로 남는다. (2) 반대로 그 분기함에 ELC-03이 걸려 있었으면(검토 1번의 C7 경로) 건조로 clearedWhen이 참이 되어 FixtureEffects.Clear가 Quality를 Proper로 바꾼다. 꼰 이음이 정식으로 읽힌다. (3) 감기 뒤의 상태 값(burnt, insulated, stripped, soldered)이 땜질과 같아서, 훈련 m2-switchboard-a의 assert는 C6을 꼬아 잇기만 해도 통과한다. 목표 문구는 '다시 잇고'이다.
+   - 고칠 것: 꼰 이음을 상태 값으로 둔다. 예: twist에서 `set twisted 1`, solder가 끝나면(soldered >= strokes) `set twisted 0`. 단서, 교범, 미션 assert(`part.junction.C6.prop.twisted == 0`)는 이 값을 읽게 한다. Quality는 쓰지 않거나 이 값과 맞춘다.
+5. **[minor]** `data/fixtures/switchboard.json` — junction.{c}.box.dry effects (wrap 0, taped 0, trapped 0; insulated는 그대로) 146·448·750행
+   - 문제: 걸레질이 '헌 테이프를 풀어 낸다'로 바뀌었는데 insulated는 그대로 둔다. 다시 이은 이음은 피복을 벗기고 땜질한 맨 이음이고, insulated 1은 테이프를 감아서 생긴 값이다. 그래서 다시 이은 분기함을 한 번만 닦으면 테이프는 사라진다(taped 0). 그런데 insulated는 1로 남아 맨 이음 누전(bareJointMoisture 0.75)이 나지 않고, Godot에서도 맨 구리가 보이지 않는다. 테이프가 떨어져 다시 감지 못한 경우에 '맨 이음은 누전한다'(23쪽)와 어긋난다.
+   - 고칠 것: box.dry에 `{"if": "self.taped >= 0.5", "set": "insulated", "to": 0}`을 더한다(테이프를 풀면 이음이 드러난다). 건조 절차는 어차피 다시 감으므로 정식 흐름은 그대로다. 시험을 더한다: 다시 잇기 뒤 box.dry 한 번 → 덮개 닫고 스위치 올림 → leak > 0.
+6. **[minor]** `sim.tests/SwitchboardTests.cs` — Floor_water_raises_humidity_and_junction_moisture_creeps_only_upward, 102~104행 `// 물을 퍼내 공기가 말라 가도…` + `sim.Cmd("hatch.open")`
+   - 문제: 시험 뒷부분이 약해졌다. 전에는 배수 회로(C3)를 올려 바닥 물을 퍼냈다. 그러면 목표 rh가 내려가고, 공기가 말라도 분기함 습기가 내려가지 않는지를 보았다. 지금은 C3을 다시 내리고 hatch.open만 한다. 해치를 열면 후방 물이 중앙으로 옮겨 갈 뿐이고 바닥 물의 합은 줄지 않는다. HUL-01 누수도 계속되므로 rh는 오히려 오른다. 그래서 '위로만 기어오른다'를 공기가 마를 때 확인하지 못하고, 주석도 코드와 맞지 않는다.
+   - 고칠 것: 누설 단언 뒤에 다시 `switch.C3.on`으로 퍼내거나 HUL-01을 고친 뒤 퍼낸다. 그리고 rh가 실제로 내려갔는지(`rh_after < rh_before`)를 단언한 다음 분기함 습기가 줄지 않았는지 본다.
+7. **[minor]** `game/scripts/World/Submarine.Switchboard.cs` — BuildBridgeLead 238행 GaugeLabels(gauge, 0.035f, {"0.01",…,"100"}) + Submarine.Layout.cs 1021행 Dial(..., 0.035f, "검류계")
+   - 문제: 검류계에 새로 붙인 양 끝 눈금 숫자 '0.01'과 '100'이 배치가 써 둔 단위 글씨 '검류계'와 같은 높이에서 겹친다. 그리고 눈금판 어디에도 'MΩ'가 없어서, 교범 08·25쪽의 MΩ 기준을 읽을 단위가 화면에 없다(검토 41번은 숫자와 'MΩ'를 쓰라고 했다). 전류계 C8(눈금 끝 15)은 큰 눈금 3.75, 11.25가 Fmt("0.#") 때문에 '3.8', '11.3'으로 적혀 눈금 값과 다르다.
+   - 고칠 것: 검류계 단위 글씨를 'MΩ'로 바꾸거나(배치의 Dial unit) 숫자 반지름과 자리를 조정해 겹치지 않게 한다. 전류계는 눈금 값을 그대로 쓰도록 Fmt를 "0.##"로 하거나, 끝 값을 넷으로 나누어 떨어지는 값(예: 16, 20)으로 고른다.
+8. **[minor]** `game/scripts/World/Submarine.Switchboard.cs` — BuildBridgeLead OnUpdate: `float f = BridgeLead.Length == 0 ? 0 : …`
+   - 문제: 선택 손잡이가 '끊음'이면 바늘이 왼쪽 끝, 곧 0.01MΩ에 선다. 이 눈금은 교범 08쪽 표로 '젖었다. 누전한다'(2MΩ 아래)에 든다. 어떤 분기함도 0.2MΩ 아래로는 읽히지 않으므로 실제로 나올 수 없는 값이다. 검토 7번은 f = 0이 '젖음'으로 읽히니 쓰지 말라고 했는데, 같은 문제가 '끊음'에 생겼다. 열린 선은 무한대(오른쪽 끝)로 읽히는 것이 자연스럽다.
+   - 고칠 것: 끊음일 때는 f = 1(오른쪽 끝, 무한대 쪽)에 쉬게 하거나 바늘을 그대로 두고, 08쪽에 '끊음이면 바늘이 오른쪽 끝에 쉰다'를 적는다.
+9. **[minor]** `game/scripts/World/Submarine.Switchboard.cs` — 16행 BridgeLead summary, 152행 BindAmmeters summary, 221~223행 BuildBridgeLead summary
+   - 문제: 고친 동작과 맞지 않는 주석이 남았다. 손잡이 상태는 '떼어 둠'이 아니라 '끊음'이다. 눈금은 '왼쪽 끝 0.1MΩ'이 아니라 0.01MΩ이다. 회로가 살아 있으면 바늘이 '가운데에 선다'가 아니라 떤다. 전류계 눈금 끝은 '퓨즈 정격의 1.25배'가 아니라 그보다 크거나 같은 둥근 값이다. 다음에 WP22나 WP17이 이 파일을 고칠 때 잘못 안내한다.
+   - 고칠 것: 세 summary를 지금 동작대로 고친다(끊음, 0.01~100MΩ, 읽을 수 없으면 떪, 둥근 눈금 끝).
+
+공통 문구 규칙(병렬 지침 6-2, 본선 1e6b5c4): `reason.need_screwdriver`와 `reason.screw_cover_open`은 이제 공통 `data/text/ko.json`에 있습니다. 본선을 합친 뒤 `data/text/ko/switchboard.json`의 이 두 줄을 지우세요.
