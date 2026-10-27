@@ -197,7 +197,7 @@ public partial class Submarine
         CoverVisual(cover, hinge, Vector3.Left, 175);
 
         // 되돌림 손잡이 (오른쪽 옆면): 한 눈금 0.05km에 90도
-        var knob = new Node3D { Position = new Vector3(5.962f, 0.93f, -0.98f) };
+        var knob = new Node3D { Position = new Vector3(5.95f, 0.93f, -0.98f) }; // 몸통 오른쪽 면
         root.AddChild(knob);
         Piece(knob, mb =>
         {
@@ -361,8 +361,8 @@ public partial class Submarine
         OnUpdate((s, _) =>
         {
             unlocked = Observed(s, "cue.gyro.settleLamp") >= 0.5;
-            float turn = unlocked && !float.IsNaN(preview) ? Math.Clamp(preview, -align.Turns, align.Turns) * -360f : 0;
-            knob.Basis = new Basis(Vector3.Up, Mathf.DegToRad(-15f * notches + turn));
+            float turn = unlocked && !float.IsNaN(preview) ? Math.Clamp(preview, -align.Turns, align.Turns) * 360f : 0;
+            knob.Basis = new Basis(Vector3.Up, Mathf.DegToRad(-15f * notches + turn)); // 반시계 끌기는 +, 놓으면 내리기 한 눈금(+15도)
         });
 
         // 안정 표시등 (배치의 등 자리): 자리 잡으면 켜진다

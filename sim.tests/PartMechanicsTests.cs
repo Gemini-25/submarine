@@ -527,6 +527,9 @@ public class PartMechanicsTests
         // 실제 데이터: 항법 모듈은 상태 부품이 있을 때만 켜진다 (WP14).
         var m = NewSim(TestData.Data).World.Mechanics;
         Assert.Equal(TestData.Data.Parts.Any(p => p.Id is "gyro.unit" or "navcomp.unit"), m.Nav);
+        Assert.False(m.HasSeaPaths);
+        // 부품 타이머는 모듈이 아니다. 계통 데이터(송풍 팬의 응급 수리 수명, 펌프 베어링의 기름 타이머)가 있으면 켜진다.
+        Assert.True(m.HasTimers);
     }
 
     [Fact]
