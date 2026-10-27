@@ -1,0 +1,14 @@
+<Project Sdk="Godot.NET.Sdk/4.7.2">
+
+  <!-- Godot 4.7.2 .NET. 대상 프레임워크와 언어 버전은 저장소 루트의 Directory.Build.props. -->
+  <PropertyGroup>
+    <RootNamespace>DeepLine.Game</RootNamespace>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+    <TargetFramework>net8.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\sim\DeepLine.Sim.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -5,7 +5,6 @@ obj/
 .idea/
 *.user
 TestResults/
-# Godot (M1부터)
+# Godot (M1부터). *.import 파일은 가져오기 설정이라 저장소에 둔다.
 .godot/
-*.import
 out/

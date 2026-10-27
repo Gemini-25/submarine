@@ -1,0 +1,32 @@
+; DEEP LINE Godot 프로젝트. 장면은 대부분 코드(scripts/World/Submarine*.cs)로 조립한다.
+
+config_version=5
+
+[application]
+
+config/name="DEEP LINE"
+run/main_scene="res://scenes/Main.tscn"
+config/features=PackedStringArray("4.7", "C#", "Forward Plus")
+
+[display]
+
+window/size/viewport_width=1600
+window/size/viewport_height=900
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+
+[gui]
+
+theme/custom_font="res://assets/fonts/NanumGothic-Regular.ttf"
+
+[dotnet]
+
+project/assembly_name="DeepLine.Game"
+
+[physics]
+
+common/physics_ticks_per_second=60
+
+[rendering]
+
+renderer/rendering_method="forward_plus"
