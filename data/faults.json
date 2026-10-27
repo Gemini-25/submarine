@@ -8,6 +8,7 @@
     "set": {
       "health": 0.3
     },
+    "clearedWhen": "self.health >= 0.9 && self.present >= 0.5",
     "baseRatePerHour": 0.02
   },
   "ELC-01": {

@@ -9,6 +9,7 @@
     ],
     "spare": true,
     "props": {
+      "fresh": 0,
       "health": 1.0,
       "jumpered": 0,
       "nut1": 1,
@@ -26,6 +27,7 @@
     ],
     "spare": true,
     "props": {
+      "fresh": 0,
       "health": 1.0,
       "jumpered": 0,
       "nut1": 1,
@@ -43,6 +45,7 @@
     ],
     "spare": true,
     "props": {
+      "fresh": 0,
       "health": 1.0,
       "jumpered": 0,
       "nut1": 1,
@@ -60,6 +63,7 @@
     ],
     "spare": true,
     "props": {
+      "fresh": 0,
       "health": 1.0,
       "jumpered": 0,
       "nut1": 1,
@@ -77,6 +81,7 @@
     ],
     "spare": true,
     "props": {
+      "fresh": 0,
       "health": 1.0,
       "jumpered": 0,
       "nut1": 1,
@@ -94,6 +99,7 @@
     ],
     "spare": true,
     "props": {
+      "fresh": 0,
       "health": 1.0,
       "jumpered": 0,
       "nut1": 1,

@@ -114,10 +114,10 @@ static class BrushGear
         return s <= 0 ? d.Throttle : d.Throttle * (1 - w.T.Power!.Brushes.ThrustLoss * s);
     }
 
-    /// <summary>축 회전계 (회/분). 불꽃이 튀면 바늘이 오르내린다.</summary>
+    /// <summary>축 회전계 (회/분). 전동기는 버스 전압을 따라 돌고(공칭 전압 1에서 전속 nominalRpm), 불꽃이 튀면 바늘이 오르내린다.</summary>
     public static double Rpm(SimWorld w)
     {
-        double rpm = Thrust(w) * w.T.Power!.Brushes.NominalRpm;
+        double rpm = Thrust(w) * w.T.Power!.Brushes.NominalRpm * w.BusVoltage;
         double s = Sparking(w);
         return s <= 0 ? rpm : rpm * (1 + w.T.Power.Brushes.TachHunt * s * Jitter(w, "brush.tach"));
     }

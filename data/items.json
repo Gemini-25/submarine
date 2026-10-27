@@ -24,6 +24,10 @@
     "scrap": true,
     "heavy": true
   },
+  "cell_used": {
+    "scrap": true,
+    "heavy": true
+  },
   "chamber_seal": {},
   "check_flapper": {
     "discard": false,

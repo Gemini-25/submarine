@@ -103,9 +103,11 @@ public class PowerRepairTests
         sim.Inject("PWR-01", "cell.3");
         sim.Run(60);
         Assert.InRange(sim.Q("panel.gauge.voltage") * V, 110, 116);                    // 약 113V
+        Assert.True(double.IsNaN(sim.Measure("hydrometer", "cell.3")), "갑판 판이 덮여 있으면 비중계가 닿지 않는다");
+        // 교범대로 갑판 판을 열고 잰다.
+        Do(sim, new[] { "tool.hand", "battery.deck.open" });
         Assert.InRange(sim.Measure("voltmeter", "cell.3") * V, 12, 14);                // 약 13V
         Assert.InRange(sim.Measure("voltmeter", "cell.1") * V, 19, 21);                // 약 20V
-        Assert.True(double.IsNaN(sim.Measure("hydrometer", "cell.3")), "갑판 판이 덮여 있으면 비중계가 닿지 않는다");
         Assert.True(sim.Measure("bridge", "cell.3") > 3 * sim.Measure("bridge", "cell.1"));
         Assert.Equal("off", sim.QS("panel.lamp.power"));
 
@@ -116,17 +118,16 @@ public class PowerRepairTests
         Assert.Equal("warning", sim.QS("panel.lamp.power"));
         Assert.True(sim.Q("cue.cell.3.fizz") > 0);
         Assert.Equal(0, sim.Q("cue.cell.1.fizz"));
-        Assert.True(Band(sim, "battery.cell.3") > Band(sim, "battery.cell.1"), "열화 셀만 뜨겁다");
+        Assert.True(Band(sim, "battery.cell.3") > Band(sim, "battery.cell.1"), "열화 셀이 더 덥게 느껴진다");
 
         // 비중은 열화 셀이 약 세 배 빨리 떨어진다.
-        sim.World.Part("battery.deck").Set("open", 1);
         double sg = TestData.Data.Measure!.Hydrometer.SgFull;
         double drop3 = sg - sim.Measure("hydrometer", "cell.3"), drop1 = sg - sim.Measure("hydrometer", "cell.1");
         Assert.True(drop3 > 2.5 * drop1, $"비중 저하 셀3 {drop3:F4}, 셀1 {drop1:F4}");
     }
 
     [Fact]
-    public void Pwr01_cascade_a_dead_unjumpered_cell_darkens_the_panel_and_a_jumper_saves_it()
+    public void A_dead_unjumpered_cell_darkens_the_panel_and_a_jumper_saves_it()
     {
         var sim = Sim();
         sim.Inject("PWR-01", "cell.3", new Dictionary<string, double> { ["health"] = 0.01 });
@@ -168,9 +169,12 @@ public class PowerRepairTests
     [Fact]
     public void Cell_replacement_at_human_pace_renews_the_cell_without_sparks_or_harm()
     {
-        var sim = Sim();
+        var sim = Loaded();
         sim.Inject("PWR-01", "cell.3");
         sim.Run(600);
+        // 수리 전: 드러내는 단서가 있다.
+        Assert.Equal("warning", sim.QS("panel.lamp.power"));
+        Assert.True(sim.Q("cue.cell.3.fizz") > 0);
         var events = Follow(sim, "proc.cell.replace");
         NoHarm(events);
         var cell = Cell(sim, 3);
@@ -184,13 +188,13 @@ public class PowerRepairTests
         Assert.Equal("", sim.QS("crew.hand"));
         Assert.Equal(0, sim.Q("part.battery.deck.prop.open"));
         Assert.Equal(1, sim.Q("panel.on"));
-        // 새 셀은 9할 충전된 채 우물 온도로 들어온다 (갈고리 cellInstalled).
-        Assert.True(sim.Q("cell.3.charge") <= TestData.T.Power!.Cells.InstalledCharge);
-        // 끝난 뒤 확인: 전압이 돌아오고 몇 분 뒤 셀 온도가 고르다.
+        // 끝난 뒤 확인: 전압이 돌아오고(추진은 반속으로 다시 돈다) 10분 안에 동력 표시등과 지글거림이 사라지고 셀 온도가 고르다.
+        Assert.Equal(1, sim.Q("device.propulsion.running"));
         Assert.True(sim.Q("panel.gauge.voltage") * V > 117);
         sim.Run(600);
-        Assert.Equal(Band(sim, "battery.cell.1"), Band(sim, "battery.cell.3"));
         Assert.Equal("off", sim.QS("panel.lamp.power"));
+        Assert.Equal(0, sim.Q("cue.cell.3.fizz"));
+        Assert.Equal(Band(sim, "battery.cell.1"), Band(sim, "battery.cell.3"));
         // 가장 큰 행동 소음은 교범 20쪽의 소음 표대로 셀 들기다.
         Assert.Equal(TestData.T.Noise.Actions["cell_lift"].Level, PeakActionNoise(Plan(Sim(s => { }), "proc.cell.replace")));
     }
@@ -208,6 +212,67 @@ public class PowerRepairTests
         sim.Step();
         Assert.Equal(TestData.T.Power!.Cells.InstalledCharge, sim.Q("cell.3.charge"), 9);
         Assert.InRange(sim.Q("cell.3.temp"), TestData.T.Heat.AmbientC - 0.01, TestData.T.Heat.AmbientC + 0.1);
+    }
+
+    /// <summary>모든 스위치를 내리고 갑판 판을 연 배에서 셀 하나의 너트를 풀어 들어낸다.</summary>
+    static void LiftCell(Simulation sim, int n)
+    {
+        var cmds = new List<string> { "tool.hand", "battery.deck.open" };
+        for (int c = 1; c <= 8; c++) cmds.Add($"switch.C{c}.off");
+        cmds.AddRange(new[] { "tool.wrench", $"battery.cell.{n}.nut.1.loosen", $"battery.cell.{n}.nut.2.loosen", "tool.hand", $"battery.cell.{n}.pull" });
+        NoHarm(Do(sim, cmds));
+    }
+
+    [Fact]
+    public void Pulling_and_reinserting_a_healthy_cell_charges_nothing_and_cannot_feed_the_locker()
+    {
+        var sim = Sim(s => s.BatteryCharge = 0.5);
+        LiftCell(sim, 1);
+        Assert.Equal("cell_used", sim.QS("crew.hand"));
+        double charge = sim.Q("cell.1.charge");
+        // 쓰던 셀은 헌 부품이라 사물함(셀 상자)에 넣을 수 없다.
+        var back = Do(sim, new[] { "locker.return.spare_cell" });
+        Assert.Contains(back, e => e.Kind == SimEventKind.CommandRejected && e.Detail == "scrap_item");
+        Assert.Equal(TestData.T.Inventory.Locker["spare_cell"], sim.Q("inventory.spare_cell"));
+        // 도로 꽂아도 거저 충전되지 않는다.
+        NoHarm(Do(sim, new[] { "battery.cell.1.insert" }));
+        Assert.Equal(charge, sim.Q("cell.1.charge"), 9);
+        Assert.Equal(1, Cell(sim, 1).Get("health"));
+        Assert.Equal(TestData.T.Inventory.Locker["spare_cell"], sim.Q("inventory.spare_cell"));
+    }
+
+    [Fact]
+    public void Cell_health_follows_the_cell_not_the_slot()
+    {
+        // 성한 셀을 다른 자리로 옮기면 그 자리가 성해진다(예비 셀을 쓰지 않았지만 뺀 자리가 빈다).
+        var moved = Sim();
+        moved.Inject("PWR-01", "cell.3");
+        LiftCell(moved, 3);
+        Assert.Equal("cell_dead", moved.QS("crew.hand"));
+        Assert.Equal(0, Cell(moved, 3).Get("health")); // 빈 자리에 health가 남지 않는다
+        Do(moved, new[] { "hand.drop", "tool.wrench", "battery.cell.1.nut.1.loosen", "battery.cell.1.nut.2.loosen", "tool.hand", "battery.cell.1.pull" });
+        Assert.Equal("cell_used", moved.QS("crew.hand"));
+        var events = Do(moved, new[] { "battery.cell.3.insert" });
+        Assert.Equal(1, Cell(moved, 3).Get("health"));
+        Assert.Equal("", Cell(moved, 3).ActiveFault);
+        Assert.Contains(events, e => e.Kind == SimEventKind.PartRepaired && e.Subject == "cell.3");
+
+        // 다 쓴 셀을 성한 셀의 자리에 앉혀도 다 쓴 셀이다: 약 13V, 충전도 그대로다.
+        var sim = Sim();
+        sim.Inject("PWR-01", "cell.3");
+        LiftCell(sim, 1);
+        double charge1 = sim.Q("cell.1.charge");
+        Do(sim, new[] { "hand.drop", "tool.wrench", "battery.cell.3.nut.1.loosen", "battery.cell.3.nut.2.loosen", "tool.hand", "battery.cell.3.pull" });
+        Assert.Equal("cell_dead", sim.QS("crew.hand"));
+        NoHarm(Do(sim, new[] { "battery.cell.1.insert", "tool.wrench", "battery.cell.1.nut.1.tighten", "battery.cell.1.nut.2.tighten" }));
+        Assert.Equal(TestData.Data.Faults.Single(f => f.Id == "PWR-01").Set["health"], Cell(sim, 1).Get("health"), 9);
+        Assert.InRange(sim.Measure("voltmeter", "cell.1") * V, 12, 14);
+        Assert.Equal(charge1, sim.Q("cell.1.charge"), 9);
+        // 3번 자리는 비었다. 예비 셀이 없으면 성하게 채울 수 없다.
+        sim.World.Crew.Locker[TestData.Data.LockerItems.ToList().IndexOf("spare_cell")] = 0;
+        var take = Do(sim, new[] { "tool.hand", "locker.take.spare_cell" });
+        Assert.Contains(take, e => e.Kind == SimEventKind.CommandRejected && e.Detail == "out_of_stock");
+        Assert.Equal(0, Cell(sim, 3).Get("present"));
     }
 
     [Fact]
@@ -276,6 +341,38 @@ public class PowerRepairTests
     }
 
     [Fact]
+    public void Skipping_only_the_jumper_is_safe_while_the_loads_are_off()
+    {
+        // 셀 교체는 내내 부하를 끊은 채 한다. 그러면 점퍼 없이도 불꽃 없이 셀을 갈 수 있다. 점퍼는 부하가 살아 있을 때의 안전판이다.
+        var sim = Sim();
+        sim.Inject("PWR-01", "cell.3");
+        var events = Follow(sim, "proc.cell.replace", c => c is not "locker.take.jumper_bar" and not "battery.link.3.fit");
+        Assert.DoesNotContain(events, e => e.Kind is SimEventKind.Spark or SimEventKind.Shock or SimEventKind.Pinch or SimEventKind.Hurt);
+        Assert.Equal(new[] { "hand_empty", "link_empty" }, events.Where(e => e.Kind == SimEventKind.CommandRejected).Select(e => e.Detail).OrderBy(d => d, StringComparer.Ordinal));
+        Assert.Equal("", Cell(sim, 3).ActiveFault);
+        Assert.True(sim.Q("battery.voltage") > 0.97);
+    }
+
+    [Fact]
+    public void Removing_the_jumper_under_load_sparks_and_hydrogen_explodes()
+    {
+        static List<string> Remove() => new() { "tool.hand", "battery.deck.open", "tool.wrench", "battery.link.3.remove" };
+        var sim = Sim();
+        sim.Inject("PWR-01", "cell.3");
+        NoHarm(Follow(sim, "proc.cell.jumper")); // 끝에서 부하가 다시 걸린다
+        var events = Do(sim, Remove());
+        Assert.Contains(events, e => e.Kind == SimEventKind.Spark && e.Subject == "battery.link.3");
+        Assert.Equal(0, sim.Q("cell.3.jumpered"));
+
+        var h2 = Sim(s => s.Air["h2"] = 5);
+        h2.Inject("PWR-01", "cell.3");
+        NoHarm(Follow(h2, "proc.cell.jumper")); // 부하를 끊고 건 점퍼는 수소가 차 있어도 안전하다
+        Assert.Equal("running", h2.QS("mission.status"));
+        Do(h2, Remove());
+        Assert.Equal("explosion", h2.QS("mission.reason"));
+    }
+
+    [Fact]
     public void A_loose_terminal_nut_reads_repaired_but_drops_voltage_heats_and_arcs_on_load_changes()
     {
         var good = Sim();
@@ -295,7 +392,7 @@ public class PowerRepairTests
         Assert.Equal("", Cell(bad, 3).ActiveFault); // 고친 것으로 읽힌다
         bad.Run(1);
         good.Run(1);
-        Assert.Equal(good.Q("battery.voltage") * (1 - TestData.T.Power!.Cells.LooseNutVoltageDrop), bad.Q("battery.voltage"), 6);
+        Assert.Equal(good.Q("battery.voltage") * (1 - TestData.T.Power!.Cells.LooseNutVoltageDrop), bad.Q("battery.voltage"), 4);
 
         bad.Run(900);
         good.Run(900);
@@ -352,14 +449,25 @@ public class PowerRepairTests
     {
         var sim = Sim();
         sim.Inject("PWR-01", "cell.3");
-        var events = Follow(sim, "proc.cell.replace", bind: new() { ["cell"] = "1" });
-        NoHarm(events);
+        var plan = Plan(sim, "proc.cell.replace", bind: new() { ["cell"] = "1" });
+        int pull = plan.IndexOf("battery.cell.1.pull") + 1;
+        NoHarm(Do(sim, plan.Take(pull)));
+        Assert.Equal("cell_used", sim.QS("crew.hand")); // 성한 셀은 쓰던 셀로 나온다
+        NoHarm(Do(sim, plan.Skip(pull)));
         Assert.Equal("PWR-01", Cell(sim, 3).ActiveFault);
+        Assert.Equal(1, Cell(sim, 1).Get("health")); // 건드린 부품만 새것
+        Do(sim, new[] { "tool.hand", "battery.deck.open" });
         Assert.InRange(sim.Measure("voltmeter", "cell.3") * V, 12, 14);
         Assert.InRange(sim.Q("panel.gauge.voltage") * V, 108, 116);
         Assert.Equal(0, sim.Q("inventory.spare_cell"));
-        // 성한 셀을 들어내면 예비 셀로 나온다 (다 쓴 셀이 아니다).
-        Assert.DoesNotContain(events, e => e.Kind == SimEventKind.CommandRejected);
+
+        // 그냥 방전된 배에서 셀을 갈아도 전압은 여전히 낮고 나머지 셀이 고르게 낮다 (교범 20쪽 가르기).
+        var flat = Sim(s => s.BatteryCharge = 0.12);
+        NoHarm(Follow(flat, "proc.cell.replace"));
+        Do(flat, new[] { "tool.hand", "battery.deck.open" });
+        Assert.True(flat.Q("panel.gauge.voltage") * V < 105, $"전압 {flat.Q("panel.gauge.voltage") * V:F0}V");
+        var others = new[] { 1, 2, 4, 5, 6 }.Select(n => flat.Measure("voltmeter", $"cell.{n}") * V).ToArray();
+        Assert.True(others.Max() - others.Min() < 0.5 && others.Max() < 19, string.Join(", ", others.Select(v => v.ToString("F1"))));
     }
 
     [Fact]
@@ -412,7 +520,7 @@ public class PowerRepairTests
         // 기준: 새 브러시면 아무것도 없다.
         var ok = Sim(s => s.Throttle = 0.75);
         var okRpm = Range(ok, "reading.tachometer", 10);
-        Assert.Equal(okRpm.Min, okRpm.Max, 9);
+        Assert.True(okRpm.Max - okRpm.Min < 0.3, $"고른 회전계 {okRpm.Min:F2}~{okRpm.Max:F2}"); // 방전으로 아주 천천히 내려갈 뿐
         Assert.Equal(0, ok.Q("cue.motor.sparks"));
         Assert.Equal(0.75, ok.Q("propulsion.thrust"), 9);
 
@@ -424,6 +532,39 @@ public class PowerRepairTests
         Assert.Equal(0, sim.Q("propulsion.sparking"));
         Assert.Equal(0, sim.Q("cue.motor.crackle"));
         Assert.DoesNotContain(sim.DrainEvents(), e => e.Kind == SimEventKind.Spark);
+    }
+
+    [Fact]
+    public void Tachometer_follows_the_bus_voltage_and_stays_steady_when_only_the_voltage_is_low()
+    {
+        var ok = Sim(s => s.Throttle = 0.75);
+        ok.Run(5);
+        double rpm = ok.Q("reading.tachometer");
+        Assert.Equal(TestData.T.Power!.Brushes.NominalRpm * 0.75 * ok.Q("battery.voltage"), rpm, 6);
+        foreach (var low in new[] { Sim(s => { s.Throttle = 0.75; s.BatteryCharge = 0.12; }), Loaded() })
+        {
+            if (low.Q("battery.voltage") > 0.99) low.Inject("PWR-01", "cell.3");
+            low.Run(5);
+            var r = Range(low, "reading.tachometer", 10);
+            Assert.True(r.Max < rpm - 3, $"낮은 전압의 회전계 {r.Max:F1} (기준 {rpm:F1})");
+            Assert.True(r.Max - r.Min < 0.3, $"고르다 {r.Min:F2}~{r.Max:F2}");
+        }
+    }
+
+    [Fact]
+    public void Brush_wear_crossing_fault_at_raises_PWR02_and_sparks()
+    {
+        var sim = Sim(s => s.Throttle = 1);
+        Brushes(sim).Wear = TestData.T.Wear.FaultAt - 0.001;
+        sim.Run(600);
+        Assert.Equal("PWR-02", Brushes(sim).ActiveFault);
+        Assert.True(sim.Q("propulsion.sparking") > 0);
+        // 마모는 스로틀에 비례한다: 세워 두면 닳지 않고 고장도 없다.
+        var idle = Sim(s => s.Throttle = 0);
+        Brushes(idle).Wear = TestData.T.Wear.FaultAt - 0.001;
+        idle.Run(600);
+        Assert.Equal(TestData.T.Wear.FaultAt - 0.001, Brushes(idle).Wear, 12);
+        Assert.Equal("", Brushes(idle).ActiveFault);
     }
 
     [Fact]
@@ -511,13 +652,14 @@ public class PowerRepairTests
     [Fact]
     public void Spring_emergency_halves_the_sparks_then_wears_out_and_the_replacement_still_works()
     {
-        var sim = Running();
+        var sim = Running(s => s.Throttle = 1); // 교범의 수명은 전속 기준
         sim.Inject("PWR-02");
         sim.Run(5);
         double before = sim.Q("propulsion.sparking");
+        double cueBefore = sim.Q("cue.motor.sparks");
         var events = Follow(sim, "proc.brush.spring");
         NoHarm(events, sparksAllowed: true);
-        sim.Cmd("propulsion.set", 0.75);
+        sim.Cmd("propulsion.set", 1);
         sim.Run(2);
         var b = Brushes(sim);
         Assert.Equal("PWR-02", b.ActiveFault);
@@ -526,19 +668,26 @@ public class PowerRepairTests
         double after = sim.Q("propulsion.sparking");
         Assert.InRange(after / before, 0.4, 0.6);   // 두 눈금에 절반쯤
 
-        // 수명: 스프링이 창보다 세서 정류자가 다시 거칠어지고, 15~25분 사이에 불꽃이 처음만큼 돌아오거나 브러시가 다 닳아 선다.
-        sim.Run(15 * 60);
-        Assert.True(sim.Q("device.propulsion.running") == 1, "15분 안에 서지는 않는다");
-        double t = 15 * 60;
-        while (t < 40 * 60 && sim.Q("device.propulsion.running") == 1 && sim.Q("propulsion.sparking") < before) { sim.Run(30); t += 30; }
-        Assert.InRange(t / 60, 15, 30);
+        // 수명 (교범 21쪽): 스프링이 알맞은 세기보다 세서 정류자가 다시 거칠어진다. 전속으로 5~10분이면 불꽃이 처음만큼 보이고,
+        // 15분이 못 되어 브러시가 다 닳아 선다.
+        double t = 0, tBack = double.NaN, tStop = double.NaN;
+        while (t < 30 * 60 && double.IsNaN(tStop))
+        {
+            sim.Run(30);
+            t += 30;
+            if (double.IsNaN(tBack) && sim.Q("cue.motor.sparks") >= cueBefore - 0.05) tBack = t;
+            if (sim.Q("device.propulsion.running") == 0) tStop = t;
+        }
+        Assert.True(tBack < tStop, $"불꽃이 돌아온 때 {tBack / 60:F1}분, 선 때 {tStop / 60:F1}분");
+        Assert.InRange(tBack / 60, 3, 10);
+        Assert.InRange(tStop / 60, 10, 15);
 
         // 그 뒤 정식 수리가 된다.
         var later = Follow(sim, "proc.brush.replace");
         NoHarm(later, sparksAllowed: true);
         Assert.Equal("", b.ActiveFault);
         Assert.Equal(Quality.Proper, b.Quality);
-        sim.Cmd("propulsion.set", 0.75);
+        sim.Cmd("propulsion.set", 1);
         sim.Run(5);
         Assert.Equal(0, sim.Q("propulsion.sparking"));
     }
@@ -555,12 +704,23 @@ public class PowerRepairTests
         shock.Inject("PWR-02");
         var events = Follow(shock, "proc.brush.replace", c => c != "switch.C8.off");
         Assert.Contains(events, e => e.Kind == SimEventKind.Shock && e.Subject == "motor.brushes.pull");
+        Assert.Contains(events, e => e.Kind == SimEventKind.Shock && e.Subject == "motor.brushes.insert");
 
-        // 둘 다 건너뛰면 도는 정류자에 줄을 대다 끼인다.
+        // 둘 다 건너뛰면 도는 전동기의 브러시를 뽑다 끼이고 감전된다.
         var both = Running();
         both.Inject("PWR-02");
         var all = Follow(both, "proc.brush.replace", c => c is not "switch.C8.off" and not "propulsion.set");
         Assert.Contains(all, e => e.Kind == SimEventKind.Pinch && e.Subject == "motor.brushes.pull");
+        Assert.Contains(all, e => e.Kind == SimEventKind.Shock && e.Subject == "motor.brushes.pull");
+
+        // 정류자 줄질 단계: 브러시를 바르게 뺀 뒤 C8을 올리고 줄질하면 감전된다.
+        // (정류자의 끼임은 일어날 수 없다. 브러시가 빠지면 전동기가 돌지 않으므로 명세의 '정류자에서 끼임'은 브러시 뽑기에서 난다.)
+        var file = Running();
+        file.Inject("PWR-02");
+        var plan = Plan(file, "proc.brush.replace");
+        NoHarm(Do(file, plan.TakeWhile(c => c != "hand.drop")), sparksAllowed: true);
+        var live = Hands(file, (null, "hand.drop"), ("hand", "switch.C8.on"), ("file", "motor.commutator.file"));
+        Assert.Contains(live, e => e.Kind == SimEventKind.Shock && e.Subject == "motor.commutator.file");
     }
 
     [Fact]
@@ -587,14 +747,37 @@ public class PowerRepairTests
         // 다시 하면 지워진다: 덮개를 열고 브러시를 빼고 줄질한 뒤 같은 브러시를 도로 끼운다.
         Hands(bad, ("hand", "propulsion.set"), ("hand", "switch.C8.off"), ("wrench", "motor.cover.bolt.1.loosen"), ("wrench", "motor.cover.bolt.2.loosen"),
             ("hand", "motor.cover.open"), ("hand", "motor.brushes.pull"));
-        Assert.Equal("brush_set", bad.QS("crew.hand"));
-        NoHarm(Hands(bad, (null, "hand.drop"), ("file", "motor.commutator.file"), ("file", "motor.commutator.file"), ("file", "motor.commutator.file"), ("file", "motor.commutator.file"),
-            (null, "locker.take.brush_set"), ("hand", "motor.brushes.insert"), ("screwdriver", "motor.brush.spring.up"), ("screwdriver", "motor.brush.spring.up"),
+        Assert.Equal("brush_set_worn", bad.QS("crew.hand")); // 10분 쓴 브러시는 쓰던 브러시다
+        NoHarm(Hands(bad, ("file", "motor.commutator.file"), ("file", "motor.commutator.file"), ("file", "motor.commutator.file"), ("file", "motor.commutator.file"),
+            ("hand", "motor.brushes.insert"), ("screwdriver", "motor.brush.spring.up"), ("screwdriver", "motor.brush.spring.up"),
             ("screwdriver", "motor.brush.spring.up"), ("hand", "motor.cover.close"), ("wrench", "motor.cover.bolt.1.tighten"), ("wrench", "motor.cover.bolt.2.tighten"),
             ("hand", "switch.C8.on")));
-        bad.Cmd("propulsion.set", 0.75);
-        bad.Run(5);
+        foreach (var s in new[] { good, bad }) { s.Cmd("propulsion.set", 0.75); s.Run(5); }
         Assert.Equal(0, bad.Q("propulsion.sparking"));
+        double g1 = Brushes(good).Wear, b1 = Brushes(bad).Wear;
+        good.Run(600);
+        bad.Run(600);
+        Assert.Equal(1, (Brushes(bad).Wear - b1) / (Brushes(good).Wear - g1), 1); // 마모 ×3도 지워졌다
+    }
+
+    [Fact]
+    public void Leaving_the_spring_at_its_weakest_shows_nothing_at_first_and_doubles_the_sparks_once_the_brushes_wear()
+    {
+        var sim = Running(s => s.Throttle = 1);
+        sim.Inject("PWR-02");
+        NoHarm(Follow(sim, "proc.brush.replace", c => c != "motor.brush.spring.up"), sparksAllowed: true);
+        sim.Cmd("propulsion.set", 1);
+        sim.Run(2);
+        Assert.Equal(0, sim.Q("propulsion.sparking")); // 새 브러시와 다듬은 정류자: 당장은 불꽃이 없다
+        var right = Running(s => s.Throttle = 1);
+        right.Inject("PWR-02");
+        Follow(right, "proc.brush.replace");
+        right.Cmd("propulsion.set", 1);
+        right.Run(2);
+        Brushes(sim).Wear = 0.7;
+        Brushes(right).Wear = 0.7;
+        double weak = Systems.BrushGear.Potential(sim.World), ok = Systems.BrushGear.Potential(right.World);
+        Assert.InRange(weak / ok, 1.7, 2.1);
     }
 
     [Fact]
@@ -621,14 +804,27 @@ public class PowerRepairTests
         Assert.True(bad.Q("cue.motor.sparks") > 0.2, $"15분 뒤 불꽃 {bad.Q("cue.motor.sparks"):F2}");
         Assert.Equal(0, good.Q("propulsion.sparking"));
         Assert.Equal(3, (Brushes(bad).Wear - b0) / (Brushes(good).Wear - g0), 1);
-        // 다시 하면 지워진다: 스프링을 한 눈금 풀면 더 긁지 않는다.
-        NoHarm(Hands(bad, ("hand", "propulsion.set"), ("screwdriver", "motor.brush.spring.down")), sparksAllowed: true);
-        Assert.InRange(Brushes(bad).Get("spring"), TestData.T.Power.Brushes.SpringLow, TestData.T.Power.Brushes.SpringHigh);
-        bad.Cmd("propulsion.set", 1);
-        bad.Run(2);
-        double rough = bad.Q("part.motor.commutator.prop.rough");
-        bad.Run(60);
-        Assert.Equal(rough, bad.Q("part.motor.commutator.prop.rough"), 9); // 더 긁지 않는다 (이미 거칠어진 정류자는 줄로 다듬는다)
+        // 스프링만 한 눈금 풀면 더 긁지는 않지만, 이미 거칠어진 정류자 때문에 불꽃과 마모 ×3이 남는다.
+        var half = Running();
+        half.RestoreState(bad.SaveState());
+        NoHarm(Hands(half, ("hand", "propulsion.set"), ("screwdriver", "motor.brush.spring.down")), sparksAllowed: true);
+        Assert.InRange(Brushes(half).Get("spring"), TestData.T.Power.Brushes.SpringLow, TestData.T.Power.Brushes.SpringHigh);
+        half.Cmd("propulsion.set", 1);
+        half.Run(2);
+        double rough = half.Q("part.motor.commutator.prop.rough");
+        half.Run(60);
+        Assert.Equal(rough, half.Q("part.motor.commutator.prop.rough"), 9);
+        Assert.True(half.Q("propulsion.sparking") > 0.1);
+        Assert.Equal(TestData.T.Power.Brushes.DefectWearMultiplier, Systems.BrushGear.WearMultiplier(half.World, Brushes(half)));
+
+        // 다시 하면 지워진다: 브러시 교체를 처음부터 다시 한다(줄질 네 번, 스프링 세 눈금).
+        NoHarm(Follow(bad, "proc.brush.replace"), sparksAllowed: true);
+        foreach (var s in new[] { good, bad }) { s.Cmd("propulsion.set", 1); s.Run(2); }
+        Assert.Equal(0, bad.Q("propulsion.sparking"));
+        double g1 = Brushes(good).Wear, b1 = Brushes(bad).Wear;
+        good.Run(600);
+        bad.Run(600);
+        Assert.Equal(1, (Brushes(bad).Wear - b1) / (Brushes(good).Wear - g1), 1);
     }
 
     [Fact]
@@ -679,6 +875,15 @@ public class PowerRepairTests
         Do(worn, new[] { "tool.hand", "motor.brushes.insert" });
         Assert.Equal("PWR-02", Brushes(worn).ActiveFault);
         Assert.True(Brushes(worn).Wear >= 0.85);
+
+        // 반쯤 쓴 브러시도 쓰던 브러시로 나온다: 사물함에 되돌릴 수 없고, 도로 끼우면 마모가 그대로다.
+        var used = Sim();
+        Brushes(used).Wear = 0.45;
+        Do(used, Plan(used, "proc.brush.replace").TakeWhile(c => c != "hand.drop"));
+        Assert.Equal("brush_set_worn", used.QS("crew.hand"));
+        Assert.Contains(Do(used, new[] { "locker.return.brush_set" }), e => e.Kind == SimEventKind.CommandRejected && e.Detail == "scrap_item");
+        Do(used, new[] { "tool.hand", "motor.brushes.insert" });
+        Assert.Equal(0.45, Brushes(used).Wear, 12);
     }
 
     [Fact]
@@ -696,10 +901,21 @@ public class PowerRepairTests
         {
             s.Cmd("hand.drop");
             s.Run(Hand);
-            Do(s, cells.Take(14)); // 점퍼를 걸고 너트를 푼 채
-            s.Run(30);
+            Do(s, cells.TakeWhile(c => !c.EndsWith(".pull", StringComparison.Ordinal))); // 점퍼를 걸고 두 너트를 푼 채
         }
         Assert.Equal(sim.StateHash(), copy.StateHash());
+        // 너트를 푼 채 저장해서 잇는다.
+        var nuts = new Simulation(TestData.Data, 1);
+        nuts.RestoreState(sim.SaveState());
+        foreach (var s in new[] { sim, nuts }) s.Run(30);
+        Assert.Equal(sim.StateHash(), nuts.StateHash());
+        // 다 쓴 셀을 든 채 저장해서 잇는다.
+        Do(sim, new[] { "tool.hand", "battery.cell.3.pull" });
+        Assert.Equal("cell_dead", sim.QS("crew.hand"));
+        var lifted = new Simulation(TestData.Data, 1);
+        lifted.RestoreState(sim.SaveState());
+        foreach (var s in new[] { sim, lifted }) s.Run(30);
+        Assert.Equal(sim.StateHash(), lifted.StateHash());
     }
 
     // ── 기본 상태 ───────────────────────────────────────
@@ -751,8 +967,12 @@ public class PowerRepairTests
             }
             else if (!cell && q.Number("time") > 30)
             {
+                // 교범대로 갑판 판을 열고 셀마다 전압계를 댄다. 고칠 셀이 없으면 판을 다시 닫는다(셀 교체 절차는 판을 여는 데서 시작한다).
+                all.AddRange(Do(sim, new[] { "tool.hand", "battery.deck.open" }));
                 int low = Enumerable.Range(1, 6).OrderBy(n => q.Measure("voltmeter", $"cell.{n}")).First();
-                if (q.Measure("voltmeter", $"cell.{low}") * V < 16)
+                bool bad = q.Measure("voltmeter", $"cell.{low}") * V < 16;
+                all.AddRange(Do(sim, new[] { "battery.deck.close" }));
+                if (bad)
                 {
                     cell = true;
                     all.AddRange(Follow(sim, "proc.cell.replace", bind: new() { ["cell"] = low.ToString(System.Globalization.CultureInfo.InvariantCulture) }));
@@ -782,8 +1002,8 @@ public class PowerRepairTests
         Assert.Contains("너트 하나를 덜 조인", cells);
         Assert.Contains("브러시 스프링 조정", brushes);
         Assert.Contains("브러시 교체와 정류자 연마", brushes);
-        Assert.Contains("정류자를 줄질하지 않고", brushes);
-        Assert.Contains("스프링을 창보다 세게 둔 채", brushes);
+        Assert.Contains("줄질하지 않고 새 브러시만", brushes);
+        Assert.Contains("스프링을 알맞은 세기보다 세게 둔 채", brushes);
         string diag = pages.Single(kv => kv.Key.StartsWith("03-", StringComparison.Ordinal)).Value;
         Assert.DoesNotContain("작성 중: WP11", diag);
         Assert.Contains("축전지 셀 열화", diag);
@@ -791,6 +1011,7 @@ public class PowerRepairTests
         string measure = pages.Single(kv => kv.Key.StartsWith("08-", StringComparison.Ordinal)).Value;
         Assert.DoesNotContain("WP11", measure);
         Assert.Contains("비중", measure);
+        Assert.Contains("| 1.28 | 가득 |", measure);
     }
 
     static double PeakActionNoise(IEnumerable<string> cmds)

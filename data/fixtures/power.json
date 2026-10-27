@@ -62,9 +62,10 @@
             { "if": "cell.{n}.submerged == 1", "reason": "cell_submerged" }
           ],
           "gives": [
-            { "if": "self.health >= 0.9", "item": "spare_cell" },
+            { "if": "self.health >= 0.9", "item": "cell_used" },
             { "item": "cell_dead" }
-          ]
+          ],
+          "set": { "health": 0 }
         },
         "insert": {
           "noise": "cell_lift",
@@ -72,11 +73,13 @@
             { "if": "part.battery.deck.prop.open < 0.5", "reason": "deck_closed" }
           ],
           "accepts": {
-            "spare_cell": { "set": { "health": 1 }, "renew": true },
-            "cell_dead": {}
+            "spare_cell": { "set": { "health": 1, "fresh": 1 }, "renew": true },
+            "cell_used": { "set": { "health": 1 } },
+            "cell_dead": { "set": { "health": 0.3 } }
           },
           "effects": [
-            { "if": "self.health >= 0.9", "hook": "cellInstalled" }
+            { "if": "self.fresh >= 0.5", "hook": "cellInstalled" },
+            { "set": "fresh", "to": 0 }
           ]
         }
       },
@@ -172,7 +175,7 @@
             { "if": "device.propulsion.running == 1", "hazard": "pinch" }
           ],
           "gives": [
-            { "if": "part.motor.brushes.wear < 0.5", "item": "brush_set" },
+            { "if": "part.motor.brushes.wear < 0.01", "item": "brush_set" },
             { "item": "brush_set_worn" }
           ],
           "set": { "spring": 0.3 }
@@ -208,8 +211,7 @@
             { "if": "part.motor.brushes.prop.present >= 0.5", "reason": "brushes_in" }
           ],
           "hazards": [
-            { "if": "circuit.C8.energized == 1", "hazard": "shock" },
-            { "if": "device.propulsion.running == 1", "hazard": "pinch" }
+            { "if": "circuit.C8.energized == 1", "hazard": "shock" }
           ],
           "effects": [
             { "add": "rough", "by": "-$filePerStroke", "min": 0, "max": 1 }
