@@ -54,17 +54,17 @@
           "tool": "hand",
           "noise": "cover",
           "rejectIf": [ { "if": "self.capOpen < 0.5", "reason": "cover_closed" } ],
-          "hazards": [ { "if": "device.bilge_pump.running == 1", "hazard": "pinch" } ],
+          "hazards": [ { "if": "circuit.C3.energized == 1 && device.bilge_pump.enabled == 1", "hazard": "pinch" } ],
           "set": { "lube": 0, "lubeArmed": 0, "lubeLife": 0, "oil": 0 },
           "gives": [
-            { "if": "part.pump.bearing.wear >= 0.5", "item": "pump_bearing_worn" },
+            { "if": "part.pump.bearing.wear > 0", "item": "pump_bearing_worn" },
             { "item": "pump_bearing" }
           ]
         },
         "insert": {
           "noise": "cover",
           "rejectIf": [ { "if": "self.capOpen < 0.5", "reason": "cover_closed" } ],
-          "hazards": [ { "if": "device.bilge_pump.running == 1", "hazard": "pinch" } ],
+          "hazards": [ { "if": "circuit.C3.energized == 1 && device.bilge_pump.enabled == 1", "hazard": "pinch" } ],
           "accepts": {
             "pump_bearing": { "renew": true },
             "pump_bearing_worn": {}
@@ -90,7 +90,7 @@
             { "add": "oil", "by": 1, "max": 3 },
             { "if": "self.oil >= 3", "set": "lube", "to": 1 },
             { "if": "self.oil >= 3", "arm": "lubeLife", "to": "$lubeLife" },
-            { "if": "self.oil >= 3 && self.drag > 0", "quality": "temporary" },
+            { "if": "self.oil >= 3 && part.pump.bearing.wear >= 0.8", "quality": "temporary" },
             { "if": "self.oil >= 3", "set": "oil", "to": 0 }
           ]
         }

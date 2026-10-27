@@ -6,7 +6,7 @@
   "fixture.pump.cap.bolt.{n}": "베어링 뚜껑 볼트 {n}",
   "fixture.pump.oilcup": "기름 잔",
   "reason.cup_full": "기름 잔이 가득 차 있다.",
-  "reason.need_bearing": "꽂을 베어링을 쥐고 있지 않다.",
-  "reason.need_oil_can": "기름을 짜 넣을 것이 없다.",
+  "reason.need_bearing": "끼울 베어링을 쥐고 있지 않다.",
+  "reason.need_oil_can": "손에 기름통이 없다.",
   "reason.no_bearing": "기름 잔 밑에 베어링이 없다."
 }

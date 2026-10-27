@@ -10,7 +10,7 @@ namespace DeepLine.Sim.Systems;
 /// present(베어링이 들어 있음), capOpen(뚜껑), capBolt1..n(뚜껑 볼트), lube(기름 잔), oil(짜 넣은 횟수), lubeLife·lubeArmed(기름의 수명 타이머).
 /// 손으로 하는 일은 data/fixtures/water.json이 하고, 여기는 계통 규칙만 둔다:
 ///   실제 저항 = drag × (1 − lubeDragCut × lube),  베어링이 빠져 있으면 펌프가 돌지 않음,
-///   뚜껑이 닫혀 있는데 볼트가 풀려 있으면 기름이 새고(weep) 베어링 wear가 looseCapWearMultiplier배.
+///   볼트가 풀려 있거나 뚜껑이 열린 채 돌면 기름이 새고(weep) 베어링 wear가 looseCapWearMultiplier배.
 /// tuning.pumpBearing이나 그 상태 값이 없는 데이터(M0·M1, 얼린 golden-data)에서는 저항이 그대로이고 배율은 정확히 1이다.
 /// </summary>
 static class PumpBearing
@@ -54,13 +54,14 @@ static class PumpBearing
         return i < 0 || p.GetAt(i) >= 0.5;
     }
 
-    /// <summary>기름이 새는 곳의 수: 뚜껑이 닫혀 있을 때 풀린 뚜껑 볼트 수. 뚜껑이 열려 있거나 규칙이 없으면 0.</summary>
+    /// <summary>기름이 새는 곳의 수: 풀린 뚜껑 볼트 수. 뚜껑이 열려 있으면 볼트 수 전부(볼트가 모두 풀려 있어야 열린다). 규칙이 없으면 0.</summary>
     public static int Weep(SimWorld w)
     {
         if (w.T.PumpBearing == null) return 0;
         var p = w.Part(PartId);
         var s = Of(p);
-        if (s.CapOpen < 0 || p.GetAt(s.CapOpen) >= 0.5) return 0;
+        if (s.CapOpen < 0) return 0;
+        if (p.GetAt(s.CapOpen) >= 0.5) return s.Bolts.Length;
         int loose = 0;
         foreach (int b in s.Bolts)
             if (p.GetAt(b) < 0.5) loose++;

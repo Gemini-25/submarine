@@ -8,7 +8,7 @@ namespace DeepLine.Game.Testing;
 /// <summary>
 /// 배수 펌프 훈련 m2-water-a (WP10): 흡입구 막힘(WTR-01)과 베어링 마모(WTR-02)가 함께 있는 펌프를 손동작만으로 고친다.
 /// 진단은 사람처럼 현장 단서(자갈 소리, 갈리는 소리)와 청진기로 하고, 교범의 절차를 공구판 왕복까지 펼쳐 그대로 한다.
-/// 몸체를 만져 보는 단계에서는 '손을 댈 수 없다'가 아닐 때까지 기다린다. 다치지 않고 훈련을 마쳐야 한다.
+/// 몸체를 만져 보는 단계에서는 3분 기다린 뒤 '손을 댈 수 없다'가 아닐 때까지 기다린다. 다치지 않고 훈련을 마쳐야 한다.
 /// 끝나면 M1 위기 훈련으로 되돌려 다른 묶음이 그대로 돌게 한다.
 /// </summary>
 public partial class AutoPlayer
@@ -72,7 +72,7 @@ public partial class AutoPlayer
         }
     }
 
-    /// <summary>절차를 공구판 왕복까지 펼쳐 손동작으로. 몸체를 만지는 단계는 식을 때까지 1분씩 기다리며 되풀이한다.</summary>
+    /// <summary>절차를 공구판 왕복까지 펼쳐 손동작으로. 몸체를 만지는 단계는 3분 기다린 뒤, 식을 때까지 1분씩 더 기다리며 되풀이한다.</summary>
     async Task FollowWithBelt(string procedureId, Func<int> lastTouchBand)
     {
         var proc = Data.Procedure(procedureId);
@@ -84,9 +84,10 @@ public partial class AutoPlayer
             if (_failures.Count > 0) return;
             if (c.Cmd.EndsWith(".touch", StringComparison.Ordinal))
             {
+                // 교범: C3를 내리고 3분 뒤 만져 본다. '손을 댈 수 없다'면 1분씩 더 기다린다.
                 for (int tries = 0; tries < 20; tries++)
                 {
-                    Step(60);
+                    Step(tries == 0 ? 180 : 60);
                     await Perform(c.Cmd);
                     Step(HandSeconds);
                     await Frame();

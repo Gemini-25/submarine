@@ -521,8 +521,9 @@ public class PartMechanicsTests
         var m = NewSim(TestData.Data).World.Mechanics;
         Assert.False(m.Steam || m.Attitude || m.Senses || m.Nav || m.Cable);
         Assert.False(m.HasSeaPaths);
-        // 부품 타이머는 계통 작업이 실제 데이터에 더한다 (WP10 펌프 베어링의 기름). 있으면 켜지고 없으면 꺼진다.
-        Assert.Equal(TestData.Data.Parts.Any(p => p.Timers.Count > 0), m.HasTimers);
+        Assert.True(m.HasTimers); // WP10 펌프 베어링의 기름 타이머
+        // 타이머가 없는 데이터(얼린 기준 데이터)에서는 꺼진다
+        Assert.False(NewSim(GameData.LoadFromDirectory(Path.Combine(TestData.FixtureDir, "golden-data"))).World.Mechanics.HasTimers);
     }
 
     [Fact]

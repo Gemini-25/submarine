@@ -253,7 +253,7 @@
         "armed": "lubeArmed",
         "onExpire": [
           { "set": "lube", "to": 0 },
-          { "if": "self.drag > 0", "event": "TempRepairFailed", "detail": "WTR-02" }
+          { "if": "part.pump.bearing.wear >= 0.8", "event": "TempRepairFailed", "detail": "WTR-02" }
         ]
       }
     ],
