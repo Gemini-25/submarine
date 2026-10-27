@@ -61,6 +61,7 @@ public partial class AutoPlayer : Node
         ["workviews"] = WorkViewsSuite,
         ["fixtures"] = FixturesSuite,
         ["tools"] = ToolsSuite,
+        ["drill-switchboard"] = DrillSwitchboardSuite,
     };
 
     async Task Run()
@@ -569,7 +570,19 @@ public partial class AutoPlayer : Node
         }
         var aim = it.GlobalPosition;
         var stand = StandPoint(aim);
-        _main.Player.PlaceAt(stand, aim);
+        // 자리 표(StandPoints)에 있는 대상은 그 자리에 선다(필요하면 웅크린다). 책상 밑 분기함처럼 아무 데서나 닿지 않는 것 (WP8).
+        var known = StandPoints.All.FirstOrDefault(st => st.Open.Length == 0 && st.Targets.Contains(id));
+        if (known != null)
+        {
+            stand = known.Feet;
+            _main.Player.PlaceAt(stand, aim);
+            if (_main.Player.Crouching != known.Crouch) await Crouch(known.Crouch);
+        }
+        else
+        {
+            if (_main.Player.Crouching) await Crouch(false);
+            _main.Player.PlaceAt(stand, aim);
+        }
         ulong start = Time.GetTicksMsec();
         while (true)
         {

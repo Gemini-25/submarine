@@ -69,6 +69,19 @@ public static class CueAudio
             v.InflowLps = c.V > 0 ? 0.01f + 0.15f * c.V : 0;
             v.DepthM = 0;
         }, spot: "battery", db: -6, range: 3),
+
+        // 젖은 분기함의 누설 (ELC-03): 희미한 지직거림. 키트에 전용 목소리가 없어 칼날 스위치 지직거림을 작게 쓴다.
+        R("junction.{c}.sizzle", s => new KnifeSwitchCrackleVoice(s), (v, c) =>
+        {
+            v.Corrosion = c.V;
+            v.Current = c.V > 0 ? 0.6f : 0;
+        }, db: -10, range: 3),
+        // 탄 배선 (ELC-01 철사의 대가): 연기가 나는 동안 그을린 이음이 가끔 튄다.
+        R("junction.{c}.smoke", s => new KnifeSwitchCrackleVoice(s), (v, c) =>
+        {
+            v.Corrosion = 0.35f * c.V;
+            v.Current = c.V > 0 ? 0.3f : 0;
+        }, db: -14, range: 2),
     };
 
     /// <summary>Submarine.SoundSpots에 없는 소리 자리. 송풍 팬은 장면에 장비 물체가 없어 소리 쪽이 자리를 정한다(M1부터).</summary>
