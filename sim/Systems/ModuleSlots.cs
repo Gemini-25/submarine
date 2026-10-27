@@ -40,6 +40,7 @@ static class NavSystem
     public static void Update(SimWorld w)
     {
         if (!w.Mechanics.Nav) return;
+        Navigation.Update(w); // WP14: sim/Systems/Navigation.cs
     }
 }
 

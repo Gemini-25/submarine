@@ -518,16 +518,20 @@ public class PartMechanicsTests
     [Fact]
     public void Modules_are_off_without_their_state_parts()
     {
-        // 얼린 golden-data에는 계통 모듈의 상태 부품이 없다 (실제 data는 계통 작업이 하나씩 켠다: 감각은 WP13의 진공관).
-        var m = NewSim(GameData.LoadFromDirectory(Path.Combine(TestData.FixtureDir, "golden-data"))).World.Mechanics;
-        Assert.False(m.Steam || m.Attitude || m.Senses || m.Nav || m.Cable);
+        // 얼린 기준 데이터에는 모듈 상태 부품이 하나도 없다.
+        var golden = GameData.LoadFromDirectory(Path.Combine(TestData.FixtureDir, "golden-data"));
+        var g = NewSim(golden).World.Mechanics;
+        Assert.False(g.Steam || g.Attitude || g.Senses || g.Nav || g.Cable);
+        Assert.False(g.HasSeaPaths);
+        Assert.False(g.HasTimers);
+        // 실제 데이터: 항법 모듈은 상태 부품이 있을 때만 켜진다 (WP14).
+        var m = NewSim(TestData.Data).World.Mechanics;
+        Assert.Equal(TestData.Data.Parts.Any(p => p.Id is "gyro.unit" or "navcomp.unit"), m.Nav);
         Assert.False(m.HasSeaPaths);
         // 부품 타이머는 모듈이 아니다. 계통 데이터(송풍 팬의 응급 수리 수명, 펌프 베어링의 기름 타이머)가 있으면 켜진다.
-        Assert.True(NewSim(TestData.Data).World.Mechanics.HasTimers);
-        // 타이머가 없는 데이터(얼린 기준 데이터)에서는 꺼진다
-        Assert.False(m.HasTimers);
+        Assert.True(m.HasTimers);
         // 실제 data에서는 감각 모듈이 켜진다 (WP13 진공관)
-        Assert.True(NewSim(TestData.Data).World.Mechanics.Senses);
+        Assert.True(m.Senses);
     }
 
     [Fact]

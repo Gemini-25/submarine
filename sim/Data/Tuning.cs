@@ -26,6 +26,8 @@ public sealed class Tuning
     public List<string> Tools { get; set; } = new();
     /// <summary>공구판과 공구띠 (M2). 없으면 M1처럼 모든 도구를 바로 쥘 수 있다.</summary>
     [Optional] public ToolBoardTuning? ToolBoard { get; set; }
+    /// <summary>항법 모듈 (M2 WP14). 자이로와 항법 계산기 상태 부품이 있으면 필요하다.</summary>
+    [Optional] public NavTuning? Nav { get; set; }
     /// <summary>흡수통의 죔쇠와 뚜껑 (M2 WP9, data/tuning/air.json). 없으면 죔쇠를 열어 둔 흡수통도 다 흡수한다.</summary>
     [Optional] public ScrubberTuning? Scrubber { get; set; }
     /// <summary>송풍 팬 (M2 WP9, data/tuning/air.json). 없으면 멎은 팬은 데워지지 않는다.</summary>

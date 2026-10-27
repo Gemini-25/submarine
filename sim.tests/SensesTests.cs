@@ -369,7 +369,7 @@ public class SensesTests
             sim.Run(Pace);
             events.AddRange(sim.DrainEvents());
         }
-        Assert.DoesNotContain(events, e => e.Kind is SimEventKind.Shock or SimEventKind.Pinch or SimEventKind.Hurt);
+        Assert.DoesNotContain(events, e => Harm.Contains(e.Kind));
         Assert.Equal(new[] { "fuse.C4" }, events.Where(e => e.Kind == SimEventKind.PartRepaired).Select(e => e.Subject).ToArray());
         Assert.Equal("SNS-03", sim.QS("part.hydrophone.tube.1.fault"));
         Assert.True(sim.Q("cue.hydrophone.hiss") >= 0.6);
@@ -409,7 +409,7 @@ public class SensesTests
         sim.Cmd("tool.screwdriver");
         sim.Cmd("hydrophone.door.screw.1.tighten");
         sim.Step();
-        Assert.Contains(sim.DrainEvents(), e => e.Kind == SimEventKind.CommandRejected && e.Detail == "screw_tight");
+        Assert.Contains(sim.DrainEvents(), e => e.Kind == SimEventKind.CommandRejected && e.Detail == "door_screw_tight");
     }
 
     [Fact]
@@ -586,8 +586,11 @@ public class SensesTests
         sim.Step();
         Assert.Equal(1, sim.Q("device.sonar.running"));
         sim.Run(3);
-        var salvage = Follow(sim, "proc.tube.salvage", Tube("1"), skip: c => c is "hydrophone.tube.1.pull" or "hand.drop");
-        Assert.DoesNotContain(salvage, e => Harm.Contains(e.Kind));
+        // 절차를 처음부터 끝까지 따른다. 탄 관은 이미 뽑아 버렸으니 빈 소켓 뽑기와 빈손 버리기만 거부된다.
+        var salvage = Follow(sim, "proc.tube.salvage", Tube("1"));
+        Assert.DoesNotContain(salvage, e => e.Kind is SimEventKind.Shock or SimEventKind.Pinch or SimEventKind.Hurt);
+        var rejected = salvage.Where(e => e.Kind == SimEventKind.CommandRejected).Select(e => $"{e.Subject}:{e.Detail}").ToArray();
+        Assert.Equal(new[] { "hydrophone.tube.1.pull:socket_empty", "hand.drop:hand_empty" }, rejected);
         Assert.Equal("", sim.QS("part.hydrophone.tube.1.fault"));
         Assert.Equal(0, sim.Q("inventory.vacuum_tube"));
         sim.Run(5);

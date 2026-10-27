@@ -53,8 +53,8 @@
       "prop": "screw{n}",
       "group": "door",
       "verbs": {
-        "loosen": { "tool": "screwdriver", "noise": "screwdriver", "rejectIf": [ { "if": "self.screw{n} < 0.5", "reason": "screw_loose" } ] },
-        "tighten": { "tool": "screwdriver", "noise": "screwdriver", "rejectIf": [ { "if": "self.screw{n} >= 0.5", "reason": "screw_tight" } ] }
+        "loosen": { "tool": "screwdriver", "noise": "screwdriver", "rejectIf": [ { "if": "self.screw{n} < 0.5", "reason": "door_screw_loose" } ] },
+        "tighten": { "tool": "screwdriver", "noise": "screwdriver", "rejectIf": [ { "if": "self.screw{n} >= 0.5", "reason": "door_screw_tight" } ] }
       }
     },
     {

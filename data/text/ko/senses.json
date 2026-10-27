@@ -34,8 +34,8 @@
   "reason.door_screws_tight": "나사가 문을 물고 있어 열리지 않는다.",
   "reason.bezel_loose": "테가 이미 풀려 있다.",
   "reason.bezel_tight": "테가 이미 끝까지 조여져 있다.",
-  "reason.screw_loose": "나사가 이미 풀려 있다.",
-  "reason.screw_tight": "나사가 이미 조여져 있다.",
   "gadget.headphones": "헤드폰",
-  "gadget.headphones.on": "헤드폰 (쓰고 있다)"
+  "gadget.headphones.on": "헤드폰 (쓰고 있다)",
+  "reason.door_screw_loose": "문 나사가 이미 풀려 있다.",
+  "reason.door_screw_tight": "문 나사가 이미 조여져 있다."
 }

@@ -232,6 +232,8 @@ static class DeviceRules
                 return false;
         foreach (var p in w.DeviceParts[d])
             if (!Tubes.Alive(p)) return false; // 빠졌거나 필라멘트가 끊긴 진공관 (SNS-03)
+        // 항법 모듈: 자이로 전원 스위치와 베어링, 항법 계산기 전원 레버 (모듈이 없으면 늘 참).
+        if (!Navigation.CanRun(w, d)) return false;
         if (d == w.Fan)
             return w.Part("fan.motor").Get("stalled") < 0.5;
         // 베어링을 빼 놓으면 펌프 축이 돌지 않는다 (WP10).

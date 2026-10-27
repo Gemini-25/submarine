@@ -8,7 +8,7 @@ namespace DeepLine.Game.World;
 
 /// <summary>
 /// 감각 계통 (M2 WP13): 상황판 표시등의 테와 전구(SNS-01), 램프 시험 단추, 청음기 문과 진공관(SNS-03), 소나와 사이펀 증폭 진공관, 헤드폰.
-/// 배치가 지은 모습(테 자리, 청음기 몸통, 소나 상자)은 그대로 두고 움직이는 것만 새로 짓는다.
+/// 배치가 지은 모습(청음기 몸통, 소나 상자, 헤드폰 걸이)은 그대로 두고, 움직이는 것(표시등 테, 문 나사, 문, 진공관, 걸이의 헤드폰)은 배치에서 지우고 여기서 짓는다.
 /// 전구와 진공관은 테와 문 너머로도 겨냥된다(문은 유리창이고 손잡이만 잡힌다). 막힘은 시뮬레이션이 판정한다(bezel_on, door_closed).
 /// </summary>
 public partial class Submarine
@@ -110,13 +110,13 @@ public partial class Submarine
         const string hy = "hydrophone";
         SoundSpots["hydrophone"] = new Vector3(6.45f, 1.25f, 1.12f);
 
-        // 문 나사 둘: 문 위 틀에 박혀 있다 (배치의 나사 자리).
+        // 문 나사 둘: 문 위 틀(상자 앞면 z 1.02)에 박혀 있다.
         foreach (var (k, x) in new[] { (1, 6.45f), (2, 6.25f) })
         {
             string id = $"hydrophone.door.screw.{k}";
             RemoveMarker(id);
-            var screw = Add(Binder.Bind(n, id, new Vector3(0.025f, 0.025f, 0.02f), new Vector3(x, 1.585f, 1.008f), hy));
-            var mount = Mount(n, $"Screw{k}", new Vector3(x, 1.585f, 1.006f), Vector3.Forward);
+            var screw = Add(Binder.Bind(n, id, new Vector3(0.025f, 0.025f, 0.02f), new Vector3(x, 1.585f, 1.012f), hy));
+            var mount = Mount(n, $"Screw{k}", new Vector3(x, 1.585f, 1.016f), Vector3.Forward); // 머리 뒷면이 상자 면에 닿는다
             var head = new Node3D { Name = "Head" };
             mount.AddChild(head);
             Geo.Cyl(head, 0.009f, 0.006f, Vector3.Zero, Geo.Brass, 10).RotationDegrees = new Vector3(90, 0, 0);
