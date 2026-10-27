@@ -18,7 +18,7 @@
     { "atSeconds": 0, "fault": "PWR-02" }
   ],
   "success": {
-    "assert": "part.cell.3.prop.health >= 0.9 && cell.3.jumpered == 0 && part.cell.3.prop.nut1 >= 0.5 && part.cell.3.prop.nut2 >= 0.5 && part.battery.deck.prop.open < 0.5 && device.propulsion.running == 1 && propulsion.sparking < 0.05 && part.motor.brushes.prop.spring >= 0.55 && part.motor.brushes.prop.spring < 0.65",
+    "assert": "part.cell.1.prop.present >= 0.5 && cell.1.jumpered == 0 && part.cell.1.prop.health >= 0.9 && part.cell.1.prop.nut1 >= 0.5 && part.cell.1.prop.nut2 >= 0.5 && part.cell.2.prop.present >= 0.5 && cell.2.jumpered == 0 && part.cell.2.prop.health >= 0.9 && part.cell.2.prop.nut1 >= 0.5 && part.cell.2.prop.nut2 >= 0.5 && part.cell.3.prop.present >= 0.5 && cell.3.jumpered == 0 && part.cell.3.prop.health >= 0.9 && part.cell.3.prop.nut1 >= 0.5 && part.cell.3.prop.nut2 >= 0.5 && part.cell.4.prop.present >= 0.5 && cell.4.jumpered == 0 && part.cell.4.prop.health >= 0.9 && part.cell.4.prop.nut1 >= 0.5 && part.cell.4.prop.nut2 >= 0.5 && part.cell.5.prop.present >= 0.5 && cell.5.jumpered == 0 && part.cell.5.prop.health >= 0.9 && part.cell.5.prop.nut1 >= 0.5 && part.cell.5.prop.nut2 >= 0.5 && part.cell.6.prop.present >= 0.5 && cell.6.jumpered == 0 && part.cell.6.prop.health >= 0.9 && part.cell.6.prop.nut1 >= 0.5 && part.cell.6.prop.nut2 >= 0.5 && part.battery.deck.prop.open < 0.5 && device.propulsion.running == 1 && propulsion.sparking < 0.05 && part.motor.brushes.prop.spring >= 0.55 && part.motor.brushes.prop.spring < 0.65",
     "holdSeconds": 60,
     "objectives": [
       "열화한 셀을 예비 셀로 갈고 갑판 판을 닫는다",

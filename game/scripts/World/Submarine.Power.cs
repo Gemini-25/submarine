@@ -186,6 +186,8 @@ public partial class Submarine
         sb.Instance(spareCell, "Cell", NoShadow);
         OnUpdate((s, _) => spareCell.Visible = s.Crew.Locker.TryGetValue("spare_cell", out int c) && c > 0);
         Replace("discard.crate", "다 쓴 셀 칸", (_, m) => m == Motion.Click ? "hand.drop" : null);
+        // 후방 폐기함은 배치에 표지만 있었다. 후방 구역에서 뺀 브러시를 버릴 곳으로 hand.drop을 붙인다.
+        Replace("discard.aft", "후방 폐기함", (_, m) => m == Motion.Click ? "hand.drop" : null);
     }
 
     // ── 추진 전동기 브러시 끝 ───────────────────────────

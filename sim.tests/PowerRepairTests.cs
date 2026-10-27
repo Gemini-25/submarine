@@ -244,7 +244,7 @@ public class PowerRepairTests
     [Fact]
     public void Cell_health_follows_the_cell_not_the_slot()
     {
-        // 성한 셀을 다른 자리로 옮기면 그 자리가 성해진다(예비 셀을 쓰지 않았지만 뺀 자리가 빈다).
+        // 성한 셀을 다른 자리로 옮기면 그 자리의 셀은 성하지만, 고장 표시(PWR-01)는 예비 셀로 갈아야만 지워진다.
         var moved = Sim();
         moved.Inject("PWR-01", "cell.3");
         LiftCell(moved, 3);
@@ -254,8 +254,8 @@ public class PowerRepairTests
         Assert.Equal("cell_used", moved.QS("crew.hand"));
         var events = Do(moved, new[] { "battery.cell.3.insert" });
         Assert.Equal(1, Cell(moved, 3).Get("health"));
-        Assert.Equal("", Cell(moved, 3).ActiveFault);
-        Assert.Contains(events, e => e.Kind == SimEventKind.PartRepaired && e.Subject == "cell.3");
+        Assert.Equal("PWR-01", Cell(moved, 3).ActiveFault);
+        Assert.DoesNotContain(events, e => e.Kind == SimEventKind.PartRepaired);
 
         // 다 쓴 셀을 성한 셀의 자리에 앉혀도 다 쓴 셀이다: 약 13V, 충전도 그대로다.
         var sim = Sim();
@@ -273,6 +273,55 @@ public class PowerRepairTests
         var take = Do(sim, new[] { "tool.hand", "locker.take.spare_cell" });
         Assert.Contains(take, e => e.Kind == SimEventKind.CommandRejected && e.Detail == "out_of_stock");
         Assert.Equal(0, Cell(sim, 3).Get("present"));
+    }
+
+    [Fact]
+    public void A_fully_dead_cell_comes_out_flat_and_reinserting_it_keeps_the_bus_at_a_third()
+    {
+        var sim = Sim();
+        sim.Inject("PWR-01", "cell.3", new Dictionary<string, double> { ["health"] = 0.01 });
+        sim.Run(2);
+        double before = sim.Q("battery.voltage");
+        Assert.InRange(before, 0.2, 0.35);
+        LiftCell(sim, 3);
+        Assert.Equal("cell_flat", sim.QS("crew.hand"));
+        NoHarm(Do(sim, new[] { "battery.cell.3.insert", "tool.wrench", "battery.cell.3.nut.1.tighten", "battery.cell.3.nut.2.tighten" }));
+        Assert.Equal(0.01, Cell(sim, 3).Get("health"), 9);
+        sim.Run(2);
+        Assert.InRange(sim.Q("battery.voltage"), 0.2, 0.35);
+        Assert.Equal("PWR-01", Cell(sim, 3).ActiveFault);
+    }
+
+    [Fact]
+    public void Without_a_spare_swapping_cells_and_jumpering_the_gap_does_not_pass_the_drill()
+    {
+        // 재고 0: 다 쓴 셀 3을 빼고, 성한 셀 1을 3번 자리로 옮기고, 빈 1번 자리에 점퍼를 건다. 추진은 돌지만 훈련은 끝나지 않는다.
+        var sim = new Simulation();
+        sim.StartMission(TestData.Data, "m2-power-a");
+        sim.World.Crew.Locker[TestData.Data.LockerItems.ToList().IndexOf("spare_cell")] = 0;
+        NoHarm(Follow(sim, "proc.brush.replace"), sparksAllowed: true);
+        sim.Cmd("propulsion.set", 0.75);
+        var plan = Plan(sim, "proc.cell.jumper", bind: new() { ["cell"] = "1" });
+        int at = plan.IndexOf("locker.take.jumper_bar");
+        if (plan[at - 1].StartsWith("tool.", StringComparison.Ordinal)) at--;
+        plan.InsertRange(at, new[]
+        {
+            "tool.wrench", "battery.cell.3.nut.1.loosen", "battery.cell.3.nut.2.loosen", "tool.hand", "battery.cell.3.pull", "hand.drop",
+            "tool.wrench", "battery.cell.1.nut.1.loosen", "battery.cell.1.nut.2.loosen", "tool.hand", "battery.cell.1.pull", "battery.cell.3.insert",
+            "tool.wrench", "battery.cell.3.nut.1.tighten", "battery.cell.3.nut.2.tighten", "tool.hand",
+        });
+        NoHarm(Do(sim, plan));
+        sim.Cmd("propulsion.set", 0.75);
+        Assert.Equal(1, sim.Q("cell.1.jumpered"));
+        Assert.Equal(0, Cell(sim, 1).Get("present"));
+        Assert.Equal(1, Cell(sim, 3).Get("health"));
+        Assert.Equal("PWR-01", Cell(sim, 3).ActiveFault);
+        double hold = TestData.Data.Mission("m2-power-a").Success.HoldSeconds;
+        sim.Run(3 * hold);
+        Assert.Equal(1, sim.Q("device.propulsion.running"));
+        Assert.True(sim.Q("propulsion.sparking") < 0.05);
+        Assert.Equal(0, sim.Q("part.battery.deck.prop.open"));
+        Assert.Equal("running", sim.QS("mission.status"));
     }
 
     [Fact]
@@ -509,6 +558,12 @@ public class PowerRepairTests
         var rpm = Range(sim, "propulsion.rpm", 10);
         double mean = TestData.T.Power!.Brushes.NominalRpm * 0.75 * (1 - TestData.T.Power.Brushes.ThrustLoss * s);
         Assert.True(rpm.Max > mean * 1.08 && rpm.Min < mean * 0.92, $"회전계 {rpm.Min:F0}~{rpm.Max:F0} (평균 {mean:F0})");
+        // 항법 책상 위의 축 회전계(WP14 instruments.tachometer)와 전동기 소리(propulsion.hum)도 같이 오르내린다.
+        double navMean = mean * TestData.T.Nav!.MaxRpm / TestData.T.Power.Brushes.NominalRpm;
+        var tach = Range(sim, "reading.tachometer", 10);
+        Assert.True(tach.Max > navMean * 1.08 && tach.Min < navMean * 0.92, $"축 회전계 {tach.Min:F0}~{tach.Max:F0} (평균 {navMean:F0})");
+        var hum = Range(sim, "cue.propulsion.hum", 10);
+        Assert.True(hum.Max - hum.Min > 0.1, $"전동기 소리 {hum.Min:F2}~{hum.Max:F2}");
         var amps = Range(sim, "panel.gauge.current", 10);
         Assert.True((amps.Max - amps.Min) / V > 2, $"총전류 {amps.Min / V:F1}~{amps.Max / V:F1}A");
         sim.DrainEvents();
@@ -521,6 +576,8 @@ public class PowerRepairTests
         var ok = Sim(s => s.Throttle = 0.75);
         var okRpm = Range(ok, "propulsion.rpm", 10);
         Assert.True(okRpm.Max - okRpm.Min < 0.3, $"고른 회전계 {okRpm.Min:F2}~{okRpm.Max:F2}"); // 방전으로 아주 천천히 내려갈 뿐
+        var okTach = Range(ok, "reading.tachometer", 10);
+        Assert.True(okTach.Max - okTach.Min < 0.3, $"고른 축 회전계 {okTach.Min:F2}~{okTach.Max:F2}");
         Assert.Equal(0, ok.Q("cue.motor.sparks"));
         Assert.Equal(0.75, ok.Q("propulsion.thrust"), 9);
 
@@ -541,10 +598,12 @@ public class PowerRepairTests
         ok.Run(5);
         double rpm = ok.Q("propulsion.rpm");
         Assert.Equal(TestData.T.Power!.Brushes.NominalRpm * 0.75 * ok.Q("battery.voltage"), rpm, 6);
-        foreach (var low in new[] { Sim(s => { s.Throttle = 0.75; s.BatteryCharge = 0.12; }), Loaded() })
+        // 방전한 배(충전 25%, 버스 약 0.93: 추진의 최저 전압 0.7보다 높다)와 PWR-01 배.
+        foreach (var low in new[] { Sim(s => { s.Throttle = 0.75; s.BatteryCharge = 0.25; }), Loaded() })
         {
             if (low.Q("battery.voltage") > 0.99) low.Inject("PWR-01", "cell.3");
             low.Run(5);
+            Assert.Equal(1, low.Q("device.propulsion.running"));
             var r = Range(low, "propulsion.rpm", 10);
             Assert.True(r.Max < rpm - 3, $"낮은 전압의 회전계 {r.Max:F1} (기준 {rpm:F1})");
             Assert.True(r.Max - r.Min < 0.3, $"고르다 {r.Min:F2}~{r.Max:F2}");
@@ -679,7 +738,7 @@ public class PowerRepairTests
             if (sim.Q("device.propulsion.running") == 0) tStop = t;
         }
         Assert.True(tBack < tStop, $"불꽃이 돌아온 때 {tBack / 60:F1}분, 선 때 {tStop / 60:F1}분");
-        Assert.InRange(tBack / 60, 3, 10);
+        Assert.InRange(tBack / 60, 5, 10);
         Assert.InRange(tStop / 60, 10, 15);
 
         // 그 뒤 정식 수리가 된다.
@@ -847,6 +906,7 @@ public class PowerRepairTests
         cell.Cmd("propulsion.set", 0.75);
         cell.Run(5);
         Assert.Equal("PWR-01", Cell(cell, 3).ActiveFault);
+        Do(cell, new[] { "tool.hand", "battery.deck.open" }); // 셀 전압계는 판을 연 뒤에 댄다
         Assert.InRange(cell.Measure("voltmeter", "cell.3") * V, 12, 14);
         Assert.True(Brushes(cell).Wear < 0.001);
     }

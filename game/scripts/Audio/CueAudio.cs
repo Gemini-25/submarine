@@ -146,14 +146,14 @@ public static class CueAudio
         R("propulsion.hum", s => new MotorVoice(s), (v, c) =>
         {
             v.Running = c.V > 0.02f;
-            // 세기 = 추력(0~1). 회전수는 추력 × 버스 전압을 따른다(셀이 열화해 전압이 떨어지면 음이 낮아진다). 브러시의 흔들림은 정류자 목소리가 낸다.
-            v.ShaftHz = 10f + 36f * c.V * (float)c.S.BusVoltage;
+            // 세기 = 전동기 회전수 / 300(추력 × 버스 전압, PWR-02 때 브러시가 닳아 흔들린다). 셀이 열화하면 음이 낮아지고, 브러시가 닳으면 음이 흔들린다.
+            v.ShaftHz = 10f + 36f * c.V;
         }, spot: "motor", db: -4, range: 10),
         // 정류자 불꽃 (PWR-02): 브러시 불꽃 세기만큼 탁탁 튄다. 회전음 위에 겹친다.
         R("motor.crackle", s => new CommutatorSparkVoice(s), (v, c) =>
         {
             v.Running = c.V > 0;
-            v.ShaftHz = 10f + 36f * (float)c.S.BusVoltage * (float)(c.S.Cues.FirstOrDefault(x => x.Id == "propulsion.hum").Value);
+            v.ShaftHz = 10f + 36f * (float)c.S.Cues.FirstOrDefault(x => x.Id == "propulsion.hum").Value;
             v.BrushWear = 0.4f + 0.6f * c.V;
         }, spot: "motor", range: 6),
     };

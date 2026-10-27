@@ -66,6 +66,7 @@ public partial class AutoPlayer
         _main.Runner.Start(Data, back);
         _main.Restart();
         await Frame(2);
+        await AftDrop(); // 훈련이 끝나면 손 명령이 막히므로 원래 임무에서 한다
     }
 
     /// <summary>
@@ -220,6 +221,27 @@ public partial class AutoPlayer
         _main.Hands.PointerUp();
         var got = _issued.Skip(before).ToList();
         Check(got.Count == 1 && got[0] == "hand.drop", $"다 쓴 셀 칸을 눌렀는데 낸 명령: [{string.Join(", ", got)}]");
+        Check(_main.Audio.LastDrop == ("discard.crate", true), $"다 쓴 셀을 버린 소리가 셀 상자에서 무겁게 나야 하는데 {_main.Audio.LastDrop}");
+    }
+
+    /// <summary>가벼운 물건(나무 쐐기)을 후방 폐기함에 버리면 소리가 그 자리에서 가볍게 난다.</summary>
+    async Task AftDrop()
+    {
+        await Perform("tool.hand");
+        await Perform("locker.take.wood_wedge");
+        Step(HandSeconds);
+        await Frame();
+        Check(Snap.Crew.Hand == "wood_wedge", $"나무 쐐기를 꺼내지 못했다 ({Snap.Crew.Hand})");
+        int before = _issued.Count;
+        var st = StandPoints.All.First(p => p.Targets.Contains("discard.aft"));
+        if (!await StandAt(st) || !await AimFrom(st, "discard.aft")) return;
+        _main.Hands.PointerDown(Sub.Interactables["discard.aft"]);
+        _main.Hands.PointerUp();
+        Step(HandSeconds);
+        await Frame();
+        var got = _issued.Skip(before).ToList();
+        Check(got.Count == 1 && got[0] == "hand.drop", $"후방 폐기함을 눌렀는데 낸 명령: [{string.Join(", ", got)}]");
+        Check(_main.Audio.LastDrop == ("discard.aft", false), $"나무 쐐기를 버린 소리가 후방 폐기함에서 가볍게 나야 하는데 {_main.Audio.LastDrop}");
     }
 
     /// <summary>기관 전령기를 한 눈금씩 끌어 스로틀 target(눈금 값)에 맞춘다. 끌 때마다 propulsion.set 하나가 나간다.</summary>

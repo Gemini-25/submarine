@@ -196,7 +196,7 @@ public class Diagnosability
 
     /// <summary>
     /// 전동기 브러시 마모(PWR-02, WP11)는 추진이 돌 때만 드러난다. 추진을 반속으로 돌린 노출 설정에서 고장 없는 기준,
-    /// 셀 열화(PWR-01), 추진 회로 퓨즈 단선(ELC-01 C8)과 구별되고, 교범 03과 21이 말하는 단서(띠 창의 불꽃, 축 회전계)로 갈린다.
+    /// 셀 열화(PWR-01), 추진 회로 퓨즈 단선(ELC-01 C8)과 구별되고, 교범 03과 21이 말하는 단서(띠 창의 불꽃, C8 전류계)로 갈린다.
     /// </summary>
     [Fact]
     public void Pwr02_is_noticeable_and_distinct_with_propulsion_running()

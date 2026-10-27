@@ -3,7 +3,7 @@
     "motor.sparks": { "sense": "Sight", "anchor": "motor.brushes", "q": "propulsion.sparking", "map": [[0.05, 0], [0.6, 1]], "caption": "cue.motor.sparks" },
     "motor.crackle": { "sense": "Sound", "anchor": "motor.brushes", "q": "propulsion.sparking", "map": [[0.05, 0], [1, 1]], "caption": "cue.motor.crackle" },
     "motor.ozone": { "sense": "Smell", "anchor": "motor.brushes", "q": "propulsion.sparking", "map": [[0.3, 0], [0.7, 1]], "caption": "cue.motor.ozone" },
-    "propulsion.hum": { "sense": "Sound", "anchor": "propulsion", "q": "propulsion.thrust", "map": [[0, 0], [1, 1]], "caption": "cue.propulsion.hum" }
+    "propulsion.hum": { "sense": "Sound", "anchor": "propulsion", "q": "propulsion.rpm", "map": [[0, 0], [300, 1]], "caption": "cue.propulsion.hum" }
   },
   "instruments": {
     "telegraph": { "anchor": "fore", "q": "propulsion.throttle", "unit": "none", "label": "reading.telegraph" }

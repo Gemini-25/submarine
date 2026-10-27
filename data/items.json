@@ -24,6 +24,10 @@
     "scrap": true,
     "heavy": true
   },
+  "cell_flat": {
+    "scrap": true,
+    "heavy": true
+  },
   "cell_used": {
     "scrap": true,
     "heavy": true
