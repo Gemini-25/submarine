@@ -1,0 +1,18 @@
+{
+  "fixtures": [
+    {
+      "id": "pump.suction",
+      "part": "pump.suction",
+      "kind": "lever",
+      "zone": "mid",
+      "prop": "pos",
+      "positions": [ "bilge", "fore", "aft", "chamber" ],
+      "verbs": {
+        "bilge": { "tool": "hand", "noise": "lever" },
+        "fore": { "tool": "hand", "noise": "lever" },
+        "aft": { "tool": "hand", "noise": "lever" },
+        "chamber": { "tool": "hand", "noise": "lever" }
+      }
+    }
+  ]
+}
