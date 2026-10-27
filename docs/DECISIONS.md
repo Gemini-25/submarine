@@ -224,3 +224,4 @@ SPEC 0절 규칙 6에 따라, 명세에 없거나 명세와 다르게 정한 것
 - **갈고리 등록부**: `fuseRemoved` 하나(손으로 뺀 퓨즈는 `FuseBlown` 사건을 내지 않는다, M1 그대로).
 - **새 사건 종류** (끝에 더함): `PartPatched`, `TempRepairFailed`, `Hurt`, `Touched`, `WiringBurnt`, `LoadLost`, `ToolRolled`. 사건 수는 0이 아닌 것만 저장하므로 해시가 그대로다.
 - **엔진 시험**: 시험용 부품 `rig.a` 하나 위에 일곱 종류를 다 올려 기본 판정, 거부 순서, 위험, 효과 순서, clearedWhen, 저장과 복원, 잘못된 데이터 20가지의 로드 오류를 본다. 돌연변이 6개(위험 판정 시점, 소켓 거부 순서, 효과 한계, 볼트 묶음, clearedWhen, 응급 사건)를 모두 잡는다.
+- **데이터 조각 파일**: `tuning`, `circuits`, `devices`, `parts`, `faults`, `procedures`, `items`는 `<이름>.json`과 `<이름>/*.json`의 맨 위 키를 서수 순서로 합쳐 읽는다. 같은 키가 두 파일에 있으면 두 파일 이름을 대는 로드 오류. 계통 작업(WP8~)은 자기 조각 파일(`data/parts/air.json` 같은)에만 써서 병렬 작업이 한 파일에서 부딪히지 않게 한다. `hull.json`과 `fixtures/`, `missions/`는 합치지 않는다.

@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 
 namespace DeepLine.Sim.Data;
@@ -102,6 +103,8 @@ public sealed class GameData
         return i < 0 ? int.MaxValue : i;
     }
 
+    static readonly JsonDocumentOptions FragmentOptions = new() { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true };
+
     public static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -146,11 +149,64 @@ public sealed class GameData
             }
         }
 
-        var tuning = Read<Tuning>("tuning.json");
-        var circuits = WithIds(Read<SortedDictionary<string, CircuitDef>>("circuits.json"), (d, id) => d.Id = id);
-        var devices = WithIds(Read<SortedDictionary<string, DeviceDef>>("devices.json"), (d, id) => d.Id = id);
-        var parts = WithIds(Read<SortedDictionary<string, PartDef>>("parts.json"), (d, id) => d.Id = id);
-        var faults = WithIds(Read<SortedDictionary<string, FaultDef>>("faults.json"), (d, id) => d.Id = id);
+        // 조각 파일: <이름>.json과 <이름>/*.json의 맨 위 키를 서수 순서로 합친다. 같은 키가 두 번 나오면 로드 오류.
+        // 계통마다 자기 파일(data/parts/air.json...)에 써서 병렬 작업이 한 파일에서 부딪히지 않게 한다.
+        T? ReadMerged<T>(string name) where T : class
+        {
+            var files = new List<string>();
+            if (File.Exists(Path.Combine(dataDir, name + ".json"))) files.Add(name + ".json");
+            var dir = Path.Combine(dataDir, name);
+            if (Directory.Exists(dir))
+                files.AddRange(Directory.GetFiles(dir, "*.json").OrderBy(f => f, StringComparer.Ordinal).Select(f => Path.Combine(name, Path.GetFileName(f))));
+            if (files.Count == 0) return null;
+            if (files.Count == 1) return Read<T>(files[0]);
+
+            var merged = new JsonObject();
+            var from = new Dictionary<string, string>(StringComparer.Ordinal);
+            var errors = new List<string>();
+            foreach (var file in files)
+            {
+                JsonObject obj;
+                try
+                {
+                    obj = JsonNode.Parse(File.ReadAllText(Path.Combine(dataDir, file)), null, FragmentOptions)?.AsObject()
+                          ?? throw new DataValidationException(new[] { $"{file}: 비어 있음" });
+                }
+                catch (Exception e) when (e is JsonException or InvalidOperationException or ArgumentException)
+                {
+                    throw new DataValidationException(new[] { $"{file}: {e.Message}" });
+                }
+                foreach (var key in obj.Select(kv => kv.Key).ToList())
+                {
+                    if (from.TryGetValue(key, out var first))
+                    {
+                        errors.Add($"{file}: '{key}'가 이미 {first}에 있다");
+                        continue;
+                    }
+                    var value = obj[key];
+                    obj.Remove(key);
+                    merged[key] = value;
+                    from[key] = file;
+                }
+            }
+            if (errors.Count > 0) throw new DataValidationException(errors);
+            try
+            {
+                return merged.Deserialize<T>(JsonOptions) ?? throw new DataValidationException(new[] { $"{name}: 비어 있음" });
+            }
+            catch (JsonException e)
+            {
+                throw new DataValidationException(new[] { $"{string.Join(" + ", files)}: {e.Message}" });
+            }
+        }
+        T Need<T>(string name) where T : class =>
+            ReadMerged<T>(name) ?? throw new DataValidationException(new[] { $"{name}.json이 없다" });
+
+        var tuning = Need<Tuning>("tuning");
+        var circuits = WithIds(Need<SortedDictionary<string, CircuitDef>>("circuits"), (d, id) => d.Id = id);
+        var devices = WithIds(Need<SortedDictionary<string, DeviceDef>>("devices"), (d, id) => d.Id = id);
+        var parts = WithIds(Need<SortedDictionary<string, PartDef>>("parts"), (d, id) => d.Id = id);
+        var faults = WithIds(Need<SortedDictionary<string, FaultDef>>("faults"), (d, id) => d.Id = id);
         var hull = Read<HullFile>("hull.json");
         var leaks = WithIds(hull.Points, (d, id) => d.Id = id);
 
@@ -169,9 +225,7 @@ public sealed class GameData
             });
         }
 
-        var procedures = File.Exists(Path.Combine(dataDir, "procedures.json"))
-            ? WithIds(Read<SortedDictionary<string, ProcedureDef>>("procedures.json"), (d, id) => d.Id = id)
-            : new List<ProcedureDef>();
+        var procedures = WithIds(ReadMerged<SortedDictionary<string, ProcedureDef>>("procedures") ?? new(), (d, id) => d.Id = id);
         var missions = new List<MissionDef>();
         var missionDir = Path.Combine(dataDir, "missions");
         if (Directory.Exists(missionDir))
@@ -184,9 +238,7 @@ public sealed class GameData
             }
         }
 
-        var items = File.Exists(Path.Combine(dataDir, "items.json"))
-            ? WithIds(Read<SortedDictionary<string, ItemDef>>("items.json"), (d, id) => d.Id = id)
-            : new List<ItemDef>();
+        var items = WithIds(ReadMerged<SortedDictionary<string, ItemDef>>("items") ?? new(), (d, id) => d.Id = id);
         var fixtureFiles = new List<(string, FixtureFile)>();
         var fixtureDir = Path.Combine(dataDir, "fixtures");
         if (Directory.Exists(fixtureDir))
