@@ -1,0 +1,356 @@
+{
+  "proc.cell.jumper": {
+    "title": "셀 점퍼로 건너뛰기",
+    "fault": "PWR-01",
+    "grade": "temporary",
+    "bind": [
+      "cell"
+    ],
+    "steps": [
+      {
+        "type": "Inspect",
+        "text": "갑판 판을 열고 셀마다 전압계를 30V 눈금으로 단자에 댄다. 성한 셀은 약 20V, 열화한 셀은 약 13V다. 열화한 셀은 손을 대 보면 혼자 뜨겁고, 비중계로 재면 비중이 다른 셀보다 빨리 떨어진다.",
+        "tool": "voltmeter"
+      },
+      {
+        "type": "Isolate",
+        "text": "배전반의 칼날 스위치 여덟 개를 모두 내려 축전지에 걸린 부하를 끊는다. 상황판과 실내등도 꺼진다. 구역 경고등은 비상 급전이라 켜진 채다.",
+        "cmd": "switch.C{n}.off",
+        "tool": "hand",
+        "repeat": 8,
+        "requires": "없음",
+        "hazard": "부하가 걸린 채 셀 단자를 건드리면 불꽃이 튄다. 수소가 차 있으면 폭발한다."
+      },
+      {
+        "type": "Open",
+        "text": "축전지 갑판 판의 걸쇠 둘을 벗기고 판을 들어 올린다.",
+        "cmd": "battery.deck.open",
+        "tool": "hand"
+      },
+      {
+        "type": "Install",
+        "text": "우물 벽의 점퍼 걸이에서 점퍼 막대 하나를 꺼낸다.",
+        "cmd": "locker.take.jumper_bar"
+      },
+      {
+        "type": "Install",
+        "text": "점퍼 막대를 그 셀의 연결 자리에 걸치고 렌치로 양 끝을 조인다. 전류가 그 셀을 건너뛰어 흐른다.",
+        "cmd": "battery.link.{cell}.fit",
+        "tool": "wrench",
+        "requires": "부하가 모두 끊겨 있을 것",
+        "hazard": "부하가 걸린 채 점퍼를 대면 불꽃이 튄다. 수소가 차 있으면 폭발한다."
+      },
+      {
+        "type": "Close",
+        "text": "갑판 판을 내려 닫는다.",
+        "cmd": "battery.deck.close",
+        "tool": "hand"
+      },
+      {
+        "type": "Close",
+        "text": "조명 회로(C1) 스위치를 올린다.",
+        "cmd": "switch.C1.on",
+        "tool": "hand"
+      },
+      {
+        "type": "Close",
+        "text": "생명유지 회로(C2) 스위치를 올린다.",
+        "cmd": "switch.C2.on",
+        "tool": "hand"
+      },
+      {
+        "type": "Close",
+        "text": "감각 회로(C4) 스위치를 올린다.",
+        "cmd": "switch.C4.on",
+        "tool": "hand"
+      },
+      {
+        "type": "Close",
+        "text": "항법 회로(C5) 스위치를 올린다.",
+        "cmd": "switch.C5.on",
+        "tool": "hand"
+      },
+      {
+        "type": "Close",
+        "text": "케이블 장비 회로(C6) 스위치를 올린다.",
+        "cmd": "switch.C6.on",
+        "tool": "hand"
+      },
+      {
+        "type": "Test",
+        "text": "추진 회로(C8) 스위치를 올린다. 상황판 전압계가 평소의 6분의 5쯤을 가리키면 점퍼가 제대로 물린 것이다.",
+        "cmd": "switch.C8.on",
+        "tool": "hand"
+      }
+    ]
+  },
+  "proc.cell.replace": {
+    "title": "축전지 셀 교체",
+    "fault": "PWR-01",
+    "grade": "proper",
+    "bind": [
+      "cell"
+    ],
+    "steps": [
+      {
+        "type": "Inspect",
+        "text": "갑판 판을 열고 셀마다 전압계를 30V 눈금으로 단자에 댄다. 성한 셀은 약 20V, 열화한 셀은 약 13V다. 열화한 셀은 손을 대 보면 혼자 뜨겁고, 비중계로 재면 비중이 다른 셀보다 빨리 떨어진다.",
+        "tool": "voltmeter"
+      },
+      {
+        "type": "Isolate",
+        "text": "배전반의 칼날 스위치 여덟 개를 모두 내려 축전지에 걸린 부하를 끊는다. 상황판과 실내등도 꺼진다. 구역 경고등은 비상 급전이라 켜진 채다.",
+        "cmd": "switch.C{n}.off",
+        "tool": "hand",
+        "repeat": 8,
+        "requires": "없음",
+        "hazard": "부하가 걸린 채 셀 단자를 건드리면 불꽃이 튄다. 수소가 차 있으면 폭발한다."
+      },
+      {
+        "type": "Open",
+        "text": "축전지 갑판 판의 걸쇠 둘을 벗기고 판을 들어 올린다.",
+        "cmd": "battery.deck.open",
+        "tool": "hand"
+      },
+      {
+        "type": "Install",
+        "text": "우물 벽의 점퍼 걸이에서 점퍼 막대 하나를 꺼낸다.",
+        "cmd": "locker.take.jumper_bar"
+      },
+      {
+        "type": "Install",
+        "text": "점퍼 막대를 그 셀의 연결 자리에 걸치고 렌치로 조인다.",
+        "cmd": "battery.link.{cell}.fit",
+        "tool": "wrench",
+        "requires": "부하가 모두 끊겨 있을 것",
+        "hazard": "부하가 걸린 채 점퍼를 대면 불꽃이 튄다. 수소가 차 있으면 폭발한다."
+      },
+      {
+        "type": "Remove",
+        "text": "렌치로 셀의 단자 너트 두 개를 푼다.",
+        "cmd": "battery.cell.{cell}.nut.{n}.loosen",
+        "tool": "wrench",
+        "repeat": 2,
+        "requires": "점퍼가 걸려 있을 것",
+        "hazard": "점퍼 없이 살아 있는 셀의 너트를 풀면 줄이 끊기며 불꽃이 튄다. 배 안의 전기가 모두 나간다."
+      },
+      {
+        "type": "Remove",
+        "text": "맨손으로 셀을 우물에서 들어낸다. 셀은 무거워서 두 손이 다 든다.",
+        "cmd": "battery.cell.{cell}.pull",
+        "tool": "hand",
+        "requires": "너트가 둘 다 풀려 있을 것. 셀이 물에 잠겨 있지 않을 것"
+      },
+      {
+        "type": "Remove",
+        "text": "다 쓴 셀을 셀 상자의 다 쓴 셀 칸에 넣는다.",
+        "cmd": "hand.drop"
+      },
+      {
+        "type": "Install",
+        "text": "셀 상자에서 예비 셀을 꺼낸다.",
+        "cmd": "locker.take.spare_cell"
+      },
+      {
+        "type": "Install",
+        "text": "예비 셀을 빈 자리에 내려 앉힌다. 새 셀은 9할쯤 충전된 채 보관되어 있다.",
+        "cmd": "battery.cell.{cell}.insert"
+      },
+      {
+        "type": "Fasten",
+        "text": "렌치로 단자 너트 두 개를 끝까지 조인다. 하나라도 덜 조이면 그 단자가 달아오르고 부하가 바뀔 때마다 불꽃이 튄다.",
+        "cmd": "battery.cell.{cell}.nut.{n}.tighten",
+        "tool": "wrench",
+        "repeat": 2
+      },
+      {
+        "type": "Remove",
+        "text": "렌치로 점퍼 막대를 풀어 떼어 낸다.",
+        "cmd": "battery.link.{cell}.remove",
+        "tool": "wrench"
+      },
+      {
+        "type": "Close",
+        "text": "점퍼 막대를 걸이에 되건다.",
+        "cmd": "locker.return.jumper_bar"
+      },
+      {
+        "type": "Close",
+        "text": "갑판 판을 내려 닫는다.",
+        "cmd": "battery.deck.close",
+        "tool": "hand"
+      },
+      {
+        "type": "Close",
+        "text": "조명 회로(C1) 스위치를 올린다.",
+        "cmd": "switch.C1.on",
+        "tool": "hand"
+      },
+      {
+        "type": "Close",
+        "text": "생명유지 회로(C2) 스위치를 올린다.",
+        "cmd": "switch.C2.on",
+        "tool": "hand"
+      },
+      {
+        "type": "Close",
+        "text": "감각 회로(C4) 스위치를 올린다.",
+        "cmd": "switch.C4.on",
+        "tool": "hand"
+      },
+      {
+        "type": "Close",
+        "text": "항법 회로(C5) 스위치를 올린다.",
+        "cmd": "switch.C5.on",
+        "tool": "hand"
+      },
+      {
+        "type": "Close",
+        "text": "케이블 장비 회로(C6) 스위치를 올린다.",
+        "cmd": "switch.C6.on",
+        "tool": "hand"
+      },
+      {
+        "type": "Test",
+        "text": "추진 회로(C8) 스위치를 올린다. 상황판 전압계가 평소 값으로 돌아오고, 몇 분 뒤 셀을 하나씩 짚어 보아 온도가 고르면 끝이다.",
+        "cmd": "switch.C8.on",
+        "tool": "hand"
+      }
+    ]
+  },
+  "proc.brush.spring": {
+    "title": "브러시 스프링 조정",
+    "fault": "PWR-02",
+    "grade": "temporary",
+    "steps": [
+      {
+        "type": "Inspect",
+        "text": "추진 전동기가 도는 동안 끝 덮개의 띠 창 안에서 푸른 불꽃이 튀고, 탁탁 튀는 소리와 오존 냄새가 난다. 축 회전계 바늘이 오르내린다.",
+        "tool": "stethoscope"
+      },
+      {
+        "type": "Isolate",
+        "text": "기관 전령기를 정지에 놓아 전동기를 세운다.",
+        "cmd": "propulsion.set",
+        "tool": "hand",
+        "requires": "없음",
+        "hazard": "도는 전동기의 조절 나사에 드라이버를 대면 손이 끼인다."
+      },
+      {
+        "type": "Work",
+        "text": "끝 덮개의 점검 구멍으로 드라이버를 넣어 브러시 스프링 조절 나사를 시계 방향으로 4분의 1바퀴씩 두 번 돌린다. 한 눈금에 불꽃이 4분의 1쯤 준다.",
+        "cmd": "motor.brush.spring.up",
+        "tool": "screwdriver",
+        "repeat": 2,
+        "requires": "전동기가 멎어 있을 것",
+        "hazard": "끼임"
+      },
+      {
+        "type": "Test",
+        "text": "기관 전령기를 원래 자리로 돌리고 띠 창의 불꽃이 줄었는지 본다."
+      }
+    ]
+  },
+  "proc.brush.replace": {
+    "title": "브러시 교체와 정류자 연마",
+    "fault": "PWR-02",
+    "grade": "proper",
+    "steps": [
+      {
+        "type": "Inspect",
+        "text": "추진 전동기가 도는 동안 끝 덮개의 띠 창 안에서 푸른 불꽃이 튀고, 탁탁 튀는 소리와 오존 냄새가 난다. 청진기를 끝 덮개에 대면 치직거리는 소리가 크게 들린다.",
+        "tool": "stethoscope"
+      },
+      {
+        "type": "Isolate",
+        "text": "기관 전령기를 정지에 놓아 전동기를 세운다.",
+        "cmd": "propulsion.set",
+        "tool": "hand",
+        "requires": "없음",
+        "hazard": "도는 정류자에 손이나 줄을 대면 끼인다."
+      },
+      {
+        "type": "Isolate",
+        "text": "배전반에서 추진 회로(C8) 칼날 스위치를 내린다.",
+        "cmd": "switch.C8.off",
+        "tool": "hand",
+        "requires": "전동기가 멎어 있을 것",
+        "hazard": "스위치를 내리지 않고 브러시나 정류자를 만지면 감전된다."
+      },
+      {
+        "type": "Open",
+        "text": "렌치로 끝 덮개 볼트 두 개를 푼다.",
+        "cmd": "motor.cover.bolt.{n}.loosen",
+        "tool": "wrench",
+        "repeat": 2
+      },
+      {
+        "type": "Open",
+        "text": "끝 덮개를 연다.",
+        "cmd": "motor.cover.open",
+        "tool": "hand"
+      },
+      {
+        "type": "Remove",
+        "text": "브러시 스프링을 젖히고 닳은 브러시 한 벌을 홀더에서 뽑는다.",
+        "cmd": "motor.brushes.pull",
+        "tool": "hand",
+        "requires": "C8 스위치가 내려가 있고 전동기가 멎어 있을 것",
+        "hazard": "감전 또는 끼임"
+      },
+      {
+        "type": "Remove",
+        "text": "닳은 브러시를 폐기함에 버린다.",
+        "cmd": "hand.drop"
+      },
+      {
+        "type": "Work",
+        "text": "줄로 정류자 둘레를 고르게 네 번 문질러 탄 자국과 홈을 없앤다.",
+        "cmd": "motor.commutator.file",
+        "tool": "file",
+        "repeat": 4,
+        "requires": "C8 스위치가 내려가 있고 전동기가 멎어 있을 것",
+        "hazard": "감전 또는 끼임"
+      },
+      {
+        "type": "Install",
+        "text": "예비품 사물함에서 새 브러시 한 벌을 꺼낸다.",
+        "cmd": "locker.take.brush_set"
+      },
+      {
+        "type": "Install",
+        "text": "새 브러시를 홀더에 끼운다.",
+        "cmd": "motor.brushes.insert",
+        "tool": "hand",
+        "requires": "C8 스위치가 내려가 있을 것",
+        "hazard": "감전"
+      },
+      {
+        "type": "Work",
+        "text": "드라이버로 브러시 스프링 조절 나사를 시계 방향으로 4분의 1바퀴씩 세 번 돌려 스프링을 창 안의 가운데 눈금에 맞춘다.",
+        "cmd": "motor.brush.spring.up",
+        "tool": "screwdriver",
+        "repeat": 3
+      },
+      {
+        "type": "Close",
+        "text": "끝 덮개를 닫는다.",
+        "cmd": "motor.cover.close",
+        "tool": "hand"
+      },
+      {
+        "type": "Fasten",
+        "text": "렌치로 끝 덮개 볼트 두 개를 조인다.",
+        "cmd": "motor.cover.bolt.{n}.tighten",
+        "tool": "wrench",
+        "repeat": 2
+      },
+      {
+        "type": "Test",
+        "text": "C8 스위치를 올리고 기관 전령기를 원래 자리로 돌린다. 1분 동안 총전류 바늘이 흔들리지 않고 띠 창에 불꽃이 없으면 끝이다.",
+        "cmd": "switch.C8.on",
+        "tool": "hand"
+      }
+    ]
+  }
+}

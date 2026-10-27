@@ -276,7 +276,7 @@ static class Measurement
     /// <summary>셀 하나의 단자 전압 (정규화; × 120 = V. 성한 만충 셀은 약 20V). 죽은 셀은 0.</summary>
     public static double CellVoltage(SimWorld w, int cell)
     {
-        if (Electrical.IsDead(w, cell)) return 0;
+        if (Electrical.IsDead(w, cell) || !CellString.Present(w, cell)) return 0; // 빠진 셀에는 댈 단자가 없다
         var b = w.T.Battery;
         double health = w.CellParts[cell].Get("health");
         double healthFactor = b.HealthVoltageFloor + (1 - b.HealthVoltageFloor) * health;

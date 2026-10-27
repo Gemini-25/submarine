@@ -244,6 +244,21 @@ static class SimQuery
                     _ => throw Unknown(),
                 };
 
+            case "propulsion":
+            {
+                // 추진 전동기 (M2 WP11): 브러시 불꽃 세기 0~1, 추력(스로틀 기준), 축 회전계(회/분). 계산값이다.
+                End(2);
+                if (At(1) == "throttle") return x => QueryValue.Of(x.Devices[x.Propulsion].Throttle);
+                if (w.T.Power == null) throw Unknown();
+                return At(1) switch
+                {
+                    "sparking" => x => QueryValue.Of(BrushGear.Sparking(x)),
+                    "thrust" => x => QueryValue.Of(BrushGear.Thrust(x)),
+                    "rpm" => x => QueryValue.Of(BrushGear.Rpm(x)),
+                    _ => throw Unknown(),
+                };
+            }
+
             case "lights":
                 End(2);
                 return At(1) == "brightness" ? x => QueryValue.Of(Presentation.LightsBrightness(x)) : throw Unknown();

@@ -16,12 +16,20 @@ static class Electrical
     {
         var b = w.T.Battery;
         double sum = 0;
-        bool blockingDeadCell = false;
+        bool blockingDeadCell = false, openString = false;
+        int looseNuts = 0;
         for (int i = 0; i < w.Cells.Length; i++)
         {
             var part = w.CellParts[i];
             bool jumpered = part.Get("jumpered") >= 0.5;
             if (jumpered) continue;
+            // 점퍼 없이 빠진 셀(또는 단자 너트가 둘 다 풀린 셀)이 있으면 줄이 끊긴다 (M2 WP11).
+            if (!CellString.Connected(w, i))
+            {
+                openString = true;
+                continue;
+            }
+            looseNuts += CellString.LooseNuts(w, i);
             if (IsDead(w, i))
             {
                 blockingDeadCell = true;
@@ -32,6 +40,9 @@ static class Electrical
             sum += Curve.Eval(b.VoltageCurve, w.Cells[i].Charge) * healthFactor;
         }
         double v = sum / w.Cells.Length;
+        if (openString) return 0;
+        // 풀린 단자 너트는 접촉 저항이라 전압이 조금 떨어진다.
+        if (looseNuts > 0) v *= 1 - w.T.Power!.Cells.LooseNutVoltageDrop * looseNuts;
         return blockingDeadCell ? v * b.UnjumperedDeadFactor : v;
     }
 
@@ -40,11 +51,12 @@ static class Electrical
         || w.CellParts[cell].State(w.T.Wear) >= PartState.Broken;
 
     public static bool IsActiveCell(SimWorld w, int cell) =>
-        w.CellParts[cell].Get("jumpered") < 0.5 && !IsDead(w, cell);
+        w.CellParts[cell].Get("jumpered") < 0.5 && !IsDead(w, cell) && CellString.Connected(w, cell);
 
     /// <summary>회로와 장비의 상태를 갱신한다. settle이면 시작 상태 계산용이라 퓨즈 시간과 사건을 건드리지 않는다.</summary>
     public static void Update(SimWorld w, bool settle)
     {
+        double loadBefore = w.TotalPowerW;
         double v = BusVoltage(w);
         w.BusVoltage = v;
 
@@ -90,6 +102,8 @@ static class Electrical
 
             double load = DeviceRules.LoadFactor(w, d);
             if (def.Kind == DeviceKind.Throttle) load *= ds.Throttle;
+            // 닳은 브러시의 불꽃이 전류를 흔든다 (PWR-02). 불꽃이 없으면 정확히 1.
+            if (d == w.Propulsion) load *= BrushGear.SurgeFactor(w);
             ds.LoadFactor = load;
             if (def.LoadType == LoadType.Resistive)
             {
@@ -138,6 +152,11 @@ static class Electrical
         double total = 0;
         for (int c = 0; c < w.Circuits.Length; c++) total += w.Circuits[c].PowerW;
         w.TotalPowerW = total;
+
+        if (settle) return;
+        // 풀린 셀 단자의 불꽃과 브러시 불꽃 일정 (M2 WP11).
+        CellString.ArcOnLoadChange(w, loadBefore);
+        BrushGear.Update(w);
     }
 
     static void BlowFuse(SimWorld w, int c)
@@ -215,6 +234,7 @@ static class Electrical
                 cell.Charge = Math.Max(0, cell.Charge - taken[i] / (cellCapacityWh * health));
                 double cellW = taken[i] * 3600.0 / w.Dt;
                 heatW = cellW * b.CellHeatFactor * (1 + (1 - health) * b.DegradedHeatGain);
+                heatW += CellString.TerminalHeatW(w, i, cellW);
             }
             double coolW = (cell.TempC - w.T.Heat.AmbientC) * b.CellCoolingWPerC;
             cell.TempC += (heatW - coolW) / b.CellHeatCapacityJPerC * w.Dt;
@@ -230,6 +250,8 @@ static class DeviceRules
         foreach (var p in w.DeviceParts[d])
             if (p.State(w.T.Wear) >= PartState.Broken)
                 return false;
+        if (d == w.Propulsion && !BrushGear.CanRun(w))
+            return false;
         if (d == w.Fan)
             return w.Part("fan.motor").Get("stalled") < 0.5;
         return true;

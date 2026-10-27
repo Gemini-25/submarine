@@ -24,6 +24,14 @@ static class FixtureHooks
             int c = Array.IndexOf(w.Fuses, v.Part);
             if (c >= 0) w.Circuits[c].FuseBlownSeen = true;
         },
+        // 새 셀을 우물에 끼웠다 (PWR-01 교체): 충전된 채 오고 우물 온도다.
+        ["cellInstalled"] = (w, v) =>
+        {
+            int i = Array.IndexOf(w.CellParts, v.Part);
+            if (i < 0) return;
+            w.Cells[i].Charge = w.T.Power!.Cells.InstalledCharge;
+            w.Cells[i].TempC = w.T.Heat.AmbientC;
+        },
     };
 }
 

@@ -73,23 +73,20 @@ public class ObservationTests
     public void Hydrometer_reads_specific_gravity_from_charge()
     {
         var h = TestData.Data.Measure!.Hydrometer;
+        // 실제 데이터에는 축전지 갑판 판(WP11)이 있어 열어 두고 잰다.
         var full = TestData.NewSim();
+        full.World.Part("battery.deck").Set("open", 1);
         Assert.Equal(h.SgFull, full.Measure("hydrometer", "cell.1"), 9);
         var half = TestData.NewSim(setup: TestData.Setup(s => s.BatteryCharge = 0.5));
+        half.World.Part("battery.deck").Set("open", 1);
         Assert.Equal(h.SgEmpty + 0.5 * (h.SgFull - h.SgEmpty), half.Measure("hydrometer", "cell.4"), 9);
     }
 
-    /// <summary>덮개 판(battery.deck)이 있는 데이터에서는 열어야 비중계가 닿는다. 닫혀 있으면 NaN.</summary>
+    /// <summary>덮개 판(battery.deck, WP11의 data/parts/power.json)이 있는 데이터에서는 열어야 비중계가 닿는다. 닫혀 있으면 NaN.</summary>
     [Fact]
     public void Hydrometer_needs_the_battery_deck_open_when_there_is_one()
     {
-        var data = LoadWith(dir =>
-        {
-            var path = Path.Combine(dir, "parts.json");
-            var n = JsonNode.Parse(File.ReadAllText(path))!;
-            n["battery.deck"] = new JsonObject { ["kind"] = "deck", ["props"] = new JsonObject { ["open"] = 0 } };
-            File.WriteAllText(path, n.ToJsonString());
-        });
+        var data = TestData.Data;
         var sim = new Simulation(data, 1);
         Assert.True(double.IsNaN(sim.Measure("hydrometer", "cell.1")));
         sim.World.Part("battery.deck").Set("open", 1);

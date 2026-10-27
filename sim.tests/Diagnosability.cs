@@ -189,6 +189,39 @@ public class Diagnosability
         Splits("PWR-01", "ELC-01", "measure.voltmeter.cell.3");
     }
 
+    /// <summary>
+    /// 전동기 브러시 마모(PWR-02, WP11)는 추진이 돌 때만 드러난다. 추진을 반속으로 돌린 노출 설정에서 고장 없는 기준,
+    /// 셀 열화(PWR-01), 추진 회로 퓨즈 단선(ELC-01 C8)과 구별되고, 교범 03과 21이 말하는 단서(띠 창의 불꽃, 축 회전계)로 갈린다.
+    /// </summary>
+    [Fact]
+    public void Pwr02_is_noticeable_and_distinct_with_propulsion_running()
+    {
+        static SortedDictionary<string, DiagnosisHarness.Element> RunUnderway(string? fault, string? part)
+        {
+            var sim = TestData.NewSim(setup: TestData.Setup(s => s.Throttle = 0.75));
+            if (fault != null) sim.Inject(fault, part);
+            sim.Run(T);
+            return DiagnosisHarness.Observe(new ObservableQuery(sim), TestData.Data);
+        }
+        var v = new Dictionary<string, SortedDictionary<string, DiagnosisHarness.Element>>
+        {
+            ["none"] = RunUnderway(null, null),
+            ["PWR-02"] = RunUnderway("PWR-02", null),
+            ["PWR-01"] = RunUnderway("PWR-01", "cell.3"),
+            ["ELC-01"] = RunUnderway("ELC-01", "fuse.C8"),
+        };
+        var sep = DiagnosisHarness.Separating(v["PWR-02"], v["none"]);
+        _out.WriteLine($"PWR-02: {string.Join(", ", sep.Select(k => $"{k}={v["PWR-02"][k]} (기준 {v["none"][k]})"))}");
+        Assert.NotEmpty(sep);
+        foreach (var k in sep) Assert.True(DiagnosisHarness.Documented(k, TestData.Data), $"PWR-02를 드러내는 '{k}'에 문구가 없다");
+        foreach (var other in new[] { "PWR-01", "ELC-01" })
+            Assert.NotEmpty(DiagnosisHarness.Separating(v["PWR-02"], v[other]));
+        Assert.True(v["PWR-02"]["cue.motor.sparks"].Differs(v["none"]["cue.motor.sparks"]));
+        Assert.True(v["PWR-02"]["cue.motor.sparks"].Differs(v["PWR-01"]["cue.motor.sparks"]));
+        Assert.True(v["PWR-02"]["reading.tachometer"].Differs(v["ELC-01"]["reading.tachometer"]));
+        Assert.True(v["PWR-01"]["measure.voltmeter.cell.3"].Differs(v["PWR-02"]["measure.voltmeter.cell.3"]));
+    }
+
     [Fact]
     public void The_harness_is_deterministic_and_reads_only_observables()
     {

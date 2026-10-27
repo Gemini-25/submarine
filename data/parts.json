@@ -1,50 +1,104 @@
 {
   "cell.1": {
     "kind": "cell",
+    "visible": [
+      "jumpered",
+      "nut1",
+      "nut2",
+      "present"
+    ],
     "spare": true,
     "props": {
       "health": 1.0,
-      "jumpered": 0
+      "jumpered": 0,
+      "nut1": 1,
+      "nut2": 1,
+      "present": 1
     }
   },
   "cell.2": {
     "kind": "cell",
+    "visible": [
+      "jumpered",
+      "nut1",
+      "nut2",
+      "present"
+    ],
     "spare": true,
     "props": {
       "health": 1.0,
-      "jumpered": 0
+      "jumpered": 0,
+      "nut1": 1,
+      "nut2": 1,
+      "present": 1
     }
   },
   "cell.3": {
     "kind": "cell",
+    "visible": [
+      "jumpered",
+      "nut1",
+      "nut2",
+      "present"
+    ],
     "spare": true,
     "props": {
       "health": 1.0,
-      "jumpered": 0
+      "jumpered": 0,
+      "nut1": 1,
+      "nut2": 1,
+      "present": 1
     }
   },
   "cell.4": {
     "kind": "cell",
+    "visible": [
+      "jumpered",
+      "nut1",
+      "nut2",
+      "present"
+    ],
     "spare": true,
     "props": {
       "health": 1.0,
-      "jumpered": 0
+      "jumpered": 0,
+      "nut1": 1,
+      "nut2": 1,
+      "present": 1
     }
   },
   "cell.5": {
     "kind": "cell",
+    "visible": [
+      "jumpered",
+      "nut1",
+      "nut2",
+      "present"
+    ],
     "spare": true,
     "props": {
       "health": 1.0,
-      "jumpered": 0
+      "jumpered": 0,
+      "nut1": 1,
+      "nut2": 1,
+      "present": 1
     }
   },
   "cell.6": {
     "kind": "cell",
+    "visible": [
+      "jumpered",
+      "nut1",
+      "nut2",
+      "present"
+    ],
     "spare": true,
     "props": {
       "health": 1.0,
-      "jumpered": 0
+      "jumpered": 0,
+      "nut1": 1,
+      "nut2": 1,
+      "present": 1
     }
   },
   "fuse.C1": {

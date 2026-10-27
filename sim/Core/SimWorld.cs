@@ -73,6 +73,8 @@ sealed class SimWorld
     public readonly Repair.FixtureRuntime Fixtures;
     /// <summary>부품 타이머, 바다 경로, 모듈 켜짐을 컴파일해 둔 것 (상태 아님).</summary>
     public readonly PartMechanics Mechanics;
+    /// <summary>셀과 브러시 규칙이 읽는 상태 값의 참조 (상태 아님, M2 WP11).</summary>
+    public readonly PowerRefs Power;
 
     public SimWorld(GameData data, int seed, MissionSetup? setup = null)
     {
@@ -97,6 +99,7 @@ sealed class SimWorld
             Cells[i] = new CellState { Charge = charge, TempC = T.Heat.AmbientC };
             CellParts[i] = Part($"cell.{i + 1}");
         }
+        Power = new PowerRefs(this, CellParts);
 
         _circuitIndex = new Dictionary<string, int>(StringComparer.Ordinal);
         Circuits = new CircuitState[data.Circuits.Count];

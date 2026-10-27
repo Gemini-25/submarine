@@ -26,6 +26,8 @@ public sealed class Tuning
     public List<string> Tools { get; set; } = new();
     /// <summary>공구판과 공구띠 (M2). 없으면 M1처럼 모든 도구를 바로 쥘 수 있다.</summary>
     [Optional] public ToolBoardTuning? ToolBoard { get; set; }
+    /// <summary>축전지 셀 손 수리와 추진 전동기 브러시 (M2 WP11, data/tuning/power.json). 없으면 그 규칙이 돌지 않는다.</summary>
+    [Optional] public PowerTuning? Power { get; set; }
 }
 
 /// <summary>손 수리 동작의 수치 (M1). 손동작 하나가 명령 하나다.</summary>

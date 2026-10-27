@@ -68,6 +68,7 @@ static class WearSystem
                 double rate = part.Def.WearPerSecond;
                 if (rate <= 0) continue;
                 if (debris && part.Kind == "bearing") rate *= w.T.Repair.BasketMissingWearMultiplier;
+                rate *= BrushGear.WearMultiplier(w, part); // 브러시 스프링이 세거나 정류자가 거칠면 (PWR-02)
                 double before = part.Wear;
                 part.Wear = Math.Min(1, part.Wear + rate * w.Dt * ds.LoadFactor * env * part.QualityFactor(wt));
                 if (before < wt.FaultAt && part.Wear >= wt.FaultAt && part.Def.WearFault != null && part.ActiveFault.Length == 0)
