@@ -16,6 +16,7 @@ public partial class Submarine
 
     void BuildShaftGlandFixtures()
     {
+        if (!Binder.Has("shaft.nut.A")) return; // 축 패킹 장치가 없는 데이터(M1, 얼린 데이터): 표지는 빈 채로 남는다
         var old = Interactables["shaft.nut.A"].GetParent<Node3D>();
         if (old.GetNodeOrNull<MeshInstance3D>("Gland") is { } baked) baked.Visible = false;
         foreach (var id in new[] { "shaft.nut.A", "shaft.nut.B", "shaft.follower", "shaft.collar" }) RemoveMarker(id);
@@ -63,13 +64,26 @@ public partial class Submarine
 
         var itA = Add(Binder.Bind(n, "shaft.nut.A", new Vector3(0.05f, 0.05f, 0.05f), new Vector3(0.335f, y + 0.1f, z), "shaft"));
         var itB = Add(Binder.Bind(n, "shaft.nut.B", new Vector3(0.05f, 0.05f, 0.05f), new Vector3(0.335f, y - 0.1f, z), "shaft"));
-        var itF = Add(Binder.Bind(n, "shaft.follower", new Vector3(0.04f, 0.16f, 0.26f), new Vector3(0.28f, y, z), "shaft"));
+        // 누름판의 잡는 상자는 원판과 함께 움직인다.
+        var itF = Add(Binder.Bind(followerNode, "shaft.follower", new Vector3(0.04f, 0.16f, 0.26f), Vector3.Zero, "shaft"));
         Add(Binder.Bind(n, "shaft.collar", new Vector3(0.04f, 0.16f, 0.16f), new Vector3(0.4f, y, z), "shaft"));
         // 패킹은 상자 옆구리(복도 쪽)에서 갈고리를 넣는 자리로 잡는다. 누름판에 가리지 않는다.
         Add(Binder.Bind(n, "shaft.packing", new Vector3(0.1f, 0.12f, 0.04f), new Vector3(0.2f, y, z - 0.12f), "shaft"));
+        // 그 자리의 모습: 상자 옆구리의 갈고리 구멍과 그 안에 보이는 패킹 고리 끝 (남은 고리만큼)
+        var slot = new MeshBuilder();
+        slot.Box(ArtMat.BlackEnamel, new Vector3(0.2f, y, z - 0.101f), new Vector3(0.09f, 0.035f, 0.004f), 0.001f);
+        slot.Instance(n, "PackingSlot");
+        var ringEnds = new MeshInstance3D[3];
+        for (int i = 0; i < 3; i++)
+        {
+            var eb = new MeshBuilder();
+            eb.Box(ArtMat.Rubber, new Vector3(0.17f + i * 0.03f, y, z - 0.103f), new Vector3(0.022f, 0.014f, 0.004f), 0.001f);
+            ringEnds[i] = eb.Instance(n, $"RingEnd{i + 1}");
+        }
 
-        WheelVisual(itA, nutA, Vector3.Right, 90);
-        WheelVisual(itB, nutB, Vector3.Right, 90);
+        // 조절 장치는 시계 방향(Cw)이 up이라 바퀴 도우미와 부호가 반대다.
+        WheelVisual(itA, nutA, Vector3.Right, -90);
+        WheelVisual(itB, nutB, Vector3.Right, -90);
         float followerX = 0.28f;
         float dragging = float.NaN;
         itF.Preview = v => dragging = v;
@@ -77,14 +91,15 @@ public partial class Submarine
         {
             double back = PartProp(s, GlandPart, "followerBack", 0);
             float target = 0.28f + 0.05f * (float)back;
-            if (!float.IsNaN(dragging)) target += 0.03f * Math.Clamp(back >= 0.5 ? -dragging : dragging, -1, 1);
+            if (!float.IsNaN(dragging)) target = Math.Clamp(target + 0.05f * Math.Clamp(dragging, -1, 1), 0.28f, 0.33f);
             followerX = Approach(followerX, target, 10, dt);
             followerNode.Position = new Vector3(followerX, y, z);
             int left = 3 - (int)Math.Round(PartProp(s, GlandPart, "ringsOut", 0));
-            for (int i = 0; i < 3; i++) rings[i].Visible = i < left;
-            // 풀린 너트는 기둥 끝 쪽(+x)으로 나온다. 둘째 칸이 제자리.
-            nutA.Position = new Vector3(0.315f + 0.006f * (2 - (float)PartProp(s, GlandPart, "nutA", 2)) + (followerX - 0.28f), y + 0.1f, z);
-            nutB.Position = new Vector3(0.315f + 0.006f * (2 - (float)PartProp(s, GlandPart, "nutB", 2)) + (followerX - 0.28f), y - 0.1f, z);
+            for (int i = 0; i < 3; i++) rings[i].Visible = ringEnds[i].Visible = i < left;
+            // 풀린 너트는 기둥 끝 쪽(+x)으로 나온다. 둘째 칸이 제자리. 뒤로 물린 원판 바로 바깥의 기둥 위에 머문다.
+            float Nx(double nut) => Math.Max(0.315f + 0.006f * (2 - (float)nut), followerX + 0.0215f);
+            nutA.Position = new Vector3(Nx(PartProp(s, GlandPart, "nutA", 2)), y + 0.1f, z);
+            nutB.Position = new Vector3(Nx(PartProp(s, GlandPart, "nutB", 2)), y - 0.1f, z);
         });
 
         // 축 고리 둘레의 물줄기와 패킹 상자의 연기 (현장 단서 shaft.stream, shaft.smoke)
@@ -104,16 +119,35 @@ public partial class Submarine
         var smoke = Geo.Sphere(n, 0.08f, new Vector3(0.26f, y + 0.18f, z), smokeMat);
         OnUpdate((s, _) =>
         {
-            float v = Cue(s, "shaft.stream"), k = Cue(s, "shaft.smoke");
+            float v = GlandCue(s, "shaft.stream"), k = GlandCue(s, "shaft.smoke");
             stream.Visible = v > 0.05f;
             stream.Scale = new Vector3(0.4f + 1.6f * v, 1, 0.4f + 1.6f * v);
             smoke.Visible = k > 0.05f;
             smoke.Scale = Vector3.One * (0.5f + k);
         });
 
+        // M1의 누수 지점 물줄기(BuildLeaks)는 이음새처럼 옆으로 뿜는다. 축 패킹 자리에서는 축 고리 아래로 떨어지는 물방울로 바꾼다.
+        // BuildLeaks의 갱신이 먼저 돌므로 여기서 그 값을 덮어쓴다.
+        if (GetNodeOrNull<Node3D>("Leaks") is { } leaks && LeakSpots.TryGetValue(GlandPart, out var spot))
+        {
+            foreach (var child in leaks.GetChildren().OfType<Node3D>())
+            {
+                if (child.Position.DistanceTo(spot.Pos) > 1e-4f || child.GetChildren().OfType<CpuParticles3D>().FirstOrDefault() is not { } spray) continue;
+                spray.Reparent(n, false);
+                spray.Position = new Vector3(0.39f, y - 0.08f, z);
+                spray.Direction = Vector3.Down;
+                spray.Spread = 25;
+                OnUpdate((_, _) =>
+                {
+                    spray.InitialVelocityMin = 0.05f;
+                    spray.InitialVelocityMax = 0.3f;
+                });
+                break;
+            }
+        }
     }
 
-    static float Cue(DeepLine.Sim.SimSnapshot s, string id)
+    static float GlandCue(DeepLine.Sim.SimSnapshot s, string id)
     {
         foreach (var c in s.Cues)
             if (c.Id == id) return (float)c.Value;

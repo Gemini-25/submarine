@@ -197,6 +197,11 @@ public sealed class ProcedureStep
     /// <summary>같은 명령을 몇 번 하는지 (볼트 4개, 타격 3번 …).</summary>
     [Optional] public int Repeat { get; set; } = 1;
     /// <summary>
+    /// 되풀이 횟수를 이 조회 경로(보이는 상태 값, 예: 너트의 칸 수)에서 읽는다. 시뮬레이션에서 펼칠 때(ExpandWithBelt(sim, ...))만 쓰고,
+    /// 시뮬레이션 없이 펼치면 repeat. 응급 수리로 더 조여 둔 너트를 0칸까지 푸는 단계처럼 지금 상태에 따라 횟수가 바뀌는 단계에 쓴다.
+    /// </summary>
+    [Optional] public string? RepeatFrom { get; set; }
+    /// <summary>
     /// Fasten 단계: 볼트를 조이는 순서 ({n}의 값들, 묶음의 순열). 있으면 repeat과 길이가 같아야 하고 절차는 이 순서로 펼친다.
     /// 볼트 묶음의 sequenceFrom이 이것을 기준으로 순서 어김(Bad)을 판정한다.
     /// </summary>

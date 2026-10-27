@@ -8,11 +8,11 @@
     "riseC": 28,
     "overTightFrom": 5,
     "overTightRiseC": 15,
-    "cockedFactor": 3,
+    "cockedFactor": 4,
     "relaxPerSecond": 0.02,
     "burnC": 90,
     "burnIntegrityPerSecond": 0.0005,
-    "squealFromC": 45,
+    "squealFromC": 60,
     "squealNoise": 8
   }
 }

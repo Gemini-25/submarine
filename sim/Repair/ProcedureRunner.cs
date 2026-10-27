@@ -65,10 +65,23 @@ public static class ProcedureRunner
     /// <summary>시뮬레이션의 지금 공구띠에서 출발한다. 공구판 모듈이 없으면 Expand와 같다.</summary>
     public static IReadOnlyList<Command> ExpandWithBelt(Simulation sim, ProcedureDef procedure, IReadOnlyDictionary<string, string>? bind = null)
     {
+        procedure = WithLiveRepeats(sim, procedure);
         var tb = sim.Data.Tuning.ToolBoard;
         if (tb == null) return Expand(procedure, bind);
         var belt = Enumerable.Range(1, tb.BeltSlots).Select(n => sim.Query($"crew.belt.{n}").Text ?? "").ToArray();
         return ExpandWithBelt(procedure, bind, belt);
+    }
+
+    /// <summary>repeatFrom이 있는 단계의 횟수를 지금 상태에서 읽은 절차 사본 (없으면 그대로).</summary>
+    static ProcedureDef WithLiveRepeats(Simulation sim, ProcedureDef p)
+    {
+        if (!p.Steps.Any(s => s.RepeatFrom != null)) return p;
+        var steps = p.Steps.Select(s => s.RepeatFrom == null ? s : new ProcedureStep
+        {
+            Type = s.Type, Text = s.Text, Cmd = s.Cmd, Tool = s.Tool, Order = s.Order, Requires = s.Requires, Hazard = s.Hazard, Revision = s.Revision,
+            Repeat = Math.Max(0, (int)Math.Round(sim.Query(s.RepeatFrom).Number)),
+        }).ToList();
+        return new ProcedureDef { Id = p.Id, Title = p.Title, Fault = p.Fault, Grade = p.Grade, Bind = p.Bind, Steps = steps };
     }
 
     static string? ToolOf(Command c) =>

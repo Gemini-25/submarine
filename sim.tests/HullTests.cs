@@ -107,7 +107,7 @@ public class ShaftPackingTests
         // 리벳 이음의 쉿 소리는 없다 (가르기).
         foreach (var r in new[] { "09", "10", "11", "12" }) Assert.Equal(0, q.Number($"cue.leak.rivet.{r}.hiss"));
 
-        // 축이 오래 돌면 축 고리가 따뜻하다 (30~45°C), 젖어 있고 떨린다.
+        // 축이 오래 돌면 축 고리가 따뜻하다(30~45°C, 고장이 없어도 같다). 고장을 가르는 것은 젖음이다.
         sim.Run(300);
         sim.Cmd("tool.hand");
         sim.Step();
@@ -119,18 +119,41 @@ public class ShaftPackingTests
     }
 
     [Fact]
+    public void Aft_flooding_from_the_packing_fills_the_aft_bilge_without_the_pump()
+    {
+        // 연쇄: 후방 침수는 펌프와 축전지에 부담이 된다. 펌프가 없으면 후방 빌지가 오른다.
+        MissionSetup NoPump() => TestData.Setup(s => { s.DepthM = 300; s.Throttle = 1; });
+        var calm = TestData.NewSim(setup: NoPump());
+        var leaking = TestData.NewSim(setup: NoPump());
+        leaking.Inject("HUL-03");
+        calm.Run(120);
+        leaking.Run(120);
+        Assert.True(leaking.Q("water.inside") > calm.Q("water.inside") + 50);
+        Assert.True(leaking.Q("bilge.aft.water") > calm.Q("bilge.aft.water"));
+    }
+
+    [Fact]
     public void Over_tightening_heats_squeals_smokes_burns_and_the_leak_comes_back_worse()
     {
         var sim = Faulted();
+        sim.Run(300);
+        double listen = new ObservableQuery(sim).Number("measure.stethoscope.shaft.collar"); // 2/2 전속
         Do(sim, "tool.wrench", "shaft.nut.A.up", "shaft.nut.B.up", "shaft.nut.A.up", "shaft.nut.B.up"); // 4/4: 인쇄된 대로 꽉
         double tight = Inflow(sim);
         Assert.Equal(LeakLps(4 * 0.36 * Systems.ShaftGland.Factor(G, 4, 4)), sim.Q($"{Packing}.inflow"), 9);
         var q = new ObservableQuery(sim);
         sim.Run(60);
         Assert.True(q.Number("cue.shaft.squeal") > 0.3, "끽끽 소리가 없다");
+        sim.Run(60);
+        Assert.True(q.Number("measure.stethoscope.shaft.collar") > listen + 0.3, "청진기에 긁히는 소리가 커지지 않았다");
+        // 교범의 확인대로 축 고리를 만지면 데인다 (그래서 교범은 연기가 나면 만지지 말라고 한다).
+        var touch = Do(sim, "tool.hand", "shaft.collar.touch");
+        Assert.Contains(touch, e => e.Kind == SimEventKind.Hurt && e.Detail == "burn");
+        sim.Run(3);
+        Do(sim, "tool.wrench");
         // 끽끽 소리는 계속 나는 소음이다: 추진 전동기 소음에 더해진다.
         Assert.Equal(DeviceNoise(sim) + G.SquealNoise * Math.Min(1, (Prop(sim, "heat") - G.SquealFromC) / (G.BurnC - G.SquealFromC)), sim.Q("noise.current"), 6);
-        sim.Run(240);
+        sim.Run(120);
         Assert.True(Prop(sim, "heat") > G.BurnC);
         Assert.True(q.Number("cue.shaft.smoke") > 0.3, "연기가 없다");
         Assert.True(sim.Q($"{Packing}.integrity") < 0.4, "패킹이 타지 않았다");
@@ -169,9 +192,33 @@ public class ShaftPackingTests
         Assert.True(Prop(sim, "heat") < 45);
         // 공구판에 다녀온다 (패킹 갈고리는 처음 공구띠에 없다).
         Assert.Contains(ProcedureRunner.ExpandWithBelt(Faulted(), TestData.Data.Procedure("proc.shaft.repack")), c => c.Cmd == "toolboard.take.packing_hook");
-        // 소음은 렌치 등급을 넘지 않는다.
-        var noise = TestData.T.Noise.Actions;
-        Assert.All(new[] { "wrench", "lever", "hook", "wrap" }, k => Assert.True(noise[k].Level <= noise["wrench"].Level + 1));
+    }
+
+    /// <summary>손동작 하나의 가장 큰 소음 (교범 11쪽 '절차별 소음'의 등급 기준). 명령마다 사람 속도로 돌리며 틱마다 잰다.</summary>
+    static double PeakActionNoise(Simulation sim, IEnumerable<Command> cmds)
+    {
+        double peak = 0;
+        foreach (var c in cmds)
+        {
+            sim.Apply(c);
+            for (int i = 0; i < TestData.Ticks(Human); i++)
+            {
+                sim.Step();
+                foreach (var a in sim.World.Noise.Actions) peak = Math.Max(peak, a.Level);
+            }
+        }
+        return peak;
+    }
+
+    [Fact]
+    public void Peak_hand_noise_matches_the_manual_class()
+    {
+        var gland = Faulted();
+        Assert.Equal(3, PeakActionNoise(gland, ProcedureRunner.ExpandWithBelt(gland, TestData.Data.Procedure("proc.shaft.gland")))); // 명세 'Noise 3'
+        var repack = Faulted();
+        double peak = PeakActionNoise(repack, ProcedureRunner.ExpandWithBelt(repack, TestData.Data.Procedure("proc.shaft.repack")));
+        Assert.InRange(peak, 1, 5); // 11쪽: 조용 0~5
+        Assert.Equal(TestData.T.Noise.Actions["hook"].Level, peak); // 36쪽: 가장 큰 소리는 패킹 고리 끌어내기
     }
 
     [Fact]
@@ -207,10 +254,17 @@ public class ShaftPackingTests
         Assert.Equal(before * (1 - 2 * G.LeakPerNotch), Inflow(sim), 6); // 한 칸마다 3할
         Assert.Equal(Quality.Temporary, sim.World.Part(Packing).Quality);
         Assert.Equal("HUL-03", sim.QS($"part.{Packing}.fault"));
-        // 3/3은 전속으로 돌아도 뜨거울 뿐 타지 않는다.
+        // 3/3은 전속으로 돌아도 뜨거울 뿐 타지 않고, 끽끽 소리도 연기도 없다. 축 고리는 '뜨겁다'이고 데지 않는다.
         sim.Run(800);
         Assert.InRange(Prop(sim, "heat"), 45, 60);
         Assert.Equal(0.4, sim.Q($"{Packing}.integrity"), 9);
+        var q = new ObservableQuery(sim);
+        Assert.True(q.Number("cue.shaft.squeal") < 0.3);
+        Assert.Equal(0, q.Number("cue.shaft.smoke"));
+        Assert.Equal(1, sim.Q("zone.aft.alarm")); // 응급 수리 뒤에도 경고등은 남는다 (교범)
+        var touch = Do(sim, "tool.hand", "shaft.collar.touch");
+        Assert.Equal(3, touch.Single(e => e.Kind == SimEventKind.Touched).Value);
+        Assert.DoesNotContain(touch, e => e.Kind == SimEventKind.Hurt);
         // 15분 뒤 다시 새고, 처음보다 조금 더 샌다.
         var later = new List<SimEvent>();
         for (int i = 0; i < 200 && !later.Any(e => e.Kind == SimEventKind.TempRepairFailed); i++)
@@ -221,15 +275,59 @@ public class ShaftPackingTests
         var failed = Assert.Single(later, e => e.Kind == SimEventKind.TempRepairFailed);
         Assert.InRange(failed.Tick / (double)TestData.T.TicksPerSecond, 900, 960);
         Assert.True(Inflow(sim) > before, $"재발 {Inflow(sim):F3} / 처음 {before:F3}");
-        // 그 뒤에도 정식 수리가 된다 (너트는 3/3에서 시작한다).
-        var extra = new List<Command> { new("tool.wrench"), new("shaft.nut.A.down"), new("shaft.nut.B.down") };
-        Do(sim, "switch.C8.off");
-        Do(sim, extra);
-        NoHarm(Follow(sim, "proc.shaft.repack", s => s.Type != "Isolate"));
+        // 그 뒤에도 정식 수리가 절차 그대로 된다 (너트는 3/3에서 시작하고, 풀기 단계는 보이는 칸 수만큼 되풀이한다).
+        var ev = Follow(sim, "proc.shaft.repack");
+        NoHarm(ev);
         Assert.Equal("", sim.QS($"part.{Packing}.fault"));
         // 응급 수리의 타이머는 새 패킹을 건드리지 않는다.
         sim.Run(1000);
         Assert.Equal(0.95, sim.Q($"{Packing}.integrity"), 9);
+    }
+
+    /// <summary>응급 수리를 한 칸 더 한 뒤(4/3, 4/4)에도 정식 수리가 절차 그대로 된다.</summary>
+    [Theory]
+    [InlineData(1, 0)]
+    [InlineData(1, 1)]
+    public void Repack_works_from_any_nut_setting(int moreA, int moreB)
+    {
+        var sim = Faulted(throttle: 0);
+        NoHarm(Follow(sim, "proc.shaft.gland"));
+        var more = Enumerable.Repeat("shaft.nut.A.up", moreA).Concat(Enumerable.Repeat("shaft.nut.B.up", moreB)).ToArray();
+        NoHarm(Do(sim, more));
+        Assert.Equal(3 + moreA, Prop(sim, "nutA"));
+        var ev = Follow(sim, "proc.shaft.repack");
+        NoHarm(ev);
+        Assert.Equal("", sim.QS($"part.{Packing}.fault"));
+        Assert.Equal(2, Prop(sim, "nutA"));
+        Assert.Equal(2, Prop(sim, "nutB"));
+        // repeatFrom이 있는 단계는 시뮬레이션 없이 펼치면 repeat(제자리 2칸)대로다.
+        Assert.Equal(4, ProcedureRunner.Expand(TestData.Data.Procedure("proc.shaft.repack")).Count(c => c.Cmd.EndsWith(".down", StringComparison.Ordinal)));
+    }
+
+    /// <summary>응급 수리의 수명이 다한 3/3에서 한 칸 더: 축이 돌면(스로틀 0.8) 패킹이 타서 처음보다 크게 새고, 축을 멈춰 두면 타지 않는다.</summary>
+    [Theory]
+    [InlineData(0.8, true)]
+    [InlineData(0, false)]
+    public void One_more_notch_after_the_emergency_burns_only_under_way(double throttle, bool burns)
+    {
+        var sim = Faulted(throttle);
+        double first = Inflow(sim);
+        NoHarm(Follow(sim, "proc.shaft.gland"));
+        sim.Run(905);
+        Assert.Equal(0, Prop(sim, "glandArmed")); // 수명이 다했다
+        NoHarm(Do(sim, "tool.wrench", "shaft.nut.A.up"));
+        double after = sim.Q($"{Packing}.integrity");
+        sim.Run(850); // 다시 건 응급 수리의 수명(15분) 안
+        if (burns)
+        {
+            Assert.True(sim.Q($"{Packing}.integrity") < after - 0.1);
+            Assert.True(Inflow(sim) > first, $"{Inflow(sim):F3} / 처음 {first:F3}");
+        }
+        else
+        {
+            Assert.Equal(after, sim.Q($"{Packing}.integrity"), 9);
+            Assert.Equal(G.AmbientC, Prop(sim, "heat"));
+        }
     }
 
     // ── 위험 건너뛰기 ───────────────────────────────────
@@ -264,9 +362,9 @@ public class ShaftPackingTests
     // ── 숨은 결함 ───────────────────────────────────────
 
     /// <summary>번갈아 조이지 않고 A를 먼저 둘째 칸까지, 그다음 B (A가 B보다 두 칸 앞선다).</summary>
-    static Simulation UnevenRepack()
+    static Simulation UnevenRepack(double throttle = 1)
     {
-        var sim = Faulted();
+        var sim = Faulted(throttle);
         var p = TestData.Data.Procedure("proc.shaft.repack");
         var cmds = ProcedureRunner.ExpandWithBelt(sim, p).ToList();
         // 마지막 네 번의 조임(A, B, A, B)을 A, A, B, B로 바꾼다.
@@ -301,9 +399,63 @@ public class ShaftPackingTests
     }
 
     [Fact]
+    public void Uneven_nuts_also_burn_at_the_drill_throttle()
+    {
+        var sim = UnevenRepack(throttle: 0.8);
+        Assert.Equal(1, Prop(sim, "cocked"));
+        var q = new ObservableQuery(sim);
+        sim.Run(300);
+        Assert.True(q.Number("cue.shaft.smoke") > 0.3);
+        sim.Run(900);
+        Assert.Equal(1, sim.Q("zone.aft.alarm"));
+    }
+
+    [Fact]
+    public void After_the_alarm_returns_only_a_new_repack_fixes_the_burnt_packing()
+    {
+        var sim = UnevenRepack();
+        Assert.Equal(1, Prop(sim, "cocked"));
+        for (int i = 0; i < 1200 && sim.Q("zone.aft.alarm") < 1; i++) sim.Run(1);
+        Assert.Equal(1, sim.Q("zone.aft.alarm"));
+        double burnt = sim.Q($"{Packing}.integrity");
+        // 너트만 다시 조인다: 누름판은 바로 앉지만 탄 패킹은 그대로라 경고등이 남는다.
+        NoHarm(Do(sim, "switch.C8.off", "tool.wrench", "shaft.nut.A.down", "shaft.nut.B.down", "shaft.nut.A.down", "shaft.nut.B.down",
+            "shaft.nut.A.up", "shaft.nut.B.up", "shaft.nut.A.up", "shaft.nut.B.up", "tool.hand", "switch.C8.on"));
+        Assert.Equal(0, Prop(sim, "cocked"));
+        Assert.True(sim.Q($"{Packing}.integrity") <= burnt);
+        sim.Run(30);
+        Assert.Equal(1, sim.Q("zone.aft.alarm"));
+        // 교범대로 축 패킹 끈 교체를 처음부터 다시 한다.
+        NoHarm(Follow(sim, "proc.shaft.repack"));
+        sim.Run(600);
+        Assert.Equal(0, sim.Q("zone.aft.alarm"));
+        Assert.Equal(0.95, sim.Q($"{Packing}.integrity"), 9);
+    }
+
+    [Fact]
+    public void Skipping_a_ring_leaves_the_old_packing_leaking()
+    {
+        var sim = Faulted(throttle: 0);
+        int stock = TestData.T.Inventory.Locker["packing_cord"];
+        NoHarm(Do(sim, "switch.C8.off", "tool.wrench", "shaft.nut.A.down", "shaft.nut.B.down", "shaft.nut.A.down", "shaft.nut.B.down",
+            "tool.hand", "shaft.follower.back", "toolboard.return.scrub_brush", "toolboard.take.packing_hook", "tool.packing_hook",
+            "shaft.packing.hook", "shaft.packing.hook", "tool.hand", "locker.take.packing_cord", "shaft.packing.wrap", "shaft.packing.wrap",
+            "shaft.follower.in", "tool.wrench", "shaft.nut.A.up", "shaft.nut.B.up", "shaft.nut.A.up", "shaft.nut.B.up"));
+        Assert.Equal("HUL-03", sim.QS($"part.{Packing}.fault"));
+        Assert.Equal(stock - 1, sim.Q("inventory.packing_cord"));
+        sim.Run(60);
+        Assert.Equal(1, sim.Q("zone.aft.alarm"));
+        Assert.Equal(0.4, sim.Q($"{Packing}.integrity"), 9);
+        NoHarm(Follow(sim, "proc.shaft.repack"));
+        Assert.Equal("", sim.QS($"part.{Packing}.fault"));
+        Assert.Equal(0.95, sim.Q($"{Packing}.integrity"), 9);
+    }
+
+    [Fact]
     public void Redoing_the_nuts_alternately_clears_the_cocked_follower()
     {
         var sim = UnevenRepack();
+        Assert.Equal(1, Prop(sim, "cocked"));
         Do(sim, "switch.C8.off", "tool.wrench", "shaft.nut.A.down", "shaft.nut.B.down", "shaft.nut.A.down", "shaft.nut.B.down",
             "shaft.nut.A.up", "shaft.nut.B.up", "shaft.nut.A.up", "shaft.nut.B.up", "tool.hand", "switch.C8.on");
         Assert.Equal(0, Prop(sim, "cocked"));
@@ -319,8 +471,10 @@ public class ShaftPackingTests
     {
         // 축 패킹이 새는데 후방 리벳 이음을 코킹한다: 쉿 소리 없는 이음새만 시끄럽게 친다.
         var sim = Faulted();
-        var caulk = ProcedureRunner.Expand(TestData.Data.Procedure("proc.rivet.caulk"), new Dictionary<string, string> { ["point"] = "leak.rivet.11" });
-        Do(sim, caulk);
+        var caulk = ProcedureRunner.ExpandWithBelt(sim, TestData.Data.Procedure("proc.rivet.caulk"), new Dictionary<string, string> { ["point"] = "leak.rivet.11" });
+        var ev = Do(sim, caulk);
+        NoHarm(ev);
+        Assert.Contains(ev, e => e.Kind == SimEventKind.PartRepaired && e.Subject == "leak.rivet.11"); // 손댄 이음새만 새것이 됐다
         Assert.Equal("HUL-03", sim.QS($"part.{Packing}.fault"));
         Assert.Equal(1, sim.Q("zone.aft.alarm"));
 
@@ -332,6 +486,8 @@ public class ShaftPackingTests
         NoHarm(events);
         Assert.DoesNotContain(events, e => e.Kind == SimEventKind.PartRepaired && e.Subject == "leak.rivet.11");
         Assert.Equal("HUL-01", rivet.QS("part.leak.rivet.11.fault"));
+        Assert.Equal(0.95, rivet.Q($"{Packing}.integrity"), 9); // 손댄 패킹만 새것이 됐다
+        Assert.Equal(TestData.Data.Faults.Single(f => f.Id == "HUL-01").Set["integrity"], rivet.Q("leak.rivet.11.integrity"), 9);
         rivet.Run(30);
         Assert.Equal(1, rivet.Q("zone.aft.alarm"));
         Assert.True(rivet.Q("leak.rivet.11.inflow") > 0.3);
@@ -398,13 +554,19 @@ public class ShaftPackingTests
         var step = p.Steps.Single(s => s.Revision != null);
         Assert.Equal("shaft.nut.A.up", step.Cmd);
         string block = ManualText.ProcedureBlock(p, TestData.Data);
-        Assert.Contains($"인쇄된 글 \"{step.Revision}\"에 줄이 그어져 있고, 옆에 연필로 고쳐 써 있다: {step.Text}", block);
-        Assert.Contains("한 번에 한 칸", step.Text);
+        Assert.Contains($"인쇄된 글 '{step.Revision}'에 줄이 그어져 있고, 옆에 연필로 고쳐 적혀 있다. {step.Text}", block);
+        Assert.Equal("누름판을 꽉 조인다", step.Revision);
+        Assert.StartsWith("한 번에 한 칸. 1초에 한 방울은 새야 한다.", step.Text); // 명세의 연필 문구 그대로
         Assert.Contains("1초에 한 방울은 새야 한다", step.Text);
         var page = ManualText.LoadPages(Path.Combine(TestData.DataDir, "manual"), TestData.Data).Single(pg => pg.File == "36-축-패킹.md");
         Assert.Contains("## 축 패킹 누름판 조이기", page.Markdown);
         Assert.Contains("## 축 패킹 끈 교체", page.Markdown);
         Assert.Contains("연필 정정", page.Markdown);
+        // 교범의 '약 15분'은 응급 수리 타이머의 수명이다.
+        var fixtures = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(Path.Combine(TestData.DataDir, "fixtures", "hull.json")))!;
+        Assert.Equal(15 * 60, (double)fixtures["params"]!["glandLifeS"]!);
+        Assert.Contains("약 15분", page.Markdown);
+        Assert.Contains($"{G.CockedFactor}배 빨리", page.Markdown);
         // 시뮬레이션은 연필 쪽과 맞는다: 한 칸씩이면 타지 않고, 인쇄된 대로 꽉 조이면 탄다 (위의 과조임 시험).
         Assert.True(Systems.ShaftGland.Rise(G, 3, 3, false) + G.AmbientC < G.BurnC);
         Assert.True(Systems.ShaftGland.Rise(G, 4, 4, false) + G.AmbientC > G.BurnC);

@@ -256,7 +256,7 @@ public static partial class ManualText
             sb.Append(i + 1).Append(". ");
             // 낡은 교범 (SPEC 7절): 인쇄된 글과 앞 기관사의 연필 정정을 함께 보인다. 시뮬레이션은 연필 쪽과 맞는다.
             if (p.Steps[i].Revision is { } printed)
-                sb.Append("인쇄된 글 \"").Append(printed).Append("\"에 줄이 그어져 있고, 옆에 연필로 고쳐 써 있다: ");
+                sb.Append("인쇄된 글 '").Append(printed.TrimEnd('.')).Append("'에 줄이 그어져 있고, 옆에 연필로 고쳐 적혀 있다. ");
             sb.Append(p.Steps[i].Text).Append('\n');
         }
         sb.Append('\n');
