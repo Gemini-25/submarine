@@ -63,9 +63,15 @@
       "kind": "cover",
       "zone": "fore",
       "prop": "doorOpen",
-      "heldBy": "door",
       "verbs": {
-        "open": { "tool": "hand", "noise": "cover" },
+        "open": {
+          "tool": "hand",
+          "noise": "cover",
+          "rejectIf": [
+            { "if": "self.screw1 >= 0.5", "reason": "door_screws_tight" },
+            { "if": "self.screw2 >= 0.5", "reason": "door_screws_tight" }
+          ]
+        },
         "close": { "tool": "hand", "noise": "cover" }
       }
     },

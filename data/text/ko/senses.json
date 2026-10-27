@@ -30,5 +30,6 @@
   "cue.bulb.black": "전구 유리가 검게 그을려 있다.",
   "cue.tube.glow": "진공관 필라멘트가 주황빛으로 빛난다.",
   "cue.hydrophone.hiss": "헤드폰에서 쉬익거리는 잡음이 커진다.",
-  "cue.hydrophone.listen": "헤드폰에서 바닷물 소리가 낮게 울린다."
+  "cue.hydrophone.listen": "헤드폰에서 바닷물 소리가 낮게 울린다.",
+  "reason.door_screws_tight": "나사가 문을 물고 있어 열리지 않는다."
 }

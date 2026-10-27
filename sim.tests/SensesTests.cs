@@ -430,7 +430,7 @@ public class SensesTests
         var sim = TestData.NewSim();
         foreach (var c in new[] { "tool.hand", "device.hydrophone.off", "hydrophone.tube.1.pull", "hydrophone.door.open" }) { sim.Cmd(c); sim.Step(); }
         var reasons = sim.DrainEvents().Where(e => e.Kind == SimEventKind.CommandRejected).Select(e => e.Detail).ToList();
-        Assert.Equal(new[] { "door_closed", "bolts_tight" }, reasons);
+        Assert.Equal(new[] { "door_closed", "door_screws_tight" }, reasons);
     }
 
     [Fact]
