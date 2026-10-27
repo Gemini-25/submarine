@@ -241,8 +241,8 @@ public partial class Submarine
         if (gauge != null)
         {
             GaugeLabels(gauge, 0.035f, new[] { "0.01", "0.1", "1", "10", "100" });
-            // 배치가 단위 자리에 쓴 '검류계'를 단위 'MΩ'로 바꾼다 (양 끝 숫자와 겹치지 않는 짧은 글씨).
-            foreach (var l in gauge.GetChildren().OfType<Label3D>().Where(l => l.Text == "검류계")) l.Text = "MΩ";
+            // 배치가 단위 자리에 쓴 '검류계'를 단위 'MΩ'(옴 기호 U+2126, 나눔고딕에 있는 글자)로 바꾼다 (양 끝 숫자와 겹치지 않는 짧은 글씨).
+            foreach (var l in gauge.GetChildren().OfType<Label3D>().Where(l => l.Text == "검류계")) l.Text = "M\u2126";
         }
         var leads = _data.Circuits.Select(c => c.Id).Append("").ToArray();
         var it = Add(Interactable.Create(m, "bridge.lead", "브리지 선택 손잡이", new Vector3(0.05f, 0.05f, 0.03f), new Vector3(0, 0, 0.012f), "commdesk"));

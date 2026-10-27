@@ -162,7 +162,7 @@
           ],
           "effects": [
             {
-              "if": "self.taped >= 0.5",
+              "if": "self.taped >= 0.5 && self.spliced >= 0.5",
               "set": "insulated",
               "to": 0
             },
@@ -293,6 +293,11 @@
               "if": "self.soldered >= $strokes",
               "set": "twisted",
               "to": 0
+            },
+            {
+              "if": "self.soldered >= $strokes",
+              "set": "spliced",
+              "to": 1
             }
           ]
         },
@@ -330,6 +335,10 @@
             },
             {
               "set": "twisted",
+              "to": 1
+            },
+            {
+              "set": "spliced",
               "to": 1
             }
           ]
@@ -475,7 +484,7 @@
           ],
           "effects": [
             {
-              "if": "self.taped >= 0.5",
+              "if": "self.taped >= 0.5 && self.spliced >= 0.5",
               "set": "insulated",
               "to": 0
             },
@@ -606,6 +615,11 @@
               "if": "self.soldered >= $strokes",
               "set": "twisted",
               "to": 0
+            },
+            {
+              "if": "self.soldered >= $strokes",
+              "set": "spliced",
+              "to": 1
             }
           ]
         },
@@ -643,6 +657,10 @@
             },
             {
               "set": "twisted",
+              "to": 1
+            },
+            {
+              "set": "spliced",
               "to": 1
             }
           ]
@@ -788,7 +806,7 @@
           ],
           "effects": [
             {
-              "if": "self.taped >= 0.5",
+              "if": "self.taped >= 0.5 && self.spliced >= 0.5",
               "set": "insulated",
               "to": 0
             },
@@ -919,6 +937,11 @@
               "if": "self.soldered >= $strokes",
               "set": "twisted",
               "to": 0
+            },
+            {
+              "if": "self.soldered >= $strokes",
+              "set": "spliced",
+              "to": 1
             }
           ]
         },
@@ -956,6 +979,10 @@
             },
             {
               "set": "twisted",
+              "to": 1
+            },
+            {
+              "set": "spliced",
               "to": 1
             }
           ]

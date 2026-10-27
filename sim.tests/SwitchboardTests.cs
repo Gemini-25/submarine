@@ -754,6 +754,23 @@ public class SwitchboardTierATests
     }
 
     [Fact]
+    public void Wiping_a_taped_factory_joint_does_not_make_it_bare()
+    {
+        // 피복을 벗긴 적 없는 공장 이음은 건조 절차로 테이프를 감았다가 다시 닦아도 맨 이음이 되지 않는다(이은 자리만 spliced).
+        var sim = TestData.NewSim();
+        sim.Inject("ELC-03", "junction.C4");
+        sim.Step();
+        NoHarm(Follow(sim, "proc.junction.dry", "C4"));
+        Assert.Equal(1, sim.Q("part.junction.C4.prop.taped"));
+        Assert.Equal(0, sim.Q("part.junction.C4.prop.spliced"));
+        Do(sim, new[] { "switch.C4.off", "tool.screwdriver", "junction.C4.screw.1.loosen", "junction.C4.screw.2.loosen", "tool.hand", "junction.C4.cover.open",
+            "tool.rag", "junction.C4.box.dry", "tool.hand", "junction.C4.cover.close",
+            "tool.screwdriver", "junction.C4.screw.1.tighten", "junction.C4.screw.2.tighten", "tool.hand", "switch.C4.on" });
+        Assert.Equal(1, sim.Q("part.junction.C4.prop.insulated"));
+        Assert.Equal(0, sim.Q("circuit.C4.leak"));
+    }
+
+    [Fact]
     public void Wiring_a_fuse_on_a_still_leaking_circuit_burns_the_junction_at_the_test_step()
     {
         // proc.fuse.wire의 시험 단계: 누전이 남은 회로에서 철사를 꽂고 스위치를 올리면 배선이 탄다(퓨즈는 끊기지 않는다).
