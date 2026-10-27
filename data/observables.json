@@ -13,7 +13,7 @@
     "pump.backflow": { "sense": "Sound", "anchor": "pump.check_valve", "q": "pump.backflow", "map": [[0, 0], [2, 1]], "caption": "cue.pump.backflow" },
     "pump.burning": { "sense": "Smell", "anchor": "bilge_pump", "q": "device.bilge_pump.overheated", "map": [[0, 0], [1, 1]], "caption": "cue.pump.burning" },
     "pump.gravel": { "sense": "Sound", "anchor": "pump.intake", "q": "part.pump.intake.prop.clog", "while": "device.bilge_pump.running", "map": [[0, 0], [1, 1]], "caption": "cue.pump.gravel" },
-    "pump.grind": { "sense": "Sound", "anchor": "pump.bearing", "q": "part.pump.bearing.prop.drag", "while": "device.bilge_pump.running", "map": [[0.05, 0], [0.4, 0.6], [1, 1]], "caption": "cue.pump.grind" },
+    "pump.grind": { "sense": "Sound", "anchor": "pump.bearing", "q": "pump.drag", "while": "device.bilge_pump.running", "map": [[0.05, 0], [0.4, 0.6], [1, 1]], "caption": "cue.pump.grind" },
     "pump.hum": { "sense": "Sound", "anchor": "bilge_pump", "q": "device.bilge_pump.running", "map": [[0, 0], [1, 1]], "caption": "cue.pump.hum" },
     "pump.smoke": { "sense": "Sight", "anchor": "bilge_pump", "q": "device.bilge_pump.overheated", "map": [[0, 0], [1, 1]], "caption": "cue.pump.smoke" },
     "scrubber.indicator": { "sense": "Sight", "anchor": "scrubber.canister", "q": "air.canister", "while": "part.scrubber.canister.prop.present", "map": [[0, 0], [1, 1]], "caption": "cue.scrubber.indicator" }
@@ -26,7 +26,7 @@
   },
   "stethoscope": {
     "fan.motor": { "q": "part.fan.motor.prop.stalled", "while": "device.vent_fan.powered", "map": [[0, 0.1], [1, 0.6]] },
-    "pump.body": { "q": "part.pump.bearing.prop.drag", "while": "device.bilge_pump.running", "map": [[0, 0.1], [0.4, 0.6], [1, 1]] }
+    "pump.body": { "q": "pump.drag", "while": "device.bilge_pump.running", "map": [[0, 0.1], [0.4, 0.6], [1, 1]] }
   },
   "measure": {
     "hydrometer": { "sgEmpty": 1.10, "sgFull": 1.28 },

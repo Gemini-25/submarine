@@ -34,6 +34,17 @@ public sealed class Tuning
     [Optional] public ScrubberTuning? Scrubber { get; set; }
     /// <summary>송풍 팬 (M2 WP9, data/tuning/air.json). 없으면 멎은 팬은 데워지지 않는다.</summary>
     [Optional] public FanTuning? Fan { get; set; }
+    /// <summary>펌프 베어링의 기름칠과 뚜껑 (M2 WP10, data/tuning/water.json). 없으면 베어링은 M1처럼 wear 곡선만 따른다.</summary>
+    [Optional] public PumpBearingTuning? PumpBearing { get; set; }
+}
+
+/// <summary>펌프 베어링 (WTR-02). 기름 잔의 기름은 저항(drag)을 줄이고, 뚜껑 볼트가 풀린 채 돌면 기름이 새고 빨리 닳는다.</summary>
+public sealed class PumpBearingTuning
+{
+    /// <summary>기름 잔이 차 있을 때(lube 1) 줄어드는 저항의 비율. 실제 저항 = drag × (1 − 이 값 × lube).</summary>
+    public double LubeDragCut { get; set; }
+    /// <summary>뚜껑이 닫혀 있는데 볼트가 하나라도 풀려 있을 때 베어링 wear 배율 (기름이 샌다).</summary>
+    public double LooseCapWearMultiplier { get; set; }
 }
 
 /// <summary>송풍 팬 (AIR-01).</summary>

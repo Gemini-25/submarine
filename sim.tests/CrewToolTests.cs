@@ -325,7 +325,7 @@ public class CrewToolTests
     {
         var sim = TestData.NewSim();
         var bind = new Dictionary<string, string> { ["circuit"] = "C3", ["point"] = "leak.rivet.09" };
-        // M1 절차만 (M2 절차는 공구판의 도구를 쓴다)
+        // M1 절차만 (M2 계통 절차는 공구판의 도구를 쓸 수 있다)
         string[] m1 = { "proc.fuse.replace", "proc.strainer.clean", "proc.rivet.wedge", "proc.rivet.caulk" };
         foreach (var p in TestData.Data.Procedures.Where(p => m1.Contains(p.Id)))
         {
