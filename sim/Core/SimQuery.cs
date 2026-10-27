@@ -99,7 +99,7 @@ static class SimQuery
                     "load" => x => QueryValue.Of(x.Devices[d].LoadFactor),
                     "cutout" => x => QueryValue.Of(x.Devices[d].CutOut),
                     "overheated" => x => QueryValue.Of(x.Devices[d].Overheated),
-                    // 전기가 실제로 장비에 가는가: 켜짐, 회로 살아 있음, 버스 전압이 최소 전압 이상 (M2 WP9, 멎은 전동기의 청진기와 단서)
+                    // 전기가 실제로 장비에 가는가: 켜짐, 회로 살아 있음, 버스 전압이 최소 전압 이상, 과열 정지 아님 (DeviceRules.Powered)
                     "powered" => DevicePowered(w, d),
                     _ => throw Unknown(),
                 };
@@ -410,9 +410,7 @@ static class SimQuery
 
     static Func<SimWorld, QueryValue> DevicePowered(SimWorld w, int d)
     {
-        var def = w.Data.Devices[d];
-        if (!w.TryCircuitIndex(def.Circuit, out int c)) return _ => QueryValue.Of(false);
-        return x => QueryValue.Of(x.Devices[d].Enabled && x.Circuits[c].Energized && x.BusVoltage >= def.MinVoltage);
+        return x => QueryValue.Of(Systems.DeviceRules.Powered(x, d));
     }
 
     static int IndexOfItem(SimWorld w, string item)

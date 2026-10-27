@@ -21,8 +21,9 @@ static partial class FixtureActions
 
     /// <summary>
     /// 데이터 조건에 쓸 수 없는 경로. 판정은 물리 상태로만 한다: 고장 여부, 부품 상태 단계, 상황판(센서), 단서, 계기 읽기, 사건 수를 읽지 않는다.
+    /// .fault와 .state는 경로의 끝일 때만 막는다 (부품 ID siphon.state의 part.siphon.state.prop.x는 상태 값이다).
     /// </summary>
-    [GeneratedRegex(@"(^|[\s(])(part\.\S+\.(fault|state)|(panel|cue|reading|measure|events|mission)\.\S*)")]
+    [GeneratedRegex(@"(^|[\s(])(part\.\S+\.(fault|state)(?![\w.])|(panel|cue|reading|measure|events|mission)\.\S*)")]
     public static partial Regex BannedPath();
 
     public static IReadOnlyList<string> VerbsOf(FixtureDef def) => def.Kind switch

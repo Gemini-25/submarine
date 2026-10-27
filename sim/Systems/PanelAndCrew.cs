@@ -135,6 +135,7 @@ static class PanelSystem
                 int nav = IndexOf(PanelSystems.Names, "nav");
                 if (nav >= 0) lamps[nav] = Max(lamps[nav], LampState.Warning);
             }
+            lamps[PanelSystems.Cable] = Max(lamps[PanelSystems.Cable], CableGear.PanelLamp(w)); // 윈치 미끄럼 스위치 (WP15)
         }
         else
         {

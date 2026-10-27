@@ -67,7 +67,7 @@ public static class StandPoints
         new("accumulator", At(2.05f, 0.15f), false,
             [ "steam.stop", "steam.bleed", ..Four("steam.flange.bolt"), "steam.joint" ], [ "hatch.closed" ]),
         new("winch", At(1.45f, 0.25f), false,
-            [ "winch.control", "winch.brake", "winch.pawl", "winch.cover", "winch.cover.bolt.1", "winch.cover.bolt.2", "winch.adjust" ], None),
+            [ "winch.control", "winch.brake", "winch.pawl", "winch.cover", "winch.cover.bolt.1", "winch.cover.bolt.2", "winch.adjust", "winch.lining" ], None),
         new("pump", At(1.0f, -0.3f), false,
             [ "pump.cap", ..Four("pump.cap.bolt"), "pump.bearing", "pump.oilcup", "pump.body", "checkvalve.bonnet", ..Four("checkvalve.bolt"), "pump.discharge" ], None),
         new("locker.aft", At(1.5f, -0.35f), false, World.Submarine.AftShelves.SelectMany(s => s).Select(i => $"locker.{i}").ToArray(), None),

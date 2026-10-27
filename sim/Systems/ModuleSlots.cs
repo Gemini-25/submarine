@@ -49,5 +49,6 @@ static class CableGearSystem
     public static void Update(SimWorld w)
     {
         if (!w.Mechanics.Cable) return;
+        CableGear.Update(w);
     }
 }

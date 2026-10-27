@@ -68,6 +68,7 @@ public partial class Submarine : Node3D
         BuildSpareCompartments(); // 예비품 칸 (중앙 벽장, 후방 사물함)
         BuildPumpBearing(); // WP10: 배치의 펌프 표지 자리에 베어링 뚜껑, 볼트, 기름 컵, 몸통
         BuildNav(); // WP14: 배치의 항법 책상과 자이로 함에 동작을 붙인다
+        BuildCable();
     }
 
     /// <summary>표현 층이 매 프레임 부른다.</summary>
