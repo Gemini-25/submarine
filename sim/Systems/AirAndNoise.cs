@@ -76,7 +76,7 @@ static class AirSystem
         if (!PropRef.Resolve(motor, "bearingWorn").Exists || motor.Get("stalled") < 0.5) return;
         var ds = w.Devices[w.Fan];
         var def = w.Data.Devices[w.Fan];
-        if (!ds.Enabled || !w.TryCircuitIndex(def.Circuit, out int c) || !w.Circuits[c].Energized || w.BusVoltage < def.MinVoltage || def.HeatCapacityJPerC <= 0) return;
+        if (!DeviceRules.Powered(w, w.Fan) || def.HeatCapacityJPerC <= 0) return;
         ds.TempC += fan.StallHeatW / def.HeatCapacityJPerC * w.Dt;
     }
 

@@ -169,7 +169,7 @@
     "loadType": "Motor",
     "kind": "Continuous",
     "defaultOn": true,
-    "zone": "mid",
+    "zone": "fore",
     "parts": [
       "siphon.tube.1"
     ]
