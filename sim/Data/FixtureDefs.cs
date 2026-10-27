@@ -75,6 +75,8 @@ public sealed class FixtureDef
     [Optional] public SortedDictionary<string, VerbDef> Verbs { get; set; } = new(StringComparer.Ordinal);
     /// <summary>만져 보기 블록 (어느 종류에나).</summary>
     [Optional] public TouchDef? Touch { get; set; }
+    /// <summary>표현 층의 손동작 힌트 (시뮬레이션은 읽지 않는다). 덮개: up(기본, 위로 끌어 열기) 또는 down.</summary>
+    [Optional] public string? Gesture { get; set; }
 }
 
 /// <summary>
@@ -84,6 +86,8 @@ public sealed class FixtureDef
 /// </summary>
 public sealed class VerbDef
 {
+    /// <summary>표현 층의 손동작 힌트 (시뮬레이션은 읽지 않는다). 작업 동사: click(기본), scrub, strike, stroke, rotate.</summary>
+    [Optional] public string? Gesture { get; set; }
     /// <summary>필요한 도구. "hand"는 빈손. 없으면 아무 도구나 된다. 어기면 need_bare_hand 또는 need_&lt;도구&gt;.</summary>
     [Optional] public string? Tool { get; set; }
     /// <summary>손에 쥐고 있어야 하는 물건. 어기면 need_&lt;물건&gt;.</summary>

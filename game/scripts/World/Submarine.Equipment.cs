@@ -202,11 +202,9 @@ public partial class Submarine
             var wire = Geo.Box(fuse, new Vector3(0.09f, 0.003f, 0.003f), Vector3.Zero, Geo.Mat(new Color(0.8f, 0.8f, 0.8f)));
             var soot = Geo.Cyl(fuse, 0.017f, 0.04f, Vector3.Zero, Geo.Mat(new Color(0.05f, 0.04f, 0.03f), 0.9f, 0));
             soot.RotationDegrees = new Vector3(0, 0, 90);
-            var socket = Add(Interactable.Create(root, $"fuse.{c.Id}", $"{c.Id} 퓨즈 소켓", new Vector3(0.17f, 0.09f, 0.1f), new Vector3(x, 1.24f, 0.08f), "switchboard"));
+            // 퓨즈 소켓은 data/fixtures/switchboard.json의 장치다 (M2 장치 엔진). 전압계를 대면 잰다.
+            var socket = Add(Binder.Bind(root, $"fuse.{c.Id}", new Vector3(0.17f, 0.09f, 0.1f), new Vector3(x, 1.24f, 0.08f), "switchboard"));
             socket.MeasureTarget = $"fuse.{c.Id}";
-            socket.GestureFor = h => h.Tool == "voltmeter" ? GestureKind.Probe : GestureKind.Click;
-            socket.CommandFor = (h, m) => m != Motion.Click ? null
-                : h.Hand is "fuse" or "fuse_blown" ? $"fuse.{c.Id}.insert" : $"fuse.{c.Id}.pull";
             Geo.Text(root, $"{c.FuseRating / NominalVolts:0.0}A", new Vector3(x, 1.185f, 0.065f), 0.018f, Geo.Bakelite);
 
             // 부하 단자 (스위치 아래, 장비 쪽)
@@ -242,16 +240,7 @@ public partial class Submarine
 
     // ── 예비품 사물함과 폐기함 (중앙 좌현 벽) ────────────
 
-    static readonly Dictionary<string, string> ItemNames = new(StringComparer.Ordinal)
-    {
-        ["fuse"] = "퓨즈",
-        ["fuse_blown"] = "끊긴 퓨즈",
-        ["wood_wedge"] = "나무 쐐기",
-        ["timber_shore"] = "버팀목",
-        ["strainer_basket"] = "거름망 바구니",
-    };
-
-    public static string ItemName(string id) => ItemNames.TryGetValue(id, out var n) ? n : id;
+    public static string ItemName(string id) => UI.Texts.Item(id);
 
     void BuildLocker()
     {

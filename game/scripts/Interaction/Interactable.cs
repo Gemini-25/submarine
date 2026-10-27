@@ -54,6 +54,8 @@ public partial class Interactable : StaticBody3D
     public float Turns { get; set; } = 1.5f;
     /// <summary>작업 시점에서 이 물체 앞에 손을 댈 때 카메라가 바라볼 점. 기본은 물체 위치.</summary>
     public Vector3? AimPoint { get; set; }
+    /// <summary>오른쪽 버튼으로 손바닥을 대 볼 때의 명령 (장치의 touch 블록). 없으면 만질 수 없다.</summary>
+    public string? TouchCommand { get; set; }
 
     /// <summary>조준 판정 상자를 만든다. 보이는 모양은 따로 붙인다.</summary>
     public static Interactable Create(Node3D parent, string id, string label, Vector3 size, Vector3 pos, string station = "")

@@ -58,6 +58,8 @@ public partial class AutoPlayer : Node
         ["crisis"] = CrisisSuite,
         ["hands"] = HandsSuite,
         ["workviews"] = CheckWorkView,
+        ["fixtures"] = FixturesSuite,
+        ["tools"] = ToolsSuite,
     };
 
     async Task Run()
@@ -392,10 +394,26 @@ public partial class AutoPlayer : Node
         _gestures++;
         int before = _issued.Count;
         var p = cmd.Split('.');
-        if (p[0] == "tool")
+        if (p[0] == "tool" && p.Length == 2)
         {
-            int n = Data.Tuning.Tools.IndexOf(p[1]);
-            await Key(Godot.Key.Key1 + n);
+            // 키 1은 빈손, 2~6은 허리띠 칸 (M2). 허리띠에 없는 도구면 도구판에 먼저 다녀와야 한다(ExpandWithBelt).
+            int key = _main.Hands.KeyForTool(p[1]);
+            Check(key > 0, $"'{p[1]}'가 허리띠에 없어서 키로 쥘 수 없다 (허리띠: {string.Join(", ", Snap.Crew.Belt)})");
+            if (key > 0) await Key(Godot.Key.Key1 + key - 1);
+        }
+        else if (p[0] == "tool" && p[1] == "drop")
+        {
+            // G: 그 구역에 서서 내려놓는다.
+            int zone = GameData.ZoneIndex(p[2]);
+            float x = new[] { 6.6f, 4.0f, 1.9f }[zone];
+            _main.Player.PlaceAt(new Vector3(x, 0.05f, 0), new Vector3(x + 1, 1.4f, 0));
+            await Frame(2);
+            await Key(Godot.Key.G);
+        }
+        else if (p[^1] == "touch")
+        {
+            var it = await Approach(string.Join('.', p.Take(p.Length - 1)));
+            if (it != null) _main.Hands.Touch(it);
         }
         else
         {
@@ -452,14 +470,100 @@ public partial class AutoPlayer : Node
         Check(got.Count == 1 && got[0] == cmd, $"'{cmd}'를 하려 했는데 손동작이 낸 명령: [{string.Join(", ", got)}]");
     }
 
-    /// <summary>명령 → (물체, 손동작). 플레이어가 화면에서 하는 일과 같다.</summary>
-    static (string Target, Motion Gesture) Map(string cmd)
+    /// <summary>
+    /// 데이터의 장치마다 장면에 잡을 물체가 있고 조준할 수 있으며, 명령마다 그 손동작이 정확히 그 명령을 낸다.
+    /// 손에 든 것은 그 동사가 요구하는 것으로 둔다 (판정이 아니라 바인더의 번역을 본다).
+    /// </summary>
+    async Task FixturesSuite()
     {
+        var catalog = Data.Fixtures;
+        foreach (var f in catalog.Instances)
+        {
+            if (!_main.Sub.Interactables.ContainsKey(f.Id)) { Check(false, $"장치 '{f.Id}'의 물체가 장면에 없다"); continue; }
+            await Approach(f.Id);
+        }
+        foreach (var row in catalog.Rows)
+        {
+            var f = catalog.Instances[row.Instance];
+            if (!_main.Sub.Interactables.TryGetValue(f.Id, out var it)) continue;
+            if (row.Verb == FixtureCatalog.TouchVerb)
+            {
+                Check(it.TouchCommand == row.Command, $"'{f.Id}'를 만지면 '{it.TouchCommand}' (기대 {row.Command})");
+                continue;
+            }
+            var v = f.Def.Verbs[row.Verb];
+            string hand = v.Hold != null ? f.Expand(v.Hold) : row.Verb == "insert" ? f.Expand(v.Accepts.Keys.First()) : "";
+            var ctx = new HandContext(Snap, v.Tool ?? "hand", hand);
+            if (!_main.Sub.Binder.TryResolve(row.Command, out var target, out var motion) || target != f.Id)
+            {
+                Check(false, $"'{row.Command}'의 손동작을 바인더 역표에서 찾을 수 없다");
+                continue;
+            }
+            var got = it.CommandFor(ctx, motion);
+            Check(got == row.Command, $"'{row.Command}'의 손동작({motion}, 도구 {ctx.Tool}, 쥔 것 '{hand}')이 낸 명령: {got ?? "없음"}");
+        }
+        GD.Print($"AUTOTEST: 장치 {catalog.Instances.Count}개, 명령 {catalog.Rows.Count}개를 손동작으로 확인");
+    }
+
+    /// <summary>도구판과 허리띠: 키 2~6, 꽉 찬 허리띠의 거부와 그 글, 걸고 가져오기, 바닥에 내려놓고 줍기.</summary>
+    async Task ToolsSuite()
+    {
+        if (Snap.Crew.Belt.Count == 0) { Check(false, "도구판 모듈이 없는 데이터로 tools 묶음을 돌렸다"); return; }
+        for (int n = 0; n < Snap.Crew.Belt.Count; n++)
+        {
+            await Key(Godot.Key.Key2 + n);
+            Step(0.1);
+            Check(Snap.Crew.Tool == Snap.Crew.Belt[n], $"키 {n + 2}를 눌렀는데 쥔 도구가 {Snap.Crew.Tool} (허리띠 {n + 1}칸은 {Snap.Crew.Belt[n]})");
+        }
+        await Key(Godot.Key.Key1);
+        Step(0.1);
+        Check(Snap.Crew.Tool == "hand", "키 1이 빈손이 아니다");
+
+        // 허리띠가 차 있으면 여섯 번째 도구는 거부되고, 손이 느낀 글이 보인다.
+        await Perform("toolboard.take.screwdriver");
+        Step(0.1);
+        await Frame(2);
+        Check(_main.Hud.LastFelt == UI.Texts.Reason("belt_full"), $"꽉 찬 허리띠의 거부 글: '{_main.Hud.LastFelt}'");
+        Check(Snap.Crew.ToolPlaces["screwdriver"] == "board", "거부됐는데 드라이버가 도구판을 떠났다");
+
+        await Perform("toolboard.return.scrub_brush");
+        Step(HandSeconds);
+        await Perform("toolboard.take.screwdriver");
+        Step(HandSeconds);
+        Check(Snap.Crew.Belt[^1] == "screwdriver", $"솔 자리에 드라이버가 들어가지 않았다 (허리띠: {string.Join(", ", Snap.Crew.Belt)})");
+        await Perform("tool.screwdriver");
+        Step(0.1);
+        Check(Snap.Crew.Tool == "screwdriver", "키 6으로 드라이버를 쥐지 못했다");
+
+        await Perform("tool.drop.mid");
+        Step(0.1);
+        await Frame(2);
+        Check(Snap.Crew.ToolPlaces["screwdriver"] == "mid" && Snap.Crew.Tool == "hand", "G로 내려놓은 드라이버가 중앙 바닥에 없다");
+        await Perform("tool.pickup.screwdriver");
+        Step(0.1);
+        Check(Snap.Crew.ToolPlaces["screwdriver"] == "belt", "바닥의 드라이버를 줍지 못했다");
+
+        await Perform("toolboard.return.screwdriver");
+        Step(HandSeconds);
+        await Perform("toolboard.take.scrub_brush");
+        Step(HandSeconds);
+        Check(Snap.Crew.Belt.SequenceEqual(Data.Tuning.ToolBoard!.InitialBelt), $"허리띠가 처음으로 돌아오지 않았다: {string.Join(", ", Snap.Crew.Belt)}");
+        GD.Print("AUTOTEST: 도구판, 허리띠 키, 거부 글, 바닥에 내려놓고 줍기 확인");
+    }
+
+    /// <summary>
+    /// 명령 → (물체, 손동작). 플레이어가 화면에서 하는 일과 같다. 데이터 장치의 명령은 바인더의 역표로,
+    /// M1의 손수 만든 장비(strainer.*, leak.*)와 내장 명령은 여기서.
+    /// </summary>
+    (string Target, Motion Gesture) Map(string cmd)
+    {
+        if (_main.Sub.Binder.TryResolve(cmd, out var target, out var motion)) return (target, motion);
         var p = cmd.Split('.');
         return p[0] switch
         {
             "switch" => ($"switch.{p[1]}", p[2] == "on" ? Motion.Up : Motion.Down),
-            "fuse" => ($"fuse.{p[1]}", Motion.Click),
+            "toolboard" => ($"toolboard.{p[2]}", Motion.Click),
+            "tool" when p[1] == "pickup" => ($"floortool.{p[2]}", Motion.Click),
             "hand" => ("discard", Motion.Click),
             "locker" => ($"locker.{p[2]}", Motion.Click),
             "hatch" => ("hatch", Motion.Click),

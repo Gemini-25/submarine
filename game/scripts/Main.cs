@@ -66,7 +66,8 @@ public partial class Main : Node3D
         AddChild(new WorldEnvironment { Environment = MakeEnvironment() });
         Sub = new Submarine { Name = "Submarine" };
         AddChild(Sub);
-        Sub.Build(data);
+        UI.Texts.Load(data);
+        Sub.Build(data, path => Runner.Sim.Query(path).Number);
 
         Player = new PlayerController { Name = "Player" };
         AddChild(Player);
@@ -284,6 +285,8 @@ public partial class Main : Node3D
         bool modal = Modal;
         Hands.Blocked = modal;
         Player.Locked = modal || Runner.Snapshot.Crew.Stunned;
+        string hand = Runner.Snapshot.Crew.Hand;
+        Player.SpeedFactor = hand.Length > 0 && Runner.Data.Items.TryGetValue(hand, out var item) && item.Heavy ? 0.6f : 1f;
         Sub.Apply(Runner.Snapshot, (float)delta);
 
         if (_smokeFrames >= 0 && --_smokeFrames < 0)

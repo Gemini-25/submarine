@@ -14,50 +14,9 @@ namespace DeepLine.Game.UI;
 /// </summary>
 public partial class Hud : CanvasLayer
 {
-    /// <summary>CommandRejected의 사유 → 손이 느낀 결과. 다음에 할 일을 알려 주지 않고 일어난 일만 말한다.</summary>
-    static readonly Dictionary<string, string> Felt = new(StringComparer.Ordinal)
-    {
-        ["hand_full"] = "손에 이미 무언가를 쥐고 있다.",
-        ["out_of_stock"] = "칸이 비어 있다.",
-        ["hand_empty"] = "버릴 것을 쥐고 있지 않다.",
-        ["cannot_discard"] = "거름망 바구니는 버릴 물건이 아니다.",
-        ["socket_empty"] = "소켓이 비어 있다.",
-        ["socket_full"] = "소켓에 이미 퓨즈가 꽂혀 있다.",
-        ["need_bare_hand"] = "도구를 든 손으로는 잡히지 않는다.",
-        ["need_fuse"] = "꽂을 퓨즈를 쥐고 있지 않다.",
-        ["need_wrench"] = "맨손으로는 볼트가 돌아가지 않는다.",
-        ["cover_open"] = "덮개가 열려 있어 볼트가 헛돈다.",
-        ["already_loose"] = "볼트가 이미 풀려 있다.",
-        ["already_tight"] = "볼트가 이미 조여져 있다.",
-        ["already_open"] = "덮개가 이미 열려 있다.",
-        ["already_closed"] = "덮개가 이미 닫혀 있다.",
-        ["bolts_tight"] = "볼트가 덮개를 누르고 있어 열리지 않는다.",
-        ["cover_closed"] = "덮개가 닫혀 있다.",
-        ["basket_out"] = "바구니가 이미 빠져 있다.",
-        ["basket_in"] = "바구니가 이미 들어 있다.",
-        ["need_basket"] = "바구니를 쥐고 있지 않다.",
-        ["need_brush"] = "맨손으로는 자갈이 털리지 않는다.",
-        ["not_rivet"] = "여기에는 쐐기가 맞지 않는다.",
-        ["need_mallet"] = "칠 것이 없다.",
-        ["already_wedged"] = "쐐기가 이미 끝까지 박혔다.",
-        ["need_wedge"] = "박을 쐐기를 쥐고 있지 않다.",
-        ["need_wedge_first"] = "버팀목이 받칠 쐐기가 없다.",
-        ["already_shored"] = "이미 버팀목을 댔다.",
-        ["need_shore"] = "버팀목을 쥐고 있지 않다.",
-        ["need_caulking_set"] = "코킹 정이 없다.",
-    };
+    // 거부 사유, 도구와 물건 이름은 data/text/ko.json (Texts).
 
-    static readonly Dictionary<string, string> ToolNames = new(StringComparer.Ordinal)
-    {
-        ["hand"] = "빈손",
-        ["wrench"] = "렌치",
-        ["mallet"] = "나무망치",
-        ["caulking_set"] = "코킹 세트",
-        ["voltmeter"] = "전압계",
-        ["scrub_brush"] = "솔",
-    };
-
-    public static string ToolName(string id) => ToolNames.TryGetValue(id, out var n) ? n : id;
+    public static string ToolName(string id) => Texts.Tool(id);
 
     static readonly Dictionary<string, string> FailReasons = new(StringComparer.Ordinal)
     {
@@ -73,7 +32,7 @@ public partial class Hud : CanvasLayer
     InteractionController _hands = null!;
     PlayerController _player = null!;
     Control _cross = null!;
-    Label _target = null!, _gesture = null!, _held = null!, _felt = null!;
+    Label _target = null!, _gesture = null!, _held = null!, _felt = null!, _belt = null!;
     Control _briefing = null!, _result = null!;
     Label _resultTitle = null!, _resultBody = null!;
     double _feltFor;
@@ -107,7 +66,14 @@ public partial class Hud : CanvasLayer
         _held.GrowVertical = Control.GrowDirection.Begin;
         _held.HorizontalAlignment = HorizontalAlignment.Right;
         _held.Position += new Vector2(-24, -20);
-        foreach (var l in new[] { _target, _gesture, _felt, _held })
+
+        // 허리띠: 왼쪽 아래 흐린 한 줄. '1 빈손 · 2 렌치 · …'. 쥔 칸은 조금 밝게.
+        _belt = UiKit.Text("", 15, new Color(1, 0.95f, 0.85f, 0.5f));
+        _belt.SetAnchorsPreset(Control.LayoutPreset.BottomLeft);
+        _belt.GrowVertical = Control.GrowDirection.Begin;
+        _belt.Position += new Vector2(24, -20);
+        AddChild(_belt);
+        foreach (var l in new[] { _target, _gesture, _felt, _held, _belt })
         {
             l.AddThemeColorOverride("font_shadow_color", new Color(0, 0, 0, 0.9f));
             l.AddThemeConstantOverride("shadow_offset_x", 1);
@@ -206,7 +172,14 @@ public partial class Hud : CanvasLayer
 
     void OnEvent(SimEvent e)
     {
-        if (e.Kind == SimEventKind.CommandRejected && Felt.TryGetValue(e.Detail, out var text))
+        string? text = e.Kind switch
+        {
+            SimEventKind.CommandRejected => Texts.Reason(e.Detail),
+            SimEventKind.Touched => Texts.Touch((int)e.Value, e.Detail),
+            SimEventKind.Hurt => Texts.Hurt(e.Detail),
+            _ => null,
+        };
+        if (!string.IsNullOrEmpty(text))
         {
             _felt.Text = LastFelt = text;
             _feltFor = 2.6;
@@ -225,6 +198,18 @@ public partial class Hud : CanvasLayer
         _ => "",
     };
 
+    /// <summary>'1 빈손 · 2 렌치 · …'. 빈 칸은 '·'만. 도구판 모듈이 없으면 M1처럼 도구 순서.</summary>
+    static string BeltLine(SimSnapshot s)
+    {
+        var slots = s.Crew.Belt.Count > 0 ? s.Crew.Belt : Array.Empty<string>();
+        var parts = new List<string> { Mark(1, "hand", s.Crew.Tool) };
+        for (int n = 0; n < slots.Count; n++)
+            parts.Add(slots[n].Length == 0 ? $"{n + 2} ─" : Mark(n + 2, slots[n], s.Crew.Tool));
+        return string.Join("  ·  ", parts);
+    }
+
+    static string Mark(int key, string tool, string held) => tool == held ? $"[{key} {Texts.Tool(tool)}]" : $"{key} {Texts.Tool(tool)}";
+
     public override void _Process(double delta)
     {
         if (_runner.Snapshot == null) return;
@@ -237,6 +222,7 @@ public partial class Hud : CanvasLayer
         {
             _target.Text = it.Label;
             var hint = GestureHint(it.GestureFor(_hands.Context));
+            if (it.TouchCommand != null) hint += "  ·  오른쪽 버튼 만져 보기";
             if (!_player.InWorkView && it.Station.Length > 0) hint += "  ·  F 작업 시점";
             _gesture.Text = hint;
         }
@@ -248,6 +234,8 @@ public partial class Hud : CanvasLayer
         if (s.Crew.Hand.Length > 0) held += $"  ·  쥔 것: {Submarine.ItemName(s.Crew.Hand)}";
         _held.Text = held;
         _held.Visible = !overlay;
+        _belt.Text = BeltLine(s);
+        _belt.Visible = !overlay && _belt.Text.Length > 0;
         _feltFor -= delta;
         _felt.Visible = _feltFor > 0 && !overlay;
     }

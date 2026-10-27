@@ -33,14 +33,19 @@ public partial class Submarine : Node3D
     public Vector3 SpawnPoint { get; } = new(4.6f, 0.05f, 0f);
     public Vector3 SpawnLookAt { get; } = new(7.9f, 1.4f, 0f);
 
+    /// <summary>데이터의 장치를 잡을 수 있는 물체로 만든다 (data/fixtures).</summary>
+    public FixtureBinder Binder { get; private set; } = null!;
+
     readonly List<Action<SimSnapshot, float>> _updaters = new();
     readonly RandomNumberGenerator _fx = new();
     GameData _data = null!;
     SimSnapshot? _snap;
 
-    public void Build(GameData data)
+    /// <param name="query">조회 경로 → 수. 바인더가 레버의 지금 자리를 읽는다(표현만, 판정 아님).</param>
+    public void Build(GameData data, Func<string, double> query)
     {
         _data = data;
+        Binder = new FixtureBinder(data, query);
         _fx.Seed = 7;
         BuildHull();
         BuildLights();
@@ -50,6 +55,7 @@ public partial class Submarine : Node3D
         BuildStatusPanel();
         BuildSwitchboard();
         BuildLocker();
+        BuildToolBoard();
         BuildHandPump();
         BuildPumpAndStrainer();
         BuildLeaks();
@@ -72,6 +78,14 @@ public partial class Submarine : Node3D
     }
 
     static float ZoneMidX(int zone) => (ZoneX[zone].From + ZoneX[zone].To) / 2;
+
+    /// <summary>x 위치의 구역 이름 (GameData.Zones). 도구를 내려놓을 바닥을 정한다.</summary>
+    public static string ZoneAt(float x)
+    {
+        for (int z = 0; z < ZoneX.Length; z++)
+            if (x >= ZoneX[z].From && x < ZoneX[z].To) return GameData.Zones[z];
+        return x < 0 ? GameData.Zones[^1] : GameData.Zones[0];
+    }
 
     // ── 선체 ─────────────────────────────────────────────
 

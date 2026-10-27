@@ -100,6 +100,8 @@ public sealed record SimSnapshot
                 Vitality = w.Crew.Vitality,
                 Stunned = w.Crew.StunTicks > 0,
                 Locker = w.Data.LockerItems.Select((id, i) => (id, w.Crew.Locker[i])).ToDictionary(x => x.id, x => x.Item2, StringComparer.Ordinal),
+                Belt = Presentation.BeltOf(w),
+                ToolPlaces = Presentation.ToolPlacesOf(w),
             },
             Strainer = StrainerOf(w),
             Mission = MissionOf(w),
@@ -148,6 +150,10 @@ public readonly record struct LeakView(string Id, string Zone, double InflowLps,
 /// <summary>손에 든 도구와 물건, 숨은 체력(화면 효과용), 사물함 재고.</summary>
 public sealed record CrewView
 {
+    /// <summary>허리띠 칸의 도구 ID (빈 칸은 ""). 도구판 모듈이 없으면 비어 있다.</summary>
+    public IReadOnlyList<string> Belt { get; init; } = Array.Empty<string>();
+    /// <summary>빈손이 아닌 도구 → "board", "belt", 또는 바닥 구역 이름. 도구판 모듈이 없으면 비어 있다.</summary>
+    public IReadOnlyDictionary<string, string> ToolPlaces { get; init; } = new Dictionary<string, string>();
     public string Tool { get; init; } = "hand";
     public string Hand { get; init; } = "";
     public double Vitality { get; init; } = 1;
@@ -217,4 +223,24 @@ static class Presentation
 {
     /// <summary>실내등 밝기 0~1. 등이 꺼져 있으면 0, 켜져 있으면 버스 전압에 비례한다.</summary>
     public static double LightsBrightness(SimWorld w) => w.Devices[w.Lights].Running ? w.BusVoltage : 0;
+
+    public static IReadOnlyList<string> BeltOf(SimWorld w)
+    {
+        if (w.T.ToolBoard is not { } tb) return Array.Empty<string>();
+        var belt = new string[tb.BeltSlots];
+        for (int n = 1; n <= tb.BeltSlots; n++)
+        {
+            int t = Repair.ToolBoard.SlotTool(w, n);
+            belt[n - 1] = t < 0 ? "" : w.T.Tools[t];
+        }
+        return belt;
+    }
+
+    public static IReadOnlyDictionary<string, string> ToolPlacesOf(SimWorld w)
+    {
+        var places = new Dictionary<string, string>(StringComparer.Ordinal);
+        if (!Repair.ToolBoard.Installed(w)) return places;
+        for (int t = 1; t < w.T.Tools.Count; t++) places[w.T.Tools[t]] = Repair.ToolBoard.LocationName(w, t);
+        return places;
+    }
 }

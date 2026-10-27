@@ -110,7 +110,13 @@ public partial class InteractionController : Node
     public override void _UnhandledInput(InputEvent e)
     {
         if (Blocked) return;
-        if (e is InputEventMouseButton mb && mb.ButtonIndex == MouseButton.Left)
+        if (e is InputEventMouseButton { ButtonIndex: MouseButton.Right, Pressed: true } && _grab == null && Hovered?.TouchCommand != null)
+        {
+            // 오른쪽 버튼: 맨손바닥을 대 본다 (장치의 touch 블록). 도구를 들었으면 시뮬레이션이 need_bare_hand로 답한다.
+            Touch(Hovered);
+            GetViewport().SetInputAsHandled();
+        }
+        else if (e is InputEventMouseButton mb && mb.ButtonIndex == MouseButton.Left)
         {
             if (mb.Pressed)
             {
@@ -129,17 +135,58 @@ public partial class InteractionController : Node
         }
         else if (e is InputEventKey { Pressed: true, Echo: false } k)
         {
-            long n = (long)k.PhysicalKeycode - (long)Key.Key1;
-            var tools = _runner.Data.Tuning.Tools;
-            if (n >= 0 && n < tools.Count && n < 9)
+            if (k.PhysicalKeycode == Key.G)
             {
-                SelectTool(tools[(int)n]);
+                DropTool();
+                GetViewport().SetInputAsHandled();
+                return;
+            }
+            long n = (long)k.PhysicalKeycode - (long)Key.Key1;
+            if (ToolForKey((int)n) is { } tool)
+            {
+                SelectTool(tool);
                 GetViewport().SetInputAsHandled();
             }
         }
     }
 
+    /// <summary>
+    /// 키 1은 빈손, 2~6은 허리띠 1~5칸 (M2). 처음 허리띠가 M1 도구 다섯 개라 M1의 키와 같다.
+    /// 도구판 모듈이 없는 데이터면 M1처럼 도구 순서대로.
+    /// </summary>
+    public string? ToolForKey(int index)
+    {
+        if (index < 0 || index > 8) return null;
+        if (index == 0) return "hand";
+        var belt = _runner.Snapshot.Crew.Belt;
+        if (belt.Count > 0) return index - 1 < belt.Count && belt[index - 1].Length > 0 ? belt[index - 1] : null;
+        var tools = _runner.Data.Tuning.Tools;
+        return index < tools.Count ? tools[index] : null;
+    }
+
+    /// <summary>그 도구를 고르는 키 (1부터). 허리띠에 없으면 0.</summary>
+    public int KeyForTool(string tool)
+    {
+        for (int i = 0; i < 9; i++)
+            if (ToolForKey(i) == tool) return i + 1;
+        return 0;
+    }
+
     public void SelectTool(string tool) => Issue($"tool.{tool}");
+
+    /// <summary>G: 쥔 도구를 지금 선 구역의 바닥에 내려놓는다.</summary>
+    public void DropTool()
+    {
+        if (!CanAct || _runner.Snapshot.Crew.Belt.Count == 0) return;
+        Issue($"tool.drop.{Submarine.ZoneAt(_player.GlobalPosition.X)}");
+    }
+
+    /// <summary>손바닥을 대 본다.</summary>
+    public void Touch(Interactable it)
+    {
+        if (!CanAct || it.TouchCommand == null) return;
+        Issue(it.TouchCommand);
+    }
 
     void Issue(string cmd)
     {

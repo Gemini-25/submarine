@@ -31,6 +31,9 @@ public sealed record FixtureRow(string Command, int Instance, string Verb);
 /// </summary>
 public sealed class FixtureCatalog
 {
+    /// <summary>touch 블록이 만드는 동사 ("&lt;장치 ID&gt;.touch").</summary>
+    public const string TouchVerb = "touch";
+
     public static readonly FixtureCatalog Empty = new(Array.Empty<FixtureInstance>(), Array.Empty<FixtureRow>());
 
     /// <summary>내장 명령의 머리. 장치 ID가 이것으로 시작하면 검증 오류다.</summary>

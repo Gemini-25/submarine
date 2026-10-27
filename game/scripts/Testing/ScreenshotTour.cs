@@ -22,6 +22,7 @@ public partial class ScreenshotTour : Node
         ("04-aft-strainer", new Vector3(1.9f, 1.4f, 0.2f), new Vector3(1.4f, 0.4f, -1.0f)),
         ("05-aft-leak", new Vector3(3.3f, 1.6f, 0.2f), new Vector3(1.6f, 1.0f, -1.0f)),
         ("06-battery-well", new Vector3(6.2f, 1.6f, 0.4f), new Vector3(6.7f, -0.3f, 0)),
+        ("08-mid-toolboard", new Vector3(3.6f, 1.5f, -0.4f), new Vector3(2.75f, 1.3f, -0.82f)),
     };
 
     public override void _Ready()

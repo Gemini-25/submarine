@@ -62,6 +62,8 @@ static class FixtureValidator
             if (def.Touch != null)
                 foreach (var h in def.Touch.Hazards) Check(KnownHazard(h.Hazard), $"{where}.touch: 위험 '{h.Hazard}'를 모른다");
 
+            if (def.Gesture != null)
+                Check(def.Kind == FixtureKind.Cover && def.Gesture is "up" or "down", $"{where}: gesture는 덮개의 up 또는 down만");
             var allowed = FixtureActions.VerbsOf(def);
             foreach (var (verb, v) in def.Verbs)
             {
@@ -69,6 +71,9 @@ static class FixtureValidator
                 if (def.Kind != FixtureKind.Work) Check(allowed.Contains(verb), $"{at}: {def.Kind}의 동사가 아니다 ({string.Join(", ", allowed)})");
                 else Check(verb.Length > 0 && verb.All(ch => char.IsAsciiLetterLower(ch)), $"{at}: 작업 동사는 영문 소문자");
                 if (v.Tool != null) Check(tools.Contains(v.Tool), $"{at}: 도구 '{v.Tool}'가 tuning.tools에 없다");
+                if (v.Gesture != null)
+                    Check(def.Kind == FixtureKind.Work && v.Gesture is "click" or "scrub" or "strike" or "stroke" or "rotate",
+                        $"{at}: gesture는 작업 동사의 click, scrub, strike, stroke, rotate만");
                 if (v.Hold != null) Check(IsItem(f.Expand(v.Hold)), $"{at}: 쥘 물건 '{v.Hold}'가 없다");
                 if (v.Count > 0) Check(def.Kind == FixtureKind.Work, $"{at}: count는 작업에만");
                 if (v.Noise != null) Check(d.Tuning.Noise.Actions.ContainsKey(v.Noise), $"{at}: 소음 키 '{v.Noise}'가 tuning.noise.actions에 없다");

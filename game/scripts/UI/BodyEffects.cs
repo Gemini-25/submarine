@@ -56,6 +56,10 @@ public partial class BodyEffects : CanvasLayer
             if (e.Kind == SimEventKind.Shock) { _flash = 0.85f; _flashColor = new Color(0.85f, 0.92f, 1f); }
             else if (e.Kind == SimEventKind.Pinch) { _flash = 0.6f; _flashColor = new Color(0.7f, 0.05f, 0.03f); }
             else if (e.Kind == SimEventKind.Explosion) { _flash = 1f; _flashColor = new Color(1f, 0.85f, 0.6f); }
+            // 화상은 주황, 증기는 흰 김, 물 분출은 희푸른 물보라 (M2 설계 'HUD, body and flow'의 회색 상자 버전).
+            else if (e.Kind == SimEventKind.Hurt && e.Detail == "spray") { _flash = 0.7f; _flashColor = new Color(0.75f, 0.85f, 0.95f); }
+            else if (e.Kind == SimEventKind.Hurt && e.Detail == "steam") { _flash = 0.75f; _flashColor = new Color(0.95f, 0.95f, 0.92f); }
+            else if (e.Kind == SimEventKind.Hurt) { _flash = 0.6f; _flashColor = new Color(1f, 0.5f, 0.15f); }
         };
     }
 

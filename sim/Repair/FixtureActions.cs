@@ -17,7 +17,7 @@ static partial class FixtureActions
     public static readonly IReadOnlyList<string> KnownHazards = Array.AsReadOnly(new[] { "spark", "shock", "pinch", "burn", "spray" });
 
     /// <summary>touch 블록이 만드는 동사. 다른 동사 이름으로 쓸 수 없다.</summary>
-    public const string TouchVerb = "touch";
+    public const string TouchVerb = FixtureCatalog.TouchVerb;
 
     /// <summary>
     /// 데이터 조건에 쓸 수 없는 경로. 판정은 물리 상태로만 한다: 고장 여부, 부품 상태 단계, 상황판(센서), 단서, 계기 읽기, 사건 수를 읽지 않는다.

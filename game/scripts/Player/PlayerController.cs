@@ -22,6 +22,8 @@ public partial class PlayerController : CharacterBody3D
     /// <summary>손으로 무언가를 잡고 있어서 마우스가 손의 움직임이 되는 중.</summary>
     public bool HandBusy { get; set; }
     public bool Crouching { get; private set; }
+    /// <summary>걸음 배율. 두 손이 드는 물건(흡수제 통, 예비 셀)을 들면 0.6 (Main이 정한다).</summary>
+    public float SpeedFactor { get; set; } = 1;
     /// <summary>자동 테스트가 넣는 이동 입력(x 오른쪽, y 뒤쪽). null이면 키보드를 읽는다.</summary>
     public Vector2? AutoMove { get; set; }
     public string WorkStation { get; private set; } = "";
@@ -125,7 +127,7 @@ public partial class PlayerController : CharacterBody3D
         if (canMove && AutoMove is { } auto) input = auto;
         input = input.LimitLength(1);
         var dir = (Transform.Basis * new Vector3(input.X, 0, input.Y)).Normalized();
-        float speed = Crouching ? CrouchSpeed : WalkSpeed;
+        float speed = (Crouching ? CrouchSpeed : WalkSpeed) * SpeedFactor;
         var v = Velocity;
         v.X = dir.X * speed;
         v.Z = dir.Z * speed;
