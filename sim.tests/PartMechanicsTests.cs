@@ -522,7 +522,12 @@ public class PartMechanicsTests
         var m = NewSim(GameData.LoadFromDirectory(Path.Combine(TestData.FixtureDir, "golden-data"))).World.Mechanics;
         Assert.False(m.Steam || m.Attitude || m.Senses || m.Nav || m.Cable);
         Assert.False(m.HasSeaPaths);
+        // 부품 타이머는 모듈이 아니다. 계통 데이터(송풍 팬의 응급 수리 수명, 펌프 베어링의 기름 타이머)가 있으면 켜진다.
+        Assert.True(NewSim(TestData.Data).World.Mechanics.HasTimers);
+        // 타이머가 없는 데이터(얼린 기준 데이터)에서는 꺼진다
         Assert.False(m.HasTimers);
+        // 실제 data에서는 감각 모듈이 켜진다 (WP13 진공관)
+        Assert.True(NewSim(TestData.Data).World.Mechanics.Senses);
     }
 
     [Fact]

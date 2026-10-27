@@ -23,7 +23,7 @@ public partial class Submarine
     const float ChamberDepth = 0.9f;
     /// <summary>주 전동기 덩어리 (M2에서 x 0.45~1.15로 줄여 축 패킹 상자 자리를 냈다).</summary>
     const float MotorX0 = 0.45f, MotorX1 = 1.15f;
-    /// <summary>환풍기. 설계 자리(4.0, 2.05, 0)는 중앙 구역 천장 등과 겹쳐서 옮겼다.</summary>
+    /// <summary>송풍 팬. 설계 자리(4.0, 2.05, 0)는 중앙 구역 천장 등과 겹쳐서 옮겼다.</summary>
     static readonly Vector3 FanPos = new(3.85f, 2.05f, -0.2f);
 
     static readonly Color PlateInk = new(0.1f, 0.07f, 0.05f);
@@ -537,7 +537,7 @@ public partial class Submarine
         Marker(n, "scrubber.lid", "흡수통 뚜껑", new Vector3(x, 0.635f, z), new Vector3(0.3f, 0.01f, 0.25f), "scrubber");
     }
 
-    /// <summary>환풍기(AIR-01): 천장 받침, 전동기 몸통, 날개, 아래를 향한 보호망과 나비 너트 둘, 종이 띠.</summary>
+    /// <summary>송풍 팬(AIR-01): 천장 받침, 전동기 몸통, 날개, 아래를 향한 보호망과 나비 너트 둘, 종이 띠.</summary>
     void BuildFan(Node3D root)
     {
         var n = Group(root, "Fan");
@@ -557,11 +557,11 @@ public partial class Submarine
         mb.Instance(n, "Fan", NoShadow); // 중앙 천장 등 바로 옆이라 그림자를 던지면 천장과 벽이 크게 가린다
         var streamer = Geo.Box(n, new Vector3(0.02f, 0.12f, 0.002f), new Vector3(p.X, 1.89f, p.Z - 0.16f), Geo.Cream);
         streamer.RotationDegrees = new Vector3(8, 0, 0);
-        NamePlate(n, "환풍기", new Vector3(p.X, Height - 0.005f, p.Z + 0.2f), Vector3.Down, 0.02f);
+        NamePlate(n, "송풍 팬", new Vector3(p.X, Height - 0.005f, p.Z + 0.2f), Vector3.Down, 0.02f);
         Marker(n, "fan.guard.nut.1", "보호망 나비 너트 1", new Vector3(p.X - 0.12f, 1.945f, p.Z), new Vector3(0.04f, 0.02f, 0.03f), "fan");
         Marker(n, "fan.guard.nut.2", "보호망 나비 너트 2", new Vector3(p.X + 0.12f, 1.945f, p.Z), new Vector3(0.04f, 0.02f, 0.03f), "fan");
-        Marker(n, "fan.guard", "환풍기 보호망", new Vector3(p.X, 1.95f, p.Z), new Vector3(0.16f, 0.02f, 0.3f), "fan");
-        Marker(n, "fan.motor", "환풍기 전동기", new Vector3(p.X, 2.1f, p.Z + 0.1f), new Vector3(0.18f, 0.1f, 0.02f), "fan");
+        Marker(n, "fan.guard", "송풍 팬 보호망", new Vector3(p.X, 1.95f, p.Z), new Vector3(0.16f, 0.02f, 0.3f), "fan");
+        Marker(n, "fan.motor", "송풍 팬 전동기", new Vector3(p.X, 2.1f, p.Z + 0.1f), new Vector3(0.18f, 0.1f, 0.02f), "fan");
     }
 
     /// <summary>산소 발생로(AIR-03): 배전반 앞쪽 끝 아래, 통로를 본다. 문과 걸쇠, 통풍구, 점화 창, 양초 단추.</summary>

@@ -1,0 +1,8 @@
+{
+  "cues": {
+    "fan.streamer": { "sense": "Sight", "anchor": "fan.guard", "q": "device.vent_fan.running", "map": [[0, 0], [1, 1]], "caption": "cue.fan.streamer" },
+    "fan.stall": { "sense": "Sound", "anchor": "fan.motor", "q": "part.fan.motor.prop.stalled", "while": "device.vent_fan.powered", "map": [[0, 0], [1, 1]], "caption": "cue.fan.stall" },
+    "fan.rattle": { "sense": "Sound", "anchor": "fan.hub", "q": "part.fan.motor.prop.hubNut", "while": "device.vent_fan.running", "map": [[0, 1], [1, 0]], "caption": "cue.fan.rattle" },
+    "scrubber.whistle": { "sense": "Sound", "anchor": "scrubber.lid", "q": "air.scrubberFlow", "while": "device.vent_fan.running", "map": [[0, 0], [0.01, 1], [0.99, 1], [1, 0]], "caption": "cue.scrubber.whistle" }
+  }
+}

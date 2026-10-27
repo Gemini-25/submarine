@@ -1,0 +1,35 @@
+{
+  "name": "공기 훈련: 송풍 팬과 흡수통",
+  "briefing": [
+    "모선 아르고스호 → 모스호 기관사. 수심 300m 정박 훈련.",
+    "중앙 구역의 공기가 탁해지고 있다는 보고가 들어왔다. 상황판의 이산화탄소 계기와 현장의 소리, 흡수통 지시약을 보고 원인을 찾아 교범(Tab)대로 고칠 것.",
+    "팬을 정식으로 고치고 흡수통을 제대로 닫은 채 이산화탄소가 2% 아래로 2분 동안 머물면 훈련을 마친다. 손으로 돌려 살린 팬으로는 끝나지 않는다."
+  ],
+  "seed": 9090,
+  "setup": {
+    "depthM": 300,
+    "air": {
+      "co2": 1.4
+    }
+  },
+  "events": [
+    {
+      "atSeconds": 0,
+      "fault": "AIR-01"
+    },
+    {
+      "atSeconds": 0,
+      "fault": "AIR-02"
+    }
+  ],
+  "success": {
+    "assert": "device.vent_fan.running == 1 && part.fan.motor.prop.spinArmed == 0 && part.fan.motor.prop.hubNut == 1 && part.fan.motor.prop.guardOpen == 0 && air.scrubberFlow == 1 && air.canister < 0.5 && air.co2 < 2",
+    "holdSeconds": 120,
+    "objectives": [
+      "송풍 팬을 정식으로 고친다",
+      "흡수통을 새 통으로 갈고 죔쇠를 모두 잠근다",
+      "이산화탄소를 2% 아래로 2분 동안 유지한다"
+    ]
+  },
+  "timeLimitSeconds": 1500
+}

@@ -286,7 +286,7 @@ public class ObservationTests
     [InlineData("q", "cue.pump.hum", "쓸 수 없는 경로")]
     [InlineData("q", "circuit.C2.fuse", "숫자가 아니다")]
     [InlineData("while", "events.Shock", "쓸 수 없는 경로")]
-    [InlineData("anchor", "fan.blades", "붙일 곳")]
+    [InlineData("anchor", "fan.propeller", "붙일 곳")]
     [InlineData("caption", "cue.fan.whirr", "문구 키")]
     public void Broken_cues_are_load_errors(string field, string value, string mention)
     {

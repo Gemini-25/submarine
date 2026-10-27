@@ -49,12 +49,28 @@ public static class CueAudio
         R("pump.backflow", s => new PumpVoice(s), (v, c) => v.Backflow = c.V, shared: "pump", spot: "pump", range: 12),
         R("pump.grind", s => new PumpVoice(s), (v, c) => v.BearingWear = c.V, shared: "pump", spot: "pump", range: 12),
 
-        // 송풍 팬 (AIR-01은 WP9가 걸림·베어링 단서를 더한다).
+        // 송풍 팬 (AIR-01): 도는 소리, 멎은 전동기의 웅웅 소리, 풀린 허브의 덜걱거림이 한 목소리다. 자리는 배치의 환풍기.
         R("fan.hum", s => new FanVoice(s), (v, c) =>
         {
-            v.Running = c.V >= 0.5f;
+            v.Running = c.V >= 0.5f || v.Stalled;
             v.RotationHz = 23f * (0.6f + 0.4f * (float)c.S.BusVoltage);
-        }, spot: "vent_fan", db: -8, range: 8),
+        }, shared: "fan", spot: "fan", db: -8, range: 8),
+        R("fan.stall", s => new FanVoice(s), (v, c) =>
+        {
+            // 웅웅 소리는 Stalled와 Running(전원)이 함께 켜져야 난다. 처음부터 멎은 팬은 fan.hum 줄이 한 번도 불리지 않으므로 여기서 둘 다 정한다.
+            v.Stalled = c.V >= 0.5f;
+            v.Running = v.Stalled || (Device(c.S, DeepLine.Sim.Data.Bindings.Fan)?.Running ?? false);
+        }, shared: "fan", spot: "fan", db: -8, range: 8),
+        R("fan.rattle", s => new FanVoice(s), (v, c) => v.BearingWear = c.V, shared: "fan", spot: "fan", db: -8, range: 8),
+
+        // 흡수통 죔쇠가 열린 채 팬이 돌면 뚜껑 틈에서 바람이 샌다 (AIR-02 숨은 결함). 키트에 전용 목소리가 없어 가는 쉿 소리로.
+        // 안전밸브의 가는 휘파람과 바람 소리를 작게 쓴다. Leak을 0으로 두어야 물방울이 튀지 않는다.
+        R("scrubber.whistle", s => new SteamHissVoice(s), (v, c) =>
+        {
+            v.Leak = 0;
+            v.Pressure = 0.3f;
+            v.SafetyValve = 0.15f * c.V;
+        }, spot: "scrubber", db: -12, range: 3),
 
         // 누수 지점마다 3D 쉿 소리 (HUL-01). 세기는 0.3L/s에서 다 차므로 크기는 실제 유입량으로 낸다.
         R("{p}.hiss", s => new LeakHissVoice(s), (v, c) =>
@@ -90,7 +106,7 @@ public static class CueAudio
         return h;
     }
 
-    /// <summary>Submarine.SoundSpots에 없는 소리 자리. 송풍 팬은 장면에 장비 물체가 없어 소리 쪽이 자리를 정한다(M1부터).</summary>
+    /// <summary>Submarine.SoundSpots에 없는 소리 자리. vent_fan은 공기 장치가 없는 데이터(M1)에서만 쓰는 송풍 팬 대체 자리다.</summary>
     public static readonly IReadOnlyDictionary<string, Godot.Vector3> ExtraSpots = new Dictionary<string, Godot.Vector3>(StringComparer.Ordinal)
     {
         ["vent_fan"] = new(4.0f, 2.1f, 0),

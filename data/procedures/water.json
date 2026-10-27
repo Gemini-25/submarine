@@ -1,0 +1,110 @@
+{
+  "proc.bearing.oil": {
+    "title": "펌프 베어링 기름칠",
+    "fault": "WTR-02",
+    "grade": "temporary",
+    "steps": [
+      {
+        "type": "Inspect",
+        "text": "펌프 전류가 평소보다 높고 펌프에서 갈리는 소리가 나는지 본다. 청진기를 펌프 몸체에 대면 거친 소리가 난다."
+      },
+      {
+        "type": "Work",
+        "text": "기름통으로 펌프 위의 기름 잔에 기름을 세 번 짜 넣는다. 펌프가 돌고 있어도 된다.",
+        "cmd": "pump.oilcup.oil",
+        "tool": "oil_can",
+        "repeat": 3
+      },
+      {
+        "type": "Test",
+        "text": "펌프 전류가 내려가고 갈리는 소리가 작아지는지 본다. 베어링은 닳은 그대로다. 기름은 펌프가 10분쯤 돌면 다 마른다. 그 전에 베어링을 간다."
+      }
+    ]
+  },
+  "proc.bearing.replace": {
+    "title": "펌프 베어링 교체",
+    "fault": "WTR-02",
+    "grade": "proper",
+    "steps": [
+      {
+        "type": "Inspect",
+        "text": "펌프 전류가 평소보다 높고 점점 오르는지, 펌프에서 갈리는 소리가 나는지 본다. 청진기를 펌프 몸체에 대면 거친 소리가 난다."
+      },
+      {
+        "type": "Isolate",
+        "text": "배수 회로(C3) 칼날 스위치를 내려 펌프를 멈춘다. 펌프 소리가 멎었는지 듣는다.",
+        "cmd": "switch.C3.off",
+        "tool": "hand",
+        "requires": "없음",
+        "hazard": "C3 스위치를 올린 채로 베어링을 빼거나 넣으면 손이 축에 끼인다. 넣는 순간 축이 돈다."
+      },
+      {
+        "type": "Inspect",
+        "text": "몸체가 식기를 기다린다. C3 스위치를 내리고 3분 뒤 빈손으로 펌프 몸체를 만져 본다. '손을 댈 수 없다'면 더 기다린다.",
+        "cmd": "pump.body.touch",
+        "tool": "hand",
+        "requires": "C3 스위치를 내리고 3분 기다렸을 것",
+        "hazard": "아주 뜨거운 몸체를 만지면 손을 덴다."
+      },
+      {
+        "type": "Open",
+        "text": "렌치로 베어링 뚜껑 볼트 네 개를 푼다.",
+        "cmd": "pump.cap.bolt.{n}.loosen",
+        "tool": "wrench",
+        "repeat": 4
+      },
+      {
+        "type": "Open",
+        "text": "빈손으로 베어링 뚜껑을 연다.",
+        "cmd": "pump.cap.open",
+        "tool": "hand",
+        "requires": "몸체가 식었을 것",
+        "hazard": "몸체가 뜨거울 때 뚜껑을 열면 손을 덴다."
+      },
+      {
+        "type": "Remove",
+        "text": "닳은 베어링을 빼낸다.",
+        "cmd": "pump.bearing.pull",
+        "tool": "hand",
+        "requires": "C3 스위치가 내려가 있을 것",
+        "hazard": "끼임"
+      },
+      {
+        "type": "Remove",
+        "text": "닳은 베어링을 폐기함에 버린다.",
+        "cmd": "hand.drop"
+      },
+      {
+        "type": "Install",
+        "text": "후방 예비품 사물함에서 새 펌프 베어링을 꺼낸다.",
+        "cmd": "locker.take.pump_bearing"
+      },
+      {
+        "type": "Install",
+        "text": "새 베어링을 자리에 끝까지 밀어 넣는다.",
+        "cmd": "pump.bearing.insert",
+        "requires": "C3 스위치가 내려가 있을 것",
+        "hazard": "끼임"
+      },
+      {
+        "type": "Close",
+        "text": "빈손으로 베어링 뚜껑을 닫는다.",
+        "cmd": "pump.cap.close",
+        "tool": "hand"
+      },
+      {
+        "type": "Fasten",
+        "text": "렌치로 볼트 네 개를 모두 조인다. 하나라도 풀려 있으면 뚜껑 둘레로 기름이 새고 베어링이 빨리 닳는다.",
+        "cmd": "pump.cap.bolt.{n}.tighten",
+        "tool": "wrench",
+        "repeat": 4
+      },
+      {
+        "type": "Test",
+        "text": "C3 스위치를 올린다. 펌프 전류가 약 2.5A로 돌아오고 갈리는 소리가 멎는지 본다.",
+        "cmd": "switch.C3.on",
+        "tool": "hand"
+      }
+    ]
+  }
+}
