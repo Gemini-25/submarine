@@ -1,0 +1,30 @@
+{
+  "name": "동력 훈련: 축전지 셀과 전동기 브러시",
+  "briefing": [
+    "모선 아르고스호 → 모스호 기관사. 수심 300m, 반속 항주 훈련.",
+    "상황판 전압이 조금 낮고 추진 전동기 쪽에서 불꽃이 튄다는 보고가 들어왔다. 상황판과 현장의 소리, 냄새, 계기를 보고 원인을 찾아 교범(Tab)대로 고칠 것.",
+    "모든 셀이 성하게 줄에 이어지고 갑판 판이 닫힌 채, 추진 전동기가 불꽃 없이 1분 동안 돌면 훈련을 마친다."
+  ],
+  "seed": 1111,
+  "setup": {
+    "depthM": 300,
+    "throttle": 0.75,
+    "parts": [
+      { "part": "motor.commutator", "prop": "rough", "value": 0.6 }
+    ]
+  },
+  "events": [
+    { "atSeconds": 0, "fault": "PWR-01", "part": "cell.3" },
+    { "atSeconds": 0, "fault": "PWR-02" }
+  ],
+  "success": {
+    "assert": "part.cell.1.prop.present >= 0.5 && cell.1.jumpered == 0 && part.cell.1.prop.health >= 0.9 && part.cell.1.prop.nut1 >= 0.5 && part.cell.1.prop.nut2 >= 0.5 && part.cell.2.prop.present >= 0.5 && cell.2.jumpered == 0 && part.cell.2.prop.health >= 0.9 && part.cell.2.prop.nut1 >= 0.5 && part.cell.2.prop.nut2 >= 0.5 && part.cell.3.prop.present >= 0.5 && cell.3.jumpered == 0 && part.cell.3.prop.health >= 0.9 && part.cell.3.prop.nut1 >= 0.5 && part.cell.3.prop.nut2 >= 0.5 && part.cell.4.prop.present >= 0.5 && cell.4.jumpered == 0 && part.cell.4.prop.health >= 0.9 && part.cell.4.prop.nut1 >= 0.5 && part.cell.4.prop.nut2 >= 0.5 && part.cell.5.prop.present >= 0.5 && cell.5.jumpered == 0 && part.cell.5.prop.health >= 0.9 && part.cell.5.prop.nut1 >= 0.5 && part.cell.5.prop.nut2 >= 0.5 && part.cell.6.prop.present >= 0.5 && cell.6.jumpered == 0 && part.cell.6.prop.health >= 0.9 && part.cell.6.prop.nut1 >= 0.5 && part.cell.6.prop.nut2 >= 0.5 && part.battery.deck.prop.open < 0.5 && device.propulsion.running == 1 && propulsion.sparking < 0.05 && part.motor.brushes.prop.spring >= 0.55 && part.motor.brushes.prop.spring < 0.65",
+    "holdSeconds": 60,
+    "objectives": [
+      "열화한 셀을 예비 셀로 갈고 갑판 판을 닫는다",
+      "브러시를 갈고 정류자를 다듬는다",
+      "추진 전동기를 불꽃 없이 1분 동안 돌린다"
+    ]
+  },
+  "timeLimitSeconds": 1800
+}

@@ -55,10 +55,14 @@ public partial class ProceduralAudio : Node3D
     CoughVoice _cough = null!;
     Source _breathSrc = null!, _coughSrc = null!;
     // 손동작 소리는 명령이 다음 틱에 받아들여졌을 때만 낸다(거부된 동작이 된 것처럼 들리지 않게).
-    readonly List<string> _pendingShots = new();
+    /// <summary>낸 명령과 그때 손이 가리킨 물체의 자리, 손에 든 물건이 무거웠는가 (hand.drop의 소리는 버린 그 자리에서, 물건의 무게로).</summary>
+    readonly List<(string Cmd, Vector3? At, bool Heavy)> _pendingShots = new();
     readonly HashSet<string> _rejected = new(StringComparer.Ordinal);
 
     public bool Enabled { get; private set; }
+
+    /// <summary>마지막 hand.drop을 낸 자리(가리킨 물체 ID)와 버린 물건이 무거웠는가. 그 자리에서 그 무게로 소리가 난다.</summary>
+    public (string Spot, bool Heavy) LastDrop { get; private set; } = ("", false);
 
     public void Setup(SimRunner runner, Submarine sub, BodyEffects body, InteractionController hands)
     {
@@ -68,8 +72,17 @@ public partial class ProceduralAudio : Node3D
         foreach (var frame in CueAudio.Unmatched(runner.Data.Cues.Select(c => c.Id)))
             GD.PushError($"소리 표(CueAudio)의 단서 '{frame}'가 data/observables에 없다");
 
-        // 헤드리스(자동 테스트)에서는 소리를 만들지 않는다.
+        // 헤드리스(자동 테스트)에서는 소리를 만들지 않는다. 버린 자리와 무게는 헤드리스에서도 잡는다(LastDrop, 자동 확인이 본다).
         Enabled = DisplayServer.GetName() != "headless";
+        hands.CommandIssued += cmd =>
+        {
+            // 명령은 다음 틱에 처리된다: 버린 자리와 물건은 지금(손이 아직 들고 가리키고 있을 때) 잡아 둔다.
+            var it = hands.Grabbed ?? hands.Hovered;
+            string held = _runner.Snapshot?.Crew.Hand ?? "";
+            bool heavy = _runner.Data.Items.TryGetValue(held, out var item) && item.Heavy;
+            if (cmd == "hand.drop") LastDrop = (it?.Id ?? "", heavy);
+            if (Enabled) _pendingShots.Add((cmd, it?.GlobalPosition, heavy));
+        };
         if (!Enabled) return;
 
         _bell = new AlarmBellVoice();
@@ -85,7 +98,6 @@ public partial class ProceduralAudio : Node3D
 
         runner.EventRaised += OnEvent;
         runner.Ticked += FlushShots;
-        hands.CommandIssued += cmd => _pendingShots.Add(cmd);
     }
 
     Source Add(Voice voice, Vector3 pos, float db, float range, bool shot = false)
@@ -195,13 +207,13 @@ public partial class ProceduralAudio : Node3D
 
     void FlushShots()
     {
-        foreach (var cmd in _pendingShots)
-            if (!_rejected.Contains(cmd)) OnCommand(cmd);
+        foreach (var (cmd, at, heavy) in _pendingShots)
+            if (!_rejected.Contains(cmd)) OnCommand(cmd, at, heavy);
         _pendingShots.Clear();
         _rejected.Clear();
     }
 
-    void OnCommand(string cmd)
+    void OnCommand(string cmd, Vector3? pointed, bool heavy)
     {
         var p = cmd.Split('.');
         var at = Spot(p.Length >= 2 ? $"{p[0]}.{p[1]}" : p[0], Camera);
@@ -212,7 +224,12 @@ public partial class ProceduralAudio : Node3D
             case "hatch": Hatch(at, close: p.Length < 2 || p[1] != "open", 2); break;
             case "handpump": HandPump(at); break;
             case "locker": Locker(Spot($"locker.{cmd["locker.take.".Length..]}", at), open: true, -6); break;
-            case "hand": Mallet(Spot("discard", at), 0.3f, -4); break;
+            case "hand":
+            {
+                // 버린 그 자리(손이 가리킨 폐기함, 후방 폐기함, 셀 상자의 다 쓴 셀 칸)에서, 버린 물건이 무거우면(items.json heavy) 무겁게 떨어진다.
+                Mallet(pointed ?? Spot("discard", at), heavy ? 0.9f : 0.3f, heavy ? 0 : -4);
+                break;
+            }
             case "strainer" when p[1] == "bolt": Ratchet(Spot($"strainer.bolt.{p[2]}", at), -2); break;
             case "strainer" when p[1] == "cover": Locker(Spot("strainer.cover", at), open: false, -4); break;
             case "strainer" when p[1] == "basket" && p[2] == "scrub": Brush(Spot("wash_bucket", at), -2); break;
@@ -237,7 +254,8 @@ public partial class ProceduralAudio : Node3D
             case SimEventKind.AlarmBell when e.Value >= 1:
                 _bell.Ring(2.5f);
                 break;
-            case SimEventKind.Spark:
+            // 브러시 불꽃은 정류자 목소리(CueAudio 'motor.crackle')가 낸다. 불꽃 하나하나를 퓨즈 터지는 소리로 내지 않는다.
+            case SimEventKind.Spark when e.Subject != "motor.brushes":
                 _sparkSrc.Player.GlobalPosition = _sub.SoundSpots.TryGetValue(e.Subject, out var sp) ? sp : Spot(e.Subject, Vector3.Zero);
                 _spark.Blow();
                 break;

@@ -196,6 +196,9 @@
     "kind": "Throttle",
     "defaultOn": false,
     "zone": "aft",
-    "parts": []
+    "parts": [
+      "motor.brushes",
+      "motor.commutator"
+    ]
   }
 }

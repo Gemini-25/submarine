@@ -105,8 +105,10 @@ public partial class AutoPlayer
         int t0 = calc.CrankTurns;
         await CrankHeld(st, 3 + 15.0 / 360);
         Check(calc.CrankTurns - t0 == 3 && calc.Machine.Result == 21, $"손잡이를 한 번 잡고 세 바퀴 돌렸는데 {calc.CrankTurns - t0}번 돌았다 (결과 창 {calc.Machine.Result})");
-        await CrankHeld(st, 1, -2);
-        Check(calc.Machine.Result == 14, $"잡은 채 방향을 바꿨는데 더하기와 빼기가 맞지 않는다 (결과 창 {calc.Machine.Result}, 기대 14)");
+        int t1 = calc.CrankTurns;
+        await CrankHeld(st, 1 + 15.0 / 360, -(2 + 30.0 / 360));
+        Check(calc.CrankTurns - t1 == 3 && calc.Machine.Result == 14,
+            $"잡은 채 앞으로 한 바퀴, 뒤로 두 바퀴 돌렸는데 {calc.CrankTurns - t1}번 돌았다 (결과 창 {calc.Machine.Result}, 기대 3번과 14)");
         await CalcStep(st, new Lib.CalcAction(Lib.CalcStep.ClearAll));
     }
 
@@ -222,7 +224,7 @@ public partial class AutoPlayer
             GD.Print($"AUTOTEST: 계산자 {what} → D {got:F3} (참값 {m:F4})");
         }
 
-        // 교범 09쪽의 세 셈. 슬라이드는 계산기 몸통에 닿는 끝(SlideMin)보다 왼쪽으로 가지 않는다.
+        // 교범 09쪽의 셈. 슬라이드는 계산기 손잡이에 닿기 전의 끝(SlideMin)보다 왼쪽으로 가지 않는다.
         // 곱하기 2.4 × 3.7: 커서를 D의 2.4에, C의 왼쪽 1을 커서에, 커서를 C의 3.7에.
         await Cursor(P(2.4));
         await Slide(rule.Cursor);
@@ -235,7 +237,13 @@ public partial class AutoPlayer
         await Cursor(rule.Slide);
         Expect("4 × 3.7 (CI)", rule.D, 4 * 3.7);
 
-        // 나누기 120 ÷ 62: C의 왼쪽 1을 D의 1.2에, 커서를 CI의 6.2에.
+        // 나누기 600 ÷ 400 (나뉘는 수의 첫 자리가 크다): 커서를 D의 6에, C의 4를 커서 아래로, 커서를 C의 왼쪽 1에.
+        await Cursor(P(6));
+        await Slide(rule.Cursor - P(4));
+        await Cursor(rule.Slide);
+        Expect("600 ÷ 400", rule.D, 600.0 / 400);
+
+        // 나누기 120 ÷ 62 (나뉘는 수의 첫 자리가 작다): C의 왼쪽 1을 D의 1.2에, 커서를 CI의 6.2에.
         await Slide(P(1.2));
         await Cursor(rule.Slide + (1 - P(6.2)));
         Expect("120 ÷ 62 (CI)", rule.D, 120.0 / 62);
@@ -243,7 +251,7 @@ public partial class AutoPlayer
         // 슬라이드를 왼쪽 끝 너머로 끌어도 계산기 몸통을 뚫지 않는다.
         await Cursor(0);
         await Slide(-1);
-        Check(rule.Slide >= Gadgets.SlideRule.SlideMin - 1e-9, $"슬라이드가 계산기 몸통 쪽으로 {rule.Slide:F3}까지 빠졌다");
+        Check(rule.Slide >= Gadgets.SlideRule.SlideMin - 1e-9, $"슬라이드가 계산기 쪽으로 {rule.Slide:F3}까지 빠졌다 (끝 {Gadgets.SlideRule.SlideMin})");
 
         await Slide(0);
         await Cursor(0);

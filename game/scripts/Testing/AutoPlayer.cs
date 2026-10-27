@@ -67,6 +67,7 @@ public partial class AutoPlayer : Node
         ["drill-senses"] = SensesDrillSuite,
         ["drill-nav"] = DrillNavSuite,
         ["drill-cable"] = DrillCableSuite,
+        ["drill-power"] = DrillPowerSuite,
         ["drill-switchboard"] = DrillSwitchboardSuite,
         ["instruments"] = InstrumentsSuite,
     };
@@ -467,11 +468,14 @@ public partial class AutoPlayer : Node
     async Task FixturesSuite()
     {
         var catalog = Data.Fixtures;
+        var pending = new List<string>();
         foreach (var f in catalog.Instances)
         {
             if (!_main.Sub.Interactables.ContainsKey(f.Id)) { Check(false, $"장치 '{f.Id}'의 물체가 장면에 없다"); continue; }
-            await Approach(f.Id);
+            pending.Add(f.Id);
         }
+        await AimFromStandPoints(pending); // 덮개 안의 장치는 작업 자리에서 덮개를 열고 (WP11, AutoPlayer.Power.cs)
+        foreach (var id in pending) await Approach(id);
         foreach (var row in catalog.Rows)
         {
             var f = catalog.Instances[row.Instance];

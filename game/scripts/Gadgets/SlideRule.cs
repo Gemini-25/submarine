@@ -19,10 +19,10 @@ public partial class SlideRule : Node3D
     /// <summary>손 1픽셀이 움직이는 거리(m). 작업 시점에서 손과 자가 함께 움직이는 정도.</summary>
     public const float MetersPerPixel = 0.00025f;
     /// <summary>
-    /// 슬라이드가 왼쪽으로 빠질 수 있는 끝. 슬라이드 왼쪽 끝이 탁상 계산기 몸통(x 6.09)에 닿는 자리다.
-    /// 그보다 왼쪽으로 빼야 하는 셈(오른쪽 1을 쓰는 곱하기, C로 하는 나누기)은 교범이 CI 눈금으로 하게 한다.
+    /// 슬라이드가 왼쪽으로 빠질 수 있는 끝. 슬라이드 왼쪽 끝(x 6.11)이 탁상 계산기 손잡이 팔(x 6.103)에 닿기 전의 자리다.
+    /// 그보다 왼쪽으로 빼야 하는 셈(곱이 10을 넘는 곱하기, 나뉘는 수가 작은 나누기)은 교범이 CI 눈금으로 하게 한다.
     /// </summary>
-    public const double SlideMin = -0.28;
+    public const double SlideMin = -0.2;
     const float StockLength = 0.29f;
     /// <summary>몸체 위 판(뒤), 슬라이드, 몸체 아래 판(앞)의 경계.</summary>
     const float ZBack = -0.021f, ZSlideBack = -0.008f, ZSlideFront = 0.007f, ZFront = 0.021f;
@@ -32,6 +32,7 @@ public partial class SlideRule : Node3D
     GadgetHost _host = null!;
     Node3D _slide = null!;
     Node3D _cursor = null!;
+    Interactable _slideIt = null!;
 
     static float X(double position) => (float)(-Length / 2 + position * Length);
 
@@ -83,7 +84,7 @@ public partial class SlideRule : Node3D
         var stock = _host.Add(Interactable.Create(this, "gadget.sliderule", "계산자", new Vector3(StockLength, 0.004f, ZFront - ZBack), new Vector3(0, -0.002f, (ZBack + ZFront) / 2), st));
         stock.AimPoint = new Vector3(X(0.8), 0, (ZBack + ZSlideBack) / 2);
         var slide = _host.Add(Interactable.Create(_slide, "gadget.sliderule.slide", "계산자 슬라이드", new Vector3(StockLength - 0.01f, 0.006f, ZSlideFront - ZSlideBack), new Vector3(0, 0.0005f, (ZSlideBack + ZSlideFront) / 2), st));
-        slide.AimPoint = new Vector3(X(0.6), 0.0005f, (ZSlideBack + ZSlideFront) / 2);
+        _slideIt = slide;
         slide.GestureFor = _ => GestureKind.DragPlane;
         slide.PlaneMove = rel => Rule.Slide = Math.Max(Rule.Slide + rel.X * MetersPerPixel / Length, SlideMin);
         var cursor = _host.Add(Interactable.Create(_cursor, "gadget.sliderule.cursor", "계산자 커서", new Vector3(0.018f, 0.008f, ZFront - ZBack + 0.01f), new Vector3(0, 0.002f, (ZBack + ZFront) / 2), st));
@@ -129,5 +130,8 @@ public partial class SlideRule : Node3D
     {
         _slide.Position = new Vector3((float)Rule.Slide * Length, 0, 0);
         _cursor.Position = new Vector3(X(Rule.Cursor), 0, 0);
+        // 슬라이드를 겨냥하는 점은 커서가 덮지 않는 쪽에 둔다.
+        double aim = Rule.CursorOnSlide < 0.5 ? 0.8 : 0.2;
+        _slideIt.AimPoint = new Vector3(X(aim), 0.0005f, (ZSlideBack + ZSlideFront) / 2);
     }
 }

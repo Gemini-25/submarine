@@ -199,9 +199,9 @@ public partial class InteractionController : Node
         Issue(it.TouchCommand);
     }
 
-    void Issue(string cmd)
+    void Issue(string cmd, double value = 0)
     {
-        _runner.Send(cmd);
+        _runner.Send(cmd, value);
         CommandIssued?.Invoke(cmd);
     }
 
@@ -340,7 +340,7 @@ public partial class InteractionController : Node
     void Fire(Interactable it, Motion m)
     {
         var cmd = it.CommandFor(Context, m);
-        if (cmd != null) Issue(cmd);
+        if (cmd != null) Issue(cmd, it.ValueFor?.Invoke(Context, m) ?? 0);
     }
 
     /// <summary>전압계 바늘이 읽는 값(V). 탐침을 대고 있지 않으면 0.</summary>

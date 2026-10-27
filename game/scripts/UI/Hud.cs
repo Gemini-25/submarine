@@ -197,7 +197,7 @@ public partial class Hud : CanvasLayer
         GestureKind.Strike => "눌러서 치기",
         GestureKind.Probe => "대고 있기",
         GestureKind.Wheel => "잡고 원을 계속 그리기",
-        GestureKind.Dial => "잡고 위아래로 끌어 한 칸씩",
+        GestureKind.Dial => "잡고 위아래로 끌어 한 칸씩 돌리기",
         GestureKind.DragPlane => "잡고 끌어 옮기기",
         _ => "",
     };

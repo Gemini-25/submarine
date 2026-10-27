@@ -18,7 +18,7 @@ public class ProcedureTests
     [Fact]
     public void Every_procedure_expands_into_valid_commands()
     {
-        var bind = new Dictionary<string, string> { ["circuit"] = "C3", ["point"] = "leak.rivet.09" };
+        var bind = new Dictionary<string, string> { ["circuit"] = "C3", ["point"] = "leak.rivet.09", ["cell"] = "3" };
         bind["lamp"] = "water"; bind["tube"] = "1"; // 감각 (WP13)
         foreach (var p in TestData.Data.Procedures)
         {

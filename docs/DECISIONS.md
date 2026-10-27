@@ -468,3 +468,22 @@ SPEC 0절 규칙 6에 따라, 명세에 없거나 명세와 다르게 정한 것
 - **Godot**: 전구와 진공관은 테와 문 너머로 겨냥되고(문은 유리창, 테와 문은 손잡이만 잡힌다), 막힘은 시뮬레이션이 판정한다. 램프 시험 단추는 명령 없이 누르는 동안만 켜진다. 청음기 전원은 토글 스위치, 헤드폰은 표현 전용.
 - **교범 렌더러**: `{{n:fixtures.<파일>.<params 이름>}}`로 장치 파일의 params를 쓴다.
 - 합칠 때 본선이 고친 것: 시험과 코드의 주석, 보고서 문장(2차 확인에서 남은 것).
+
+## 2026-10-27 · M2 (WP11 동력, 병렬 세션)
+
+- **셀의 줄 끊김**: 셀 부품의 `present`, `nut1`, `nut2`. 점퍼 없는 셀이 빠졌거나 두 너트가 다 풀리면 버스 전압 0. 너트 하나가 풀리면 전압 −2%, 단자 발열, 부하가 20W 넘게 바뀌는 틱에 그 셀에서 불꽃. 상태 값이 없으면(golden-data) 늘 이어져 있다.
+- **셀 장치**: `battery.deck`(덮개), `battery.cell.N.nut.K`(볼트), `battery.cell.N`(소켓 pull/insert), `battery.link.N`(작업 fit/remove). 점퍼는 대거나 뗄 때 `power.total > 0`이면 불꽃. 점퍼 없는 너트 풀기도 불꽃. 잠긴 셀은 `cell_submerged`.
+- **셀 health는 셀을 따른다**: 빼면 자리의 health가 0, 꽂으면 예비 셀 1, 쓰던 셀(`cell_used`, 헌 부품) 1, 다 쓴 셀(`cell_dead`) 0.3, 완전히 죽은 셀(`cell_flat`) 0.01. charge는 자리에 남는다(단순화). PWR-01에는 `clearedWhen`이 없어 예비 셀(renew)로만 지워진다. 훈련 성공 조건은 여섯 셀을 모두 본다(셀을 옮겨 꽂고 빈 자리에 점퍼를 걸어서는 끝나지 않는다).
+- **갈고리 `cellInstalled`**: charge = `tuning.power.cells.installedCharge`(0.9), 셀 온도 = 주변. 예비 셀을 꽂을 때만 부른다(셀 상태 값 `fresh`).
+- **M0의 `cell.N.jumper`**: 시나리오와 디버그용으로 그대로. 플레이어와 Godot은 `battery.link.N`을 쓴다(같은 상태 값 `jumpered`).
+- **브러시 불꽃 세기** S = 곡선(wear) + 0.6 × rough, 스프링 배율(기준 0.6, 한 눈금 셀수록 −25%), 0~1, 전동기가 돌 때만. 상태로 두지 않는다(`propulsion.sparking`). 불꽃 일정은 `Noise01(seed, "brush.spark", tick) < S × 2/초 × dt`이면 `Spark(motor.brushes)`. 전류 흔들림은 0.5초 창의 `brush.surge`, 회전계는 `brush.tach`. 불꽃이 없으면 곱하는 수가 정확히 1이다.
+- **정류자 긁힘**: wear 0.5 넘은 브러시와 창(0.55~0.65)보다 센 스프링이 rough를 올린다. rough > 0.3이거나 스프링이 창보다 세면 브러시 마모 ×3.
+- **PWR-02**: `motor.brushes`(brush_gear) wear 0.85. 정류자 rough는 주입하지 않고 setup.parts나 긁힘으로 생긴다. 브러시를 빼면 전동기가 돌지 않는다. 쓰던 브러시는 늘 헌 부품으로 나온다.
+- **브러시 손 수리**: 스프링 조정(응급, 드라이버, 전동기가 돌면 끼임, 전속에서 불꽃이 4~10분 뒤 처음만큼 돌아오고 15분이 못 되어 브러시가 다 닳는다), 교체(전령기 정지, C8 내림, 볼트 둘, 덮개, 브러시 빼기는 스프링을 0.3으로 젖힘, 줄질 네 번, 새 브러시 renew, 스프링 세 눈금, 덮개, 볼트, C8 올림).
+- **기관 전령기**: 장치가 아니라 내장 명령 `propulsion.set`을 보내는 Godot 레버. 눈금 정지 0, 미속 0.25, 저속 0.5, 반속 0.75, 전속 1. 지금 눈금은 계기 `reading.telegraph`.
+- **추진 조회 경로**: `propulsion.throttle`, `propulsion.sparking`, `propulsion.thrust`(스로틀 × (1 − 0.5S)), `propulsion.rpm`(추력 × 300 × 버스 전압, 불꽃이 튀면 흔들림).
+- **축 회전계 바늘**: 항법(WP14)의 계기 `tachometer`가 쓰는 `nav.rpm`은 `tuning.power`가 있으면 `BrushGear.Rpm` × (항법 maxRpm / 동력 nominalRpm)을 따른다. 그래서 PWR-02 때 흔들리고 NAV-02 때는 고르다(진단 쌍 '거리가 틀림'). PWR-02와 C8 퓨즈의 구별은 C8 전류계로 본다.
+- **열린 우물 위를 사람만 밟는 층** `Submarine.PlayerOnlyLayer`(8): 플레이어 충돌 마스크에만 있고 조준선 마스크에는 없다.
+- **버리는 소리**: 손으로 누른 폐기 자리에서 나고, 손에 든 물건이 무거우면(items.json heavy) 무겁게 낸다.
+- **덮개 안 장치를 겨냥하는 방식이 둘이다**: WP8은 `AutoPlayer.Approach`가 자리 표(StandPoints)를 쓰게 했고, WP11은 fixtures 묶음에서 `AimFromStandPoints`를 쓴다. 둘 다 같은 자리 표를 쓰므로 그대로 두고, WP16의 Godot `drill:<mission>` 묶음을 만들 때 하나로 모은다.
+- 합칠 때 본선이 고친 것: 스프링 응급 뒤 불꽃이 돌아오는 시간을 실제(약 4.97분)에 맞춰 교범·시험·보고서 모두 4~10분, 물건 이름 '완전히 죽은 셀', 20쪽 만지기 낱말, 03쪽 전압계 눈금에 셀의 30V 눈금.
