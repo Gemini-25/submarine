@@ -55,6 +55,8 @@ static class Modules
         ["senses"] = new[] { "searchlight.rods" },
         ["nav"] = new[] { "gyro.unit", "navcomp.unit" },
         ["cable"] = new[] { "winch.drum", "siphon.state" },
+        // 습도는 tuning.humidity도 있어야 돈다 (Systems.HumidityRuntime.Build).
+        ["humidity"] = new[] { "air.humidity" },
     };
 
     public static bool Has(SimWorld w, string module) => GateParts[module].Any(id => w.PartIndex(id) >= 0);

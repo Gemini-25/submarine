@@ -56,7 +56,7 @@
   "reason.basket_in": "바구니가 이미 들어 있다.",
   "reason.basket_out": "바구니가 이미 빠져 있다.",
   "reason.belt_full": "공구띠에 빈 칸이 없다.",
-  "reason.bolts_tight": "볼트가 덮개를 누르고 있어 열리지 않는다.",
+  "reason.bolts_tight": "아직 조여 있어 덮개가 열리지 않는다.",
   "reason.both_hands": "두 손으로 드는 물건이라 도구를 쥔 채로는 들 수 없다.",
   "reason.cannot_discard": "버릴 물건이 아니다.",
   "reason.cover_closed": "덮개가 닫혀 있다.",

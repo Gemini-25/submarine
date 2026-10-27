@@ -1,0 +1,6 @@
+{
+  "junctions": {
+    "bareJointMoisture": 0.75,
+    "ragDry": 0.2
+  }
+}

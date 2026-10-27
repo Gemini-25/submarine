@@ -28,6 +28,7 @@
     "set": {
       "moisture": 0.95
     },
+    "clearedWhen": "self.moisture < 0.6 && self.coverOpen == 0",
     "baseRatePerHour": 0.01
   },
   "AIR-01": {

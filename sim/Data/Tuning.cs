@@ -30,6 +30,10 @@ public sealed class Tuning
     [Optional] public NavTuning? Nav { get; set; }
     /// <summary>케이블 장비: 윈치와 사이펀 기록기 (M2 WP15, data/tuning/cable.json). 상태 부품이 없으면 쓰지 않는다.</summary>
     [Optional] public CableTuning? Cable { get; set; }
+    /// <summary>실내 습도와 분기함 습기 (M2 WP8). 없으면 습기는 주입으로만 바뀐다(M0).</summary>
+    [Optional] public HumidityTuning? Humidity { get; set; }
+    /// <summary>분기함 배선 (M2 WP8): 맨 이음의 누전. 없으면 맨 이음이 누전하지 않는다.</summary>
+    [Optional] public JunctionTuning? Junctions { get; set; }
     /// <summary>흡수통의 죔쇠와 뚜껑 (M2 WP9, data/tuning/air.json). 없으면 죔쇠를 열어 둔 흡수통도 다 흡수한다.</summary>
     [Optional] public ScrubberTuning? Scrubber { get; set; }
     /// <summary>송풍 팬 (M2 WP9, data/tuning/air.json). 없으면 멎은 팬은 데워지지 않는다.</summary>

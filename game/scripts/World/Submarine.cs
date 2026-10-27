@@ -70,6 +70,7 @@ public partial class Submarine : Node3D
         BuildNav(); // WP14: 배치의 항법 책상과 자이로 함에 동작을 붙인다
         BuildCable();
         BuildShaftGlandFixtures(); // 선체: 축 패킹 상자 (Submarine.Hull)
+        BuildSwitchboardTierA(query); // 분기함, 전류계, 납땜인두 전원, 브리지 대기 (WP8)
     }
 
     /// <summary>표현 층이 매 프레임 부른다.</summary>

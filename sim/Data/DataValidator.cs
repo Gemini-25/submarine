@@ -257,6 +257,7 @@ static class DataValidator
         Parts.MechanicsValidator.Validate(d, errors);
         Systems.Navigation.Validate(d, errors);
         Systems.CableGear.Validate(d, errors);
+        SwitchboardTuningValidator.Validate(d, errors);
 
         if (errors.Count > 0)
             throw new DataValidationException(errors);

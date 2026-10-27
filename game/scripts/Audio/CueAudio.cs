@@ -154,6 +154,18 @@ public static class CueAudio
         R("siphon.ink.line", s => new SiphonRecorderVoice(s), (v, c) =>
             v.Clog = PartVal(c.S, "siphon.state", "signal") > 0.5 && PartVal(c.S, "siphon.pen", "armUp") < 0.5 ? 1 - c.V : 0,
             shared: "siphon", spot: "siphon", db: -6, range: 3),
+        // 젖은 분기함의 누설 (ELC-03): 희미한 지직거림. 키트에 전용 목소리가 없어 칼날 스위치 지직거림을 작게 쓴다.
+        R("junction.{c}.sizzle", s => new KnifeSwitchCrackleVoice(s), (v, c) =>
+        {
+            v.Corrosion = c.V;
+            v.Current = c.V > 0 ? 0.6f : 0;
+        }, db: -10, range: 3),
+        // 탄 배선 (ELC-01 철사의 대가): 연기가 나는 동안 그을린 이음이 가끔 튄다.
+        R("junction.{c}.smoke", s => new KnifeSwitchCrackleVoice(s), (v, c) =>
+        {
+            v.Corrosion = 0.35f * c.V;
+            v.Current = c.V > 0 ? 0.3f : 0;
+        }, db: -14, range: 2),
     };
 
     /// <summary>Submarine.SoundSpots에 없는 소리 자리. vent_fan은 공기 장치가 없는 데이터(M1)에서만 쓰는 송풍 팬 대체 자리다.</summary>

@@ -1,0 +1,8 @@
+{
+  "cues": {
+    "fuse.{c}.wire": { "bind": { "c": "circuits" }, "sense": "Sight", "anchor": "fuse.{c}", "q": "part.fuse.{c}.prop.wire", "map": [[0, 0], [1, 1]], "caption": "cue.fuse.wire" },
+    "junction.{c}.burning": { "bind": { "c": "circuits" }, "sense": "Smell", "anchor": "junction.{c}", "q": "part.junction.{c}.prop.burnt", "map": [[0, 0], [1, 1]], "caption": "cue.junction.burning" },
+    "junction.{c}.sizzle": { "bind": { "c": "circuits" }, "sense": "Sound", "anchor": "junction.{c}", "q": "circuit.{c}.leak", "map": [[0, 0], [1, 0.15], [30, 0.5], [300, 1]], "caption": "cue.junction.sizzle" },
+    "junction.{c}.smoke": { "bind": { "c": "circuits" }, "sense": "Sight", "anchor": "junction.{c}", "q": "part.junction.{c}.prop.burnt", "map": [[0, 0], [1, 1]], "caption": "cue.junction.smoke" }
+  }
+}

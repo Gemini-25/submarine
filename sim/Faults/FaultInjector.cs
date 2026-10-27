@@ -78,6 +78,8 @@ static class RandomFaults
             {
                 if (part.Kind != fault.PartKind || part.ActiveFault.Length > 0) continue;
                 if (part.State(w.T.Wear) >= PartState.Fault) continue;
+                // 철사를 감은 퓨즈는 끊기지 않는다 (WP8). 철사가 없는 데이터에서는 아무것도 건너뛰지 않는다.
+                if (Array.IndexOf(w.Fuses, part) is int fi && fi >= 0 && w.FuseWire[fi].Get() >= 0.5) continue;
                 if (w.FaultRng.NextDouble() < Probability(w, fault, part))
                     FaultInjector.Inject(w, fault.Id, part.Id);
             }

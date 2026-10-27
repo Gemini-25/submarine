@@ -73,6 +73,10 @@ sealed class SimWorld
     public readonly Repair.FixtureRuntime Fixtures;
     /// <summary>부품 타이머, 바다 경로, 모듈 켜짐을 컴파일해 둔 것 (상태 아님).</summary>
     public readonly PartMechanics Mechanics;
+    /// <summary>실내 습도 모듈 (M2 WP8). air.humidity가 없으면 null (상태 아님).</summary>
+    public readonly Systems.HumidityRuntime? Humidity;
+    /// <summary>회로마다 퓨즈의 철사(wire), 분기함의 탐(burnt)과 피복(insulated). 없는 데이터(M0·M1)에서는 −1 참조 (상태 아님).</summary>
+    public readonly PropRef[] FuseWire, JunctionBurnt, JunctionInsulated;
 
     public SimWorld(GameData data, int seed, MissionSetup? setup = null)
     {
@@ -114,6 +118,10 @@ sealed class SimWorld
         Sensors = new SensorReadings(data.Circuits.Count, data.Devices.Count);
         Fixtures = new Repair.FixtureRuntime(this);
         Mechanics = new PartMechanics(this);
+        Humidity = Systems.HumidityRuntime.Build(this);
+        FuseWire = Fuses.Select(f => PropRef.Resolve(f, "wire")).ToArray();
+        JunctionBurnt = Junctions.Select(j => PropRef.Resolve(j, "burnt")).ToArray();
+        JunctionInsulated = Junctions.Select(j => PropRef.Resolve(j, "insulated")).ToArray();
         _deviceIndex = new Dictionary<string, int>(StringComparer.Ordinal);
         Devices = new DeviceState[data.Devices.Count];
         DeviceCircuit = new int[Devices.Length];
@@ -311,6 +319,7 @@ sealed class SimWorld
         WaterSystem.Update(this);
         AttitudeSystem.Update(this);
         AirSystem.Update(this);
+        HumiditySystem.Update(this);
         SensesSystem.Update(this);
         NavSystem.Update(this);
         CableGearSystem.Update(this);

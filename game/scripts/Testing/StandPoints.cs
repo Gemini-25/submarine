@@ -79,7 +79,7 @@ public static class StandPoints
             [ "ballast.fore.flood", "ballast.aft.flood", "ballast.fore.gland", "ballast.aft.gland", "ballast.fore.body", "ballast.aft.body", "pump.suction" ], None),
         new("scrubber", At(3.05f, -0.35f), false, [ "scrubber.lid", "scrubber.clamp.1", "scrubber.clamp.2", "scrubber.canister" ], None),
         new("fan", At(3.85f, 0.25f), false, [ "fan.guard", "fan.guard.nut.1", "fan.guard.nut.2", "fan.motor", "fan.hub", "fan.bearing", "fan.blades" ], None),
-        new("junctions", At(3.65f, 0.5f), true, [ ..Junction("C1"), ..Junction("C2"), ..Junction("C6"), ..Junction("C7") ], None),
+        new("junctions", At(3.65f, 0.5f), true, [ ..Junction("C1"), ..Junction("C2"), ..Junction("C6"), ..Junction("C7"), "device.soldering_iron" ], None),
         new("furnace", At(4.6f, 0.3f), true, [ "o2.furnace.door", "o2.furnace.latch", "o2.furnace.vent", "candle", "o2.furnace" ], None),
         new("chamber", At(4.0f, 0.65f), false, [ "chamber.hatch", ..Four("chamber.hatch.dog"), "chamber.squeeze" ], None),
         new("chamber.in", At(4.0f, 0.64f), true, [ "chamber.seal", ..Four("chamber.seal.screw") ], [ "chamber.hatch" ]),
@@ -97,7 +97,7 @@ public static class StandPoints
         new("nomogram", At(6.65f, -0.4f), false, [ "gadget.nomogram" ], None),
         new("gyro", At(7.1f, -0.35f), false, [ "gyro.lid", ..Four("gyro.case.screw"), "gyro.switch", "gyro.align", "gyro.case", "gyro.bearing" ], None),
         new("commdesk", At(6.4f, 0.35f), false,
-            [ "gadget.bridge", "siphon.ink", "siphon.bulb", "siphon.testkey", "siphon.arm", "siphon.pen", "siphon.tube.1" ], None),
+            [ "gadget.bridge", "bridge.lead", "siphon.ink", "siphon.bulb", "siphon.testkey", "siphon.arm", "siphon.pen", "siphon.tube.1" ], None),
         new("hydrophone", At(6.45f, 0.35f), false,
             [ "hydrophone.door", "hydrophone.door.screw.1", "hydrophone.door.screw.2", "hydrophone", "sonar.tube.1", "gadget.headphones" ], None),
 
