@@ -357,6 +357,7 @@ static class SimQuery
                     "state" => x => QueryValue.Of(x.Parts[pi].State(x.T.Wear).ToString().ToLowerInvariant()),
                     "wear" => x => QueryValue.Of(x.Parts[pi].Wear),
                     "fault" => x => QueryValue.Of(x.Parts[pi].ActiveFault),
+                    "quality" => x => QueryValue.Of(x.Parts[pi].Quality.ToString().ToLowerInvariant()),
                     _ => throw Unknown(),
                 };
             }

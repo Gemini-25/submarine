@@ -24,6 +24,13 @@ static class FixtureHooks
             int c = Array.IndexOf(w.Fuses, v.Part);
             if (c >= 0) w.Circuits[c].FuseBlownSeen = true;
         },
+        // 걸레로 말린 분기함: 습기를 지금 공기의 목표 습기 아래로는 내리지 못한다 (습도 모듈이 없으면 아무것도 하지 않는다, WP8).
+        ["humidityFloor"] = (w, v) =>
+        {
+            if (w.Humidity is not { } h || !v.Part.HasProp("moisture")) return;
+            double floor = h.Target(w, v.Part);
+            if (v.Part.Get("moisture") < floor) v.Part.Set("moisture", floor);
+        },
     };
 }
 

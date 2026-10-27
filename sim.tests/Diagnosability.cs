@@ -189,6 +189,31 @@ public class Diagnosability
         Splits("PWR-01", "ELC-01", "measure.voltmeter.cell.3");
     }
 
+    /// <summary>
+    /// 탄 배선(WP8: 철사를 감은 퓨즈 뒤 과전류)은 같은 회로의 퓨즈 단선, 팬 정지와 구별되고, 교범이 말하는 단서
+    /// (분기함 연기와 타는 냄새, 퓨즈 소켓 0V, 퓨즈 몸통의 철사)로 갈린다.
+    /// </summary>
+    [Fact]
+    public void Burnt_junction_wiring_is_noticeable_and_splits_from_a_blown_fuse()
+    {
+        var sim = TestData.NewSim(setup: TestData.Setup(s =>
+        {
+            s.Switches["C3"] = true;
+            s.Bilges["bilge.aft"] = 150;
+            s.Parts = new() { new() { Part = "fuse.C2", Prop = "wire", Value = 1 }, new() { Part = "junction.C2", Prop = "burnt", Value = 1 } };
+        }));
+        sim.Run(T);
+        var burnt = DiagnosisHarness.Observe(new ObservableQuery(sim), TestData.Data);
+        var sep = DiagnosisHarness.Separating(burnt, _baseline.Value);
+        _out.WriteLine($"탄 배선: {string.Join(", ", sep)}");
+        Assert.NotEmpty(sep);
+        foreach (var k in sep) Assert.True(DiagnosisHarness.Documented(k, TestData.Data), $"탄 배선을 드러내는 '{k}'에 문구가 없다");
+        foreach (var other in new[] { "ELC-01", "AIR-01" })
+            Assert.NotEmpty(DiagnosisHarness.Separating(burnt, _vectors.Value[other]));
+        foreach (var path in new[] { "cue.junction.C2.smoke", "cue.junction.C2.burning", "measure.voltmeter.fuse.C2", "cue.fuse.C2.wire" })
+            Assert.True(burnt[path].Differs(_vectors.Value["ELC-01"][path]), $"탄 배선과 C2 퓨즈 단선이 {path}로 갈리지 않는다");
+    }
+
     [Fact]
     public void The_harness_is_deterministic_and_reads_only_observables()
     {

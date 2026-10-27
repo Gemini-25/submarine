@@ -1,0 +1,17 @@
+{
+  "cue.fuse.wire": "퓨즈 몸통에 철사가 감겨 있다",
+  "cue.junction.burning": "타는 냄새",
+  "cue.junction.sizzle": "분기함 안에서 지직거리는 소리",
+  "cue.junction.smoke": "분기함 틈으로 연기가 샌다",
+  "fixture.junction.{c}.box": "분기함 {c}",
+  "fixture.junction.{c}.cable": "분기함 {c} 케이블",
+  "fixture.junction.{c}.cover": "분기함 {c} 덮개",
+  "fixture.junction.{c}.screw.{n}": "분기함 {c} 나사 {n}",
+  "reason.iron_cold": "인두가 차갑다.",
+  "reason.need_insulating_tape": "감을 테이프가 없다.",
+  "reason.need_knife": "칼이 있어야 한다.",
+  "reason.need_rag": "닦을 걸레가 없다.",
+  "reason.need_screwdriver": "드라이버가 있어야 한다.",
+  "reason.need_soldering_iron": "납땜인두가 있어야 한다.",
+  "reason.not_stripped": "피복이 그대로라 납이 붙지 않는다."
+}

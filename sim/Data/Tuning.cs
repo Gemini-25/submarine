@@ -26,6 +26,10 @@ public sealed class Tuning
     public List<string> Tools { get; set; } = new();
     /// <summary>공구판과 공구띠 (M2). 없으면 M1처럼 모든 도구를 바로 쥘 수 있다.</summary>
     [Optional] public ToolBoardTuning? ToolBoard { get; set; }
+    /// <summary>실내 습도와 분기함 습기 (M2 WP8). 없으면 습기는 주입으로만 바뀐다(M0).</summary>
+    [Optional] public HumidityTuning? Humidity { get; set; }
+    /// <summary>분기함 배선 (M2 WP8): 맨 이음의 누전. 없으면 맨 이음이 누전하지 않는다.</summary>
+    [Optional] public JunctionTuning? Junctions { get; set; }
 }
 
 /// <summary>손 수리 동작의 수치 (M1). 손동작 하나가 명령 하나다.</summary>

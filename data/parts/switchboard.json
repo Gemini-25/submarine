@@ -1,0 +1,11 @@
+{
+  "air.humidity": {
+    "kind": "humidity",
+    "visible": [
+      "rh"
+    ],
+    "props": {
+      "rh": 0.35
+    }
+  }
+}

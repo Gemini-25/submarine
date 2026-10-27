@@ -1,0 +1,25 @@
+{
+  "humidity": {
+    "baselineRh": 0.35,
+    "floorWaterRhPerL": 0.002,
+    "maxRh": 0.95,
+    "rhTauSeconds": 600,
+    "moistureFromRh": [[0.35, 0.1], [0.6, 0.3], [0.8, 0.6], [0.95, 0.9]],
+    "splashFromFloorL": [[0, 0], [10, 0], [60, 0.4], [200, 0.9]],
+    "creepPerMin": 0.08,
+    "tapedFactor": 0.3,
+    "looseFactor": 2,
+    "trappedMoisture": 0.9,
+    "trappedCreepPerMin": 0.03,
+    "boxes": {
+      "junction.C1": "mid",
+      "junction.C2": "mid",
+      "junction.C3": "aft",
+      "junction.C4": "fore",
+      "junction.C5": "fore",
+      "junction.C6": "mid",
+      "junction.C7": "mid",
+      "junction.C8": "aft"
+    }
+  }
+}

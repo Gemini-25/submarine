@@ -12,6 +12,8 @@ sealed class SensorReadings
 {
     public double Voltage, TotalCurrent, MaxCellTemp, Co2, O2, Cl2, H2, BilgeTotal, Depth, PumpCurrent, PumpTemp, PumpFlow;
     public readonly bool[] CircuitSwitchOn, CircuitFuseBlown, CircuitEnergized;
+    /// <summary>분기함 배선이 탔다 (M2 WP8; 배전반 표시등 계전기가 퓨즈 뒤의 끊김을 본다).</summary>
+    public readonly bool[] CircuitWiringBurnt;
     public readonly double[] CircuitCurrent;
     /// <summary>구역별 침수 감지 (누수 유입 감지기와 바닥 수위 감지기).</summary>
     public readonly double[] ZoneInflow, ZoneFloorWater;
@@ -22,6 +24,7 @@ sealed class SensorReadings
         CircuitSwitchOn = new bool[circuits];
         CircuitFuseBlown = new bool[circuits];
         CircuitEnergized = new bool[circuits];
+        CircuitWiringBurnt = new bool[circuits];
         CircuitCurrent = new double[circuits];
         ZoneInflow = new double[GameData.Zones.Count];
         ZoneFloorWater = new double[GameData.Zones.Count];
@@ -46,6 +49,7 @@ static class PanelSystem
             r.CircuitSwitchOn[c] = cs.SwitchOn;
             r.CircuitFuseBlown[c] = w.Fuses[c].Get("blown") >= 0.5;
             r.CircuitEnergized[c] = cs.Energized;
+            r.CircuitWiringBurnt[c] = w.JunctionBurnt[c].Get() >= 0.5;
             r.CircuitCurrent[c] = cs.Current;
             total += cs.Current;
         }
@@ -102,7 +106,7 @@ static class PanelSystem
             var sb = LampState.Off;
             for (int c = 0; c < w.Circuits.Length; c++)
             {
-                if (s.CircuitSwitchOn[c] && s.CircuitFuseBlown[c]) sb = Max(sb, LampState.Fault);
+                if (s.CircuitSwitchOn[c] && (s.CircuitFuseBlown[c] || s.CircuitWiringBurnt[c])) sb = Max(sb, LampState.Fault);
                 else if (s.CircuitCurrent[c] > pt.CircuitWarnFraction * w.Data.Circuits[c].FuseRating) sb = Max(sb, LampState.Warning);
             }
             lamps[PanelSystems.Switchboard] = sb;
