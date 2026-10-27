@@ -84,19 +84,19 @@ public partial class Submarine
         OnUpdate((s, dt) =>
         {
             bool running = fanIndex >= 0 && fanIndex < s.Devices.Count && s.Devices[fanIndex].Running;
+            // 손이 실제로 움직인 프레임에서만 손의 각속도를 따른다(부드럽게). 손이 멈춘 프레임과 놓은 뒤에는 남은 기세가 잦아든다.
+            // 전동기가 돌면 잡고 있어도 전동기 속도를 따른다.
+            float d = 0;
             if (!float.IsNaN(hand))
             {
-                float d = (hand - handLast) * Mathf.Tau;
+                d = (hand - handLast) * Mathf.Tau;
                 handLast = hand;
-                spin += d;
-                if (dt > 0) vel = d / dt;
             }
-            else
-            {
-                handLast = 0;
-                vel = running ? 14f : vel * MathF.Exp(-dt * 1.5f);
-                spin += vel * dt;
-            }
+            else handLast = 0;
+            if (running) vel = 14f;
+            else if (d != 0 && dt > 0) vel = Mathf.Lerp(vel, d / dt, 0.5f);
+            else vel *= MathF.Exp(-dt * 1.5f);
+            spin += d != 0 && !running ? d : vel * dt;
             rotor.RotationDegrees = new Vector3(0, Mathf.RadToDeg(spin) % 360, 0);
         });
 
@@ -218,17 +218,18 @@ public partial class Submarine
 
     /// <summary>
     /// 흡수제 통 받침: 예비 흡수제 통을 중앙 사물함 앞 바닥에 세워 둔다(본선 결정 '흡수제 통 받침은 장비 옆에 그 계통이 둔다').
-    /// 받침은 사물함 앞쪽(+x) 끝, 폐기함 옆이다. M1 물체(버팀목 칸, 폐기함)에서 0.25m 넘게 떨어져 있고, 사물함 칸을 겨냥하는 조준선(x 3.75)을 가리지 않는다. 팬 베어링은 후방 예비품 사물함(Submarine.Lockers.cs)에 있다.
+    /// 받침은 사물함 오른쪽(x 4.25) 밖, 중앙 폐기함 바로 앞 바닥이다. 사물함 칸 앞을 가리지 않고, 사물함 작업 시점에서 폐기함을 겨냥하는 조준선보다 낮다. 팬 베어링은 후방 예비품 사물함(Submarine.Lockers.cs)에 있다.
     /// </summary>
     void BuildAirSpares()
     {
         if (Interactables.ContainsKey("locker.canister")) return;
-        var root = new Node3D { Name = "CanisterStand", Position = new Vector3(4.11f, 0, -0.65f) };
+        var root = new Node3D { Name = "CanisterStand", Position = new Vector3(4.6f, 0, -0.6f) };
         AddChild(root);
         var stand = new MeshBuilder();
         stand.Box(ArtMat.Machinery, new Vector3(0, 0.01f, 0), new Vector3(0.56f, 0.02f, 0.28f), 0.004f);
         stand.Box(ArtMat.BareSteel, new Vector3(0, 0.2f, -0.13f), new Vector3(0.56f, 0.02f, 0.02f), 0.003f); // 넘어지지 않게 거는 띠
         stand.Instance(root, "Stand");
+        Geo.Blocker(root, new Vector3(0.52f, 0.2f, 0.24f), new Vector3(0, 0.1f, 0));
         var cans = new List<MeshInstance3D>();
         int stock = _data.Tuning.Inventory.Locker.GetValueOrDefault("canister");
         var paint = ArtMat.PaintedSteel(new Color(0.5f, 0.45f, 0.28f));

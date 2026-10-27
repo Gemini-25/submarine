@@ -104,5 +104,22 @@ public partial class AutoPlayer
             _main.Hands.ToggleWorkView();
             Check(!_main.Player.InWorkView, "F로 작업 시점에서 나오지 않았다");
         }
+
+        // 흡수제 통 받침이 중앙 사물함 맨 아래 칸(버팀목)을 가리지 않는다: 사물함 작업 시점에서 그 칸의 양 끝을 겨냥한다.
+        if (await Approach("locker.timber_shore") != null)
+        {
+            await Frame();
+            Check(_main.Hands.ToggleWorkView(), "사물함을 보고 F를 눌렀는데 작업 시점이 아니다");
+            await ToSignal(GetTree().CreateTimer(0.8), SceneTreeTimer.SignalName.Timeout);
+            var cam = _main.Player.Camera;
+            var shelf = _main.Sub.Interactables["locker.timber_shore"];
+            foreach (float dx in new[] { -0.4f, 0.4f })
+            {
+                var screen = cam.UnprojectPosition(shelf.GlobalPosition + new Vector3(dx, 0, 0));
+                var hit = _main.Hands.RayPickAt(screen);
+                Check(hit == shelf, $"사물함 맨 아래 칸의 끝(x {dx:+0.0;-0.0})을 겨냥했는데 잡힌 것: {hit?.Id ?? "없음"}");
+            }
+            _main.Hands.ToggleWorkView();
+        }
     }
 }

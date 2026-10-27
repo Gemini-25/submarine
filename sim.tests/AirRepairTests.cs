@@ -272,6 +272,8 @@ public class AirRepairTests
         var ev = Do(off, Plan(off, "proc.fan.spin").Prepend("device.vent_fan.off"));
         Assert.DoesNotContain(ev, e => e.Kind is SimEventKind.CommandRejected or SimEventKind.PartPatched);
         Assert.Equal(1, Fan(off).Get("stalled"));
+        Assert.Equal(0, off.Measure("stethoscope", "fan.motor")); // 전기가 가지 않는 전동기는 소리가 없다
+        Assert.Equal(0, off.Q("cue.fan.stall"));
         var low = Sim(s => s.BatteryCharge = 0);
         low.Inject("AIR-01");
         low.Run(1);
@@ -279,6 +281,7 @@ public class AirRepairTests
         ev = Do(low, Plan(low, "proc.fan.spin"));
         Assert.DoesNotContain(ev, e => e.Kind == SimEventKind.PartPatched);
         Assert.Equal(1, Fan(low).Get("stalled"));
+        Assert.Equal(0, low.Measure("stethoscope", "fan.motor"));
     }
 
     [Fact]
