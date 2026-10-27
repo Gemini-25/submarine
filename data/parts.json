@@ -270,9 +270,43 @@
     "kind": "bearing",
     "spare": true,
     "wearPerSecond": 2e-05,
+    "visible": [
+      "capBolt1",
+      "capBolt2",
+      "capBolt3",
+      "capBolt4",
+      "capOpen",
+      "lube",
+      "oil",
+      "present"
+    ],
     "props": {
-      "drag": 0
+      "capBolt1": 1,
+      "capBolt2": 1,
+      "capBolt3": 1,
+      "capBolt4": 1,
+      "capOpen": 0,
+      "drag": 0,
+      "lube": 0,
+      "lubeArmed": 0,
+      "lubeLife": 0,
+      "lubePatch": 0,
+      "oil": 0,
+      "present": 1
     },
+    "timers": [
+      {
+        "prop": "lubeLife",
+        "perSecond": 1,
+        "while": "device.bilge_pump.running == 1",
+        "armed": "lubeArmed",
+        "onExpire": [
+          { "set": "lube", "to": 0 },
+          { "if": "self.lubePatch >= 0.5", "event": "TempRepairFailed", "detail": "WTR-02" },
+          { "set": "lubePatch", "to": 0 }
+        ]
+      }
+    ],
     "wearCurves": {
       "drag": [
         [
