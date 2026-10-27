@@ -25,6 +25,8 @@ public static class Texts
     /// <summary>장치의 명판 이름: "fixture.&lt;틀 ID&gt;"의 틀 변수를 채운다 (예: "{c} 퓨즈 소켓" → "C3 퓨즈 소켓").</summary>
     public static string Fixture(FixtureInstance f)
     {
+        // 펼친 장치마다 따로 쓴 이름이 있으면 그것 (예: "fixture.panel.bulb.water" → "배수 표시등 전구")
+        if (_text.TryGetValue($"fixture.{f.Id}", out var exact)) return exact;
         if (!_text.TryGetValue($"fixture.{f.Def.Id}", out var name)) return f.Id;
         return FixtureCatalog.Expand(name, f.Vars);
     }

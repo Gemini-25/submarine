@@ -264,6 +264,15 @@ static class SimQuery
                     int s = -1;
                     for (int k = 0; k < PanelSystems.Names.Count; k++) if (PanelSystems.Names[k] == p[2]) s = k;
                     if (s < 0) throw Unknown();
+                    // 보이는 표시등: 논리 표시등에 전구 마스크를 씌운 것 (SNS-01)
+                    return x => QueryValue.Of(LampName(PanelDisplay.Shown(x, s)));
+                }
+                if (p.Length == 3 && p[1] == "signal")
+                {
+                    // 논리 표시등 (센서 판정, 벨이 울리는 쪽). 시험과 디버그용이고 ObservableQuery는 막는다.
+                    int s = -1;
+                    for (int k = 0; k < PanelSystems.Names.Count; k++) if (PanelSystems.Names[k] == p[2]) s = k;
+                    if (s < 0) throw Unknown();
                     return x => QueryValue.Of(LampName(x.PanelState.Lamps[s]));
                 }
                 if (p.Length == 3 && p[1] == "gauge")
@@ -366,6 +375,7 @@ static class SimQuery
                     "state" => x => QueryValue.Of(x.Parts[pi].State(x.T.Wear).ToString().ToLowerInvariant()),
                     "wear" => x => QueryValue.Of(x.Parts[pi].Wear),
                     "fault" => x => QueryValue.Of(x.Parts[pi].ActiveFault),
+                    "quality" => x => QueryValue.Of(x.Parts[pi].Quality.ToString().ToLowerInvariant()),
                     _ => throw Unknown(),
                 };
             }
@@ -401,6 +411,19 @@ static class SimQuery
                 return x => QueryValue.Of(m(x));
             }
 
+            case "tubes":
+            {
+                // tubes.health.<장비>: 그 장비 진공관 가운데 가장 약한 필라멘트 (빠진 관은 0, 관이 없으면 1)
+                // tubes.glow.<부품>: 그 진공관 필라멘트의 불빛 (전원이 걸려 있을 때만)
+                if (p.Length == 3 && p[1] == "health" && w.TryDeviceIndex(p[2], out int d)) return x => QueryValue.Of(Tubes.Health(x, d));
+                if (p.Length >= 3 && p[1] == "glow" && w.TryPart(string.Join('.', p, 2, p.Length - 2), out var tube) && Tubes.IsTube(tube))
+                {
+                    int owner = Tubes.DeviceOf(w, tube), ti = w.PartIndex(tube.Id);
+                    if (owner < 0) throw Unknown();
+                    return x => QueryValue.Of(Tubes.Glow(x, owner, x.Parts[ti]));
+                }
+                throw Unknown();
+            }
             // 항법 (M2 WP14): 자이로와 항법 계산기의 파생 값. 상태 부품이 없으면 모르는 경로다.
             case "nav":
                 End(2);

@@ -65,7 +65,7 @@ public static class StandPoints
             [ "strainer.cover", "strainer.bolt.1", "strainer.bolt.2", "strainer.bolt.3", "strainer.bolt.4", "wash_bucket" ], None),
         new("locker", At(3.75f, -0.25f), false, [ "locker.fuse", "locker.wood_wedge", "locker.timber_shore", "discard" ], None),
         new("panel", At(7.3f, -0.1f), false,
-            [ "panel", ..DeepLine.Sim.Data.Bindings.PanelLamps.Select(l => $"panel.bezel.{l}"), ..DriftGauges.Select(g => $"gauge.{g}.glass"),
+            [ "panel", ..DeepLine.Sim.Data.Bindings.PanelLamps.Select(l => $"panel.bezel.{l}"), ..DeepLine.Sim.Data.Bindings.PanelLamps.Select(l => $"panel.bulb.{l}"), ..DriftGauges.Select(g => $"gauge.{g}.glass"),
               ..DriftGauges.Select(g => $"gauge.{g}.zero"), "panel.lamptest", "propulsion.telegraph", "searchlight.switch" ], None),
 
         // ── 후방 ──
@@ -86,7 +86,7 @@ public static class StandPoints
             [ "ballast.fore.flood", "ballast.aft.flood", "ballast.fore.gland", "ballast.aft.gland", "ballast.fore.body", "ballast.aft.body", "pump.suction" ], None),
         new("scrubber", At(3.05f, -0.35f), false, [ "scrubber.lid", "scrubber.clamp.1", "scrubber.clamp.2", "scrubber.canister" ], None),
         new("fan", At(3.85f, 0.25f), false, [ "fan.guard", "fan.guard.nut.1", "fan.guard.nut.2", "fan.motor", "fan.hub", "fan.bearing", "fan.blades" ], None),
-        new("junctions", At(3.65f, 0.5f), true, [ ..Junction("C1"), ..Junction("C2"), ..Junction("C6"), ..Junction("C7") ], None),
+        new("junctions", At(3.65f, 0.5f), true, [ ..Junction("C1"), ..Junction("C2"), ..Junction("C6"), ..Junction("C7"), "device.soldering_iron" ], None),
         new("furnace", At(4.6f, 0.3f), true, [ "o2.furnace.door", "o2.furnace.latch", "o2.furnace.vent", "candle", "o2.furnace" ], None),
         new("chamber", At(4.0f, 0.65f), false, [ "chamber.hatch", ..Four("chamber.hatch.dog"), "chamber.squeeze" ], None),
         new("chamber.in", At(4.0f, 0.64f), true, [ "chamber.seal", ..Four("chamber.seal.screw") ], [ "chamber.hatch" ]),
@@ -109,9 +109,10 @@ public static class StandPoints
             [ ..Four("gadget.bridge.dial"), "bridge.lead", "gadget.bridge.range.1", "gadget.bridge.range.2", "gadget.bridge.range.3", "gadget.bridge.key", "gadget.bridge" ], None),
         new("gyro", At(7.1f, -0.35f), false, [ "gyro.lid", ..Four("gyro.case.screw"), "gyro.switch", "gyro.align", "gyro.case", "gyro.bearing" ], None),
         new("commdesk", At(6.4f, 0.35f), false,
-            [ "gadget.bridge", "siphon.ink", "siphon.bulb", "siphon.testkey", "siphon.arm", "siphon.pen", "siphon.tube.1" ], None),
+            [ "gadget.bridge", "bridge.lead", "siphon.ink", "siphon.bulb", "siphon.testkey", "siphon.arm", "siphon.pen", "siphon.tube.1" ], None),
         new("hydrophone", At(6.45f, 0.35f), false,
-            [ "hydrophone.door", "hydrophone.door.screw.1", "hydrophone.door.screw.2", "hydrophone", "sonar.tube.1", "gadget.headphones" ], None),
+            [ "hydrophone.door", "hydrophone.door.screw.1", "hydrophone.door.screw.2", "hydrophone", "hydrophone.switch",
+              "hydrophone.tube.1", "hydrophone.tube.2", "sonarset.tube.1", "gadget.headphones" ], None),
 
         // ── 손이 닿는지만 보는 자리 ──
         new("canister.stand", At(4.6f, -0.15f), false, [ "locker.canister" ], None, WorkView: false),

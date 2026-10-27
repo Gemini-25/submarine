@@ -30,6 +30,7 @@ static class SensesSystem
     public static void Update(SimWorld w)
     {
         if (!w.Mechanics.Senses) return;
+        Tubes.Decay(w);
     }
 }
 

@@ -51,7 +51,8 @@
     "kind": "fuse",
     "visible": [
       "blown",
-      "present"
+      "present",
+      "wire"
     ],
     "spare": true,
     "props": {
@@ -64,7 +65,8 @@
     "kind": "fuse",
     "visible": [
       "blown",
-      "present"
+      "present",
+      "wire"
     ],
     "spare": true,
     "props": {
@@ -77,7 +79,8 @@
     "kind": "fuse",
     "visible": [
       "blown",
-      "present"
+      "present",
+      "wire"
     ],
     "spare": true,
     "props": {
@@ -90,7 +93,8 @@
     "kind": "fuse",
     "visible": [
       "blown",
-      "present"
+      "present",
+      "wire"
     ],
     "spare": true,
     "props": {
@@ -103,7 +107,8 @@
     "kind": "fuse",
     "visible": [
       "blown",
-      "present"
+      "present",
+      "wire"
     ],
     "spare": true,
     "props": {
@@ -116,7 +121,8 @@
     "kind": "fuse",
     "visible": [
       "blown",
-      "present"
+      "present",
+      "wire"
     ],
     "spare": true,
     "props": {
@@ -129,7 +135,8 @@
     "kind": "fuse",
     "visible": [
       "blown",
-      "present"
+      "present",
+      "wire"
     ],
     "spare": true,
     "props": {
@@ -142,7 +149,8 @@
     "kind": "fuse",
     "visible": [
       "blown",
-      "present"
+      "present",
+      "wire"
     ],
     "spare": true,
     "props": {
@@ -153,50 +161,242 @@
   },
   "junction.C1": {
     "kind": "junction",
+    "visible": [
+      "burnt",
+      "coverOpen",
+      "insulated",
+      "screw1",
+      "screw2",
+      "soldered",
+      "stripped",
+      "taped",
+      "twisted",
+      "wrap"
+    ],
     "props": {
-      "moisture": 0.1
+      "burnt": 0,
+      "coverOpen": 0,
+      "insulated": 1,
+      "moisture": 0.1,
+      "screw1": 1,
+      "screw2": 1,
+      "soldered": 0,
+      "spliced": 0,
+      "stripped": 0,
+      "taped": 0,
+      "trapped": 0,
+      "twisted": 0,
+      "wrap": 0
     }
   },
   "junction.C2": {
     "kind": "junction",
+    "visible": [
+      "burnt",
+      "coverOpen",
+      "insulated",
+      "screw1",
+      "screw2",
+      "soldered",
+      "stripped",
+      "taped",
+      "twisted",
+      "wrap"
+    ],
     "props": {
-      "moisture": 0.1
+      "burnt": 0,
+      "coverOpen": 0,
+      "insulated": 1,
+      "moisture": 0.1,
+      "screw1": 1,
+      "screw2": 1,
+      "soldered": 0,
+      "spliced": 0,
+      "stripped": 0,
+      "taped": 0,
+      "trapped": 0,
+      "twisted": 0,
+      "wrap": 0
     }
   },
   "junction.C3": {
     "kind": "junction",
+    "visible": [
+      "burnt",
+      "coverOpen",
+      "insulated",
+      "screw1",
+      "screw2",
+      "soldered",
+      "stripped",
+      "taped",
+      "twisted",
+      "wrap"
+    ],
     "props": {
-      "moisture": 0.1
+      "burnt": 0,
+      "coverOpen": 0,
+      "insulated": 1,
+      "moisture": 0.1,
+      "screw1": 1,
+      "screw2": 1,
+      "soldered": 0,
+      "spliced": 0,
+      "stripped": 0,
+      "taped": 0,
+      "trapped": 0,
+      "twisted": 0,
+      "wrap": 0
     }
   },
   "junction.C4": {
     "kind": "junction",
+    "visible": [
+      "burnt",
+      "coverOpen",
+      "insulated",
+      "screw1",
+      "screw2",
+      "soldered",
+      "stripped",
+      "taped",
+      "twisted",
+      "wrap"
+    ],
     "props": {
-      "moisture": 0.1
+      "burnt": 0,
+      "coverOpen": 0,
+      "insulated": 1,
+      "moisture": 0.1,
+      "screw1": 1,
+      "screw2": 1,
+      "soldered": 0,
+      "spliced": 0,
+      "stripped": 0,
+      "taped": 0,
+      "trapped": 0,
+      "twisted": 0,
+      "wrap": 0
     }
   },
   "junction.C5": {
     "kind": "junction",
+    "visible": [
+      "burnt",
+      "coverOpen",
+      "insulated",
+      "screw1",
+      "screw2",
+      "soldered",
+      "stripped",
+      "taped",
+      "twisted",
+      "wrap"
+    ],
     "props": {
-      "moisture": 0.1
+      "burnt": 0,
+      "coverOpen": 0,
+      "insulated": 1,
+      "moisture": 0.1,
+      "screw1": 1,
+      "screw2": 1,
+      "soldered": 0,
+      "spliced": 0,
+      "stripped": 0,
+      "taped": 0,
+      "trapped": 0,
+      "twisted": 0,
+      "wrap": 0
     }
   },
   "junction.C6": {
     "kind": "junction",
+    "visible": [
+      "burnt",
+      "coverOpen",
+      "insulated",
+      "screw1",
+      "screw2",
+      "soldered",
+      "stripped",
+      "taped",
+      "twisted",
+      "wrap"
+    ],
     "props": {
-      "moisture": 0.1
+      "burnt": 0,
+      "coverOpen": 0,
+      "insulated": 1,
+      "moisture": 0.1,
+      "screw1": 1,
+      "screw2": 1,
+      "soldered": 0,
+      "spliced": 0,
+      "stripped": 0,
+      "taped": 0,
+      "trapped": 0,
+      "twisted": 0,
+      "wrap": 0
     }
   },
   "junction.C7": {
     "kind": "junction",
+    "visible": [
+      "burnt",
+      "coverOpen",
+      "insulated",
+      "screw1",
+      "screw2",
+      "soldered",
+      "stripped",
+      "taped",
+      "twisted",
+      "wrap"
+    ],
     "props": {
-      "moisture": 0.1
+      "burnt": 0,
+      "coverOpen": 0,
+      "insulated": 1,
+      "moisture": 0.1,
+      "screw1": 1,
+      "screw2": 1,
+      "soldered": 0,
+      "spliced": 0,
+      "stripped": 0,
+      "taped": 0,
+      "trapped": 0,
+      "twisted": 0,
+      "wrap": 0
     }
   },
   "junction.C8": {
     "kind": "junction",
+    "visible": [
+      "burnt",
+      "coverOpen",
+      "insulated",
+      "screw1",
+      "screw2",
+      "soldered",
+      "stripped",
+      "taped",
+      "twisted",
+      "wrap"
+    ],
     "props": {
-      "moisture": 0.1
+      "burnt": 0,
+      "coverOpen": 0,
+      "insulated": 1,
+      "moisture": 0.1,
+      "screw1": 1,
+      "screw2": 1,
+      "soldered": 0,
+      "spliced": 0,
+      "stripped": 0,
+      "taped": 0,
+      "trapped": 0,
+      "twisted": 0,
+      "wrap": 0
     }
   },
   "fan.motor": {
@@ -230,8 +430,14 @@
         "while": "device.vent_fan.running == 1",
         "armed": "spinArmed",
         "onExpire": [
-          { "set": "stalled", "to": 1 },
-          { "event": "TempRepairFailed", "detail": "AIR-01" }
+          {
+            "set": "stalled",
+            "to": 1
+          },
+          {
+            "event": "TempRepairFailed",
+            "detail": "AIR-01"
+          }
         ]
       },
       {
@@ -240,7 +446,10 @@
         "while": "self.hubNut < 0.5 && device.vent_fan.running == 1",
         "armed": "hubArmed",
         "onExpire": [
-          { "set": "stalled", "to": 1 }
+          {
+            "set": "stalled",
+            "to": 1
+          }
         ]
       }
     ]
@@ -301,9 +510,19 @@
         "while": "device.bilge_pump.running == 1",
         "armed": "lubeArmed",
         "onExpire": [
-          { "set": "lube", "to": 0 },
-          { "if": "self.lubePatch >= 0.5", "event": "TempRepairFailed", "detail": "WTR-02" },
-          { "set": "lubePatch", "to": 0 }
+          {
+            "set": "lube",
+            "to": 0
+          },
+          {
+            "if": "self.lubePatch >= 0.5",
+            "event": "TempRepairFailed",
+            "detail": "WTR-02"
+          },
+          {
+            "set": "lubePatch",
+            "to": 0
+          }
         ]
       }
     ],

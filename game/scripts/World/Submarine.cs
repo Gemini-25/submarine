@@ -67,9 +67,11 @@ public partial class Submarine : Node3D
         BindToolBoard(); // 배치가 놓은 공구판 윤곽에 동작을 붙인다
         BuildSpareCompartments(); // 예비품 칸 (중앙 벽장, 후방 사물함)
         BuildPumpBearing(); // WP10: 배치의 펌프 표지 자리에 베어링 뚜껑, 볼트, 기름 컵, 몸통
+        BuildSenses(query); // 감각 (WP13): 상황판 전구와 램프 시험, 청음기와 소나, 증폭 진공관
         BuildNav(); // WP14: 배치의 항법 책상과 자이로 함에 동작을 붙인다
         BuildCable();
         BuildShaftGlandFixtures(); // 선체: 축 패킹 상자 (Submarine.Hull)
+        BuildSwitchboardTierA(query); // 분기함, 전류계, 납땜인두 전원, 브리지 대기 (WP8)
         BuildGadgets(); // 계산 도구: 탁상 계산기, 계산자, 계산 도표, 저항 측정 브리지 (WP22)
     }
 

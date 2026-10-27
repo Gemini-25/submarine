@@ -212,7 +212,8 @@ static class Measurement
                     // 부하 단자: 회로가 살아 있으면 버스 전압
                     "circuit" => x => x.Circuits[c].Energized ? x.BusVoltage : 0,
                     // 퓨즈 양단: 스위치가 올라가 있고 퓨즈가 끊겼거나 빠졌으면 전원 전압이 걸린다
-                    "fuse" => x => x.Circuits[c].SwitchOn && x.BusVoltage > 0 && !x.Circuits[c].Energized ? x.BusVoltage : 0,
+                    // (분기함 배선이 탔으면 퓨즈는 멀쩡하므로 0. M0에서는 '살아 있지 않음'과 같다.)
+                    "fuse" => x => x.Circuits[c].SwitchOn && x.BusVoltage > 0 && (x.Fuses[c].Get("blown") >= 0.5 || x.Fuses[c].Get("present") < 0.5) ? x.BusVoltage : 0,
                     // 칼날 스위치 양단: 열린 접점에는 버스 전압, 닫힌 접점에는 접점 강하
                     "switch" => x => x.BusVoltage <= 0 ? 0 : x.Circuits[c].SwitchOn ? ContactDrop(x, c) : x.BusVoltage,
                     _ => throw Unknown(),
@@ -238,7 +239,8 @@ static class Measurement
                 var b = Tuning().Bridge;
                 if (p[0] == "insulation" && Circuit(out int c))
                     // 살아 있는 회로에는 브리지를 댈 수 없다 (스위치를 내려야 읽힌다)
-                    return x => x.Circuits[c].SwitchOn ? double.NaN : Curve.Eval(b.InsulationMOhm, x.Junctions[c].Get("moisture"));
+                    // 맨 이음(WP8)은 젖은 상자처럼 낮게 읽힌다 (Electrical.InsulationMoisture).
+                    return x => x.Circuits[c].SwitchOn ? double.NaN : Curve.Eval(b.InsulationMOhm, Electrical.InsulationMoisture(x, c));
                 if (target == "panel.wiring")
                 {
                     // 상황판 배선함 (SNS-02, WP20). 그 부품이 없으면 잴 곳도 없다.
@@ -294,7 +296,7 @@ static class Measurement
 
     /// <summary>
     /// 상황판 램프 시험: 켜지는 전구의 비트 (PanelSystems.Names 순서). 상황판 전원이 있어야 하고,
-    /// 탄 전구(panel.bulb.&lt;표시등&gt;의 burnt, SNS-01)는 켜지지 않는다.
+    /// 빠졌거나 탄 전구(panel.bulb.&lt;표시등&gt;, SNS-01)는 켜지지 않고 테가 헐거운 전구는 깜박인다 (PanelDisplay.BulbLights).
     /// </summary>
     public static double LampTestMask(SimWorld w)
     {
@@ -302,8 +304,7 @@ static class Measurement
         int mask = 0;
         for (int i = 0; i < PanelSystems.Names.Count; i++)
         {
-            bool burnt = w.TryPart($"panel.bulb.{PanelSystems.Names[i]}", out var bulb) && bulb.HasProp("burnt") && bulb.Get("burnt") >= 0.5;
-            if (!burnt) mask |= 1 << i;
+            if (PanelDisplay.BulbLights(w, i)) mask |= 1 << i;
         }
         return mask;
     }

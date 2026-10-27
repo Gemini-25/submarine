@@ -531,6 +531,8 @@ public class PartMechanicsTests
         // 부품 타이머와 바다 경로는 모듈이 아니다. 계통 데이터(송풍 팬의 응급 수리 수명, 펌프 베어링의 기름 타이머, 축 패킹)가 있으면 켜진다.
         Assert.True(m.HasTimers);
         Assert.True(m.HasSeaPaths);
+        // 실제 data에서는 감각 모듈이 켜진다 (WP13 진공관)
+        Assert.True(m.Senses);
     }
 
     [Fact]

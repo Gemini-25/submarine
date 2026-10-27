@@ -87,15 +87,14 @@ public class CableGearTests
         return sim.Q("noise.current") - devices;
     }
 
-    /// <summary>WP13처럼 증폭관 siphon.tube.1을 사이펀 기록기 장비의 parts에 넣은 데이터.</summary>
+    /// <summary>증폭관 siphon.tube.1(WP13, data/parts/senses.json, 사이펀 기록기 장비의 parts)의 상태를 바꾼 데이터.</summary>
     static Simulation WithAmplifierTube(double present, double filament = 1) => WithData(dir =>
     {
-        File.WriteAllText(Path.Combine(dir, "parts", "zz-test.json"),
-            $$"""{ "siphon.tube.1": { "kind": "vacuum_tube", "props": { "filament": {{filament}}, "present": {{present}} } } }""");
-        var file = Path.Combine(dir, "devices.json");
-        var devices = JsonNode.Parse(File.ReadAllText(file))!.AsObject();
-        devices["siphon_recorder"]!["parts"] = new JsonArray("siphon.tube.1");
-        File.WriteAllText(file, devices.ToJsonString());
+        var file = Path.Combine(dir, "parts", "senses.json");
+        var parts = JsonNode.Parse(File.ReadAllText(file))!.AsObject();
+        parts["siphon.tube.1"]!["props"]!["present"] = present;
+        parts["siphon.tube.1"]!["props"]!["filament"] = filament;
+        File.WriteAllText(file, parts.ToJsonString());
     });
 
     static Simulation WithExtraParts(string json) => WithData(dir => File.WriteAllText(Path.Combine(dir, "parts", "zz-test.json"), json));

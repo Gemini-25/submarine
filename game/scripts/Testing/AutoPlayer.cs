@@ -64,8 +64,10 @@ public partial class AutoPlayer : Node
         ["drill-hull"] = DrillHullSuite,
         ["drill-air"] = DrillAirSuite,
         ["drill-water"] = DrillWaterSuite,
+        ["drill-senses"] = SensesDrillSuite,
         ["drill-nav"] = DrillNavSuite,
         ["drill-cable"] = DrillCableSuite,
+        ["drill-switchboard"] = DrillSwitchboardSuite,
         ["instruments"] = InstrumentsSuite,
     };
 
@@ -577,7 +579,20 @@ public partial class AutoPlayer : Node
         }
         var aim = it.GlobalPosition;
         var stand = StandPoint(aim);
-        _main.Player.PlaceAt(stand, aim);
+        // M1 물체가 아닌 것 가운데 자리 표(StandPoints)에 있는 대상은 그 자리에 선다(필요하면 웅크린다). 책상 밑 분기함처럼 아무 데서나 닿지 않는 것 (WP8).
+        // M1 물체(M1 묶음 crisis, hands)는 예전처럼 대상마다 계산한 자리에 선다.
+        var known = _main.Sub.M1Ids.Contains(id) ? null : StandPoints.All.FirstOrDefault(st => st.Open.Length == 0 && st.Targets.Contains(id));
+        if (known != null)
+        {
+            stand = known.Feet;
+            _main.Player.PlaceAt(stand, aim);
+            if (_main.Player.Crouching != known.Crouch) await Crouch(known.Crouch);
+        }
+        else
+        {
+            if (_main.Player.Crouching) await Crouch(false);
+            _main.Player.PlaceAt(stand, aim);
+        }
         ulong start = Time.GetTicksMsec();
         while (true)
         {

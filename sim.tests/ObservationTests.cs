@@ -143,7 +143,8 @@ public class ObservationTests
     [InlineData("stethoscope", "pump.nope")]
     [InlineData("bridge", "insulation.C0")]
     [InlineData("bridge", "panel.wiring")]   // 상황판 배선함 부품이 아직 없다 (WP20)
-    [InlineData("bridge", "tube.hydrophone.tube.1")]
+    [InlineData("bridge", "tube.hydrophone.tube.9")]  // 그런 진공관이 없다
+    [InlineData("bridge", "tube.hydrophone.case")]    // 진공관이 아니다
     [InlineData("lamptest", "bus")]
     [InlineData("sextant", "bus")]
     public void Unknown_tools_and_targets_throw(string tool, string target)
@@ -223,7 +224,7 @@ public class ObservationTests
         var intake = s.Parts.Single(p => p.Id == "pump.intake");
         Assert.True(intake.Props.ContainsKey("coverOpen"));
         Assert.False(intake.Props.ContainsKey("clog"), "막힘 정도는 바구니를 꺼내 봐야 안다");
-        Assert.Equal(new[] { "blown", "present" }, s.Parts.Single(p => p.Id == "fuse.C3").Props.Keys);
+        Assert.Equal(new[] { "blown", "present", "wire" }, s.Parts.Single(p => p.Id == "fuse.C3").Props.Keys);
         Assert.DoesNotContain(s.Parts, p => p.Id == "pump.check_valve"); // 고착은 숨은 값
     }
 
