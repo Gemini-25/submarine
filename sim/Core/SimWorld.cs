@@ -71,6 +71,8 @@ sealed class SimWorld
     public readonly SensorReadings Sensors;
     /// <summary>장치 명령과 clearedWhen을 컴파일해 둔 것 (상태 아님).</summary>
     public readonly Repair.FixtureRuntime Fixtures;
+    /// <summary>부품 타이머, 바다 경로, 모듈 켜짐을 컴파일해 둔 것 (상태 아님).</summary>
+    public readonly PartMechanics Mechanics;
 
     public SimWorld(GameData data, int seed, MissionSetup? setup = null)
     {
@@ -111,6 +113,7 @@ sealed class SimWorld
 
         Sensors = new SensorReadings(data.Circuits.Count, data.Devices.Count);
         Fixtures = new Repair.FixtureRuntime(this);
+        Mechanics = new PartMechanics(this);
         _deviceIndex = new Dictionary<string, int>(StringComparer.Ordinal);
         Devices = new DeviceState[data.Devices.Count];
         DeviceCircuit = new int[Devices.Length];
@@ -204,6 +207,18 @@ sealed class SimWorld
             if (b < 0) throw new ArgumentException($"setup.bilges: 알 수 없는 빌지 칸 '{id}'");
             Water.Bilge[b] = v;
         }
+        foreach (var o in s.Parts ?? new List<PartSetup>())
+        {
+            if (!TryPart(o.Part, out var part)) throw new ArgumentException($"setup.parts: 알 수 없는 부품 '{o.Part}'");
+            if (!part.HasProp(o.Prop)) throw new ArgumentException($"setup.parts: 부품 {o.Part}에 상태 값 '{o.Prop}'이 없다");
+            part.Set(o.Prop, o.Value);
+        }
+        if (s.Throttle is double throttle)
+        {
+            // propulsion.set과 같다.
+            Devices[Propulsion].Enabled = throttle > 0;
+            Devices[Propulsion].Throttle = throttle;
+        }
     }
 
     // ── 조회 ─────────────────────────────────────────────
@@ -288,11 +303,17 @@ sealed class SimWorld
 
         Systems.Electrical.Update(this, settle: false);
         Systems.Electrical.Discharge(this);
+        SteamSystem.Update(this);
         HeatSystem.Update(this);
         WearSystem.Update(this);
+        PartTimers.Update(this);
         HullSystem.Update(this);
         WaterSystem.Update(this);
+        AttitudeSystem.Update(this);
         AirSystem.Update(this);
+        SensesSystem.Update(this);
+        NavSystem.Update(this);
+        CableGearSystem.Update(this);
         NoiseSystem.Update(this);
 
         if (Status == MissionStatus.Running && SparksThisTick.Count > 0 && Air.H2 >= T.Air.ExplosiveH2Pct)

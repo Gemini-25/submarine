@@ -23,8 +23,8 @@ static class FixtureValidator
         bool IsItem(string id) => d.Items.ContainsKey(id) || d.LockerItems.Contains(id);
         var groups = d.Fixtures.Instances
             .Where(f => f.Def.Kind == FixtureKind.Fastener && f.Group != null)
-            .Select(f => f.Group!)
-            .ToHashSet(StringComparer.Ordinal);
+            .Select(f => (f.PartId, f.Group!))
+            .ToHashSet();
 
         foreach (var locker in d.LockerItems)
             Check(d.Items.Count == 0 || d.Items.ContainsKey(locker), $"items.json: 사물함 예비품 '{locker}'의 정보가 없다");
@@ -47,7 +47,8 @@ static class FixtureValidator
             if (needsProp) Check(HasProp(f.Prop), $"{where}: {def.Kind}에는 부품 {f.PartId}의 상태 값 prop이 있어야 한다 ('{f.Prop}')");
             if (def.Kind == FixtureKind.Socket) Check(part.Props.ContainsKey("present"), $"{where}: 소켓 부품 {f.PartId}에 'present'가 없다");
             if (def.Kind == FixtureKind.Fastener) Check(f.Group != null, $"{where}: 볼트에는 group이 있어야 한다");
-            if (def.Kind == FixtureKind.Cover && f.HeldBy != null) Check(groups.Contains(f.HeldBy), $"{where}: heldBy '{f.HeldBy}' 묶음의 볼트가 없다");
+            if (def.Kind == FixtureKind.Cover && f.HeldBy != null)
+                Check(groups.Contains((f.PartId, f.HeldBy)), $"{where}: heldBy '{f.HeldBy}' 묶음의 볼트가 같은 부품 {f.PartId}에 없다");
             if (def.Kind == FixtureKind.Valve)
             {
                 Check(def.Turns > 0, $"{where}: 밸브의 turns > 0");
@@ -89,7 +90,8 @@ static class FixtureValidator
                 foreach (var e in v.Effects.Concat(v.OnComplete))
                 {
                     int kinds = (e.Set != null ? 1 : 0) + (e.Add != null ? 1 : 0) + (e.Give != null ? 1 : 0) + (e.Consume ? 1 : 0)
-                              + (e.Renew ? 1 : 0) + (e.Quality != null ? 1 : 0) + (e.Event != null ? 1 : 0) + (e.Hook != null ? 1 : 0);
+                              + (e.Renew ? 1 : 0) + (e.Quality != null ? 1 : 0) + (e.Event != null ? 1 : 0) + (e.Hook != null ? 1 : 0)
+                              + (e.Arm != null ? 1 : 0);
                     Check(kinds == 1, $"{at}: 효과 하나에는 종류가 하나만 (지금 {kinds}개)");
                     if (e.Set != null) Check(HasProp(f.Expand(e.Set)) && e.To != null, $"{at}: set '{e.Set}'(부품에 있고 to가 있어야 함)");
                     if (e.Add != null) Check(HasProp(f.Expand(e.Add)) && e.By != null, $"{at}: add '{e.Add}'(부품에 있고 by가 있어야 함)");

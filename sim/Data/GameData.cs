@@ -88,15 +88,21 @@ public sealed class GameData
         Items = (items ?? Array.Empty<ItemDef>()).ToDictionary(i => i.Id, StringComparer.Ordinal);
         var fixtureErrors = new List<string>();
         Fixtures = fixtureFiles is { Count: > 0 } ? Repair.FixtureCatalog.Build(this, fixtureFiles, fixtureErrors) : Repair.FixtureCatalog.Empty;
+        // 조이는 순서를 추적하는 볼트 묶음의 부품에 <묶음>Seq, Start, Bad 상태 값을 더한다 (검증과 상태 배열보다 먼저).
+        DeepLine.Sim.Parts.FastenerSequence.AddTrackerProps(this);
 
         DataValidator.ThrowIfInvalid(this, fixtureErrors);
 
         // 장치 조건과 clearedWhen은 조회 경로로 컴파일된다. 시험용 세계 하나에서 전부 컴파일해 보고, 틀리면 로드 오류다.
-        if (Fixtures.Rows.Count > 0 || Faults.Any(f => f.ClearedWhen is { Length: > 0 }))
+        if (Fixtures.Rows.Count > 0 || Faults.Any(f => f.ClearedWhen is { Length: > 0 }) || Parts.Any(p => p.Timers.Count > 0 || p.SeaPaths.Count > 0))
         {
-            var probe = new Core.SimWorld(this, 0);
+            Core.SimWorld probe;
+            // 바다 경로는 세계를 만들 때(첫 상황판 갱신) 이미 컴파일된다. 그때의 오류도 로드 오류로 알린다.
+            try { probe = new Core.SimWorld(this, 0); }
+            catch (Exception e) when (e is FormatException or KeyNotFoundException) { throw new DataValidationException(new[] { e.Message }); }
             var errors = new List<string>();
             probe.Fixtures.CompileAll(errors);
+            probe.Mechanics.CompileAll(errors);
             if (errors.Count > 0) throw new DataValidationException(errors);
         }
     }
@@ -216,21 +222,18 @@ public sealed class GameData
         var faults = WithIds(Need<SortedDictionary<string, FaultDef>>("faults"), (d, id) => d.Id = id);
         var hull = Read<HullFile>("hull.json");
         var leaks = WithIds(hull.Points, (d, id) => d.Id = id);
+        var hullErrors = new List<string>();
+        foreach (var (kind, kt) in hull.KindTemplates)
+        {
+            if (!leaks.Any(l => l.Kind == kind)) hullErrors.Add($"hull.json: kindTemplates.{kind}를 쓰는 지점이 없다");
+            if (kt.Kind.Length > 0) hullErrors.Add($"hull.json: kindTemplates.{kind}.kind는 비워 둔다 (지점의 kind를 쓴다)");
+        }
+        if (hullErrors.Count > 0) throw new DataValidationException(hullErrors);
 
-        // 누수 지점도 부품이다. 지점마다 템플릿을 복사해 부품을 만든다.
+        // 누수 지점도 부품이다. 지점마다 템플릿(과 그 종류의 kindTemplates)을 복사해 부품을 만든다.
         var allParts = parts.ToList();
         foreach (var leak in leaks)
-        {
-            allParts.Add(new PartDef
-            {
-                Id = leak.Id,
-                Kind = leak.Kind,
-                WearPerSecond = hull.PartTemplate.WearPerSecond,
-                Spare = hull.PartTemplate.Spare,
-                WearFault = hull.PartTemplate.WearFault,
-                Props = new SortedDictionary<string, double>(hull.PartTemplate.Props, StringComparer.Ordinal),
-            });
-        }
+            allParts.Add(LeakPart(hull, leak));
 
         var procedures = WithIds(ReadMerged<SortedDictionary<string, ProcedureDef>>("procedures") ?? new(), (d, id) => d.Id = id);
         var missions = new List<MissionDef>();
@@ -254,6 +257,36 @@ public sealed class GameData
 
         var text = ReadMerged<SortedDictionary<string, string>>("text");
         return new GameData(tuning, circuits, devices, allParts, faults, leaks, procedures, missions, items, fixtureFiles, text);
+    }
+
+    /// <summary>
+    /// 누수 지점의 부품 정의: partTemplate 위에 kindTemplates[kind]를 얹는다. props와 wearCurves는 종류 쪽이 이기고,
+    /// 타이머와 바다 경로는 이어 붙이고, wearPerSecond는 종류 쪽이 0이 아닐 때, wearFault는 종류 쪽이 있을 때 종류 쪽이다.
+    /// </summary>
+    static PartDef LeakPart(HullFile hull, LeakPointDef leak)
+    {
+        var t = hull.PartTemplate;
+        var part = new PartDef
+        {
+            Id = leak.Id,
+            Kind = leak.Kind,
+            WearPerSecond = t.WearPerSecond,
+            Spare = t.Spare,
+            WearFault = t.WearFault,
+            Props = new SortedDictionary<string, double>(t.Props, StringComparer.Ordinal),
+            WearCurves = new SortedDictionary<string, List<double[]>>(t.WearCurves, StringComparer.Ordinal),
+            Timers = t.Timers.ToList(),
+            SeaPaths = t.SeaPaths.ToList(),
+        };
+        if (!hull.KindTemplates.TryGetValue(leak.Kind, out var k)) return part;
+        if (k.WearPerSecond != 0) part.WearPerSecond = k.WearPerSecond;
+        part.Spare |= k.Spare;
+        part.WearFault = k.WearFault ?? part.WearFault;
+        foreach (var (name, v) in k.Props) part.Props[name] = v;
+        foreach (var (name, c) in k.WearCurves) part.WearCurves[name] = c;
+        part.Timers.AddRange(k.Timers);
+        part.SeaPaths.AddRange(k.SeaPaths);
+        return part;
     }
 
     static List<T> WithIds<T>(IDictionary<string, T> map, Action<T, string> setId)

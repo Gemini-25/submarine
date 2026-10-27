@@ -79,6 +79,44 @@ public sealed class PartDef
     [Optional] public string? WearFault { get; set; }
     /// <summary>wear에서 저절로 나오는 상태 값. 실제 값 = max(Props 값, 곡선(wear)). 곡선은 [wear, 값] 점들.</summary>
     [Optional] public SortedDictionary<string, List<double[]>> WearCurves { get; set; } = new(StringComparer.Ordinal);
+    /// <summary>부품 타이머 (응급 수리의 수명 등). PartTimers 칸에서 부품 순서대로 돈다.</summary>
+    [Optional] public List<PartTimerDef> Timers { get; set; } = new();
+    /// <summary>바다 경로: 풀린 볼트나 열린 덮개로 바닷물이 들어오는 길. q = k·a·√수심.</summary>
+    [Optional] public List<SeaPathDef> SeaPaths { get; set; } = new();
+}
+
+/// <summary>
+/// 부품 타이머 (docs/plans/M2-design.md 3.6절). armed가 0.5 이상이고 while이 참이면 prop이 초당 perSecond씩 준다.
+/// prop이 0 이하가 되면 (시간이 다 됐든 행동이 깎았든) armed를 0으로 내리고 onExpire를 한 번 한다.
+/// onExpire는 보통 고장의 상태 값을 되돌리고 TempRepairFailed 사건을 낸다.
+/// </summary>
+public sealed class PartTimerDef
+{
+    /// <summary>남은 수명을 담는 상태 값.</summary>
+    public string Prop { get; set; } = "";
+    /// <summary>초당 줄어드는 양 (0이면 행동으로만 준다).</summary>
+    public double PerSecond { get; set; }
+    /// <summary>assert 식. 참일 때만 시간이 간다. 비어 있으면 늘.</summary>
+    [Optional] public string While { get; set; } = "";
+    /// <summary>걸쇠 상태 값. 0.5 이상이면 타이머가 살아 있다. 효과 arm이 올린다.</summary>
+    public string Armed { get; set; } = "";
+    /// <summary>수명이 다했을 때의 효과 (set, add, event, arm만).</summary>
+    [Optional] public List<EffectDef> OnExpire { get; set; } = new();
+}
+
+/// <summary>
+/// 바다 경로 (docs/plans/M2-design.md 3.6절). when이 참이면 넓이 areaCm2 × times만큼 바닷물이 zone으로 들어온다.
+/// 누수 유입 다음에 더하고, 구역 유입 감지와 누적 유입량(InflowL)에 들어간다. 넓이가 0이면 아무것도 바꾸지 않는다.
+/// </summary>
+public sealed class SeaPathDef
+{
+    /// <summary>fore, mid, aft, chamber. 선체 누수 지점 부품이면 비워 두어 그 지점의 구역을 쓴다.</summary>
+    [Optional] public string Zone { get; set; } = "";
+    public double AreaCm2 { get; set; }
+    /// <summary>넓이 배율: "looseCount(묶음)"(이 부품의 그 볼트 묶음에서 풀린 볼트 수) 또는 조회 경로(self.x 가능). 비어 있으면 1.</summary>
+    [Optional] public string Times { get; set; } = "";
+    /// <summary>assert 식. 비어 있으면 늘.</summary>
+    [Optional] public string When { get; set; } = "";
 }
 
 public sealed class FaultDef
@@ -120,6 +158,11 @@ public sealed class HullFile
     /// <summary>모든 누수 지점이 공유하는 부품 정의 (wear, props). 부품 종류는 지점의 kind를 쓴다.</summary>
     public PartDef PartTemplate { get; set; } = new();
     public SortedDictionary<string, LeakPointDef> Points { get; set; } = new(StringComparer.Ordinal);
+    /// <summary>
+    /// 지점 종류별 부품 정의. partTemplate 위에 얹는다: props, wearCurves는 종류 쪽이 이기고, 타이머와 바다 경로는 이어 붙이고,
+    /// wearPerSecond는 종류 쪽이 0이 아니면, wearFault는 종류 쪽이 있으면 종류 쪽. kind는 비워 둔다(지점의 kind를 쓴다).
+    /// </summary>
+    [Optional] public SortedDictionary<string, PartDef> KindTemplates { get; set; } = new(StringComparer.Ordinal);
 }
 
 /// <summary>
@@ -151,6 +194,11 @@ public sealed class ProcedureStep
     [Optional] public string? Tool { get; set; }
     /// <summary>같은 명령을 몇 번 하는지 (볼트 4개, 타격 3번 …).</summary>
     [Optional] public int Repeat { get; set; } = 1;
+    /// <summary>
+    /// Fasten 단계: 볼트를 조이는 순서 ({n}의 값들, 묶음의 순열). 있으면 repeat과 길이가 같아야 하고 절차는 이 순서로 펼친다.
+    /// 볼트 묶음의 sequenceFrom이 이것을 기준으로 순서 어김(Bad)을 판정한다.
+    /// </summary>
+    [Optional] public List<int> Order { get; set; } = new();
     /// <summary>매뉴얼용: 지켜야 할 전제 조건과 어겼을 때의 위험.</summary>
     [Optional] public string? Requires { get; set; }
     [Optional] public string? Hazard { get; set; }

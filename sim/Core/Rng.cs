@@ -67,6 +67,24 @@ public sealed class Rng
         return unchecked((long)SplitMix(ref x));
     }
 
+    /// <summary>
+    /// 상태 없는 흔들림 [0, 1). 같은 (시드, 스트림 이름, 틱)이면 언제 몇 번 불러도 같은 값이고 난수를 소비하지 않는다.
+    /// 브러시 불꽃, 기어 튐, 바늘 떨림처럼 저장할 필요 없는 흔들림에 쓴다. 스트림 이름은 FNV 해시(StateHasher)로 섞고 SplitMix64로 뽑는다.
+    /// </summary>
+    public static double Noise01(long seed, string streamId, long tick)
+    {
+        var h = new StateHasher();
+        h.Add(streamId);
+        unchecked
+        {
+            ulong x = (ulong)seed ^ h.Value;
+            SplitMix(ref x);
+            x ^= (ulong)tick * 0xD6E8FEB86659FD93UL;
+            ulong z = SplitMix(ref x);
+            return (z >> 11) * (1.0 / (1UL << 53));
+        }
+    }
+
     internal void Io(StateIO io)
     {
         io.U(ref _s0);

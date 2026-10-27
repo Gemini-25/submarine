@@ -261,4 +261,18 @@ public sealed class MissionSetup
     public double? BatteryCharge { get; set; }
     public bool Charging { get; set; }
     public bool RandomFaults { get; set; }
+    /// <summary>부품 상태 값의 시작 값 덮어쓰기 (시험 부하, 미리 정비한 상태 등). 없으면 데이터의 초기값.</summary>
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public List<PartSetup>? Parts { get; set; }
+    /// <summary>추진 스로틀 0~1로 시작한다 (propulsion.set과 같다: 0보다 크면 켜짐). 없으면 꺼진 채.</summary>
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public double? Throttle { get; set; }
+}
+
+/// <summary>setup.parts 한 줄: 부품 하나의 상태 값 하나를 시작할 때 이 값으로.</summary>
+public sealed class PartSetup
+{
+    public string Part { get; set; } = "";
+    public string Prop { get; set; } = "";
+    public double Value { get; set; }
 }
