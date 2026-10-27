@@ -1,0 +1,31 @@
+{
+  "power": {
+    "cells": {
+      "installedCharge": 0.9,
+      "looseNutVoltageDrop": 0.02,
+      "looseNutHeatFactor": 0.3,
+      "arcLoadStepW": 20
+    },
+    "brushes": {
+      "sparkCurve": [[0, 0], [0.5, 0], [0.8, 0.3], [0.85, 0.4], [1, 0.8]],
+      "roughWeight": 0.6,
+      "springLow": 0.55,
+      "springHigh": 0.65,
+      "springNominal": 0.6,
+      "springHighGain": 2.5,
+      "springLowGain": 3,
+      "sparksPerSecond": 2,
+      "sparkMin": 0.05,
+      "surgeFraction": 0.7,
+      "surgeSeconds": 0.5,
+      "thrustLoss": 0.5,
+      "nominalRpm": 300,
+      "tachHunt": 0.2,
+      "defectWearMultiplier": 3,
+      "roughDefectAt": 0.3,
+      "scoreFromWear": 0.5,
+      "scoreRoughPerSecond": 0.0001,
+      "highSpringRoughPerSecond": 0.001
+    }
+  }
+}

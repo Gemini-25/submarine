@@ -102,13 +102,14 @@ public class NavigationTests
         Assert.Equal(1, sim.Q("nav.settled"));
         Assert.True(sim.Q("nav.headingError") < 0.01, "성한 베어링도 아주 조금은 닳지만 표류는 보이지 않는다");
         Assert.Equal("off", sim.QS("panel.lamp.nav"));
-        double rpm = N.MaxRpm * 0.5;
+        // 축 회전은 추진 전동기를 따라 버스 전압에 비례한다(WP11). 만충에서 300초 방전한 버스 전압은 1보다 아주 조금 낮다.
+        double rpm = N.MaxRpm * 0.5 * sim.Q("battery.voltage");
         Assert.Equal(rpm, sim.Q("reading.tachometer"), 6);
-        Assert.Equal(rpm * 300 / 60, sim.Q("reading.shaft.revs"), 3);
+        Assert.InRange(sim.Q("reading.shaft.revs"), N.MaxRpm * 0.5 * 300 / 60 * 0.99, N.MaxRpm * 0.5 * 300 / 60);
         Assert.Equal(sim.Q("reading.shaft.revs") * N.AdvancePerRevM / 1000, sim.Q("nav.trueKm"), 9);
         Assert.Equal(sim.Q("nav.trueKm"), sim.Q("reading.navcomp.counter"), 9);
         Assert.Equal(0, sim.Q("nav.counterError"), 9);
-        Assert.Equal(rpm / 60 * N.AdvancePerRevM * 3600 / 1852, sim.Q("reading.speedlog"), 9);
+        Assert.Equal(sim.Q("reading.tachometer") / 60 * N.AdvancePerRevM * 3600 / 1852, sim.Q("reading.speedlog"), 9);
         // 나침반은 참 침로 + 편차. 교범의 셈(나침반 − 편차)이 참 침로를 0.1도 안으로 돌려준다.
         Assert.InRange(Math.Abs(Gap(sim)), 0, 0.1);
         Assert.Equal(sim.Q("depth"), sim.Q("reading.depth.reference"));
@@ -194,7 +195,7 @@ public class NavigationTests
         _out.WriteLine($"멎은 비율 {stallFraction:F2}, 딸깍 틱 {clicks}, 계수 오차 {sim.Q("nav.counterError"):F3}km");
         Assert.InRange(stallFraction, 0.55, 0.65); // 미끄럼 0.6
         Assert.True(clicks > 0, "튀는 소리가 한 번도 없다");
-        Assert.Single(tach);
+        Assert.True(tach.Max() - tach.Min() < 0.01 * tach.Max(), $"회전계 {tach.Min():F2}~{tach.Max():F2}"); // 고르다 (방전으로 아주 천천히 내려갈 뿐, PWR-02의 흔들림은 ±15% 안팎)
         Assert.Equal(new[] { "off" }, lamps);
         // 계수기가 축 회전계 × 한 바퀴 전진 거리와 어긋난다.
         double gap = Math.Abs(NavDrill.DistanceFromRevs(new ObservableQuery(sim), TestData.Data) - sim.Q("reading.navcomp.counter"));

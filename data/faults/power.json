@@ -1,0 +1,12 @@
+{
+  "PWR-02": {
+    "name": "전동기 브러시 마모",
+    "system": "power",
+    "partKind": "brush_gear",
+    "defaultPart": "motor.brushes",
+    "state": "Fault",
+    "set": {},
+    "wear": 0.85,
+    "baseRatePerHour": 0
+  }
+}

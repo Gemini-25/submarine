@@ -73,6 +73,8 @@ sealed class SimWorld
     public readonly Repair.FixtureRuntime Fixtures;
     /// <summary>부품 타이머, 바다 경로, 모듈 켜짐을 컴파일해 둔 것 (상태 아님).</summary>
     public readonly PartMechanics Mechanics;
+    /// <summary>셀과 브러시 규칙이 읽는 상태 값의 참조 (상태 아님, M2 WP11).</summary>
+    public readonly PowerRefs Power;
     /// <summary>실내 습도 모듈 (M2 WP8). air.humidity가 없으면 null (상태 아님).</summary>
     public readonly Systems.HumidityRuntime? Humidity;
     /// <summary>회로마다 퓨즈의 철사(wire), 분기함의 탐(burnt)과 피복(insulated). 없는 데이터(M0·M1)에서는 −1 참조 (상태 아님).</summary>
@@ -101,6 +103,7 @@ sealed class SimWorld
             Cells[i] = new CellState { Charge = charge, TempC = T.Heat.AmbientC };
             CellParts[i] = Part($"cell.{i + 1}");
         }
+        Power = new PowerRefs(this, CellParts);
 
         _circuitIndex = new Dictionary<string, int>(StringComparer.Ordinal);
         Circuits = new CircuitState[data.Circuits.Count];
