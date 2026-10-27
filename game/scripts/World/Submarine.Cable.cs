@@ -1,3 +1,4 @@
+using DeepLine.Game.Art;
 using DeepLine.Game.Interaction;
 using DeepLine.Game.UI;
 using DeepLine.Sim;
@@ -6,19 +7,16 @@ using Godot;
 namespace DeepLine.Game.World;
 
 /// <summary>
-/// 케이블 장비 (M2 WP15): 후방 우현의 윈치 구동부와 전방 통신 책상의 사이펀 기록기.
-/// 좌표는 M2 설계 Godot plan의 표를 따르되, 해치 문이 쓸고 가는 곳을 피해 모두 z 0.8 이상에 둔다.
-/// 윈치 상자는 리벳 11의 버팀목이 지나는 자리를 비우려고 x 1.15~1.5로 줄였다 (설계 1.2~1.65, ±0.2 안).
+/// 케이블 장비 (M2 WP15): 후방 우현의 윈치 구동부와 전방 통신 책상의 사이펀 기록기를 동작하게 한다.
+/// 모습(상자, 레버, 덮개, 책상, 기록기 몸통)은 배치(Submarine.Layout.cs, docs/reports/m2-layout.md)가 지었다.
+/// 여기서는 표지를 지우고 같은 자리에 장치를 붙인 뒤, 움직이는 부분(볼트 머리, 덮개, 라이닝, 턴버클, 레버 손잡이,
+/// 줄 계수기, 하중계 바늘, 펜, 잉크 높이, 시험 키)만 만들어 모양 갱신기에 맡긴다.
 /// 사이펀 테이프의 기록은 매 프레임 단서(cue.siphon.tape, ink.line, wave)로 그린다. 판정은 시뮬레이션이 한다.
+/// 브레이크 레버 표지(winch.brake)는 장치가 아니라 그대로 둔다. 증폭 진공관(siphon.tube.1)은 WP13의 몫이다.
 /// 상태 부품이 없는 데이터(M1)면 짓지 않는다.
 /// </summary>
 public partial class Submarine
 {
-    /// <summary>윈치 상자의 복도 쪽 면 (z 0.84). 이 면의 노드는 +Z가 복도(−z)를 본다.</summary>
-    static readonly Vector3 WinchFaceAt = new(1.325f, 0, 0.84f);
-    /// <summary>사이펀 기록기 (통신 책상 위, 설계 (6.25, 0.9, 1.0)).</summary>
-    static readonly Vector3 SiphonAt = new(6.27f, 0, 0.95f);
-
     readonly Dictionary<string, int> _cueIndex = new(StringComparer.Ordinal);
 
     /// <summary>단서 세기 0~1 (없으면 0).</summary>
@@ -29,7 +27,7 @@ public partial class Submarine
         return _cueIndex.TryGetValue(id, out int k) && k < s.Cues.Count ? s.Cues[k].Value : 0;
     }
 
-    double ReadingOf(SimSnapshot s, string id)
+    static double ReadingOf(SimSnapshot s, string id)
     {
         foreach (var r in s.Readings) if (r.Id == id) return r.Value;
         return 0;
@@ -38,231 +36,206 @@ public partial class Submarine
     void BuildCable()
     {
         if (!_data.Parts.Any(p => p.Id == "winch.drum")) return;
-        BuildWinch();
-        BuildSiphon();
-    }
-
-    /// <summary>복도 쪽을 보는 면 노드. 그 안의 x는 세계 x와 반대로 간다(면이 −z를 본다).</summary>
-    Node3D FacePlate(string name, Vector3 at)
-    {
-        var face = new Node3D { Name = name, Position = at };
-        AddChild(face);
-        Geo.Face(face, Vector3.Forward);
-        return face;
-    }
-
-    /// <summary>면 노드 안의 좌표: 세계 x, y와 면에서 복도 쪽으로 나온 거리.</summary>
-    static Vector3 OnFace(Vector3 faceAt, float worldX, float y, float out_ = 0) => new(faceAt.X - worldX, y, out_);
-
-    // ── 윈치 구동부 (후방 우현) ──────────────────────────
-
-    void BuildWinch()
-    {
-        var root = new Node3D { Name = "Winch" };
+        var root = new Node3D { Name = "Cable" };
         AddChild(root);
-        // 받침 상자, 드럼과 양 볼, 활차로 오르는 와이어
-        Geo.Solid(root, new Vector3(0.35f, 0.45f, 0.31f), new Vector3(1.325f, 0.225f, 0.995f), Geo.Paint, "WinchBase");
-        foreach (float x in new[] { 1.17f, 1.48f })
-            Geo.Box(root, new Vector3(0.03f, 0.3f, 0.28f), new Vector3(x, 0.58f, 1.0f), Geo.DarkSteel);
-        var drum = new Node3D { Position = new Vector3(1.325f, 0.6f, 1.0f) };
-        root.AddChild(drum);
-        Geo.Cyl(drum, 0.11f, 0.28f, Vector3.Zero, Geo.Steel, 18).RotationDegrees = new Vector3(0, 0, 90);
-        foreach (float dx in new[] { -0.09f, 0, 0.09f })
-            Geo.Box(drum, new Vector3(0.01f, 0.23f, 0.02f), new Vector3(dx, 0, 0.11f), Geo.DarkSteel);
-        Geo.Blocker(root, new Vector3(0.35f, 0.75f, 0.31f), new Vector3(1.325f, 0.375f, 0.995f));
-        Geo.Box(root, new Vector3(0.012f, 1.5f, 0.012f), new Vector3(1.325f, 1.45f, 1.1f), Geo.Mat(new Color(0.15f, 0.15f, 0.16f), 0.6f, 0.6f));
-        Geo.Cyl(root, 0.06f, 0.04f, new Vector3(1.325f, 2.15f, 1.1f), Geo.Steel).RotationDegrees = new Vector3(0, 0, 90);
-        Geo.Text(root, "갈고리 윈치", new Vector3(1.325f, 0.47f, 0.835f), 0.03f, Geo.Cream, Vector3.Forward);
+        BuildWinch(root);
+        BuildSiphon(root);
+        BuildCableSpares(root);
+    }
 
-        var face = FacePlate("WinchFace", WinchFaceAt);
-        Vector3 F(float x, float y, float o = 0.025f) => OnFace(WinchFaceAt, x, y, o);
-        Stations["winch"] = (new Vector3(1.45f, 1.2f, 0.1f), new Vector3(1.32f, 0.42f, 0.9f));
+    /// <summary>표지를 지우고 같은 ID, 같은 자리에 장치를 붙인다. 너무 작은 표지는 손이 잡을 만큼 키운다.</summary>
+    Interactable BindAtMarker(Node3D parent, string id, float minSize = 0.035f)
+    {
+        var marker = Interactables[id];
+        // 짓는 중에는 장면 나무에 아직 안 들어 있을 수 있어서 부모 변환을 직접 곱한다.
+        var t = marker.Transform;
+        for (var n = marker.GetParent() as Node3D; n != null && n != this; n = n.GetParent() as Node3D) t = n.Transform * t;
+        var pos = t.Origin;
+        var size = ((BoxShape3D)marker.GetChild<CollisionShape3D>(0).Shape).Size;
+        string station = marker.Station;
+        RemoveMarker(id);
+        size = new Vector3(Math.Max(size.X, minSize), Math.Max(size.Y, minSize), Math.Max(size.Z, minSize * 0.6f));
+        return Add(Binder.Bind(parent, id, size, pos, station));
+    }
 
-        // 띠 덮개와 볼트 두 개
-        var hinge = new Node3D { Position = F(1.30f, 0.39f, 0.012f) };
-        face.AddChild(hinge);
-        Geo.Box(hinge, new Vector3(0.15f, 0.1f, 0.012f), new Vector3(0, -0.05f, 0), Geo.Mat(Geo.DarkSteel, 0.6f, 0.5f));
-        var cover = Add(Binder.Bind(face, "winch.cover", new Vector3(0.14f, 0.09f, 0.05f), F(1.30f, 0.34f), "winch"));
+    // ── 윈치 구동부 (후방 우현, 상자 x 1.2~1.65, 통로 쪽 면 z 0.8) ──
+
+    void BuildWinch(Node3D root)
+    {
+        const float f = 0.8f;
+        var steel = Geo.Mat(Geo.Steel, 0.5f, 0.6f);
+
+        // 띠 덮개: 위쪽 경첩에 매달린 판. 열면 아래 라이닝 자리가 드러난다.
+        var cover = BindAtMarker(root, "winch.cover");
+        var hinge = new Node3D { Position = new Vector3(1.38f, 0.41f, f - 0.022f) };
+        root.AddChild(hinge);
+        Geo.Box(hinge, new Vector3(0.2f, 0.12f, 0.008f), new Vector3(0, -0.06f, 0), Geo.Mat(Geo.DarkSteel, 0.6f, 0.5f));
         CoverVisual(cover, hinge, Vector3.Left, 95);
-        for (int n = 1; n <= 2; n++)
+
+        foreach (var (n, x) in new[] { (1, 1.51f), (2, 1.25f) })
         {
-            float x = n == 1 ? 1.19f : 1.41f;
-            var head = new Node3D { Position = F(x, 0.34f, 0.012f) };
-            face.AddChild(head);
-            Geo.Cyl(head, 0.014f, 0.014f, Vector3.Zero, Geo.Steel, 6).RotationDegrees = new Vector3(90, 0, 0);
-            var bolt = Add(Binder.Bind(face, $"winch.cover.bolt.{n}", new Vector3(0.05f, 0.05f, 0.05f), F(x, 0.34f), "winch"));
+            var bolt = BindAtMarker(root, $"winch.cover.bolt.{n}");
+            var head = new Node3D { Position = new Vector3(x, 0.35f, f - 0.028f) };
+            root.AddChild(head);
+            Geo.Face(head, Vector3.Forward);
+            Geo.Cyl(head, 0.013f, 0.012f, Vector3.Zero, steel, 6).RotationDegrees = new Vector3(90, 0, 0);
             BoltVisual(bolt, head);
         }
 
-        // 라이닝 자리와 점검창 (라이닝이 얇으면 얇게 보인다)
-        Geo.Box(face, new Vector3(0.13f, 0.07f, 0.006f), F(1.27f, 0.19f, 0.004f), Geo.Mat(new Color(0.06f, 0.06f, 0.06f)));
-        var lining = new Node3D { Position = F(1.27f, 0.19f, 0.01f) };
-        face.AddChild(lining);
-        var pad = Geo.Box(lining, new Vector3(0.11f, 0.04f, 0.01f), Vector3.Zero, Geo.Mat(new Color(0.42f, 0.3f, 0.2f), 0.95f, 0));
-        var liningIt = Add(Binder.Bind(face, "winch.lining", new Vector3(0.12f, 0.06f, 0.05f), F(1.27f, 0.19f), "winch"));
+        // 라이닝 자리 (덮개 바로 아래). 라이닝이 얇으면 얇게, 빼면 비어 보인다.
+        Geo.Box(root, new Vector3(0.13f, 0.04f, 0.006f), new Vector3(1.38f, 0.25f, f - 0.004f), Geo.Mat(new Color(0.06f, 0.06f, 0.06f)));
+        var lining = new Node3D { Position = new Vector3(1.38f, 0.25f, f - 0.01f) };
+        root.AddChild(lining);
+        var pad = Geo.Box(lining, new Vector3(0.11f, 0.03f, 0.008f), Vector3.Zero, Geo.Mat(new Color(0.42f, 0.3f, 0.2f), 0.95f, 0));
+        var liningIt = Add(Binder.Bind(root, "winch.lining", new Vector3(0.12f, 0.035f, 0.025f), new Vector3(1.38f, 0.25f, f - 0.015f), "winch"));
         SocketVisual(liningIt, lining);
+        // 점검 창 너머의 라이닝 두께
+        var windowPad = Geo.Box(root, new Vector3(0.03f, 0.01f, 0.002f), new Vector3(1.55f, 0.55f, f - 0.002f), Geo.Mat(new Color(0.42f, 0.3f, 0.2f), 0.95f, 0));
         OnUpdate((s, _) =>
         {
-            float t = (float)Math.Clamp(PartProp(s, "winch.brake", "lining", 1), 0.1, 1);
+            float t = (float)Math.Clamp(PartProp(s, "winch.brake", "lining", 1), 0.08, 1);
             pad.Scale = new Vector3(1, t, 1);
+            windowPad.Scale = new Vector3(1, 0.5f + 2.5f * t, 1);
+            windowPad.Visible = PartProp(s, "winch.brake", "present", 1) >= 0.5;
         });
 
-        // 턴버클 (렌치로 한 눈금씩)
-        var buckle = new Node3D { Position = F(1.43f, 0.19f, 0.02f) };
-        face.AddChild(buckle);
-        Geo.Cyl(buckle, 0.016f, 0.05f, Vector3.Zero, Geo.Brass, 6);
-        var adjust = Add(Binder.Bind(face, "winch.adjust", new Vector3(0.05f, 0.07f, 0.05f), F(1.43f, 0.19f), "winch"));
-        WheelVisual(adjust, buckle, Vector3.Up, 36);
+        // 턴버클: 렌치로 한 눈금씩 돌리는 황동 통
+        var adjust = BindAtMarker(root, "winch.adjust");
+        var sleeve = new Node3D { Position = new Vector3(1.38f, 0.17f, f - 0.034f) };
+        root.AddChild(sleeve);
+        Geo.Box(sleeve, new Vector3(0.055f, 0.03f, 0.03f), Vector3.Zero, Geo.Mat(Geo.Brass, 0.4f, 0.7f));
+        WheelVisual(adjust, sleeve, Vector3.Right, 36);
 
-        // 멈춤쇠, 조종 레버, 브레이크 연결 막대(조종 레버를 따라 움직이는 장식)
-        var pawlPivot = new Node3D { Position = F(1.19f, 0.56f, 0.015f) };
-        face.AddChild(pawlPivot);
-        Geo.Box(pawlPivot, new Vector3(0.025f, 0.08f, 0.015f), new Vector3(0, 0.04f, 0), Geo.Steel);
-        var pawl = Add(Binder.Bind(face, "winch.pawl", new Vector3(0.06f, 0.09f, 0.05f), F(1.19f, 0.58f), "winch"));
-        LeverVisual(pawl, pawlPivot, Vector3.Back, new[] { 25f, -10f });
+        // 멈춤쇠와 조작 레버: 배치의 레버 몸체 위에 움직이는 손잡이를 단다.
+        var pawl = BindAtMarker(root, "winch.pawl");
+        var pawlPivot = new Node3D { Position = new Vector3(1.25f, 0.57f, f - 0.03f) };
+        root.AddChild(pawlPivot);
+        Geo.Box(pawlPivot, new Vector3(0.02f, 0.07f, 0.012f), new Vector3(0, 0.035f, 0), steel);
+        LeverVisual(pawl, pawlPivot, Vector3.Back, new[] { 30f, -5f });
 
-        var ctlPivot = new Node3D { Position = F(1.45f, 0.55f, 0.02f) };
-        face.AddChild(ctlPivot);
-        Geo.Box(ctlPivot, new Vector3(0.018f, 0.16f, 0.018f), new Vector3(0, 0.08f, 0), Geo.Steel);
-        Geo.Sphere(ctlPivot, 0.022f, new Vector3(0, 0.17f, 0), Geo.Mat(Geo.Bakelite, 0.5f, 0));
-        var control = Add(Binder.Bind(face, "winch.control", new Vector3(0.07f, 0.18f, 0.06f), F(1.45f, 0.63f), "winch"));
-        LeverVisual(control, ctlPivot, Vector3.Right, new[] { -35f, 0f, 35f });
-        Geo.Text(face, "감기 · 멈춤 · 풀기", F(1.45f, 0.75f, 0.01f), 0.016f);
+        var control = BindAtMarker(root, "winch.control");
+        var ctlPivot = new Node3D { Position = new Vector3(1.55f, 0.72f, 0.835f) };
+        root.AddChild(ctlPivot);
+        Geo.Box(ctlPivot, new Vector3(0.014f, 0.24f, 0.014f), new Vector3(0, 0.12f, 0), steel);
+        Geo.Sphere(ctlPivot, 0.02f, new Vector3(0, 0.25f, 0), Geo.Mat(Geo.Bakelite, 0.5f, 0));
+        LeverVisual(control, ctlPivot, Vector3.Right, new[] { 30f, 0f, -30f });
 
-        // 줄 계수기와 하중계
-        var counter = Geo.Text(face, "", F(1.31f, 0.6f, 0.012f), 0.022f, Geo.Cream);
-        Geo.Box(face, new Vector3(0.09f, 0.035f, 0.006f), F(1.31f, 0.6f, 0.006f), Geo.Bakelite);
-        Geo.Cyl(face, 0.03f, 0.008f, F(1.31f, 0.52f, 0.008f), Geo.Cream).RotationDegrees = new Vector3(90, 0, 0);
-        var needle = new Node3D { Position = F(1.31f, 0.52f, 0.014f) };
-        face.AddChild(needle);
-        Geo.Box(needle, new Vector3(0.003f, 0.025f, 0.002f), new Vector3(0, 0.012f, 0), Geo.Mat(new Color(0.6f, 0.1f, 0.08f)));
-        float drumAngle = 0, loadAngle = 0;
-        OnUpdate((s, dt) =>
+        // 줄 계수기 숫자와 하중계 바늘: 배치가 지은 것을 찾아 움직인다.
+        var drive = FindChild("WinchDrive", true, false) as Node3D;
+        var counter = drive?.GetChildren().OfType<Label3D>().FirstOrDefault(l => l.Text == "0042");
+        var loadGauge = drive?.GetChildren().OfType<KitGauge>().FirstOrDefault();
+        OnUpdate((s, _) =>
         {
-            double line = ReadingOf(s, "winch.line");
-            counter.Text = $"{line,5:000.0}";
-            float target = (float)Math.Clamp(ReadingOf(s, "winch.load") / 400, 0, 1) * 270 - 135;
-            loadAngle = Approach(loadAngle, target, 120, dt);
-            needle.RotationDegrees = new Vector3(0, 0, -loadAngle);
-            drumAngle += (float)PartProp(s, "winch.drum", "motion") * dt / 0.11f * Mathf.RadToDeg(1);
-            drum.RotationDegrees = new Vector3(drumAngle, 0, 0);
+            if (counter != null) counter.Text = $"{Math.Clamp(ReadingOf(s, "winch.line"), 0, 999.9):000.0}";
+            loadGauge?.SetFraction((float)(ReadingOf(s, "winch.load") / 400));
         });
 
-        // 윈치 전동기 스위치 (선체 벽, 상자 뒤). device.hook_winch.on/off.
-        var swRoot = FacePlate("WinchSwitch", new Vector3(1.25f, 0, HalfWidth - 0.04f));
-        Geo.Box(swRoot, new Vector3(0.1f, 0.14f, 0.02f), new Vector3(0, 0.95f, 0.01f), Geo.Bakelite);
-        var lever = new Node3D { Position = new Vector3(0, 0.95f, 0.03f) };
-        swRoot.AddChild(lever);
-        Geo.Box(lever, new Vector3(0.016f, 0.07f, 0.016f), new Vector3(0, 0.035f, 0), Geo.Steel);
-        Geo.Text(swRoot, "윈치 전동기", new Vector3(0, 1.05f, 0.022f), 0.016f);
-        var motor = Add(Interactable.Create(swRoot, "device.hook_winch", "윈치 전동기 스위치", new Vector3(0.1f, 0.14f, 0.07f), new Vector3(0, 0.95f, 0.04f), "winch"));
+        // 윈치 전동기 스위치 (상자 뒤 선체 벽). 위로 올리면 켜고 내리면 끈다.
+        var sw = new Node3D { Name = "WinchMotorSwitch", Position = new Vector3(1.3f, 1.15f, HalfWidth - 0.03f) };
+        root.AddChild(sw);
+        Geo.Face(sw, Vector3.Forward);
+        Geo.Box(sw, new Vector3(0.09f, 0.13f, 0.02f), new Vector3(0, 0, 0.01f), Geo.Bakelite);
+        var handle = new Node3D { Position = new Vector3(0, 0, 0.025f) };
+        sw.AddChild(handle);
+        Geo.Box(handle, new Vector3(0.016f, 0.06f, 0.016f), new Vector3(0, 0.03f, 0), steel);
+        Geo.Text(sw, "윈치 전동기", new Vector3(0, 0.085f, 0.021f), 0.014f);
+        var motor = Add(Interactable.Create(sw, "device.hook_winch", "윈치 전동기 스위치", new Vector3(0.09f, 0.13f, 0.06f), new Vector3(0, 0, 0.035f), "winch"));
         motor.GestureFor = _ => GestureKind.DragVertical;
         motor.CommandFor = (_, m) => m switch { Motion.Up => "device.hook_winch.on", Motion.Down => "device.hook_winch.off", _ => null };
         int winchDevice = _data.Devices.ToList().FindIndex(d => d.Id == "hook_winch");
-        OnUpdate((s, _) => lever.RotationDegrees = new Vector3(s.Devices[winchDevice].Enabled ? -30 : 30, 0, 0));
+        OnUpdate((s, _) => handle.RotationDegrees = new Vector3(s.Devices[winchDevice].Enabled ? -30 : 30, 0, 0));
 
-        SoundSpots["winch"] = new Vector3(1.325f, 0.6f, 1.0f);
-
-        // 새 라이닝 칸: 후방 예비품 사물함 자리 (WP6의 사물함이 들어오면 그 칸으로 옮긴다).
-        var bin = FacePlate("LiningBin", new Vector3(1.5f, 0, -HalfWidth + 0.04f));
-        Geo.Face(bin, Vector3.Back);
-        Geo.Box(bin, new Vector3(0.26f, 0.1f, 0.12f), new Vector3(0, 1.45f, 0.06f), Geo.Paint);
-        var liningBin = Add(Interactable.Create(bin, "locker.brake_lining", $"사물함: {ItemName("brake_lining")}", new Vector3(0.26f, 0.1f, 0.06f), new Vector3(0, 1.45f, 0.12f), "winch"));
-        liningBin.CommandFor = (_, m) => m == Motion.Click ? "locker.take.brake_lining" : null;
-        var binLabel = Geo.Text(bin, "", new Vector3(0, 1.53f, 0.125f), 0.02f);
-        OnUpdate((s, _) => binLabel.Text = $"{ItemName("brake_lining")}  {s.Crew.Locker.GetValueOrDefault("brake_lining")}");
+        SoundSpots["winch"] = new Vector3(1.425f, 0.55f, 0.975f);
     }
 
     // ── 사이펀 기록기 (전방 우현 통신 책상) ──────────────
 
-    const int TapeSamples = 64;
+    const int TapeSamples = 48;
 
-    void BuildSiphon()
+    void BuildSiphon(Node3D root)
     {
-        var root = new Node3D { Name = "CommDesk" };
-        AddChild(root);
-        // 통신 책상 (윗면 y 0.78, x 6.1~6.75)
-        Geo.Solid(root, new Vector3(0.65f, 0.04f, 0.5f), new Vector3(6.425f, 0.76f, 0.95f), Geo.Wood, "CommDeskTop");
-        Geo.Box(root, new Vector3(0.6f, 0.74f, 0.04f), new Vector3(6.425f, 0.37f, 1.18f), Geo.Wood);
-        Geo.Blocker(root, new Vector3(0.65f, 0.78f, 0.5f), new Vector3(6.425f, 0.39f, 0.95f));
-        Stations["commdesk"] = (new Vector3(6.4f, 1.45f, 0.2f), new Vector3(6.3f, 0.9f, 0.95f));
+        BindAtMarker(root, "siphon.bulb");
+        BindAtMarker(root, "siphon.ink");
+        var arm = BindAtMarker(root, "siphon.arm");
+        BindAtMarker(root, "siphon.pen", 0.03f);
+        BindAtMarker(root, "siphon.testkey");
 
-        var face = FacePlate("Siphon", SiphonAt);
-        Vector3 F(float x, float y, float z) => new(SiphonAt.X - x, y, SiphonAt.Z - z);
-        Geo.Box(face, new Vector3(0.42f, 0.05f, 0.26f), F(6.29f, 0.805f, 1.0f), Geo.Mat(Geo.DarkSteel, 0.6f, 0.4f));
-        Geo.Text(face, "사이펀 기록기", F(6.29f, 0.84f, 0.865f), 0.018f, Geo.Cream);
+        // 펜 팔: 들면 뒤쪽 끝을 축으로 들린다.
+        var armPivot = new Node3D { Position = new Vector3(6.17f, 1.0f, 1.0f) };
+        root.AddChild(armPivot);
+        Geo.Box(armPivot, new Vector3(0.1f, 0.006f, 0.012f), new Vector3(0.05f, 0, 0), Geo.Brass);
+        LeverVisual(arm, armPivot, Vector3.Back, new[] { 0f, 18f });
 
-        // 테이프 창: 뒤쪽에 서 있는 판. 기록은 단서로 매 프레임 그린다.
-        Geo.Box(face, new Vector3(0.3f, 0.14f, 0.01f), F(6.28f, 1.0f, 1.1f), Geo.Mat(new Color(0.9f, 0.88f, 0.8f), 0.9f, 0));
+        // 펜 끝과 마른 잉크 딱지, 잉크 병의 잉크 높이, 시험 키
+        var penTip = Geo.Sphere(root, 0.004f, new Vector3(6.25f, 0.88f, 0.92f), Geo.Mat(new Color(0.1f, 0.12f, 0.35f)));
+        var crust = Geo.Sphere(root, 0.007f, new Vector3(6.33f, 0.975f, 0.955f), Geo.Mat(new Color(0.05f, 0.05f, 0.12f), 0.95f, 0));
+        var ink = Geo.Cyl(root, 0.017f, 0.035f, new Vector3(6.15f, 0.8f, 0.82f), Geo.Mat(new Color(0.08f, 0.1f, 0.3f)));
+        var key = Geo.Box(root, new Vector3(0.04f, 0.008f, 0.016f), new Vector3(6.35f, 0.8f, 0.84f), Geo.Bakelite);
+
+        // 테이프 창 (배치의 사기 띠 x 6.17~6.33, y 0.88)에 그리는 기록
         var segMat = Geo.Mat(new Color(0.1f, 0.12f, 0.35f), 0.8f, 0);
         var segs = new MeshInstance3D[TapeSamples];
         var wave = new float[TapeSamples];
-        var ink = new bool[TapeSamples];
+        var inked = new bool[TapeSamples];
+        float X(int i) => 6.33f - 0.16f * i / (TapeSamples - 1); // 테이프는 펜 자리(오른쪽)에서 왼쪽으로 흐른다(복도에서 보아)
         for (int i = 0; i < TapeSamples; i++)
-            segs[i] = Geo.Box(face, new Vector3(0.28f / TapeSamples, 0.004f, 0.003f), F(6.14f + 0.28f * i / TapeSamples, 1.0f, 1.094f), segMat);
-        // 증폭관 (WP13이 siphon.tube.1 장치를 붙인다)
-        Geo.Cyl(face, 0.018f, 0.06f, F(6.13f, 0.86f, 1.05f), Geo.Mat(new Color(0.7f, 0.75f, 0.7f, 0.5f)));
-
-        var bulb = Add(Binder.Bind(face, "siphon.bulb", new Vector3(0.05f, 0.05f, 0.05f), F(6.12f, 0.85f, 0.88f), "commdesk"));
-        Geo.Sphere(face, 0.02f, F(6.12f, 0.85f, 0.88f), Geo.Mat(new Color(0.45f, 0.12f, 0.08f), 0.7f, 0));
-        _ = bulb;
-
-        var armPivot = new Node3D { Position = F(6.2f, 0.86f, 0.9f) };
-        face.AddChild(armPivot);
-        Geo.Box(armPivot, new Vector3(0.012f, 0.012f, 0.16f), new Vector3(0, 0, -0.08f), Geo.Brass);
-        var arm = Add(Binder.Bind(face, "siphon.arm", new Vector3(0.05f, 0.06f, 0.06f), F(6.2f, 0.88f, 0.9f), "commdesk"));
-        LeverVisual(arm, armPivot, Vector3.Right, new[] { 0f, -25f });
-
-        var penTip = Geo.Cyl(face, 0.004f, 0.08f, F(6.28f, 0.92f, 0.98f), Geo.Mat(new Color(0.8f, 0.85f, 0.9f, 0.6f)));
-        var crust = Geo.Sphere(face, 0.008f, F(6.28f, 0.88f, 0.98f), Geo.Mat(new Color(0.05f, 0.05f, 0.12f), 0.95f, 0));
-        var pen = Add(Binder.Bind(face, "siphon.pen", new Vector3(0.05f, 0.08f, 0.05f), F(6.28f, 0.92f, 0.96f), "commdesk"));
-        _ = pen;
-
-        var well = Geo.Cyl(face, 0.022f, 0.05f, F(6.36f, 0.855f, 0.9f), Geo.Mat(new Color(0.8f, 0.85f, 0.9f, 0.5f)));
-        var inkLevel = Geo.Cyl(face, 0.019f, 0.045f, F(6.36f, 0.855f, 0.9f), Geo.Mat(new Color(0.08f, 0.1f, 0.3f)));
-        Add(Binder.Bind(face, "siphon.ink", new Vector3(0.05f, 0.06f, 0.05f), F(6.36f, 0.86f, 0.9f), "commdesk"));
-        _ = well;
-
-        var key = Geo.Box(face, new Vector3(0.04f, 0.015f, 0.05f), F(6.45f, 0.84f, 0.88f), Geo.Bakelite);
-        Add(Binder.Bind(face, "siphon.testkey", new Vector3(0.05f, 0.04f, 0.06f), F(6.45f, 0.84f, 0.88f), "commdesk"));
-        Geo.Text(face, "시험", F(6.45f, 0.86f, 0.855f), 0.014f, Geo.Cream);
-
-        // 잉크병 칸: 책상 옆 선반 (본선이 중앙 사물함 칸으로 옮긴다)
-        Geo.Box(face, new Vector3(0.08f, 0.06f, 0.06f), F(6.12f, 0.81f, 1.08f), Geo.Paint);
-        var inkBin = Add(Interactable.Create(face, "locker.ink_bottle", $"사물함: {ItemName("ink_bottle")}", new Vector3(0.08f, 0.06f, 0.06f), F(6.12f, 0.84f, 1.08f), "commdesk"));
-        inkBin.CommandFor = (_, m) => m == Motion.Click ? "locker.take.ink_bottle" : null;
+        {
+            segs[i] = Geo.Box(root, new Vector3(0.16f / TapeSamples + 0.001f, 0.003f, 0.002f), new Vector3(X(i), 0.88f, 0.921f), segMat);
+            segs[i].Visible = false;
+        }
 
         float phase = 0, scroll = 0;
+        int written = 0;
         OnUpdate((s, dt) =>
         {
             double tape = CueOf(s, "siphon.tape"), line = CueOf(s, "siphon.ink.line"), signal = CueOf(s, "siphon.wave");
             crust.Visible = CueOf(s, "siphon.crust") > 0.3;
-            inkLevel.Scale = new Vector3(1, (float)Math.Clamp(PartProp(s, "siphon.pen", "ink", 1), 0.02, 1), 1);
-            key.Position = F(6.45f, signal > 0 ? 0.835f : 0.84f, 0.88f);
+            ink.Scale = new Vector3(1, (float)Math.Clamp(PartProp(s, "siphon.pen", "ink", 1), 0.03, 1), 1);
+            key.Position = new Vector3(6.35f, signal > 0 ? 0.797f : 0.8f, 0.84f);
             phase += dt * 9;
-            float y = signal > 0 ? 0.04f * Mathf.Sin(phase) : 0;
-            penTip.Position = F(6.28f + y * 0.5f, 0.92f, 0.98f);
-            if (tape > 0.5)
+            float y = signal > 0 ? 0.018f * Mathf.Sin(phase) : 0;
+            penTip.Position = new Vector3(6.25f, 0.88f + y, 0.92f);
+            if (tape < 0.5) return;
+            // 테이프가 흐르면 기록이 한 칸씩 밀려 간다. 잉크 줄 품질이 낮으면 끊긴 점선, 0이면 빈 테이프.
+            scroll += dt * 16;
+            while (scroll >= 1)
             {
-                // 테이프가 흐르면 기록이 한 칸씩 밀려 간다. 잉크 줄 품질이 낮으면 끊긴 점선이 된다(잉크가 묻는 칸만).
-                scroll += dt * 20;
-                while (scroll >= 1)
-                {
-                    scroll -= 1;
-                    Array.Copy(wave, 1, wave, 0, TapeSamples - 1);
-                    Array.Copy(ink, 1, ink, 0, TapeSamples - 1);
-                    wave[^1] = y;
-                    // 결정적인 점선: 칸 번호로 고른다(표현 층의 흔들림이 아니다).
-                    float dash = (float)((Math.Abs(phase * 7) % 1.0));
-                    ink[^1] = line > 0.95 || (line > 0.05 && dash < line);
-                }
+                scroll -= 1;
+                written++;
+                Array.Copy(wave, 0, wave, 1, TapeSamples - 1);
+                Array.Copy(inked, 0, inked, 1, TapeSamples - 1);
+                wave[0] = y;
+                // 점선은 테이프 칸 번호로 정한다(표현 층의 난수가 아니다): 품질만큼의 칸에 잉크가 묻는다.
+                inked[0] = line > 0.95 || (line > 0.05 && (written % 10) < line * 10);
             }
             for (int i = 0; i < TapeSamples; i++)
             {
-                segs[i].Visible = ink[i];
-                segs[i].Position = F(6.14f + 0.28f * i / TapeSamples, 1.0f + wave[i], 1.094f);
+                segs[i].Visible = inked[i];
+                segs[i].Position = new Vector3(X(i), 0.88f + wave[i], 0.921f);
             }
         });
-        SoundSpots["siphon"] = new Vector3(6.28f, 0.92f, 0.98f);
+        SoundSpots["siphon"] = new Vector3(6.25f, 0.9f, 1.0f);
+    }
+
+    /// <summary>
+    /// 케이블 장비의 예비품 칸: 새 브레이크 라이닝(후방 예비품 사물함 아래 선반)과 잉크병(중앙 사물함 위 선반).
+    /// 사물함 칸 표지를 물건별로 나누는 일(locker.aft.shelf.N → locker.&lt;물건&gt;)은 본선이 정한다. 그때 이 두 칸을 옮긴다.
+    /// </summary>
+    void BuildCableSpares(Node3D root)
+    {
+        void Tray(string item, Vector3 pos, Vector3 facing)
+        {
+            var t = new Node3D { Name = $"Tray_{item}", Position = pos };
+            root.AddChild(t);
+            Geo.Face(t, facing);
+            Geo.Box(t, new Vector3(0.24f, 0.012f, 0.12f), new Vector3(0, -0.04f, 0.06f), Geo.Mat(Geo.Paint));
+            Geo.Box(t, new Vector3(0.24f, 0.06f, 0.012f), new Vector3(0, -0.01f, 0.12f), Geo.Mat(Geo.Paint));
+            var label = Geo.Text(t, "", new Vector3(0, 0.05f, 0.125f), 0.018f);
+            var it = Add(Interactable.Create(t, $"locker.{item}", $"사물함: {ItemName(item)}", new Vector3(0.24f, 0.1f, 0.12f), new Vector3(0, 0, 0.06f), ""));
+            it.CommandFor = (_, m) => m == Motion.Click ? $"locker.take.{item}" : null;
+            OnUpdate((s, _) => label.Text = $"{ItemName(item)}  {s.Crew.Locker.GetValueOrDefault(item)}");
+        }
+        Tray("brake_lining", new Vector3(1.5f, 1.15f, -HalfWidth + 0.02f), Vector3.Back);
+        Tray("ink_bottle", new Vector3(3.75f, 1.75f, -HalfWidth + 0.06f), Vector3.Back);
     }
 }

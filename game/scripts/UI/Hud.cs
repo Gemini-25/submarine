@@ -22,9 +22,9 @@ public partial class Hud : CanvasLayer
     {
         ["incapacitated"] = "거듭 다쳐 쓰러졌다.",
         ["unconscious"] = "숨이 막혀 의식을 잃었다.",
-        ["timeout"] = "모선이 정한 시간 안에 정상으로 되돌리지 못했다.",
-        ["explosion"] = "수소가 불꽃에 터졌다.",
-        ["hull_collapse"] = "선체가 수압을 이기지 못했다.",
+        ["timeout"] = "모선이 정한 시간 안에 배를 정상으로 되돌리지 못했다.",
+        ["explosion"] = "불꽃이 튀어 수소가 폭발했다.",
+        ["hull_collapse"] = "선체가 수압을 견디지 못하고 무너졌다.",
         ["swamped"] = "물이 차올라 모스호가 가라앉았다.",
     };
 
@@ -190,8 +190,8 @@ public partial class Hud : CanvasLayer
     {
         GestureKind.Click => "누르기",
         GestureKind.DragVertical => "잡고 위아래로 끌기",
-        GestureKind.Rotate => "잡고 원 그리기 (반시계 풀기, 시계 조이기)",
-        GestureKind.Stroke => "잡고 올렸다 누르기",
+        GestureKind.Rotate => "잡고 원 그리기 (반시계 방향 풀기, 시계 방향 조이기)",
+        GestureKind.Stroke => "잡고 올렸다가 누르기",
         GestureKind.Scrub => "잡고 좌우로 문지르기",
         GestureKind.Strike => "눌러서 치기",
         GestureKind.Probe => "대고 있기",

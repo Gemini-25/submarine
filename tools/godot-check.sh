@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Godot 쪽 확인 (SPEC 13절 'Godot 쪽 확인'): 빌드, 가져오기, 헤드리스 스모크, 종단 자동 플레이.
 # 쓰는 법: GODOT=/경로/Godot_v4.7.2-stable_mono_linux.x86_64 tools/godot-check.sh [묶음...] [--screenshots 폴더]
-#   묶음: crisis(위기 한 판), hands(위험과 손의 느낌), workviews(작업 시점), fixtures(데이터 장치의 손동작), tools(도구판과 허리띠), drill-cable(케이블 장비 훈련). 주지 않으면 전부.
+#   묶음: crisis(위기 한 판), hands(위험과 손의 느낌), reach(서 있는 자리에서 손이 닿는지), workviews(작업 시점 28곳), fixtures(데이터 장치의 손동작), tools(공구판과 공구띠), drill-cable(케이블 장비 훈련). 주지 않으면 전부.
 # 스크린샷은 화면(또는 xvfb-run)이 필요하다.
 set -euo pipefail
 cd "$(dirname "$0")/.."

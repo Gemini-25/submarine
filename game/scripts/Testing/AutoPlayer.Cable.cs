@@ -9,7 +9,7 @@ namespace DeepLine.Game.Testing;
 /// <summary>
 /// 확인 묶음 drill-cable (M2 WP15): 훈련 m2-cable을 손동작으로 푼다. 상황판의 케이블 표시등을 보고 윈치 라이닝을 갈고,
 /// 시험 키로 테이프를 본 뒤 사이펀 모세관을 청소한다. 절차는 ExpandWithBelt로 펼쳐 명령마다 손동작을 하고(Perform),
-/// 이미 그 자리에 있는 레버는 건드리지 않는다. 윈치와 통신 책상의 작업 시점에서 물체가 모두 잡히는지도 본다.
+/// 이미 그 자리에 있는 레버는 건드리지 않는다. 작업 시점(winch, commdesk)은 workviews 묶음이 본다.
 /// 끝나면 위기 훈련(m1-crisis)으로 되돌려 다른 묶음에 영향을 주지 않는다.
 /// </summary>
 public partial class AutoPlayer
@@ -20,9 +20,6 @@ public partial class AutoPlayer
         _main.Runner.Start(Data, "m2-cable");
         _main.Restart();
         await Frame(2);
-
-        await CheckStation("winch", "winch.cover", new[] { "winch.control", "winch.pawl", "winch.cover.bolt.1", "winch.cover.bolt.2", "winch.cover", "winch.lining", "winch.adjust" });
-        await CheckStation("commdesk", "siphon.pen", new[] { "siphon.arm", "siphon.pen", "siphon.ink", "siphon.bulb", "siphon.testkey" });
 
         Step(5);
         await Frame();
@@ -106,26 +103,5 @@ public partial class AutoPlayer
         _main.Hands.PointerUp();
         var got = _issued.Skip(before).ToList();
         Check(got.Count == 1 && got[0] == cmd, $"'{cmd}'를 하려 했는데 손동작이 낸 명령: [{string.Join(", ", got)}]");
-    }
-
-    /// <summary>작업 시점에 들어가 물체를 모두 가리켜 본다 (workviews 묶음과 같은 방법).</summary>
-    async Task CheckStation(string station, string enter, string[] targets)
-    {
-        if (await Approach(enter) == null) return;
-        await Frame();
-        Check(_main.Hands.ToggleWorkView(), $"'{enter}'를 보고 F를 눌렀는데 작업 시점이 아니다");
-        Check(_main.Player.WorkStation == station, $"'{enter}'의 작업 시점이 '{_main.Player.WorkStation}' (기대 {station})");
-        await ToSignal(GetTree().CreateTimer(0.8), SceneTreeTimer.SignalName.Timeout);
-        var cam = _main.Player.Camera;
-        var size = cam.GetViewport().GetVisibleRect().Size;
-        foreach (var id in targets)
-        {
-            var it = _main.Sub.Interactables[id];
-            var screen = cam.UnprojectPosition(it.GlobalPosition);
-            bool onScreen = screen.X >= 0 && screen.Y >= 0 && screen.X <= size.X && screen.Y <= size.Y;
-            var hit = _main.Hands.RayPickAt(screen);
-            Check(onScreen && hit == it, $"'{station}' 작업 시점에서 '{id}'를 가리켰는데 잡힌 것: {hit?.Id ?? "없음"} (화면 {screen} / {size})");
-        }
-        _main.Hands.ToggleWorkView();
     }
 }
