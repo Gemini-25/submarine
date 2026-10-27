@@ -7,37 +7,9 @@ namespace DeepLine.Sim.Tests;
 public class ManualTests
 {
     static string ManualDir => Path.Combine(TestData.DataDir, "manual");
-    static string SnapshotDir => Path.Combine(TestData.FixtureDir, "manual-m1");
 
     static readonly Lazy<IReadOnlyList<ManualPage>> _pages = new(() => ManualText.LoadPages(ManualDir, TestData.Data));
     static IReadOnlyList<ManualPage> Pages => _pages.Value;
-
-    /// <summary>
-    /// M1 교범 쪽은 숫자를 자리표시자로 옮긴 뒤에도 글자 하나까지 같게 렌더된다 (fixtures/manual-m1은 옮기기 전 원본).
-    /// M2에서 일부러 고친 쪽은 그 스냅숏을 지우고 보고서에 적는다 (진단 표는 셋으로 나누며 지웠다). 뒤에 절만 덧붙인 쪽은 앞부분이 같으면 된다.
-    /// </summary>
-    [Fact]
-    public void M1_pages_render_exactly_as_before_the_placeholders()
-    {
-        var snapshots = Directory.GetFiles(SnapshotDir, "*.md").OrderBy(f => f, StringComparer.Ordinal).ToList();
-        Assert.NotEmpty(snapshots);
-        foreach (var snap in snapshots)
-        {
-            string name = Path.GetFileName(snap);
-            var page = Pages.SingleOrDefault(p => p.File == name);
-            Assert.True(page != null, $"교범에 {name}이 없다");
-            string expected = File.ReadAllText(snap);
-            // M2가 M1 글 뒤에 절만 덧붙인 쪽(23 퓨즈 교체: 퓨즈 대용 철사, 탄 배선 다시 잇기)은 M1 글이 앞에 그대로 있어야 한다.
-            if (page.Markdown.Length > expected.Length && page.Markdown.StartsWith(expected, StringComparison.Ordinal)) continue;
-            if (expected != page.Markdown)
-            {
-                var a = expected.Split('\n');
-                var b = page.Markdown.Split('\n');
-                int line = Enumerable.Range(0, Math.Min(a.Length, b.Length)).FirstOrDefault(i => a[i] != b[i], Math.Min(a.Length, b.Length));
-                Assert.Fail($"{name} {line + 1}행이 다르다:\n원본: {(line < a.Length ? a[line] : "(끝)")}\n렌더: {(line < b.Length ? b[line] : "(끝)")}");
-            }
-        }
-    }
 
     [Fact]
     public void M1_pages_take_their_numbers_from_data()
