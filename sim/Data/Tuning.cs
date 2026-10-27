@@ -26,6 +26,8 @@ public sealed class Tuning
     public List<string> Tools { get; set; } = new();
     /// <summary>공구판과 공구띠 (M2). 없으면 M1처럼 모든 도구를 바로 쥘 수 있다.</summary>
     [Optional] public ToolBoardTuning? ToolBoard { get; set; }
+    /// <summary>케이블 장비: 윈치와 사이펀 기록기 (M2 WP15, data/tuning/cable.json). 상태 부품이 없으면 쓰지 않는다.</summary>
+    [Optional] public CableTuning? Cable { get; set; }
 }
 
 /// <summary>손 수리 동작의 수치 (M1). 손동작 하나가 명령 하나다.</summary>

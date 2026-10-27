@@ -1,0 +1,200 @@
+{
+  "params": {
+    "testSeconds": 10,
+    "prickClear": 0.25
+  },
+  "fixtures": [
+    {
+      "id": "winch.control",
+      "part": "winch.drum",
+      "kind": "lever",
+      "zone": "aft",
+      "prop": "control",
+      "positions": ["haul", "stop", "lower"],
+      "verbs": {
+        "haul": { "tool": "hand", "noise": "lever" },
+        "stop": { "tool": "hand", "noise": "lever" },
+        "lower": { "tool": "hand", "noise": "lever" }
+      }
+    },
+    {
+      "id": "winch.pawl",
+      "part": "winch.pawl",
+      "kind": "lever",
+      "zone": "aft",
+      "prop": "engaged",
+      "positions": ["release", "engage"],
+      "verbs": {
+        "release": { "tool": "hand", "noise": "pawl" },
+        "engage": {
+          "tool": "hand",
+          "noise": "pawl",
+          "rejectIf": [
+            { "if": "part.winch.drum.prop.motion > 0.5", "reason": "drum_spinning" }
+          ]
+        }
+      }
+    },
+    {
+      "id": "winch.cover.bolt.{n}",
+      "bind": { "n": "1..2" },
+      "part": "winch.brake",
+      "kind": "fastener",
+      "zone": "aft",
+      "prop": "bolt{n}",
+      "group": "cover",
+      "verbs": {
+        "loosen": { "tool": "wrench", "noise": "wrench" },
+        "tighten": { "tool": "wrench", "noise": "wrench" }
+      }
+    },
+    {
+      "id": "winch.cover",
+      "part": "winch.brake",
+      "kind": "cover",
+      "zone": "aft",
+      "prop": "coverOpen",
+      "heldBy": "cover",
+      "verbs": {
+        "open": { "tool": "hand", "noise": "cover" },
+        "close": { "tool": "hand", "noise": "cover" }
+      },
+      "touch": { "temp": "self.tempC" }
+    },
+    {
+      "id": "winch.lining",
+      "part": "winch.brake",
+      "kind": "socket",
+      "zone": "aft",
+      "needReason": "need_lining",
+      "verbs": {
+        "pull": {
+          "tool": "hand",
+          "noise": "cover",
+          "rejectIf": [
+            { "if": "self.coverOpen < 0.5", "reason": "cover_closed" }
+          ],
+          "hazards": [
+            { "if": "part.winch.drum.prop.load > 0 && part.winch.pawl.prop.engaged < 0.5", "hazard": "pinch" },
+            { "if": "device.hook_winch.running == 1 && part.winch.drum.prop.control == 0", "hazard": "pinch" }
+          ],
+          "set": { "adjust": 0 },
+          "gives": [
+            { "if": "self.lining < 0.6", "item": "lining_worn" },
+            { "item": "brake_lining" }
+          ]
+        },
+        "insert": {
+          "noise": "cover",
+          "rejectIf": [
+            { "if": "self.coverOpen < 0.5", "reason": "cover_closed" }
+          ],
+          "hazards": [
+            { "if": "device.hook_winch.running == 1 && part.winch.drum.prop.control == 0", "hazard": "pinch" }
+          ],
+          "accepts": {
+            "brake_lining": { "set": { "lining": 1 }, "renew": true },
+            "lining_worn": {}
+          }
+        }
+      }
+    },
+    {
+      "id": "winch.adjust",
+      "part": "winch.brake",
+      "kind": "adjuster",
+      "zone": "aft",
+      "prop": "adjust",
+      "min": 0,
+      "max": 10,
+      "step": 1,
+      "verbs": {
+        "up": { "tool": "wrench", "noise": "wrench" },
+        "down": { "tool": "wrench", "noise": "wrench" }
+      }
+    },
+    {
+      "id": "siphon.arm",
+      "part": "siphon.pen",
+      "kind": "lever",
+      "zone": "fore",
+      "prop": "armUp",
+      "positions": ["down", "up"],
+      "verbs": {
+        "down": { "tool": "hand", "noise": "lever" },
+        "up": { "tool": "hand", "noise": "lever" }
+      }
+    },
+    {
+      "id": "siphon.pen",
+      "part": "siphon.pen",
+      "kind": "work",
+      "zone": "fore",
+      "verbs": {
+        "prick": {
+          "gesture": "stroke",
+          "tool": "pricker",
+          "noise": "tap",
+          "rejectIf": [
+            { "if": "self.armUp < 0.5", "reason": "arm_down" }
+          ],
+          "effects": [
+            { "add": "clog", "by": "-$prickClear", "min": 0, "max": 1 },
+            { "set": "primed", "to": 0 },
+            { "set": "primeStrokes", "to": 0 }
+          ]
+        }
+      }
+    },
+    {
+      "id": "siphon.ink",
+      "part": "siphon.pen",
+      "kind": "work",
+      "zone": "fore",
+      "verbs": {
+        "fill": {
+          "gesture": "click",
+          "hold": "ink_bottle",
+          "noise": "tap",
+          "effects": [
+            { "set": "ink", "to": 1 },
+            { "set": "primeStrokes", "to": 0 },
+            { "consume": true }
+          ]
+        }
+      }
+    },
+    {
+      "id": "siphon.bulb",
+      "part": "siphon.pen",
+      "kind": "work",
+      "zone": "fore",
+      "prop": "primeStrokes",
+      "verbs": {
+        "prime": {
+          "gesture": "stroke",
+          "tool": "hand",
+          "count": 2,
+          "noise": "prime",
+          "onComplete": [
+            { "if": "self.ink > 0.1 && self.clog < 0.5", "set": "primed", "to": 1 }
+          ]
+        }
+      }
+    },
+    {
+      "id": "siphon.testkey",
+      "part": "siphon.state",
+      "kind": "work",
+      "zone": "fore",
+      "verbs": {
+        "press": {
+          "gesture": "click",
+          "tool": "hand",
+          "noise": "tap",
+          "set": { "testTimer": "$testSeconds" }
+        }
+      }
+    }
+  ]
+}

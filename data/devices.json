@@ -159,7 +159,7 @@
     "loadType": "Motor",
     "kind": "Continuous",
     "defaultOn": true,
-    "zone": "mid",
+    "zone": "fore",
     "parts": []
   },
   "soldering_iron": {

@@ -1,0 +1,178 @@
+{
+  "proc.winch.reline": {
+    "title": "윈치 브레이크 라이닝 교체",
+    "fault": "CBL-01",
+    "grade": "proper",
+    "steps": [
+      {
+        "type": "Inspect",
+        "text": "조종 레버가 멈춤에 있는데 드럼이 조금씩 풀려 나가고 줄 계수기가 오르면 브레이크가 하중을 못 잡는 것이다. 점검창으로 라이닝 두께를 본다."
+      },
+      {
+        "type": "Isolate",
+        "text": "조종 레버를 멈춤에 둔다.",
+        "cmd": "winch.control.stop",
+        "tool": "hand"
+      },
+      {
+        "type": "Isolate",
+        "text": "멈춤쇠를 걸어 드럼이 풀리지 않게 한다.",
+        "cmd": "winch.pawl.engage",
+        "tool": "hand",
+        "requires": "드럼이 빨리 돌고 있지 않을 것",
+        "hazard": "드럼이 빨리 돌면 멈춤쇠가 튕겨 나와 걸리지 않는다."
+      },
+      {
+        "type": "Isolate",
+        "text": "윈치 전동기를 끈다.",
+        "cmd": "device.hook_winch.off",
+        "tool": "hand"
+      },
+      {
+        "type": "Open",
+        "text": "렌치로 띠 덮개 볼트 두 개를 푼다.",
+        "cmd": "winch.cover.bolt.{n}.loosen",
+        "tool": "wrench",
+        "repeat": 2
+      },
+      {
+        "type": "Open",
+        "text": "띠 덮개를 연다.",
+        "cmd": "winch.cover.open",
+        "tool": "hand"
+      },
+      {
+        "type": "Remove",
+        "text": "닳은 라이닝을 빼낸다. 빼면 턴버클이 끝까지 풀린다.",
+        "cmd": "winch.lining.pull",
+        "tool": "hand",
+        "requires": "멈춤쇠가 걸려 있고 전동기가 꺼져 있을 것",
+        "hazard": "멈춤쇠 없이 하중이 걸린 채로 빼면 드럼이 헛돌아 손이 끼이고 하중을 잃는다."
+      },
+      {
+        "type": "Remove",
+        "text": "닳은 라이닝을 폐기함에 버린다.",
+        "cmd": "hand.drop"
+      },
+      {
+        "type": "Install",
+        "text": "예비품 사물함에서 새 브레이크 라이닝을 꺼낸다.",
+        "cmd": "locker.take.brake_lining"
+      },
+      {
+        "type": "Install",
+        "text": "새 라이닝을 띠 안쪽에 끼운다.",
+        "cmd": "winch.lining.insert",
+        "tool": "hand",
+        "requires": "전동기가 꺼져 있을 것",
+        "hazard": "감기 중인 드럼에 손을 넣으면 끼인다."
+      },
+      {
+        "type": "Close",
+        "text": "띠 덮개를 닫는다.",
+        "cmd": "winch.cover.close",
+        "tool": "hand"
+      },
+      {
+        "type": "Fasten",
+        "text": "덮개 볼트 두 개를 조인다.",
+        "cmd": "winch.cover.bolt.{n}.tighten",
+        "tool": "wrench",
+        "repeat": 2
+      },
+      {
+        "type": "Work",
+        "text": "렌치로 턴버클을 한 눈금씩 열 번 돌려 끝까지 조인다.",
+        "cmd": "winch.adjust.up",
+        "tool": "wrench",
+        "repeat": 10
+      },
+      {
+        "type": "Work",
+        "text": "턴버클을 한 눈금씩 세 번 되돌린다. 끝까지 조인 채로 두면 띠가 드럼에 끌린다.",
+        "cmd": "winch.adjust.down",
+        "tool": "wrench",
+        "repeat": 3
+      },
+      {
+        "type": "Close",
+        "text": "윈치 전동기를 켠다.",
+        "cmd": "device.hook_winch.on",
+        "tool": "hand"
+      },
+      {
+        "type": "Close",
+        "text": "멈춤쇠를 푼다.",
+        "cmd": "winch.pawl.release",
+        "tool": "hand"
+      },
+      {
+        "type": "Test",
+        "text": "조종 레버를 감기에 두어 줄 계수기가 5m 줄 때까지 감아 올린다.",
+        "cmd": "winch.control.haul",
+        "tool": "hand"
+      },
+      {
+        "type": "Test",
+        "text": "조종 레버를 멈춤에 두고 60초 지켜본다. 줄 계수기가 서 있고 케이블 표시등이 꺼져 있으면 된다.",
+        "cmd": "winch.control.stop",
+        "tool": "hand"
+      }
+    ]
+  },
+  "proc.siphon.clear": {
+    "title": "사이펀 모세관 청소",
+    "fault": "CBL-02",
+    "grade": "proper",
+    "steps": [
+      {
+        "type": "Inspect",
+        "text": "시험 키를 누르고 테이프를 본다. 물결이 끊어져 점선이 되거나 아무것도 그려지지 않으면 잉크 길이 막힌 것이다. 펜 끝의 마른 잉크 딱지와 잉크병 눈금을 본다."
+      },
+      {
+        "type": "Open",
+        "text": "펜 팔을 들어 테이프에서 뗀다.",
+        "cmd": "siphon.arm.up",
+        "tool": "hand"
+      },
+      {
+        "type": "Work",
+        "text": "쑤시개 바늘로 모세관을 네 번 쑤신다.",
+        "cmd": "siphon.pen.prick",
+        "tool": "pricker",
+        "repeat": 4,
+        "requires": "펜 팔이 들려 있을 것"
+      },
+      {
+        "type": "Work",
+        "text": "예비품 사물함에서 잉크병을 꺼낸다.",
+        "cmd": "locker.take.ink_bottle"
+      },
+      {
+        "type": "Work",
+        "text": "잉크병을 잉크 우물에 부어 채운다.",
+        "cmd": "siphon.ink.fill",
+        "tool": "hand"
+      },
+      {
+        "type": "Work",
+        "text": "마중 고무공을 두 번 눌러 모세관에 잉크를 채운다.",
+        "cmd": "siphon.bulb.prime",
+        "tool": "hand",
+        "repeat": 2
+      },
+      {
+        "type": "Close",
+        "text": "펜 팔을 내려 테이프에 댄다.",
+        "cmd": "siphon.arm.down",
+        "tool": "hand"
+      },
+      {
+        "type": "Test",
+        "text": "시험 키를 누른다. 끊김 없는 물결이 그려지면 된다.",
+        "cmd": "siphon.testkey.press",
+        "tool": "hand"
+      }
+    ]
+  }
+}

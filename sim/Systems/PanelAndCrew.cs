@@ -129,6 +129,7 @@ static class PanelSystem
                 if (i >= 0 && w.TryCircuitIndex(circuit, out int c))
                     lamps[i] = Max(lamps[i], CircuitDevicesLamp(w, s, c));
             }
+            lamps[PanelSystems.Cable] = Max(lamps[PanelSystems.Cable], CableGear.PanelLamp(w)); // 윈치 미끄럼 스위치 (WP15)
         }
         else
         {

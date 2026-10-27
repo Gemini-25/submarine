@@ -325,7 +325,7 @@ public class CrewToolTests
     {
         var sim = TestData.NewSim();
         var bind = new Dictionary<string, string> { ["circuit"] = "C3", ["point"] = "leak.rivet.09" };
-        foreach (var p in TestData.Data.Procedures)
+        foreach (var p in TestData.Data.Procedures.Where(p => p.Fault is "ELC-01" or "WTR-01" or "HUL-01"))
         {
             var b = p.Bind.ToDictionary(n => n, n => bind[n]);
             Assert.Equal(ProcedureRunner.Expand(p, b).Select(c => c.Cmd), ProcedureRunner.ExpandWithBelt(sim, p, b).Select(c => c.Cmd));

@@ -518,7 +518,8 @@ public class PartMechanicsTests
     [Fact]
     public void Modules_are_off_without_their_state_parts()
     {
-        var m = NewSim(TestData.Data).World.Mechanics;
+        // 상태 부품이 없는 얼린 기준 데이터 (실제 데이터에는 계통 작업 묶음이 상태 부품을 더해 간다)
+        var m = NewSim(GameData.LoadFromDirectory(Path.Combine(TestData.FixtureDir, "golden-data"))).World.Mechanics;
         Assert.False(m.Steam || m.Attitude || m.Senses || m.Nav || m.Cable);
         Assert.False(m.HasSeaPaths);
         Assert.False(m.HasTimers);

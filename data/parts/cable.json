@@ -1,0 +1,55 @@
+{
+  "winch.drum": {
+    "kind": "winch_drum",
+    "props": {
+      "control": 1,
+      "lineOut": 30,
+      "load": 0,
+      "motion": 0,
+      "slip": 0,
+      "slipSwitch": 0
+    },
+    "visible": ["control", "lineOut", "load", "motion", "slip"]
+  },
+  "winch.brake": {
+    "kind": "winch_brake",
+    "props": {
+      "adjust": 7,
+      "bolt1": 1,
+      "bolt2": 1,
+      "coverOpen": 0,
+      "lining": 1,
+      "present": 1,
+      "tempC": 12
+    },
+    "visible": ["adjust", "bolt1", "bolt2", "coverOpen", "lining", "present"]
+  },
+  "winch.pawl": {
+    "kind": "winch_pawl",
+    "props": {
+      "engaged": 0
+    },
+    "visible": ["engaged"]
+  },
+  "siphon.pen": {
+    "kind": "siphon_pen",
+    "props": {
+      "armUp": 0,
+      "clog": 0,
+      "ink": 0.8,
+      "primeStrokes": 0,
+      "primed": 1
+    },
+    "visible": ["armUp", "ink"]
+  },
+  "siphon.state": {
+    "kind": "siphon_state",
+    "props": {
+      "signal": 0,
+      "tape": 1,
+      "testTimer": 0,
+      "trace": 1
+    },
+    "visible": ["signal", "tape", "trace"]
+  }
+}

@@ -15,7 +15,7 @@ public static class Units
     /// <summary>증기 압력 1에 해당하는 kg/cm².</summary>
     public const double PressureKgCm2 = 15;
 
-    public static readonly IReadOnlyList<string> Known = Array.AsReadOnly(new[] { "V", "A", "L", "Lpm", "kgcm2", "C", "pct", "m", "MOhm", "Ohm", "s", "none" });
+    public static readonly IReadOnlyList<string> Known = Array.AsReadOnly(new[] { "V", "A", "L", "Lpm", "kgcm2", "C", "pct", "m", "kg", "MOhm", "Ohm", "s", "none" });
 
     public static bool IsKnown(string unit) => Known.Contains(unit);
 
