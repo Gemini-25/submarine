@@ -111,7 +111,7 @@ public partial class Submarine
         root.AddChild(sleeve);
         Geo.Box(sleeve, new Vector3(0.055f, 0.03f, 0.03f), Vector3.Zero, Geo.Mat(Geo.Brass, 0.4f, 0.7f));
         Geo.Box(sleeve, new Vector3(0.057f, 0.004f, 0.006f), new Vector3(0, 0.016f, 0), Geo.Mat(new Color(0.08f, 0.06f, 0.03f))); // 돈 정도가 보이는 홈
-        WheelVisual(adjust, sleeve, Vector3.Right, 36);
+        WheelVisual(adjust, sleeve, Vector3.Right, 30); // 한 눈금 30°: 0~10이 0~300°라 끝까지 푼 자리와 끝까지 조인 자리가 다르게 보인다
 
         // 멈춤쇠와 조작 레버 (배치 Body에서 빼고 배치 자리에 짓는다)
         var pawl = BindAtMarker(root, "winch.pawl");

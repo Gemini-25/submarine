@@ -207,10 +207,10 @@ static class CableGear
     static void Siphon(SimWorld w, Refs r, SiphonTuning t)
     {
         double dt = w.Dt;
-        // 테이프 구동과 잉크 줄은 기록기에 전기가 오면(C6이 살아 있고 기록기가 켜져 있으면) 돈다.
+        // 테이프 구동과 잉크 줄은 기록기에 전기가 오면(DeviceRules.Powered: 켜짐, C6 살아 있음, 버스 전압 ≥ 최소 전압, 과열 정지 아님) 돈다.
         // 신호(펜의 흔들림)는 증폭기가 돌아야 한다: 장비가 Running이고(WP13: 빠지거나 죽은 진공관은 장비를 세운다),
         // 증폭관이 데이터에 있으면 꽂혀 있고 필라멘트가 살아 있어야 한다. 그래서 관이 빠지면 테이프는 흐르고 곧은 줄이 그려진다.
-        bool powered = r.SiphonDevice >= 0 && w.Devices[r.SiphonDevice].Enabled && w.Circuits[w.DeviceCircuit[r.SiphonDevice]].Energized;
+        bool powered = r.SiphonDevice >= 0 && DeviceRules.Powered(w, r.SiphonDevice);
         bool running = r.SiphonDevice >= 0 && w.Devices[r.SiphonDevice].Running;
         double timer = r.TestTimer.Get();
         if (timer > 0) r.TestTimer.Set(Math.Max(0, timer - dt));

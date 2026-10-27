@@ -518,11 +518,13 @@ public class PartMechanicsTests
     [Fact]
     public void Modules_are_off_without_their_state_parts()
     {
-        // 상태 부품이 없는 얼린 기준 데이터 (실제 데이터에는 계통 작업 묶음이 상태 부품을 더해 간다)
+        // 상태 부품도 타이머도 바다 경로도 없는 얼린 기준 데이터에서는 모두 꺼진다.
         var m = NewSim(GameData.LoadFromDirectory(Path.Combine(TestData.FixtureDir, "golden-data"))).World.Mechanics;
         Assert.False(m.Steam || m.Attitude || m.Senses || m.Nav || m.Cable);
         Assert.False(m.HasSeaPaths);
         Assert.False(m.HasTimers);
+        // 부품 타이머는 모듈이 아니다. 실제 데이터에는 계통 데이터(송풍 팬의 응급 수리 수명, 펌프 베어링의 기름 타이머)가 있어 켜진다.
+        Assert.True(NewSim(TestData.Data).World.Mechanics.HasTimers);
     }
 
     [Fact]

@@ -28,6 +28,35 @@ public sealed class Tuning
     [Optional] public ToolBoardTuning? ToolBoard { get; set; }
     /// <summary>케이블 장비: 윈치와 사이펀 기록기 (M2 WP15, data/tuning/cable.json). 상태 부품이 없으면 쓰지 않는다.</summary>
     [Optional] public CableTuning? Cable { get; set; }
+    /// <summary>흡수통의 죔쇠와 뚜껑 (M2 WP9, data/tuning/air.json). 없으면 죔쇠를 열어 둔 흡수통도 다 흡수한다.</summary>
+    [Optional] public ScrubberTuning? Scrubber { get; set; }
+    /// <summary>송풍 팬 (M2 WP9, data/tuning/air.json). 없으면 멎은 팬은 데워지지 않는다.</summary>
+    [Optional] public FanTuning? Fan { get; set; }
+    /// <summary>펌프 베어링의 기름칠과 뚜껑 (M2 WP10, data/tuning/water.json). 없으면 베어링은 M1처럼 wear 곡선만 따른다.</summary>
+    [Optional] public PumpBearingTuning? PumpBearing { get; set; }
+}
+
+/// <summary>펌프 베어링 (WTR-02). 기름 잔의 기름은 저항(drag)을 줄이고, 뚜껑 볼트가 풀린 채 돌면 기름이 새고 빨리 닳는다.</summary>
+public sealed class PumpBearingTuning
+{
+    /// <summary>기름 잔이 차 있을 때(lube 1) 줄어드는 저항의 비율. 실제 저항 = drag × (1 − 이 값 × lube).</summary>
+    public double LubeDragCut { get; set; }
+    /// <summary>뚜껑이 닫혀 있는데 볼트가 하나라도 풀려 있을 때 베어링 wear 배율 (기름이 샌다).</summary>
+    public double LooseCapWearMultiplier { get; set; }
+}
+
+/// <summary>송풍 팬 (AIR-01).</summary>
+public sealed class FanTuning
+{
+    /// <summary>C2에 전기가 오는데 날개가 멎어 있을 때(구속) 전동기에 드는 열 (W). 만지면 따뜻하다.</summary>
+    public double StallHeatW { get; set; }
+}
+
+/// <summary>흡수통 (AIR-02). 상태는 부품 scrubber.canister의 상태 값 clamp1Open, clamp2Open, lidOpen, present.</summary>
+public sealed class ScrubberTuning
+{
+    /// <summary>죔쇠가 하나라도 열려 있으면 공기가 흡수제를 비켜 가서 흡수가 이 배율로 준다.</summary>
+    public double BypassAbsorption { get; set; }
 }
 
 /// <summary>손 수리 동작의 수치 (M1). 손동작 하나가 명령 하나다.</summary>

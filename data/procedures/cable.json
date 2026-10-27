@@ -56,7 +56,7 @@
       },
       {
         "type": "Install",
-        "text": "예비품 사물함에서 새 브레이크 라이닝을 꺼낸다.",
+        "text": "후방 예비품 사물함에서 새 브레이크 라이닝을 꺼낸다.",
         "cmd": "locker.take.brake_lining"
       },
       {
@@ -152,7 +152,7 @@
       },
       {
         "type": "Work",
-        "text": "예비품 사물함에서 잉크병을 꺼낸다.",
+        "text": "전기 예비품 벽장에서 잉크병을 꺼낸다.",
         "cmd": "locker.take.ink_bottle"
       },
       {

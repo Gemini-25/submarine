@@ -49,12 +49,28 @@ public static class CueAudio
         R("pump.backflow", s => new PumpVoice(s), (v, c) => v.Backflow = c.V, shared: "pump", spot: "pump", range: 12),
         R("pump.grind", s => new PumpVoice(s), (v, c) => v.BearingWear = c.V, shared: "pump", spot: "pump", range: 12),
 
-        // 송풍 팬 (AIR-01은 WP9가 걸림·베어링 단서를 더한다).
+        // 송풍 팬 (AIR-01): 도는 소리, 멎은 전동기의 웅웅 소리, 풀린 허브의 덜걱거림이 한 목소리다. 자리는 배치의 환풍기.
         R("fan.hum", s => new FanVoice(s), (v, c) =>
         {
-            v.Running = c.V >= 0.5f;
+            v.Running = c.V >= 0.5f || v.Stalled;
             v.RotationHz = 23f * (0.6f + 0.4f * (float)c.S.BusVoltage);
-        }, spot: "vent_fan", db: -8, range: 8),
+        }, shared: "fan", spot: "fan", db: -8, range: 8),
+        R("fan.stall", s => new FanVoice(s), (v, c) =>
+        {
+            // 웅웅 소리는 Stalled와 Running(전원)이 함께 켜져야 난다. 처음부터 멎은 팬은 fan.hum 줄이 한 번도 불리지 않으므로 여기서 둘 다 정한다.
+            v.Stalled = c.V >= 0.5f;
+            v.Running = v.Stalled || (Device(c.S, DeepLine.Sim.Data.Bindings.Fan)?.Running ?? false);
+        }, shared: "fan", spot: "fan", db: -8, range: 8),
+        R("fan.rattle", s => new FanVoice(s), (v, c) => v.BearingWear = c.V, shared: "fan", spot: "fan", db: -8, range: 8),
+
+        // 흡수통 죔쇠가 열린 채 팬이 돌면 뚜껑 틈에서 바람이 샌다 (AIR-02 숨은 결함). 키트에 전용 목소리가 없어 가는 쉿 소리로.
+        // 안전밸브의 가는 휘파람과 바람 소리를 작게 쓴다. Leak을 0으로 두어야 물방울이 튀지 않는다.
+        R("scrubber.whistle", s => new SteamHissVoice(s), (v, c) =>
+        {
+            v.Leak = 0;
+            v.Pressure = 0.3f;
+            v.SafetyValve = 0.15f * c.V;
+        }, spot: "scrubber", db: -12, range: 3),
 
         // 누수 지점마다 3D 쉿 소리 (HUL-01). 세기는 0.3L/s에서 다 차므로 크기는 실제 유입량으로 낸다.
         R("{p}.hiss", s => new LeakHissVoice(s), (v, c) =>
@@ -72,23 +88,34 @@ public static class CueAudio
 
         // 갈고리 윈치 (CBL-01, WP15): 전동기 웅웅거림은 전동기 상태를, 드럼 소리는 줄 속도(감기 +, 풀기 −)를 따른다.
         // 브레이크 미끄럼(와이어가 쉭 하고 풀리고 브레이크가 끽 한다)은 미끄럼이 빨라질수록 커진다.
-        R("winch.motor", s => new WinchVoice(s), (v, c) => v.Running = c.V >= 0.5f, shared: "winch", spot: "winch", range: 10),
+        R("winch.motor", s => new WinchVoice(s), (v, c) =>
+        {
+            v.Running = c.V >= 0.5f;
+            v.Load = WinchLoad(c.S);
+        }, shared: "winch", spot: "winch", range: 10),
         R("winch.hauling", s => new WinchVoice(s), (v, c) =>
         {
             v.Speed = (float)Math.Clamp(-PartVal(c.S, "winch.drum", "motion") / 0.25, -1, 1);
-            v.Load = (float)Math.Clamp(Reading(c.S, "winch.load") / 400, 0, 1);
+            v.Load = WinchLoad(c.S);
         }, shared: "winch", spot: "winch", range: 10),
-        R("winch.zip", s => new WinchVoice(s), (v, c) => v.BrakeSlip = c.V, shared: "winch", spot: "winch", range: 10),
+        R("winch.zip", s => new WinchVoice(s), (v, c) =>
+        {
+            // 미끄럼 소리는 하중에 비례한다. 처음 소리를 내는 줄이 이것일 수 있으므로 여기서도 하중을 넣는다.
+            v.BrakeSlip = c.V;
+            v.Load = WinchLoad(c.S);
+        }, shared: "winch", spot: "winch", range: 10),
 
         // 사이펀 기록기 (CBL-02, WP15): 테이프 구동, 신호 중의 펜 소리. 마른 긁힘(막힘)은 시험 신호가 있고 펜 팔이 내려가 있을 때만.
         R("siphon.tape", s => new SiphonRecorderVoice(s), (v, c) => v.Running = c.V >= 0.5f, shared: "siphon", spot: "siphon", db: -6, range: 3),
-        R("siphon.wave", s => new SiphonRecorderVoice(s), (v, c) => v.Signal = c.V, shared: "siphon", spot: "siphon", db: -6, range: 3),
+        // 펜 팔을 들면 펜이 테이프에 닿지 않으므로 펜 소리가 없다 (시뮬레이션의 siphon.scratch와 같다).
+        R("siphon.wave", s => new SiphonRecorderVoice(s), (v, c) => v.Signal = PartVal(c.S, "siphon.pen", "armUp") >= 0.5 ? 0 : c.V,
+            shared: "siphon", spot: "siphon", db: -6, range: 3),
         R("siphon.ink.line", s => new SiphonRecorderVoice(s), (v, c) =>
             v.Clog = PartVal(c.S, "siphon.state", "signal") > 0.5 && PartVal(c.S, "siphon.pen", "armUp") < 0.5 ? 1 - c.V : 0,
             shared: "siphon", spot: "siphon", db: -6, range: 3),
     };
 
-    /// <summary>Submarine.SoundSpots에 없는 소리 자리. 송풍 팬은 장면에 장비 물체가 없어 소리 쪽이 자리를 정한다(M1부터).</summary>
+    /// <summary>Submarine.SoundSpots에 없는 소리 자리. vent_fan은 공기 장치가 없는 데이터(M1)에서만 쓰는 송풍 팬 대체 자리다.</summary>
     public static readonly IReadOnlyDictionary<string, Godot.Vector3> ExtraSpots = new Dictionary<string, Godot.Vector3>(StringComparer.Ordinal)
     {
         ["vent_fan"] = new(4.0f, 2.1f, 0),
@@ -128,6 +155,10 @@ public static class CueAudio
             if (d.Id == id) return d;
         return null;
     }
+
+    /// <summary>윈치 하중 0~1 (하중계 ÷ 새 브레이크가 잡는 하중 400kg, tuning.cable.winch.brakeMaxKg).</summary>
+    const double WinchFullKg = 400;
+    static float WinchLoad(SimSnapshot s) => (float)Math.Clamp(Reading(s, "winch.load") / WinchFullKg, 0, 1);
 
     /// <summary>스냅숏의 보이는 부품 값 (parts.json의 visible). 없으면 0.</summary>
     static double PartVal(SimSnapshot s, string part, string prop)

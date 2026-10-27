@@ -225,6 +225,14 @@ static class Electrical
 /// <summary>장비별 규칙. 부품 상태 값을 읽어 가동 가능 여부와 부하율을 정한다.</summary>
 static class DeviceRules
 {
+    /// <summary>
+    /// 장비에 전기가 오는가: 켜져 있고, 회로가 살아 있고, 버스 전압이 최소 전압 이상이고, 과열 정지가 아니다.
+    /// Running에서 부품 조건(CanRun)만 뺀 것이다. 부품 때문에 서 있는 장비(빠진 진공관)와 전기가 없는 장비를 가른다.
+    /// 조회 device.&lt;id&gt;.powered와 사이펀 기록기의 테이프 구동이 함께 쓴다.
+    /// </summary>
+    public static bool Powered(SimWorld w, int d) =>
+        w.Devices[d].Enabled && w.Circuits[w.DeviceCircuit[d]].Energized && w.BusVoltage >= w.Data.Devices[d].MinVoltage && !w.Devices[d].CutOut;
+
     public static bool CanRun(SimWorld w, int d)
     {
         foreach (var p in w.DeviceParts[d])
@@ -232,6 +240,8 @@ static class DeviceRules
                 return false;
         if (d == w.Fan)
             return w.Part("fan.motor").Get("stalled") < 0.5;
+        // 베어링을 빼 놓으면 펌프 축이 돌지 않는다 (WP10).
+        if (d == w.Pump && !PumpBearing.Present(w)) return false;
         return true;
     }
 
@@ -240,7 +250,8 @@ static class DeviceRules
         if (d == w.Pump)
         {
             var pr = w.T.Pump;
-            double drag = PartEffects.Effective(w, w.Part("pump.bearing"), "drag");
+            // 기름 잔이 차 있으면 저항이 준다 (WP10). 규칙이 없으면 wear 곡선의 drag 그대로.
+            double drag = PumpBearing.Drag(w);
             // 덮개가 열려 공기를 빨면 막힌 것처럼 헛돈다. 바구니가 없으면 막힘도 없다.
             double starve = Systems.WaterSystem.PumpStarvation(w);
             return Math.Max(0, 1 - pr.ClogLoadDrop * starve + pr.DragLoadGain * drag);

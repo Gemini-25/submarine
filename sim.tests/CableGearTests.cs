@@ -67,7 +67,10 @@ public class CableGearTests
             for (int k = 0; k < TestData.Ticks(wait); k++)
             {
                 sim.Step();
-                events.AddRange(sim.DrainEvents());
+                var e = sim.DrainEvents();
+                var rejected = e.FirstOrDefault(x => x.Kind == SimEventKind.CommandRejected);
+                Assert.True(rejected.Kind != SimEventKind.CommandRejected, $"'{c}'가 거부됐다: {rejected.Detail}");
+                events.AddRange(e);
                 if (P(sim, "winch.drum", "slip") <= 0) peak[0] = Math.Max(peak[0], ActionNoise(sim));
             }
         }
@@ -384,13 +387,16 @@ public class CableGearTests
         Assert.True(tTight > tGood * 1.2, $"끌리는 윈치가 덜 느리다 ({tTight:F1}초 / {tGood:F1}초)");
         double rateGood = (lining[good] - P(good, "winch.brake", "lining")) / tGood;
         double rateTight = (lining[tight] - P(tight, "winch.brake", "lining")) / tTight;
-        Assert.Equal(4, rateTight / rateGood, 2);
+        Assert.Equal(4, rateTight / rateGood, 6);
         // 감은 직후 띠 덮개: 끌리면 뜨겁고(단계 3 이상) 타는 냄새가 난다. 맞으면 차갑고 냄새가 없다 (교범 44 가르기).
         Assert.True(TouchBand(tight, "winch.cover") >= 3);
         Assert.Equal(0, TouchBand(good, "winch.cover"));
         Assert.True(tight.Q("cue.winch.brake.smell") >= 0.3);
         Assert.Equal(0, good.Q("cue.winch.brake.smell"));
-        // 오래 감아도 화상 기준에는 이르지 않는다
+        // 오래 감아도(평형 가까이) 화상 기준에는 이르지 않는다
+        tight.Run(90);
+        Assert.True(P(tight, "winch.drum", "motion") < 0, "90초 더 감는 동안 줄 끝(활차)에 닿았다");
+        Assert.True(P(tight, "winch.brake", "tempC") > 55);
         Assert.True(P(tight, "winch.brake", "tempC") < TestData.T.Crew.Touch!.BurnAtC);
 
         // 다시 하면(세 눈금 되돌리면) 끌림이 없어진다
@@ -552,7 +558,13 @@ public class CableGearTests
         for (int i = 0; i < TestData.Ticks(3); i++) { sim.Step(); Assert.Equal("off", sim.QS("panel.lamp.cable")); }
         Assert.Equal(0, sim.Q("cue.siphon.wave"));
         Assert.Equal(1 - TestData.Data.Faults.First(f => f.Id == "CBL-02").Set["clog"], sim.Q("cue.siphon.ink.line"), 9); // 멈춘 펜의 곧은 줄도 점선
-        Do(sim, "siphon.testkey.press", 2);
+        sim.Cmd("siphon.testkey.press");
+        for (int i = 0; i < TestData.Ticks(2); i++)
+        {
+            sim.Step();
+            Assert.DoesNotContain(sim.DrainEvents(), e => e.Kind == SimEventKind.CommandRejected);
+            Assert.Equal("off", sim.QS("panel.lamp.cable"));
+        }
         Assert.Equal(1, sim.Q("cue.siphon.wave"));
         double line = sim.Q("cue.siphon.ink.line");
         Assert.InRange(line, 0.05, 0.5); // 점선
@@ -664,6 +676,21 @@ public class CableGearTests
         Assert.Equal(1, good.Q("cue.siphon.wave"));
     }
 
+    [Fact]
+    public void A_bus_below_the_recorder_minimum_stops_the_tape_even_with_C6_alive()
+    {
+        // 점퍼하지 않은 죽은 셀: 버스 전압이 기록기의 최소 전압 아래로 떨어진다. C6은 살아 있다.
+        var sim = TestData.NewSim(setup: TestData.Setup(s => s.Parts = new List<PartSetup> { new() { Part = "cell.3", Prop = "health", Value = 0 } }));
+        sim.Run(1);
+        int d = sim.World.DeviceIndex("siphon_recorder");
+        Assert.True(sim.Q("circuit.C6.energized") >= 0.5);
+        Assert.True(sim.World.BusVoltage < TestData.Data.Devices[d].MinVoltage);
+        Do(sim, "siphon.testkey.press", 2);
+        Assert.Equal(0, sim.Q("cue.siphon.tape"));
+        Assert.Equal(0, sim.Q("cue.siphon.ink.line"));
+        Assert.Equal(0, sim.Q("device.siphon_recorder.powered"));
+    }
+
     // ── 테이프가 이상하다 (pair:siphon.trace)의 헛수리 ────
 
     [Fact]
@@ -672,11 +699,10 @@ public class CableGearTests
         var sim = Clogged();
         var bind = new Dictionary<string, string> { ["circuit"] = "C6" };
         foreach (var c in ProcedureRunner.ExpandWithBelt(sim, TestData.Data.Procedure("proc.fuse.replace"), bind).Select(c => c.Cmd))
-        {
-            sim.Cmd(c);
-            sim.Run(Hand);
-        }
+            Do(sim, c);
         Do(sim, "siphon.testkey.press", 2);
+        Assert.Equal(1, sim.Q("cue.siphon.tape")); // C6은 살아 있다
+        Assert.Equal(1, sim.Q("cue.siphon.wave"));
         Assert.Equal("CBL-02", sim.World.Part("siphon.pen").ActiveFault);
         Assert.True(sim.Q("cue.siphon.ink.line") < 0.5);
         Assert.Equal(TestData.T.Inventory.Locker["fuse"] - 1, sim.Q("inventory.fuse"));
