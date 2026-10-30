@@ -57,6 +57,8 @@ static class Modules
         ["cable"] = new[] { "winch.drum", "siphon.state" },
         // 습도는 tuning.humidity도 있어야 돈다 (Systems.HumidityRuntime.Build).
         ["humidity"] = new[] { "air.humidity" },
+        // 칼날 스위치 접점 (WP17). tuning.contacts도 있어야 돈다 (Systems.ContactRefs.Build).
+        ["contacts"] = new[] { "contact.C1", "contact.C2", "contact.C3", "contact.C4", "contact.C5", "contact.C6", "contact.C7", "contact.C8" },
     };
 
     public static bool Has(SimWorld w, string module) => GateParts[module].Any(id => w.PartIndex(id) >= 0);
