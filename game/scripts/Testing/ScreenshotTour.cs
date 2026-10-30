@@ -49,9 +49,10 @@ public partial class ScreenshotTour : Node
             await Capture(name);
         }
         // 기울기 (WP18): 이물이 숙은 배와 고물이 숙은 배. 경사계 바늘, 화면 기울기, 구른 도구가 같은 쪽을 가리키는지 본다.
+        string first = _main.Runner.Snapshot!.Mission.Id;
         await Tilted("10-tilt-bow-down", new[] { "pump.suction.aft" });
         await Tilted("11-tilt-stern-down", new[] { "ballast.aft.flood.open", "ballast.aft.flood.open", "ballast.aft.flood.open", "ballast.aft.flood.open", "pump.suction.fore" });
-        _main.Runner.Start(_main.Runner.Data, "m1-crisis");
+        _main.Runner.Start(_main.Runner.Data, first);
         _main.Restart();
         _main.Runner.Paused = true;
 

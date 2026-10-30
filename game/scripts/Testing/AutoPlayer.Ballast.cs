@@ -134,6 +134,28 @@ public partial class AutoPlayer
         await Frame();
         var up = _main.Player.Camera.GlobalBasis.Y;
         Check(up.X < -0.05f, $"이물이 숙었는데 카메라가 고물 쪽으로 젖혀지지 않았다 (위쪽 {up})");
+
+        // 기울어진 배에서도 'ballast' 작업 시점의 대상(레버, 경사계 쪽 바퀴, 패킹)이 모두 화면 안에 있고 조준선이 닿는다.
+        var st = StandPoints.All.First(x => x.Name == "ballast");
+        if (await StandAt(st) && await AimFrom(st, st.Targets[0]))
+        {
+            await Frame(2);
+            Check(_main.Hands.ToggleWorkView() && _main.Player.WorkStation == st.Name, "기울어진 배에서 'ballast' 작업 시점에 들어가지 못했다");
+            await ToSignal(GetTree().CreateTimer(0.8), SceneTreeTimer.SignalName.Timeout);
+            var cam = _main.Player.Camera;
+            var size = cam.GetViewport().GetVisibleRect().Size;
+            Check(Math.Abs(q.Number("reading.inclinometer")) > Data.Tuning.ToolBoard!.RollTiltDeg, "작업 시점을 볼 때 배가 기울어 있지 않다");
+            foreach (var id in st.Targets)
+            {
+                var it = _main.Sub.Interactables[id];
+                var p = it.WorldAimPoint;
+                var screen = cam.UnprojectPosition(p);
+                bool onScreen = !cam.IsPositionBehind(p) && screen.X >= 0 && screen.Y >= 0 && screen.X <= size.X && screen.Y <= size.Y;
+                var hit = _main.Hands.RayPickAt(screen);
+                Check(onScreen && hit == it, $"기울어진 배의 'ballast' 작업 시점에서 '{id}'를 가리켰는데 잡힌 것: {hit?.Id ?? "없음"} (화면 {screen})");
+            }
+            _main.Hands.ToggleWorkView();
+        }
         Check(seen.SequenceEqual(new[] { "aft", "mid", "fore" }), $"나무망치가 구른 길: {string.Join(" → ", seen)}");
         // 화면의 도구는 굴러가듯 미끄러져 닿는다 (표현만; 프레임 시간에 따른다).
         var node = _main.Sub.GetNode<Node3D>("Floor_mallet");

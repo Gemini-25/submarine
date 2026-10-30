@@ -69,7 +69,7 @@ public partial class Submarine
             var flood = BindAtMarker(root, $"ballast.{tank}.flood");
             WheelVisual(flood, spinner, Vector3.Back, 360);
 
-            // 패킹 너트: 한 칸 60°. 풀면 앞으로 나온다.
+            // 패킹 너트: 한 칸 90°(시계 방향이 조임). 풀면 앞으로 나온다.
             var nutMount = Mount(m, $"BallastGland_{tank}", new Vector3(x, 1.4f, 0.03f), Vector3.Back);
             var nut = new Node3D();
             nutMount.AddChild(nut);

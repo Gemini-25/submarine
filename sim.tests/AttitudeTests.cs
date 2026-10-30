@@ -477,6 +477,32 @@ public class BallastValveTests
     }
 
     [Fact]
+    public void Oil_then_hammer_keeps_the_hammer_life_and_its_failure_event()
+    {
+        // 침투유를 바르고 곧바로 쇠망치 ×3: 스밈이 끝나도 쇠망치의 수명과 재발 사건을 덮지 않는다.
+        var sim = Exposed();
+        Do(sim, "locker.take.penetrating_oil");
+        Do(sim, "ballast.fore.stem.oil");
+        Do(sim, "toolboard.return.scrub_brush");
+        Do(sim, "toolboard.take.engineer_hammer");
+        Do(sim, "tool.engineer_hammer");
+        long strikeTick = 0;
+        for (int i = 0; i < 3; i++) { strikeTick = sim.Tick; Do(sim, "ballast.fore.body.strike"); }
+        Assert.Equal("temporary", sim.QS($"part.{Valve}.quality"));
+        double life = TestData.Data.Fixtures.Instances.First(f => f.Id == "ballast.fore.body").Params["freeLifeS"];
+        var events = new List<SimEvent>();
+        while (sim.Tick < strikeTick + TestData.Ticks(life) + 20)
+        {
+            sim.Run(1);
+            events.AddRange(sim.DrainEvents());
+            if (sim.Tick < strikeTick + TestData.Ticks(life) - 2) Assert.Equal("temporary", sim.QS($"part.{Valve}.quality"));
+        }
+        var failed = Assert.Single(events, e => e.Kind == SimEventKind.TempRepairFailed);
+        Assert.InRange(failed.Tick - strikeTick, TestData.Ticks(life) - 2, TestData.Ticks(life) + 2);
+        Assert.Equal(1, sim.Q($"part.{Valve}.prop.stuck"));
+    }
+
+    [Fact]
     public void A_valve_that_seizes_again_mid_repack_is_freed_by_the_new_packing()
     {
         // 침투유 뒤 수명(닫기 한 번을 쓰면 400초)이 패킹을 감기 전에 다해도, 새 패킹을 다 감으면 축이 풀린다.
@@ -504,6 +530,21 @@ public class BallastValveTests
         var events = Follow(sim, "proc.ballast.repack", skip: c => c == "ballast.fore.flood.close");
         var spray = Assert.Single(events, e => e.Kind == SimEventKind.Hurt && e.Detail == "spray" && e.Subject == "ballast.fore.gland.down");
         Assert.Equal(spray, events.First(e => e.Kind == SimEventKind.Hurt));
+        // 세 번의 너트 풀기가 모두 실제로 됐다 (분출의 기절로 거부된 것이 없다).
+        Assert.DoesNotContain(events, e => e.Kind == SimEventKind.CommandRejected && e.Subject == "ballast.fore.gland.down");
+
+        // 한 칸씩 직접: 첫째·둘째 칸에서는 분출이 없고 셋째 칸(다 풀 때)에서만 난다.
+        var b = Exposed();
+        var v = b.World.Part(Valve);
+        v.Set("stuck", 0);
+        Do(b, "tool.wrench");
+        for (int notch = 1; notch <= 3; notch++)
+        {
+            var e = Do(b, "ballast.fore.gland.down");
+            Assert.DoesNotContain(e, x => x.Kind == SimEventKind.CommandRejected);
+            Assert.Equal(notch == 3, e.Any(x => x.Kind == SimEventKind.Hurt && x.Detail == "spray"));
+            b.Run(3); // 기절이 풀리게
+        }
     }
 
     [Theory]
@@ -551,9 +592,10 @@ public class BallastValveTests
             Assert.Equal(0, sim.Q("zone.mid.alarm")); // 수심 100m에서는 경고등에 걸리지 않을 만큼 조금 샌다
             // 펌프가 서 있으면 전중 빌지가 천천히 오른다 (교범 32쪽).
             Do(sim, "switch.C3.off");
-            double fwd = sim.Q("bilge.fwd.water") + sim.Q("bilge.aft.water");
+            double fwd = sim.Q("bilge.fwd.water");
             sim.Run(300);
-            Assert.True(sim.Q("bilge.fwd.water") + sim.Q("bilge.aft.water") > fwd + 10);
+            _out.WriteLine($"C3를 끈 300초: 전중 빌지 {fwd:F1} → {sim.Q("bilge.fwd.water"):F1}L");
+            Assert.True(sim.Q("bilge.fwd.water") > fwd + 5, "전중 빌지가 천천히 오른다");
             Do(sim, "switch.C3.on");
             // 다시 맞추면(셋째 칸) 그친다.
             Do(sim, "tool.wrench");
@@ -758,7 +800,8 @@ public class BallastDrillTests
     [Fact]
     public void A_bound_valve_with_its_gland_set_back_does_not_finish_the_drill()
     {
-        // 패킹을 다 감은 뒤 너트를 다섯째 칸까지 조이고 바퀴를 돌려 물리게 한다. 너트만 셋째 칸으로 되돌려서는 끝나지 않는다.
+        // 패킹을 다 감은 뒤 너트를 다섯째 칸까지 조이고 닫아서 닫힌 채 물리게 한다(stuck 1, open 0).
+        // 너트를 셋째 칸으로 되돌리고 탱크를 다 맞춰도 stuck 조건 때문에 끝나지 않는다.
         var sim = new Simulation();
         sim.StartMission(TestData.Data, Mission);
         sim.Run(300);
@@ -766,16 +809,27 @@ public class BallastDrillTests
         BallastValveTests.Follow(sim, "proc.ballast.repack", skip: c => c == "ballast.fore.gland.up" && ++ups > 0);
         void Do(string c) { sim.Cmd(c); sim.Run(Human); }
         Do("tool.wrench");
-        for (int i = 0; i < 5; i++) Do("ballast.fore.gland.up");
+        for (int i = 0; i < 3; i++) Do("ballast.fore.gland.up");
         Do("tool.hand");
         Do("ballast.fore.flood.open");
+        Assert.Equal(0, sim.Q("part.ballast.fore.valve.prop.stuck"));
+        Do("tool.wrench");
+        Do("ballast.fore.gland.up");
+        Do("ballast.fore.gland.up");
+        Do("tool.hand");
+        Do("ballast.fore.flood.close");
         Assert.Equal(1, sim.Q("part.ballast.fore.valve.prop.stuck"));
+        Assert.Equal(0, sim.Q("ballast.fore.open"));
         Do("tool.wrench");
         Do("ballast.fore.gland.down");
         Do("ballast.fore.gland.down");
+        LevelTanks(sim);
         sim.Run(TestData.Data.Mission(Mission).Success.HoldSeconds + 60);
-        Assert.Equal(MissionStatus.Running, sim.Status);
+        Assert.True(OtherGoalsHold(sim));
+        Assert.Equal(0, sim.Q("part.ballast.fore.valve.prop.corroded"));
+        Assert.Equal(3, sim.Q("part.ballast.fore.valve.prop.gland"));
         Assert.Equal(1, sim.Q("part.ballast.fore.valve.prop.stuck"));
+        Assert.Equal(MissionStatus.Running, sim.Status);
     }
 
     [Fact]

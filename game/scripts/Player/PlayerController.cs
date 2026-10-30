@@ -27,6 +27,7 @@ public partial class PlayerController : CharacterBody3D
     /// <summary>배의 앞뒤 기울기 (도, 이물이 숙으면 양수; 경사계 읽기). 카메라가 기울고 비탈을 오를 때 느려진다 (M2 WP18).</summary>
     public float TrimDeg { get; set; }
     float _tilt;
+    Vector3 _workTarget;
     /// <summary>자동 테스트가 넣는 이동 입력(x 오른쪽, y 뒤쪽). null이면 키보드를 읽는다.</summary>
     public Vector2? AutoMove { get; set; }
     public string WorkStation { get; private set; } = "";
@@ -80,6 +81,7 @@ public partial class PlayerController : CharacterBody3D
         WorkStation = station;
         _workFrom = Camera.GlobalTransform;
         _workTo = new Transform3D(Basis.Identity, eye).LookingAt(target, Vector3.Up);
+        _workTarget = target;
         _workBlend = 0;
         Camera.TopLevel = true;
         Camera.GlobalTransform = _workFrom;
@@ -152,8 +154,11 @@ public partial class PlayerController : CharacterBody3D
         {
             _workBlend = Math.Min(1, _workBlend + dt * 3.5f);
             float t = _workBlend * _workBlend * (3 - 2 * _workBlend);
-            // 작업 시점에서도 기울기는 남는다.
-            var tilted = new Transform3D(new Basis(Vector3.Back, _tilt) * _workTo.Basis, _workTo.Origin);
+            // 작업 시점에서도 기울기는 남지만 대상은 화면에 그대로 둔다: 대상을 보고 위쪽만 중력을 따른다.
+            // 옆벽을 보는 작업 시점에서는 화면이 구르고, 앞뒤(격벽)를 보는 작업 시점에서는 대상이 가운데에 남는다.
+            var tilted = Mathf.Abs(_tilt) > 1e-5f
+                ? new Transform3D(Basis.Identity, _workTo.Origin).LookingAt(_workTarget, new Basis(Vector3.Back, _tilt) * Vector3.Up)
+                : _workTo;
             Camera.GlobalTransform = _workFrom.InterpolateWith(tilted, t);
         }
     }
