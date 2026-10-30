@@ -285,11 +285,7 @@ public sealed partial class DrillSolver
             _s.Agenda.RemoveAt(0);
             return null;
         }
-        if (Now - op.Start > _book.Ticks(max))
-        {
-            Stop(DrillOutcome.Stuck, "wait_timeout:" + op.WaitRef);
-            return null;
-        }
+        if (Now - op.Start > _book.Ticks(max)) return TimedOut(op, "wait_timeout:");
         if (op.Release && JobOf(op.Job) is { } job)
         {
             // 손을 놓는다: 이 일의 남은 연산을 치워 두고, 조건이 서면 다시 시작한다.
@@ -300,6 +296,32 @@ public sealed partial class DrillSolver
             return Emit(PlanKind.Note, 0, job: JobName(job.Id), note: "park " + op.WaitRef);
         }
         return Emit(PlanKind.Wait, Math.Max(1, Math.Min(_book.Ticks(every), Poll)), job: JobName(op.Job), jobStep: op.Step, note: "until " + op.WaitRef);
+    }
+
+    /// <summary>
+    /// 일의 기다림이 시간이나 횟수를 넘겼다 (WP23): 훈련 전체를 멈추지 않고 그 일만 그만두고(gave_up) 손을 놓는다.
+    /// 일에 딸리지 않은 기다림(확인 따위)이면 전처럼 멈춘다.
+    /// </summary>
+    PlanStep? TimedOut(Op op, string why)
+    {
+        if (JobOf(op.Job) is not { } job)
+        {
+            Stop(DrillOutcome.Stuck, why + op.WaitRef);
+            return null;
+        }
+        return GiveUp(job, why + op.WaitRef);
+    }
+
+    PlanStep GiveUp(Job job, string why)
+    {
+        _s.Agenda.RemoveAll(o => o.Job == job.Id);
+        job.Parked = new List<Op>();
+        job.Phase = "done";
+        SetKey(job.Key, "failed", job.Attempts);
+        string bt = BindText(job.Bind);
+        _s.Findings.Add(new DrillFinding(Now, job.Pair, job.Verdict, bt, "gave_up"));
+        _s.QuietSince = Now;
+        return Emit(PlanKind.Note, 0, pair: job.Pair, verdict: job.Verdict, bind: bt, job: JobName(job.Id), note: "gave_up " + why);
     }
 
     StepWait? StepWaitOf(string origin, int step) =>
@@ -327,11 +349,9 @@ public sealed partial class DrillSolver
         if (op.Start < 0) op.Start = Now;
         _s.Agenda.RemoveAt(0);
         if (!WaitHolds(op, conds, WaitBind(op))) return null;
-        if (Now - op.Start > _book.Ticks(max))
-        {
-            Stop(DrillOutcome.Stuck, "wait_timeout:" + op.WaitRef);
-            return null;
-        }
+        if (Now - op.Start > _book.Ticks(max)) return TimedOut(op, "wait_timeout:");
+        // tries (WP23): 다시 만지기를 이만큼 했는데도 서면 그 일을 그만둔다 (원인이 남아 축축함이 그치지 않는 따위).
+        if (StepWaitOf(op.Origin!, op.Step)?.Tries is { } tries && op.Tries >= tries) return TimedOut(op, "retry_limit:");
         var again = op.Copy();
         again.Tries++;
         if (StepWaitOf(op.Origin!, op.Step)?.Redo is { } redo)
@@ -432,7 +452,7 @@ public sealed partial class DrillSolver
             {
                 if (Now - head.Start > _book.Ticks(max))
                 {
-                    Stop(DrillOutcome.Stuck, "wait_timeout:" + head.WaitRef);
+                    GiveUp(job, "wait_timeout:" + head.WaitRef);
                     return true;
                 }
                 continue;

@@ -585,11 +585,11 @@ public class DrillLogTests
     }
 
     /// <summary>
-    /// 예비 개스킷이 없으면 관의 증기를 1.5kg/cm² 아래로 뺀 뒤 감는다. 다치지 않고, 거부되는 명령 없이 끝난다.
-    /// 감은 이음은 조금 새어 공기가 마르지 않으므로 분기함 말리기를 되풀이하다 시간이 다한다 (성공은 보지 않는다).
+    /// 예비 개스킷이 없으면 관의 증기를 1.5kg/cm² 아래로 뺀 뒤 감는다. 감은 테이프의 수명이 다해 다시 새면 또 감는다.
+    /// 말리기가 손을 붙들어 응급 수리의 재발을 놓치지 않는다 (WP23 2차 확인). 다치지 않고, 멈추지(Stuck) 않는다. 성공은 보지 않는다.
     /// </summary>
     [Fact]
-    public void Without_a_gasket_the_joint_is_wrapped_below_the_line_pressure()
+    public void Without_a_gasket_the_joint_is_wrapped_below_the_line_pressure_and_rewrapped()
     {
         var data = DataValidationTests.LoadModified("tuning.json", n => n["inventory"]!["locker"]!["gasket"] = 0);
         var sim = new Simulation();
@@ -605,8 +605,38 @@ public class DrillLogTests
         });
         Assert.NotEmpty(lines);
         Assert.All(lines, v => Assert.True(v < 1.5, $"감을 때 관 압력 {v:F2}kg/cm²"));
+        var burst = events.FirstOrDefault(e => e.Kind == SimEventKind.TempRepairFailed && e.Subject == "steam.joint");
+        Assert.True(burst.Kind == SimEventKind.TempRepairFailed, "감은 테이프의 수명이 훈련 안에 다하지 않았다");
+        Assert.Contains(log.Lines, l => l.Step.Kind == PlanKind.Do && l.Step.Cmd == "steam.joint.wrap" && l.Tick > burst.Tick);
+        Assert.NotEqual(DrillOutcome.Stuck, solver.Outcome);
         Assert.DoesNotContain(events, e => e.Kind is SimEventKind.CommandRejected or SimEventKind.Hurt or SimEventKind.Shock or SimEventKind.Pinch);
         Assert.True(solver.Outcome == DrillOutcome.Done, $"{solver.Outcome} {solver.StopReason}");
+    }
+
+    /// <summary>
+    /// 다시 닦기에는 횟수 상한(tries)이 있다 (WP23 2차 확인). 김이 걷히기를 기다리는 단계를 뺀 자료에서 테이프로만 감으면 분기함이 마르지 않는다.
+    /// 다섯 번 다시 닦은 뒤 그 일만 그만두고(gave_up) 손을 놓는다. 훈련 전체가 멈추지 않고, 테이프가 터지면 다시 감는다.
+    /// </summary>
+    [Fact]
+    public void A_drying_job_that_never_dries_gives_up_and_frees_the_hand()
+    {
+        var data = DiagnosisDataTests.Load(
+            ("tuning.json", n => n["inventory"]!["locker"]!["gasket"] = 0),
+            ("procedures/switchboard.json", n => n["proc.junction.dry"]!["steps"]![1]!.AsObject().Remove("wait")));
+        var sim = new Simulation();
+        sim.StartMission(data, "m2-power-b");
+        var book = Book.From(data, "m2-power-b");
+        var events = new List<SimEvent>();
+        var solver = new DrillSolver(book, new ObservableQuery(sim));
+        var log = DrillRunner.Run(sim, solver, book, new DrillHooks { EveryEvent = events.Add });
+        Assert.Contains(log.Lines, l => l.Step.Kind == PlanKind.Note && l.Step.Note == "gave_up retry_limit:proc.junction.dry#5");
+        Assert.Contains(log.Findings, f => f.Verdict == "ELC-03" && f.Outcome == "gave_up");
+        Assert.True(log.Lines.Count(l => l.Step.Note == "redo junction.C3.box") <= 5);
+        Assert.NotEqual(DrillOutcome.Stuck, solver.Outcome);
+        Assert.DoesNotContain(events, e => e.Kind is SimEventKind.CommandRejected or SimEventKind.Hurt or SimEventKind.Shock or SimEventKind.Pinch);
+        var burst = events.FirstOrDefault(e => e.Kind == SimEventKind.TempRepairFailed && e.Subject == "steam.joint");
+        if (burst.Kind == SimEventKind.TempRepairFailed)
+            Assert.Contains(log.Lines, l => l.Step.Kind == PlanKind.Do && l.Step.Cmd == "steam.joint.wrap" && l.Tick > burst.Tick);
     }
 
     /// <summary>계기 영점(align gauge): 손에 든 전압계로 버스 바를 재고, 그 차이만큼 영점 나사를 돌려 바늘을 1V 안에 맞춘다.</summary>

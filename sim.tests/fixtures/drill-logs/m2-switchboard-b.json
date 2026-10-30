@@ -1,5 +1,5 @@
 {
-  "mission": "m2-switchboard-b", "seed": 1702, "dataStamp": "0d9c7889e6606646", "handTicks": 12,
+  "mission": "m2-switchboard-b", "seed": 1702, "dataStamp": "a85a949b85464584", "handTicks": 12,
   "finalTick": 1556, "finalHash": 2664573629552828709, "status": "succeeded",
   "findings": [
     {"tick":308,"pair":"switch.drop","verdict":"ELC-02","bind":"c=C1","outcome":"fixed"},

@@ -209,10 +209,11 @@
       },
       {
         "type": "Isolate",
-        "text": "그 회로의 칼날 스위치를 내린다.",
+        "text": "그 회로의 칼날 스위치를 내린다. 선내에 김이 서려 있으면(증기가 새면) 닦아도 마르지 않는다. 원인부터 고치고, 김이 걷힐 때까지 기다린 뒤 시작한다.",
         "cmd": "switch.{circuit}.off",
         "tool": "hand",
-        "hazard": "젖은 분기함을 살아 있는 채 열거나 만지거나 닦으면 감전된다."
+        "hazard": "젖은 분기함을 살아 있는 채 열거나 만지거나 닦으면 감전된다.",
+        "wait": { "until": [ { "q": "cue.steam.fog", "unit": "cue", "below": 0.3 } ], "every": 5, "max": 300 }
       },
       {
         "type": "Open",
@@ -240,11 +241,11 @@
       },
       {
         "type": "Inspect",
-        "text": "상자 안을 맨손으로 만져 본다. 축축하면 1분 기다렸다가 다시 네 번 닦고 또 만져 본다. 축축하지 않을 때까지 되풀이한다.",
+        "text": "상자 안을 맨손으로 만져 본다. 축축하면 1분 기다렸다가 다시 네 번 닦고 또 만져 본다. 축축하지 않을 때까지 되풀이한다. 다섯 번 닦아도 축축함이 그치지 않으면(증기가 다시 새면) 원인부터 고친다.",
         "cmd": "junction.{circuit}.box.touch",
         "tool": "hand",
         "requires": "회로 스위치가 내려가 있을 것",
-        "wait": { "retry": [ { "touched": "junction.{circuit}.box", "has": "wet" } ], "redo": 4, "every": 60, "max": 1500 }
+        "wait": { "retry": [ { "touched": "junction.{circuit}.box", "has": "wet" } ], "redo": 4, "tries": 5, "every": 60, "max": 1500 }
       },
       {
         "type": "Install",

@@ -240,6 +240,8 @@ public sealed class StepWait
     [Optional] public List<CondDef> While { get; set; } = new();
     /// <summary>WP23: retry가 서면 다시 만지기 전에 이 단계(0부터 센 자리)를 다시 한다 (예: 축축하면 다시 닦고 만진다).</summary>
     [Optional] public int? Redo { get; set; }
+    /// <summary>WP23: retry로 다시 만지기를 이만큼 하고도 서면 그 일을 그만둔다(솔버는 그 일만 gave_up으로 끝내고 손을 놓는다).</summary>
+    [Optional] public int? Tries { get; set; }
 }
 
 /// <summary>미리 짠 임무 (data/missions/*.json). M1은 위기 훈련 하나.</summary>

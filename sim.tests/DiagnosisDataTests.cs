@@ -164,6 +164,8 @@ public class DiagnosisDataTests
         Rejects("cases[2].at", (Nav, n => Pair(n, "heading.off")["cases"]![2]!["at"]![0]!["cmd"] = "gyro.switch.sideways"));
         Rejects("기준 계기나 영점 나사가 없다", (Senses, n => Pair(n, "gauge.voltage")["verdicts"]!["SNS-05"]!["do"]![1]!["bind"]!["gauge"] = "depth"));
         Rejects("align gauge에는 bind", (Senses, n => Pair(n, "gauge.voltage")["verdicts"]!["SNS-05"]!["do"]![1]!["bind"] = new JsonObject()));
+        Rejects("tries는 retry와 함께", ("procedures/switchboard.json", n => n["proc.junction.dry"]!["steps"]![1]!["wait"]!["tries"] = 3));
+        Rejects("redo는 retry와 함께", ("procedures/switchboard.json", n => n["proc.junction.dry"]!["steps"]![5]!["wait"]!["redo"] = 7));
     }
 
     /// <summary>
