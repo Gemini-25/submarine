@@ -20,6 +20,12 @@ public enum GestureKind
     Strike,
     /// <summary>누르고 있는 동안 대고 있기. 전압계 탐침.</summary>
     Probe,
+    /// <summary>누른 채 원을 계속 그리기. Turns 바퀴마다 한 번씩, 쥐고 있는 동안 계속 낸다 (계산기 손잡이). 시계가 Cw.</summary>
+    Wheel,
+    /// <summary>장치 전용: 멈춤 칸이 있는 다이얼. 위로 끌면 칸마다 Up, 아래로 끌면 Down. 명령을 보내지 않는다 (WP22).</summary>
+    Dial,
+    /// <summary>장치 전용: 평면 위의 점을 끈다. 손 움직임을 PlaneMove로 넘긴다. 명령을 보내지 않는다 (WP22).</summary>
+    DragPlane,
 }
 
 /// <summary>손동작이 끝난 결과. 물체는 이것과 손에 든 것으로 명령을 고른다.</summary>
@@ -56,6 +62,8 @@ public partial class Interactable : StaticBody3D
     public float Turns { get; set; } = 1.5f;
     /// <summary>작업 시점에서 이 물체 앞에 손을 댈 때 카메라가 바라볼 점. 기본은 물체 위치.</summary>
     public Vector3? AimPoint { get; set; }
+    /// <summary>DragPlane으로 잡은 동안의 손 움직임(화면 픽셀, 아래가 +y). 장치가 제 평면 위의 거리로 바꾼다.</summary>
+    public Action<Vector2>? PlaneMove { get; set; }
     /// <summary>오른쪽 버튼으로 손바닥을 대 볼 때의 명령 (장치의 touch 블록). 없으면 만질 수 없다.</summary>
     public string? TouchCommand { get; set; }
 
