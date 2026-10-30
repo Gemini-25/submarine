@@ -169,8 +169,8 @@ public class ManualTests
     static readonly System.Text.RegularExpressions.Regex FigureNumber = new(@"^그림 (\d+)-(\d+)\. \S");
     static string FigDir => Path.Combine(ManualDir, "fig");
 
-    /// <summary>2차 고장 쪽: 다른 세션이 고치는 중이라 그림을 아직 넣지 않았다. 본선이 그림을 넣으면 여기서 지운다.</summary>
-    static readonly HashSet<int> FiguresPending = new() { 22, 35, 37 };
+    /// <summary>그림을 미룬 쪽 (다른 작업 묶음이 쓰는 중인 쪽). 그림을 넣으면 여기서 지운다. 지금은 없다.</summary>
+    static readonly HashSet<int> FiguresPending = new();
 
     /// <summary>그림을 두지 않는 쪽: 00 차례.</summary>
     static readonly HashSet<int> NoFigures = new() { 0 };

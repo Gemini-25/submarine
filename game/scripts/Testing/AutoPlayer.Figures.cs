@@ -618,7 +618,7 @@ public partial class AutoPlayer
     }
 
     /// <summary>
-    /// 깊이 버퍼로 보는 가림: 칸 위의 점(칸 기준 그림 화소) 둘레 3px 가운데 한 곳이라도 그려진 면이 대상 점보다 앞(6cm나 조준 상자 반 크기 넘게)에 있지 않으면 보인다.
+    /// 깊이 버퍼로 보는 가림: 칸 위의 점(칸 기준 그림 화소) 둘레 3px 가운데 한 곳이라도 그려진 면이 대상 점보다 앞(12cm나 조준 상자 반 크기 넘게: 표지는 부품 겉면에서 조금 들어가 있다)에 있지 않으면 보인다.
     /// 대상 점 앞을 다른 메시(열린 덮개, 뚜껑, 함 앞판)가 가리면 둘레가 모두 그 면이라 false. 숨긴 메시와 유리는 깊이를 쓰지 않는다.
     /// 대상 노드의 메시가 찍을 때 모두 숨겨져 있으면(빼낸 부품) 알 수 없음(null).
     /// </summary>
@@ -629,7 +629,7 @@ public partial class AutoPlayer
         if (cap.Depth.Length == 0) return null;
         float target = -(cap.Camera.GlobalTransform.AffineInverse() * point).Z;
         // 조준 상자의 가운데는 부품 속에 들 수 있으므로, 상자의 반 크기만큼은 앞에 그려진 면을 그 부품의 겉면으로 본다
-        float tol = 0.06f;
+        float tol = 0.12f;
         if (node is Interactable it && it.GetChildren().OfType<CollisionShape3D>().FirstOrDefault()?.Shape is BoxShape3D bs)
             tol = Math.Max(tol, Math.Max(bs.Size.X, Math.Max(bs.Size.Y, bs.Size.Z)) / 2 + 0.02f);
         int s = InkRenderer.Supersample, r = 3 * s;
