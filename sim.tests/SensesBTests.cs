@@ -701,6 +701,14 @@ public class SensesBTests
         Assert.InRange(peak, lo, hi);
     }
 
+    [Fact]
+    public void SensesValidator_requires_the_SNS02_clearedWhen_to_match_the_tuning()
+    {
+        var e = Assert.Throws<DataValidationException>(() => DataValidationTests.LoadModified(Path.Combine("tuning", "senses.json"),
+            n => n["senses"]!["panelWiring"]!["unseatedCrossMoisture"] = 0.15));
+        Assert.Contains(e.Errors, x => x.Contains("SNS-02") && x.Contains("unseatedCrossMoisture"));
+    }
+
     // ---------- 갈고리와 저장
 
     [Fact]

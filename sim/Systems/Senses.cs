@@ -143,6 +143,12 @@ static class SensesValidator
                 "tuning.senses.panelWiring: 0 < unseatedCrossMoisture < crossMoisture < 1");
             Check(parts.ContainsKey(pw.FollowBox), $"tuning.senses.panelWiring.followBox '{pw.FollowBox}' 부품이 없다");
             Check(pw.FollowPerMin >= 0, "tuning.senses.panelWiring.followPerMin >= 0");
+            // 배선 고장(SNS-02)의 clearedWhen은 '지금 엇갈리지 않음'을 숫자로 적는다. 그 숫자는 엇갈림 문턱과 같아야 한다.
+            string inv(double v) => v.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            foreach (var f in d.Faults.Where(f => f.PartKind == "panel_wiring" && f.ClearedWhen != null))
+                Check(f.ClearedWhen!.Contains($"self.moisture <= {inv(pw.UnseatedCrossMoisture)}", StringComparison.Ordinal)
+                      && f.ClearedWhen.Contains($"self.moisture < {inv(pw.CrossMoisture)}", StringComparison.Ordinal),
+                    $"faults.{f.Id}.clearedWhen의 습기 문턱은 tuning.senses.panelWiring의 unseatedCrossMoisture({inv(pw.UnseatedCrossMoisture)})·crossMoisture({inv(pw.CrossMoisture)})와 같아야 한다");
         }
         if (st.Searchlight is { } sl)
         {

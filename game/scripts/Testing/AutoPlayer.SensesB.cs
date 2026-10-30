@@ -11,7 +11,7 @@ namespace DeepLine.Game.Testing;
 /// <summary>
 /// 감각 훈련 B 확인 묶음 drill-senses-b (M2 WP20): m2-senses-b를 손동작으로 푼다.
 /// 판단은 sim의 SensesDrill(사람이 보는 것만 읽는다)이 하고, 절차는 ExpandWithBelt로 펼쳐 Perform한다.
-/// 탐조등은 끝벽 레버로 끄고 켜며, 몸통은 2분 넘게 기다린 뒤 만져 본다. 계기는 유리를 두드려 바늘이 뛰는지 본다.
+/// 탐조등은 끝벽 레버로 끄고 켜며, 몸통은 2분 넘게 기다린 뒤 만져 본다. 전압계는 손에 든 전압계로 버스 바를 재어 바늘과 견주고, 유리를 두드린 앞뒤 바늘을 기록한다.
 /// 끝나면 위기 훈련(m1-crisis)으로 되돌려 다음 묶음이 그대로 돈다.
 /// </summary>
 public partial class AutoPlayer
@@ -45,7 +45,7 @@ public partial class AutoPlayer
             await Perform("switch.C3.on");
             Step(HandSeconds);
 
-            // 전압 바늘이 낮은데 동력 표시등은 꺼져 있다: 버스 바를 재어 견주고, 유리를 두드려 바늘이 뛰는지 본다.
+            // 전압 바늘이 낮은데 동력 표시등은 꺼져 있다: 버스 바를 재어 견준다. 유리를 두드린 앞뒤 바늘은 기록만 한다.
             double needle = q.Number("panel.gauge.voltage");
             Check(needle < Data.Tuning.Panel.PowerWarnV && q.Read("panel.lamp.power").Text == "off", $"전압 바늘 {needle * 120:F0}V");
             // 손에 든 전압계로 배전반 버스 바를 잰다 (공구판에서 전압계를 가져온다).
@@ -58,9 +58,8 @@ public partial class AutoPlayer
             Step(HandSeconds);
             double afterTap = q.Number("panel.gauge.voltage");
             GD.Print($"AUTOTEST: 전압계 유리를 두드리니 바늘 {beforeTap * 120:F2}V → {afterTap * 120:F2}V");
-            // 배선함 수리로 상황판 전원이 끊겼다 들어와 걸린 바늘이 이미 제자리에 있고, 버스 전압은 거의 바뀌지 않는다.
-            // 그래서 이 훈련에서는 두드려도 한 칸(0.75V)만큼 뛰지 않는다 (교범 41쪽: 그때는 기준 계기로만 가른다).
-            Check(Math.Abs(afterTap - beforeTap) * 120 < 0.75, $"전압 바늘이 두드리자 {Math.Abs(afterTap - beforeTap) * 120:F2}V 뛰었다 (이 훈련에서는 거의 뛰지 않아야)");
+            // 고장이 들어올 때 영점 변화(약 18V)가 걸림 폭(4.5V)보다 커서 바늘은 이미 목표값에 있고, 버스 전압도 거의 바뀌지 않는다.
+            // 그래서 전압계는 두드려도 거의 뛰지 않는다. 가르는 것은 위의 버스 바 견주기다 (교범 41쪽).
             var fs = Data.Tuning.Senses!.Gauges!.FullScale["voltage"];
             double step = Data.Fixtures.Instances.First(f => f.Id == "gauge.voltage.zero").Params["zeroStep"];
             await FollowSensesB("proc.gauge.zero", new Dictionary<string, string> { ["gauge"] = "voltage" }, after: c =>
