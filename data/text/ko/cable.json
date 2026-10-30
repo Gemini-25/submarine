@@ -14,7 +14,6 @@
   "reason.drum_spinning": "드럼이 빨리 돌아 멈춤쇠가 튕겨 나온다.",
   "reason.arm_down": "펜이 테이프에 붙어 있어 바늘이 들어가지 않는다.",
   "reason.need_ink_bottle": "부을 잉크병을 쥐고 있지 않다.",
-  "reason.need_pricker": "쑤시개 바늘 없이는 모세관이 뚫리지 않는다.",
   "cue.winch.creep": "멈춘 드럼이 조금씩 풀려 나간다",
   "cue.winch.zip": "와이어가 쉭 하고 풀리는 소리와 브레이크가 끽 하는 소리",
   "cue.winch.hauling": "윈치가 줄을 감는 소리",

@@ -21,5 +21,16 @@
   "reason.lid_closed": "뚜껑이 닫혀 있다.",
   "reason.lid_open": "뚜껑이 열려 있어 죔쇠가 걸리지 않는다.",
   "reason.need_canister": "새 흡수제 통을 들고 있지 않다.",
-  "reason.need_fan_bearing": "끼울 팬 베어링을 쥐고 있지 않다."
+  "reason.need_fan_bearing": "끼울 팬 베어링을 쥐고 있지 않다.",
+  "cue.furnace.burn": "산소 화로 안에서 양초가 치익 소리를 내며 탄다",
+  "cue.furnace.choke": "양초가 콜록이듯 끊기며 답답하게 탄다",
+  "cue.furnace.smoke": "산소 화로 문틈으로 연기가 샌다",
+  "cue.furnace.acrid": "매캐한 냄새",
+  "fixture.o2.furnace": "산소 화로 몸통",
+  "fixture.o2.furnace.door": "산소 화로 문",
+  "fixture.o2.furnace.grate": "산소 화로 재받이",
+  "fixture.o2.furnace.latch": "산소 화로 문 걸쇠",
+  "fixture.o2.furnace.vent": "산소 화로 배기구",
+  "reason.furnace_door_open": "문이 열려 있어 걸쇠가 걸리지 않는다.",
+  "reason.latch_shut": "걸쇠가 문을 잡고 있어 열리지 않는다."
 }

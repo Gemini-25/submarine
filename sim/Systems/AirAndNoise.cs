@@ -45,10 +45,14 @@ static class AirSystem
         StalledMotorHeat(w);
 
         air.O2 -= a.PersonO2PerMin * min;
+        var furnace = Furnace.Of(w);
+        if (furnace != null) Furnace.Update(w, furnace);
         if (air.CandleRemaining > 0)
         {
-            air.O2 += a.CandleO2PerMin * min;
+            // 산소 화로가 있으면 재와 배기구, 걸쇠가 양초의 산소를 깎는다 (AIR-03). 없으면 M0 그대로.
+            air.O2 += furnace == null ? a.CandleO2PerMin * min : a.CandleO2PerMin * Furnace.O2Factor(w, furnace) * min;
             air.CandleRemaining = Math.Max(0, air.CandleRemaining - w.Dt);
+            if (furnace != null && air.CandleRemaining <= 0) Furnace.BurnedOut(w, furnace);
         }
         air.O2 = Math.Clamp(air.O2, 0, a.O2MaxPct);
 
@@ -134,5 +138,68 @@ static class NoiseSystem
         w.Noise.Current = n;
         var t = w.T.Noise;
         w.Noise.Accum += (t.AccumGain * n - w.Noise.Accum) / t.AccumTauSeconds * w.Dt;
+    }
+}
+
+/// <summary>
+/// 산소 화로 (AIR-03, M2 WP17). 상태는 부품 o2.furnace의 상태 값이다: ash(재받이의 재), vent(배기구 그을음), doorOpen, latchOpen, tempC.
+/// 손으로 하는 일(걸쇠, 문, 재 긁기, 배기구 쑤시기)은 data/fixtures/air.json이 하고, 여기는 계통 규칙만 둔다(수치는 tuning.furnace):
+///   양초의 산소 × (1 − max(ashO2Weight × ash, vent)), 걸쇠가 열렸거나 문이 열린 채 타면 × leakO2Factor,
+///   연기 = 타는 동안 max(vent &gt; smokeVentAbove이면 vent, 새면 leakSmoke), 이산화탄소 + smokeCo2PerMin × 연기,
+///   다 탄 양초마다 ash + ashPerCandle, vent + ventPerCandle(재는 양초가 다 탄 뒤 남으므로 첫 양초는 깨끗한 화로에서 탄다),
+///   몸통 온도는 타는 동안 hotC, 꺼지면 주변 온도로 다가간다.
+/// 부품이나 tuning.furnace가 없는 데이터(M0·M1, 얼린 golden-data)에서는 Of가 null이라 아무것도 바뀌지 않는다.
+/// </summary>
+static class Furnace
+{
+    public const string PartId = "o2.furnace";
+
+    /// <summary>화로 부품. 부품이나 튜닝 절이 없으면 null(규칙 꺼짐).</summary>
+    public static Part? Of(SimWorld w) =>
+        w.T.Furnace != null && w.TryPart(PartId, out var p) ? p : null;
+
+    static bool Leaking(Part p) => p.Get("latchOpen") >= 0.5 || p.Get("doorOpen") >= 0.5;
+
+    /// <summary>양초 산소에 곱하는 수 (0~1).</summary>
+    public static double O2Factor(SimWorld w, Part p)
+    {
+        var t = w.T.Furnace!;
+        double f = Curve.Clamp01(1 - Math.Max(t.AshO2Weight * p.Get("ash"), p.Get("vent")));
+        return Leaking(p) ? f * t.LeakO2Factor : f;
+    }
+
+    /// <summary>실내로 나오는 연기 세기 0~1. 양초가 탈 때만.</summary>
+    public static double Smoke(SimWorld w)
+    {
+        if (Of(w) is not { } p || w.Air.CandleRemaining <= 0) return 0;
+        var t = w.T.Furnace!;
+        double vent = p.Get("vent");
+        double s = vent > t.SmokeVentAbove ? vent : 0;
+        if (Leaking(p)) s = Math.Max(s, t.LeakSmoke);
+        return Curve.Clamp01(s);
+    }
+
+    /// <summary>막힌 듯한 울림의 세기: 타는 양초가 잃는 산소의 몫(1 − 산소 배율). 타지 않으면 0.</summary>
+    public static double Choke(SimWorld w) =>
+        Of(w) is { } p && w.Air.CandleRemaining > 0 ? 1 - O2Factor(w, p) : 0;
+
+    public static void Update(SimWorld w, Part p)
+    {
+        var t = w.T.Furnace!;
+        bool burning = w.Air.CandleRemaining > 0;
+        double temp = p.Get("tempC");
+        double target = burning ? t.HotC : w.T.Heat.AmbientC;
+        double tau = burning ? t.HeatTauSeconds : t.CoolTauSeconds;
+        p.Set("tempC", temp + (target - temp) * Math.Min(1, w.Dt / tau));
+        double smoke = Smoke(w);
+        if (smoke > 0) w.Air.Co2 += t.SmokeCo2PerMin * smoke * w.Dt / 60.0;
+    }
+
+    /// <summary>양초 하나가 다 탔다: 재와 그을음이 남는다.</summary>
+    public static void BurnedOut(SimWorld w, Part p)
+    {
+        var t = w.T.Furnace!;
+        p.Set("ash", Math.Min(1, p.Get("ash") + t.AshPerCandle));
+        p.Set("vent", Math.Min(1, p.Get("vent") + t.VentPerCandle));
     }
 }

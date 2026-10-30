@@ -261,6 +261,7 @@ static class DataValidator
         Systems.Suction.Validate(d, errors);
         SwitchboardTuningValidator.Validate(d, errors);
         ContactsTuningValidator.Validate(d, errors);
+        AirTuningValidator.Validate(d, errors);
 
         if (errors.Count > 0)
             throw new DataValidationException(errors);
