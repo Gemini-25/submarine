@@ -34,7 +34,8 @@ public static class StandPoints
 
     static string[] Viewport(int v) =>
         new[] { $"viewport.{v}.ring.bolt.1", $"viewport.{v}.ring.bolt.2", $"viewport.{v}.ring.bolt.3", $"viewport.{v}.ring.bolt.4",
-            $"viewport.{v}.ring.bolt.5", $"viewport.{v}.ring.bolt.6", $"viewport.{v}.dog.1", $"viewport.{v}.dog.2", $"viewport.{v}.ring", $"viewport.{v}.deadlight" };
+            $"viewport.{v}.ring.bolt.5", $"viewport.{v}.ring.bolt.6", $"viewport.{v}.dog.1", $"viewport.{v}.dog.2", $"viewport.{v}.ring", $"viewport.{v}.deadlight",
+            $"viewport.{v}.seal" };
 
     static string[] Cells()
     {
@@ -73,7 +74,7 @@ public static class StandPoints
         new("motor", At(1.75f, 0.2f), false, [ "motor.cover", "motor.cover.bolt.1", "motor.cover.bolt.2", "motor.brush.spring" ], None),
         new("shaft", At(0.3f, -0.2f), true, [ "shaft.follower", "shaft.nut.A", "shaft.nut.B", "shaft.collar", "shaft.packing" ], None),
         new("accumulator", At(2.05f, 0.15f), false,
-            [ "steam.stop", "steam.bleed", ..Four("steam.flange.bolt"), "steam.joint" ], [ "hatch.closed" ]),
+            [ "steam.stop", "steam.bleed", ..Four("steam.flange.bolt"), "steam.joint", "steam.gasket", "steam.flange.face" ], [ "hatch.closed" ]),
         new("winch", At(1.45f, 0.25f), false,
             [ "winch.control", "winch.brake", "winch.pawl", "winch.cover", "winch.cover.bolt.1", "winch.cover.bolt.2", "winch.adjust", "winch.lining" ], None),
         new("pump", At(1.0f, -0.3f), false,

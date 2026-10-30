@@ -193,6 +193,16 @@ public partial class Main : Node3D
 
     bool Modal => Manual.IsOpen || Notepad.IsOpen || Hud.BriefingOpen || Hud.ResultOpen || (Debug?.ConsoleOpen ?? false);
 
+    public override void _ExitTree()
+    {
+        // 정적 캐시(글꼴, 재질, 질감, 메시)를 놓지 않으면 끝낼 때 엔진이 Image와 텍스처를 누수로 적는다.
+        // 그 기록이 가끔 헤드리스 확인을 깨뜨렸다(글리프 캐시 장수가 그린 글자에 따라 달라서).
+        UI.UiKit.ReleaseStatics();
+        World.Geo.ReleaseStatics();
+        Art.ArtMat.ReleaseStatics();
+        Art.Kit.ReleaseStatics();
+    }
+
     public override void _Input(InputEvent e)
     {
         if (_automated && e is not InputEventKey) return;

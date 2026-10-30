@@ -7,6 +7,6 @@
   },
   "margins": {
     "V": 5, "A": 0.4, "Lpm": 6, "L": 20, "sg": 0.010, "deg": 3, "km": 0.05, "rpm": 5, "m": 1,
-    "pct": 0.1, "cue": 0.3, "band": 1, "MOhm": 2, "Ohm": 2, "none": 0.5
+    "pct": 0.1, "kgcm2": 0.5, "cue": 0.3, "band": 1, "MOhm": 2, "Ohm": 2, "none": 0.5
   }
 }

@@ -57,9 +57,11 @@ public class DataValidationTests
         var sim = TestData.NewSim();
         sim.Run(1);
         var saved = sim.SaveState();
-        // 사물함 칸 하나를 빼면 저장본의 사물함 배열 길이가 달라진다. 진단 자료의 절차가 꺼내지 않는 칸(챔버 문 밀봉)을 뺀다
-        // (진단 검사기는 판정의 절차가 꺼내는 예비품마다 재고 경로가 있는지 본다).
-        var other = LoadModified("tuning.json", n => n["inventory"]!["locker"]!.AsObject().Remove("chamber_seal"));
+        // 사물함 칸 하나를 더하면 저장본의 사물함 배열 길이가 달라진다. 이제 모든 칸을 절차나 진단 자료가 쓰므로(빼면 검사기가 먼저 막는다)
+        // 빼지 않고 더한다: 아무도 쓰지 않는 새 예비품(test_spare) 칸 하나.
+        var other = DiagnosisDataTests.Load(("items.json", n => n["test_spare"] = new JsonObject()),
+                                            ("tuning.json", n => n["inventory"]!["locker"]!["test_spare"] = 1),
+                                            ("text/ko.json", n => n["item.test_spare"] = "시험 예비품"));
         var restored = new Simulation(other, 1);
         Assert.Throws<InvalidDataException>(() => restored.RestoreState(saved));
     }

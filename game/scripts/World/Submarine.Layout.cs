@@ -309,6 +309,7 @@ public partial class Submarine
         Kit.Pipe(n, new[] { new Vector3(vx - r + 0.01f, ly, lz), new Vector3(1.45f, ly, lz), new Vector3(1.45f, 0.72f, lz) },
             new PipeSpec { Radius = 0.025f, BendRadius = 0.07f, FlangeSpacing = 0, SupportSpacing = 0, Material = ArtMat.Machinery });
         var stop = Kit.GlobeValve(n, 0.03f);
+        stop.Name = "StopValve"; // 같은 부모에 밸브가 둘이라 이름을 따로 준다 (WP19가 이름으로 찾는다)
         stop.Position = new Vector3(1.72f, ly, lz);
         stop.RotationDegrees = new Vector3(-90, 0, 0);
         var jb = new MeshBuilder();
@@ -317,6 +318,7 @@ public partial class Submarine
         jb.Tube(ArtMat.Machinery, Transform3D.Identity, new[] { new Vector3(vx + r - 0.02f, 0.35f, vz), new Vector3(2.45f, 0.35f, vz), new Vector3(2.45f, 0.25f, vz) }, 0.02f, 10, capEnd: false);
         jb.Instance(n, "Lines");
         var bleed = Kit.GlobeValve(n, 0.025f);
+        bleed.Name = "BleedValve";
         bleed.Position = new Vector3(2.32f, 0.35f, vz);
         Dial(n, new Vector3(vx, 1.35f, vz - r - 0.01f), Vector3.Forward, 0.06f, "kg/cm²", new[] { "0", "5", "10", "15", "20" }).SetFraction(0.6f);
         Dial(n, new Vector3(1.45f, 0.82f, lz - 0.04f), Vector3.Forward, 0.035f, "관").SetFraction(0.55f);
@@ -495,7 +497,7 @@ public partial class Submarine
             mb.Cylinder(ArtMat.Bronze, Kit.AlongAxis(Vector3.Back, new Vector3(x, 1.4f, 0.025f)), 0.025f, 0.03f, 12);
             Bolt(mb, new Vector3(x, 1.4f, 0.042f), Vector3.Back, 0.03f);
             mb.Box(ArtMat.Bronze, new Vector3(x + side * 0.14f, 1.55f, 0.035f), new Vector3(0.05f, 0.07f, 0.05f), 0.008f);
-            Wheel(m, new Vector3(x, 1.55f, 0.1f), Vector3.Back, 0.07f);
+            Wheel(m, new Vector3(x, 1.55f, 0.1f), Vector3.Back, 0.07f).Name = side > 0 ? "FloodWheelFore" : "FloodWheelAft"; // 같은 이름 둘이면 둘째가 임시 이름을 받는다
         }
         // 탱크 유리관: 앞 탱크 z 0.55, 뒤 탱크 z 0.75. 붉은 금이 정상 수위.
         foreach (var (label, x) in new[] { ("전방\n탱크", 0.275f), ("후방\n탱크", 0.075f) })
@@ -684,7 +686,7 @@ public partial class Submarine
         var lg = new MeshBuilder();
         lg.Cylinder(ArtMat.Glass, new Transform3D(Basis.Identity, new Vector3(4.52f, 0.004f, 0.28f)), 0.045f, 0.004f, 18);
         lg.Instance(n, "LevelGlass", NoShadow);
-        Wheel(n, new Vector3(4.52f, 0.012f, -0.25f), Vector3.Up, 0.07f);
+        Wheel(n, new Vector3(4.52f, 0.012f, -0.25f), Vector3.Up, 0.07f).Name = "SqueezeWheel"; // WP19가 이름으로 찾는다
         NamePlate(n, "챔버 수위", new Vector3(4.52f, 0.003f, 0.37f), Vector3.Up, 0.014f);
         Marker(n, "chamber.squeeze", "챔버 압착 바퀴", new Vector3(4.52f, 0.02f, -0.25f), new Vector3(0.15f, 0.03f, 0.15f), "chamber");
 

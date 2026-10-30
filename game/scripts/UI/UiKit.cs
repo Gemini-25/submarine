@@ -14,6 +14,13 @@ public static class UiKit
     public static FontFile Myeongjo => _myeongjo ??= GD.Load<FontFile>("res://assets/fonts/NanumMyeongjo-Regular.ttf");
     public static FontFile Pen => _pen ??= GD.Load<FontFile>("res://assets/fonts/NanumPenScript-Regular.ttf");
 
+    /// <summary>끝낼 때 정적 캐시가 붙잡은 Godot 자원을 놓는다. C# 정리는 엔진의 누수 검사보다 늦게 돌기 때문이다 (Main._ExitTree).</summary>
+    internal static void ReleaseStatics()
+    {
+        _gothic?.Dispose(); _myeongjo?.Dispose(); _pen?.Dispose();
+        _gothic = _myeongjo = _pen = null;
+    }
+
     /// <summary>굵은 글씨는 같은 글꼴을 진하게 그린다 (굵은 글꼴 파일을 따로 싣지 않는다).</summary>
     public static FontVariation Bold(Font f) => new() { BaseFont = f, VariationEmbolden = 0.9f };
 

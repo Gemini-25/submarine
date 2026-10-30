@@ -1,0 +1,68 @@
+// 선체 2차: 현창과 케이블 챔버 (교범 04쪽 '선체', 35·37쪽). WP19.
+{
+  "pairs": {
+    "fore.alarm": {
+      "no": 26,
+      "priority": 15,
+      "urgent": true,
+      "page": "04-진단-표-물과-선체.md",
+      "section": "선체",
+      "sees": [
+        [ { "q": "zone.fore.alarm", "unit": "none", "above": 0.5 } ]
+      ],
+      "checks": [
+        {
+          "each": { "v": "1..2" },
+          "all": [ { "q": "cue.viewport.{v}.beads", "unit": "cue", "above": 0.3, "says": "현창 유리 테 둘레에 물방울이 맺히고" } ],
+          "verdict": "HUL-02"
+        },
+        {
+          "each": { "point": "leak.rivet.01,leak.rivet.02,leak.rivet.03,leak.rivet.04" },
+          "all": [ { "q": "cue.{point}.hiss", "unit": "cue", "above": 0.3, "says": "쉿 소리" } ],
+          "verdict": "HUL-01"
+        }
+      ],
+      "verdicts": {
+        "HUL-02": {
+          "fault": "HUL-02",
+          "says": "현창",
+          "do": [ { "procedure": "proc.viewport.reseal", "bind": { "viewport": "{v}" }, "if": [ { "q": "inventory.viewport_seal", "unit": "none", "above": 0.5 } ] } ],
+          "verify": { "all": [ { "q": "cue.viewport.{v}.beads", "unit": "cue", "below": 0.1 } ], "within": 60, "hold": 10 }
+        },
+        "HUL-01": { "fault": "HUL-01", "says": "그 구역의 누수", "same": "aft.alarm" }
+      },
+      "exposure": { "setup": { "depthM": 300, "switches": { "C3": true } }, "seconds": 30 },
+      "cases": [
+        { "expect": "HUL-02", "bind": { "v": "1" }, "inject": [ { "fault": "HUL-02", "part": "leak.viewport.1" } ] },
+        { "expect": "HUL-02", "bind": { "v": "2" }, "inject": [ { "fault": "HUL-02", "part": "leak.viewport.2" } ] },
+        { "expect": "HUL-01", "bind": { "point": "leak.rivet.02" }, "inject": [ { "fault": "HUL-01", "part": "leak.rivet.02" } ] },
+        { "expect": "none" }
+      ]
+    },
+    "chamber.rising": {
+      "no": 27,
+      "priority": 40,
+      "page": "04-진단-표-물과-선체.md",
+      "section": "선체",
+      "sees": [
+        [ { "q": "reading.chamber.glass", "unit": "L", "above": 30, "says": "챔버 수위 유리가 오른다" } ]
+      ],
+      "checks": [
+        { "all": [ { "q": "cue.chamber.gurgle", "unit": "cue", "above": 0.3, "says": "꾸르륵 소리" } ], "verdict": "HUL-04" }
+      ],
+      "verdicts": {
+        "HUL-04": {
+          "fault": "HUL-04",
+          "says": "케이블 챔버 바깥 문 밀봉",
+          "do": [ { "procedure": "proc.chamber.reseal", "if": [ { "q": "inventory.chamber_seal", "unit": "none", "above": 0.5 } ] } ],
+          "verify": { "all": [ { "q": "cue.chamber.gurgle", "unit": "cue", "below": 0.1 }, { "q": "reading.chamber.glass", "unit": "L", "below": 20 } ], "within": 600, "hold": 30 }
+        }
+      },
+      "exposure": { "setup": { "depthM": 300, "switches": { "C3": true } }, "seconds": 60 },
+      "cases": [
+        { "expect": "HUL-04", "inject": [ { "fault": "HUL-04" } ] },
+        { "expect": "none" }
+      ]
+    }
+  }
+}

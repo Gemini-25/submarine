@@ -1,0 +1,9 @@
+{
+  "chamber": {
+    "squeezeMax": 3,
+    "squeezeCut": 0.7,
+    "sealOutFactor": 2,
+    "sillL": 20,
+    "spillLps": 5
+  }
+}
