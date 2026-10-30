@@ -1,7 +1,10 @@
 {
   "params": {
     "spinLife": 480,
-    "hubLife": 300
+    "hubLife": 300,
+    "hotHandC": 50,
+    "scrapeAsh": 0.25,
+    "prickVent": 0.34
   },
   "fixtures": [
     {
@@ -177,6 +180,73 @@
             "canister_spent": {}
           }
         }
+      }
+    },
+    {
+      "id": "o2.furnace.latch",
+      "part": "o2.furnace",
+      "kind": "lever",
+      "zone": "mid",
+      "prop": "latchOpen",
+      "positions": [ "close", "open" ],
+      "verbs": {
+        "close": { "tool": "hand", "noise": "latch", "rejectIf": [ { "if": "self.doorOpen == 1", "reason": "furnace_door_open" } ] },
+        "open": { "tool": "hand", "noise": "latch" }
+      }
+    },
+    {
+      "id": "o2.furnace.door",
+      "part": "o2.furnace",
+      "kind": "cover",
+      "zone": "mid",
+      "prop": "doorOpen",
+      "verbs": {
+        "open": {
+          "tool": "hand",
+          "noise": "cover",
+          "rejectIf": [ { "if": "self.latchOpen == 0", "reason": "latch_shut" } ],
+          "hazards": [ { "if": "self.tempC >= $hotHandC", "hazard": "burn" } ]
+        },
+        "close": { "tool": "hand", "noise": "cover" }
+      }
+    },
+    {
+      "id": "o2.furnace.grate",
+      "part": "o2.furnace",
+      "kind": "work",
+      "zone": "mid",
+      "verbs": {
+        "scrape": {
+          "gesture": "scrub",
+          "tool": "scraper",
+          "noise": "scrape",
+          "rejectIf": [ { "if": "self.doorOpen == 0", "reason": "door_closed" } ],
+          "hazards": [ { "if": "self.tempC >= $hotHandC", "hazard": "burn" } ],
+          "effects": [ { "add": "ash", "by": "-$scrapeAsh", "min": 0, "max": 1 } ]
+        }
+      }
+    },
+    {
+      "id": "o2.furnace.vent",
+      "part": "o2.furnace",
+      "kind": "work",
+      "zone": "mid",
+      "verbs": {
+        "prick": {
+          "gesture": "stroke",
+          "tool": "pricker",
+          "noise": "tap",
+          "effects": [ { "add": "vent", "by": "-$prickVent", "min": 0, "max": 1 } ]
+        }
+      }
+    },
+    {
+      "id": "o2.furnace",
+      "part": "o2.furnace",
+      "kind": "work",
+      "zone": "mid",
+      "touch": {
+        "temp": "self.tempC"
       }
     }
   ]

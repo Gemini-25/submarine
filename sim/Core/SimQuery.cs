@@ -214,6 +214,9 @@ static class SimQuery
                     "candleSeconds" => x => QueryValue.Of(x.Air.CandleRemaining),
                     "canister" => x => QueryValue.Of(x.Part("scrubber.canister").Get("saturation")),
                     "scrubberFlow" => x => QueryValue.Of(Systems.AirSystem.ScrubberFlow(x)),
+                    // 산소 화로 (AIR-03, WP17): 실내로 나오는 연기 세기와 막힌 울림의 세기. 화로가 없으면 0.
+                    "furnaceSmoke" => x => QueryValue.Of(Systems.Furnace.Smoke(x)),
+                    "furnaceChoke" => x => QueryValue.Of(Systems.Furnace.Choke(x)),
                     _ => throw Unknown(),
                 };
 
