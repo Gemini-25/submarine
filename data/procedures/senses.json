@@ -87,7 +87,7 @@
     "grade": "proper",
     "steps": [
       { "type": "Isolate", "text": "끝벽의 탐조등 레버를 내려 탐조등을 끈다.", "cmd": "device.searchlight.off" },
-      { "type": "Inspect", "text": "탐조등 몸통을 맨손으로 만져 본다. 손을 댈 수 있을 만큼 식을 때까지 기다린다.", "cmd": "searchlight.housing.touch", "tool": "hand" },
+      { "type": "Inspect", "text": "2분 넘게 기다린 뒤 탐조등 몸통을 맨손으로 살짝 만져 본다. 따뜻한 정도로 식을 때까지 기다린다.", "cmd": "searchlight.housing.touch", "tool": "hand" },
       { "type": "Open", "text": "장전 문 걸쇠 두 개를 젖힌다.", "cmd": "searchlight.latch.{n}.loosen", "tool": "hand", "repeat": 2, "requires": "몸통이 60°C 아래로 식었을 것", "hazard": "뜨거울 때 걸쇠와 문을 만지면 손을 덴다." },
       { "type": "Open", "text": "장전 문을 아래로 연다.", "cmd": "searchlight.door.open", "tool": "hand", "requires": "몸통이 식었을 것", "hazard": "화상" },
       { "type": "Remove", "text": "타고 남은 탄소봉 한 쌍을 뽑는다.", "cmd": "searchlight.rods.pull", "tool": "hand", "hazard": "화상" },
