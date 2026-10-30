@@ -1,14 +1,14 @@
 {
   "mission": "m2-air-a", "seed": 9090, "dataStamp": "69d8a12538c0db30", "handTicks": 12,
-  "finalTick": 3804, "finalHash": 7927461937697398052, "status": "succeeded",
+  "finalTick": 3804, "finalHash": 17688813779957429224, "status": "succeeded",
   "findings": [
     {"tick":504,"pair":"co2.rising","verdict":"AIR-01","bind":"","outcome":"fixed"},
     {"tick":1424,"pair":"co2.rising","verdict":"AIR-02","bind":"","outcome":"fixed"}
   ],
   "hashes": [
-    {"tick":1200,"hash":1704707901754186285},
-    {"tick":2400,"hash":10805322506893436270},
-    {"tick":3600,"hash":10234032358385826849}
+    {"tick":1200,"hash":7873521082774922281},
+    {"tick":2400,"hash":12224250155091687794},
+    {"tick":3600,"hash":14563199176509611073}
   ],
   "lines": [
     {"tick":0,"step":{"seq":1,"kind":"Wait","ticks":20,"value":0,"value2":0,"jobStep":-1,"note":"look"}},

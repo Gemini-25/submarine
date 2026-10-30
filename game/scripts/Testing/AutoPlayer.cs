@@ -621,7 +621,7 @@ public partial class AutoPlayer : Node
             await Frame();
             _main.Player.LookAt3D(it.GlobalPosition);
             var hit = _main.Hands.RayPick();
-            if (hit == it) return it;
+            if (hit == it && _main.Hands.Hovered == it) return it; // 손이 가리키는 것(Hovered)까지 그 물체여야 손동작이 그 물체에 간다
             if (Time.GetTicksMsec() - start > 3000)
             {
                 Check(false, $"'{id}'를 조준할 수 없다 (서 있는 곳 {stand}, 조준선에 걸린 것: {hit?.Id ?? "벽이나 허공"})");
