@@ -171,6 +171,33 @@ static class SimQuery
                 End(2);
                 return At(1) == "total" ? x => QueryValue.Of(WaterSystem.FloorTotal(x)) : throw Unknown();
 
+            case "attitude":
+                // 기울기 모듈 (M2 WP18): 트림(도, 이물이 숙으면 양수)과 순부력(L, M3 훅). 모듈이 없으면 0.
+                End(2);
+                return At(1) switch
+                {
+                    "trim" => x => QueryValue.Of(Attitude.TrimDeg(x)),
+                    "netBuoyancyL" => x => QueryValue.Of(x.T.Attitude == null ? 0 : Attitude.NetBuoyancyL(x)),
+                    _ => throw Unknown(),
+                };
+
+            case "ballast":
+            {
+                // ballast.fore.water, ballast.fore.flood (탱크로 드는 L/s), ballast.fore.open (밸브의 열린 바퀴 수)
+                End(3);
+                string t = At(1);
+                if (t is not ("fore" or "aft") || !w.TryPart(Attitude.TankPart(t), out _)) throw Unknown();
+                return At(2) switch
+                {
+                    "water" => x => QueryValue.Of(Parts.PropRef.Resolve(x, Attitude.TankPart(t), "water").Get()),
+                    "flood" => x => QueryValue.Of(Attitude.FloodLps(x, t)),
+                    "open" => x => QueryValue.Of(Parts.PropRef.Resolve(x, Attitude.ValvePart(t), "open").Get()),
+                    // 침수 밸브 축 둘레로 새는 바닷물 (L/s, 패킹 너트가 풀렸거나 덜 조였을 때의 바다 경로)
+                    "weep" => x => QueryValue.Of(PartSeaInflow(x, Attitude.ValvePart(t))),
+                    _ => throw Unknown(),
+                };
+            }
+
             case "chamber":
                 End(2);
                 return At(1) == "water" ? x => QueryValue.Of(x.Water.Chamber) : throw Unknown();
@@ -494,6 +521,15 @@ static class SimQuery
     }
 
     /// <summary>누수 지점 i의 부품에 달린 바다 경로로 지금 드는 물 (L/s).</summary>
+    static double PartSeaInflow(SimWorld w, string partId)
+    {
+        if (!w.Mechanics.HasSeaPaths || !w.TryPart(partId, out var part)) return 0;
+        double sum = 0;
+        foreach (var p in w.Mechanics.SeaPaths)
+            if (ReferenceEquals(p.Part, part)) sum += SeaPaths.Lps(w, p);
+        return sum;
+    }
+
     static double LeakSeaInflow(SimWorld w, int leak)
     {
         if (!w.Mechanics.HasSeaPaths) return 0;

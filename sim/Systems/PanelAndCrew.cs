@@ -118,7 +118,7 @@ static class PanelSystem
 
             lamps[PanelSystems.Water] = Max(
                 Level(s.BilgeTotal, pt.BilgeWarnL, pt.BilgeFaultL),
-                s.PumpTemp > pt.PumpHotC ? LampState.Warning : LampState.Off);
+                Max(s.PumpTemp > pt.PumpHotC ? LampState.Warning : LampState.Off, Attitude.PanelLamp(w))); // 기울기 (WP18)
 
             var hull = LampState.Off;
             for (int z = 0; z < GameData.Zones.Count; z++)

@@ -1,13 +1,13 @@
 {
-  "mission": "m2-power-a", "seed": 1111, "dataStamp": "2a7ae07a3db6a678", "handTicks": 12,
-  "finalTick": 2820, "finalHash": 9838453567212693739, "status": "succeeded",
+  "mission": "m2-power-a", "seed": 1111, "dataStamp": "829ceebb9dab2209", "handTicks": 12,
+  "finalTick": 2820, "finalHash": 12754482952032360463, "status": "succeeded",
   "findings": [
     {"tick":804,"pair":"motor.sparks","verdict":"PWR-02","bind":"","outcome":"fixed"},
     {"tick":1840,"pair":"voltage.low","verdict":"PWR-01","bind":"cell=3","outcome":"fixed"}
   ],
   "hashes": [
-    {"tick":1200,"hash":11859614075290295435},
-    {"tick":2400,"hash":2306056777017069590}
+    {"tick":1200,"hash":3521085570424698347},
+    {"tick":2400,"hash":14121760535362030762}
   ],
   "lines": [
     {"tick":0,"step":{"seq":1,"kind":"Wait","ticks":20,"value":0,"value2":0,"jobStep":-1,"note":"look"}},
