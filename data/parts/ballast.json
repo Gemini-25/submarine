@@ -1,0 +1,17 @@
+{
+  "pump.suction": {
+    "kind": "suction_selector",
+    "visible": [ "pos" ],
+    "props": { "pos": 0 }
+  },
+  "ballast.tank.fore": {
+    "kind": "trim_tank",
+    "visible": [ "water" ],
+    "props": { "water": 150 }
+  },
+  "ballast.tank.aft": {
+    "kind": "trim_tank",
+    "visible": [ "water" ],
+    "props": { "water": 150 }
+  }
+}

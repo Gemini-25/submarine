@@ -117,6 +117,8 @@ static class SimQuery
                     // 베어링 저항 (기름 잔이 차 있으면 준 값)과 뚜껑 둘레에서 기름이 새는 곳의 수 (WP10)
                     "drag" => x => QueryValue.Of(PumpBearing.Drag(x)),
                     "weep" => x => QueryValue.Of(PumpBearing.Weep(x)),
+                    // 흡입 선택기 자리: 'bilge', 'fore', 'aft', 'chamber' (M2 WP18). 선택기가 없는 데이터에서는 늘 'bilge'.
+                    "suction" => x => QueryValue.Of(Suction.Positions[Suction.Position(x)]),
                     _ => throw Unknown(),
                 };
 

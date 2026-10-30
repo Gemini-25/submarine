@@ -131,8 +131,15 @@ static class WaterSystem
         if (w.Mechanics.HasSeaPaths) SeaPaths.Flow(w);
 
         // 2. 전동 펌프. 배출량 = 정격 × (1 − 흡입구 막힘), 역류 방지 밸브가 열린 채 고착되면 되돌아온다.
+        //    흡입 선택기(M2 WP18)가 탱크나 챔버 줄에 있으면 그쪽에서 빤다(Suction.Pump).
         var pump = w.Devices[w.Pump];
-        if (pump.Running)
+        int suction = Suction.Position(w);
+        if (pump.Running && suction != Suction.Bilge)
+        {
+            double stuck = w.Part("pump.check_valve").Get("stuck");
+            Suction.Pump(w, suction, wt.PumpRatedLps * Curve.Clamp01(1 - PumpStarvation(w)), Curve.Clamp01(1 - stuck));
+        }
+        else if (pump.Running)
         {
             double stuck = w.Part("pump.check_valve").Get("stuck");
             water.PumpGrossLps = wt.PumpRatedLps * Curve.Clamp01(1 - PumpStarvation(w));
@@ -199,12 +206,13 @@ static class WaterSystem
 
     /// <summary>
     /// 흡입 쪽이 물을 못 빨아들이는 정도 0~1. 덮개가 열려 있으면 공기를 빨아 1, 바구니가 있으면 막힘만큼,
-    /// 덮개를 닫았는데 볼트가 풀려 있으면 그 틈으로 공기가 샌다 (숨은 결함).
+    /// 덮개를 닫았는데 볼트가 풀려 있으면 그 틈으로 공기가 샌다 (숨은 결함). 흡입 선택기가 빈 쪽을 가리켜도 1.
     /// </summary>
     public static double PumpStarvation(SimWorld w)
     {
         var intake = w.Part("pump.intake");
         if (intake.Get("coverOpen") >= 0.5) return 1;
+        if (Suction.Dry(w)) return 1; // 흡입 선택기가 빈 탱크나 빈 챔버를 가리킨다 (M2 WP18)
         double clog = intake.Get("basketOut") >= 0.5 ? 0 : intake.Get("clog");
         double air = Repair.HandActions.LooseBolts(w) * w.T.Repair.LooseBoltAirLeak;
         return Curve.Clamp01(clog + air);
