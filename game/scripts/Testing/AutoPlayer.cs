@@ -61,6 +61,7 @@ public partial class AutoPlayer : Node
         ["workviews"] = WorkViewsSuite,
         ["fixtures"] = FixturesSuite,
         ["tools"] = ToolsSuite,
+        ["briefing"] = BriefingSuite,
         ["drill-hull"] = DrillHullSuite,
         ["drill-air"] = DrillAirSuite,
         ["drill-water"] = DrillWaterSuite,

@@ -40,6 +40,13 @@ public partial class Hud : CanvasLayer
     string _beltKey = "", _heldKey = "";
     Control _briefing = null!, _result = null!;
     Label _resultTitle = null!, _resultBody = null!;
+    Label _briefTitle = null!;
+    RichTextLabel _briefBody = null!;
+    ItemList _picker = null!;
+    readonly List<string> _pickerIds = new();
+
+    /// <summary>지시서 화면에서 다른 훈련을 골랐을 때 (임무 ID). Main이 그 임무로 다시 시작한다.</summary>
+    public event Action<string>? MissionPicked;
     double _feltFor;
 
     public bool BriefingOpen => _briefing.Visible;
@@ -118,28 +125,95 @@ public partial class Hud : CanvasLayer
     {
         _briefing = UiKit.Full(new CenterContainer());
         AddChild(_briefing);
-        var paper = new PanelContainer { CustomMinimumSize = new Vector2(860, 0) };
+        var paper = new PanelContainer { CustomMinimumSize = new Vector2(1180, 0) };
         paper.AddThemeStyleboxOverride("panel", UiKit.PaperBox(margin: 36));
         _briefing.AddChild(paper);
+        var row = new HBoxContainer();
+        row.AddThemeConstantOverride("separation", 28);
+        paper.AddChild(row);
+
+        // 왼쪽: 훈련 고르기. 고르면 그 임무로 처음부터 다시 시작하고 지시서가 바뀐다.
+        var left = new VBoxContainer();
+        left.AddThemeConstantOverride("separation", 10);
+        row.AddChild(left);
+        left.AddChild(UiKit.Text("훈련 고르기", 18, UiKit.Faded, UiKit.Myeongjo));
+        _picker = new ItemList { CustomMinimumSize = new Vector2(300, 560), FocusMode = Control.FocusModeEnum.None };
+        _picker.AddThemeFontOverride("font", UiKit.Gothic);
+        _picker.AddThemeFontSizeOverride("font_size", 16);
+        _picker.AddThemeColorOverride("font_color", UiKit.Ink);
+        _picker.AddThemeColorOverride("font_selected_color", UiKit.Ink);
+        _picker.AddThemeStyleboxOverride("panel", new StyleBoxFlat { BgColor = new Color(0, 0, 0, 0.05f) });
+        _picker.AddThemeStyleboxOverride("selected", new StyleBoxFlat { BgColor = new Color(0.55f, 0.42f, 0.25f, 0.35f) });
+        _picker.AddThemeStyleboxOverride("selected_focus", new StyleBoxFlat { BgColor = new Color(0.55f, 0.42f, 0.25f, 0.35f) });
+        foreach (var m in PickerOrder(_runner.Data.Missions))
+        {
+            _picker.AddItem(m.Name.Length > 0 ? m.Name : m.Id);
+            _pickerIds.Add(m.Id);
+        }
+        _picker.ItemSelected += i => PickMission(_pickerIds[(int)i]);
+        left.AddChild(_picker);
+
+        // 오른쪽: 이번 임무의 지시서.
         var v = new VBoxContainer();
         v.AddThemeConstantOverride("separation", 14);
-        paper.AddChild(v);
-        var m = _runner.Snapshot.Mission;
+        row.AddChild(v);
         v.AddChild(UiKit.Text("대양전신회사 · 작업 지시서", 18, UiKit.Faded, UiKit.Myeongjo));
-        v.AddChild(UiKit.Text(m.Name, 32, UiKit.Ink, UiKit.Bold(UiKit.Myeongjo)));
-        var body = UiKit.Rich(20, UiKit.Ink);
-        body.FitContent = true;
-        body.CustomMinimumSize = new Vector2(780, 0);
-        var md = string.Join("\n\n", m.Briefing);
-        if (m.Objectives.Count > 0) md += "\n\n## 목표\n\n" + string.Join("\n", m.Objectives.Select(o => "- " + o));
-        body.Text = MarkdownBb.Convert(md);
-        v.AddChild(body);
+        _briefTitle = UiKit.Text("", 32, UiKit.Ink, UiKit.Bold(UiKit.Myeongjo));
+        v.AddChild(_briefTitle);
+        _briefBody = UiKit.Rich(20, UiKit.Ink);
+        _briefBody.FitContent = true;
+        _briefBody.CustomMinimumSize = new Vector2(780, 0);
+        v.AddChild(_briefBody);
         var keys = UiKit.Text("W A S D 걷기 · 왼쪽 버튼 잡기(누른 채 끌기, 돌리기, 문지르기) · 오른쪽 버튼 가까이 보기 · F 작업 시점 · 1~6 도구 · Tab 교범 · N 메모장", 15, UiKit.Faded);
         keys.AutowrapMode = TextServer.AutowrapMode.WordSmart;
         keys.CustomMinimumSize = new Vector2(780, 0);
         v.AddChild(keys);
-        v.AddChild(UiKit.Text("Enter 또는 왼쪽 버튼: 근무 시작", 20, UiKit.Ink, UiKit.Bold(UiKit.Gothic)));
+        v.AddChild(UiKit.Text("Enter 또는 지시서 누르기: 근무 시작", 20, UiKit.Ink, UiKit.Bold(UiKit.Gothic)));
+        RefreshBriefing();
         _briefing.Visible = false;
+    }
+
+    /// <summary>훈련 목록의 계통 차례: 교범의 계통 탭과 같다. 위기 훈련이 맨 앞, 시운전이 맨 뒤다.</summary>
+    static readonly string[] PickerSystems = { "m1-", "m2-power", "m2-switchboard", "m2-air", "m2-water", "m2-ballast", "m2-hull", "m2-senses", "m2-nav", "m2-cable", "m2-shakedown" };
+
+    static IEnumerable<DeepLine.Sim.Data.MissionDef> PickerOrder(IEnumerable<DeepLine.Sim.Data.MissionDef> missions) =>
+        missions.OrderBy(m =>
+                {
+                    int i = Array.FindIndex(PickerSystems, p => m.Id.StartsWith(p, StringComparison.Ordinal));
+                    return i < 0 ? PickerSystems.Length - 1 : i; // 모르는 임무는 시운전 앞
+                })
+                .ThenBy(m => m.Id, StringComparer.Ordinal);
+
+    /// <summary>지시서를 지금 임무로 다시 채우고, 훈련 목록에서 그 임무를 고른 것으로 보인다.</summary>
+    public void RefreshBriefing()
+    {
+        var m = _runner.Snapshot.Mission;
+        _briefTitle.Text = m.Name;
+        var md = string.Join("\n\n", m.Briefing);
+        if (m.Objectives.Count > 0) md += "\n\n## 목표\n\n" + string.Join("\n", m.Objectives.Select(o => "- " + o));
+        _briefBody.Text = MarkdownBb.Convert(md);
+        int i = _pickerIds.IndexOf(m.Id);
+        if (i >= 0) _picker.Select(i);
+        else _picker.DeselectAll();
+    }
+
+    /// <summary>훈련 목록 위의 점인가. 지시서 화면에서 목록을 누르면 근무를 시작하지 않고 훈련을 고른다.</summary>
+    public bool PickerHasPoint(Vector2 screen) => _briefing.Visible && _picker.GetGlobalRect().HasPoint(screen);
+
+    /// <summary>지시서 제목 (자동 테스트가 확인한다).</summary>
+    public string BriefingTitle => _briefTitle.Text;
+
+    /// <summary>훈련 목록의 화면 가운데 (자동 테스트가 누른다).</summary>
+    public Vector2 PickerCenter => _picker.GetGlobalRect().GetCenter();
+
+    /// <summary>훈련 목록에 있는 임무 ID들 (보이는 차례).</summary>
+    public IReadOnlyList<string> PickerMissions => _pickerIds;
+
+    /// <summary>그 임무를 고른다. 지금 임무와 같으면 아무 일도 없다.</summary>
+    public void PickMission(string id)
+    {
+        if (id == _runner.Snapshot.Mission.Id) return;
+        MissionPicked?.Invoke(id);
     }
 
     void BuildResult()
