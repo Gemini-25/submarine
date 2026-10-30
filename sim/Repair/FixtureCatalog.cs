@@ -126,7 +126,7 @@ public sealed class FixtureCatalog
         return combos;
     }
 
-    static IReadOnlyList<string> Source(GameData data, string source)
+    internal static IReadOnlyList<string> Source(GameData data, string source)
     {
         if (source == "circuits") return data.Circuits.Select(c => c.Id).ToArray();
         if (source == "cells") return Enumerable.Range(1, data.Tuning.Battery.Cells).Select(n => n.ToString(CultureInfo.InvariantCulture)).ToArray();

@@ -258,6 +258,9 @@ public sealed partial class GameData
         var text = ReadText(dataDir);
         var data = new GameData(tuning, circuits, devices, allParts, faults, leaks, procedures, missions, items, fixtureFiles, text);
         data.LoadObservation(dataDir);
+        data.LoadDiagnosis(dataDir);
+        if (data.Diagnosis == null && data.Missions.FirstOrDefault(m => m.Rounds.Count > 0) is { } withRounds)
+            throw new DataValidationException(new[] { $"missions.{withRounds.Id}.rounds: diagnosis.json이 없다" });
         return data;
     }
     /// <summary>

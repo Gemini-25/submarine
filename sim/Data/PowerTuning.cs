@@ -7,6 +7,8 @@ public sealed class PowerTuning
 {
     public CellRepairTuning Cells { get; set; } = new();
     public BrushTuning Brushes { get; set; } = new();
+    /// <summary>기관 전령기 눈금 (스로틀 값, 오름차순). 교범에 인쇄된 값이고 손잡이는 한 눈금씩 움직인다 (WP16: 자동 플레이어와 Godot이 함께 읽는다).</summary>
+    [Optional] public List<double> TelegraphNotches { get; set; } = new();
 }
 
 /// <summary>셀 교체와 단자 너트 (PWR-01).</summary>

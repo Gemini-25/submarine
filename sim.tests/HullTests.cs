@@ -605,7 +605,7 @@ public class ShaftPackingTests
         Assert.Throws<UnobservableException>(() => q.Read($"part.{Packing}.prop.glandLife")); // 숨은 수명
         Assert.Throws<UnobservableException>(() => q.Read($"part.{Packing}.prop.cocked")); // 숨은 결함
         foreach (var step in TestData.Data.Procedures.SelectMany(p => p.Steps).Where(s => s.RepeatFrom != null))
-            Assert.True(ObservableQuery.IsVisiblePartProp(step.RepeatFrom!, TestData.Data), step.RepeatFrom);
+            Assert.True(ObservableQuery.IsHandPosition(step.RepeatFrom!, TestData.Data), step.RepeatFrom);
     }
 
     [Theory]
