@@ -69,6 +69,7 @@ public partial class AutoPlayer : Node
         ["drill-cable"] = DrillCableSuite,
         ["drill-power"] = DrillPowerSuite,
         ["drill-switchboard"] = DrillSwitchboardSuite,
+        ["drill-air-b"] = DrillAirBSuite,
     };
 
     async Task Run()
@@ -570,6 +571,7 @@ public partial class AutoPlayer : Node
             "hand" => ("discard", Motion.Click),
             "locker" => ($"locker.{p[2]}", Motion.Click),
             "hatch" => ("hatch", Motion.Click),
+            "candle" => ("candle", Motion.Click), // 산소 화로 점화 단추 (WP17)
             "handpump" => ("handpump", Motion.Stroke),
             "strainer" when p[1] == "bolt" => ($"strainer.bolt.{p[2]}", p[3] == "loosen" ? Motion.Ccw : Motion.Cw),
             "strainer" when p[1] == "cover" => ("strainer.cover", p[2] == "open" ? Motion.Down : Motion.Up),

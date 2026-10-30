@@ -76,6 +76,10 @@ public static class CueAudio
             v.SafetyValve = 0.15f * c.V;
         }, spot: "scrubber", db: -12, range: 3),
 
+        // 산소 화로 (AIR-03, WP17): 양초가 타는 치익 소리와, 재와 그을음에 막혀 콜록이듯 끊기는 소리가 한 목소리다.
+        R("furnace.burn", s => new OxygenCandleVoice(s), (v, c) => v.Burning = c.V >= 0.5f, shared: "furnace", spot: "furnace", db: -6, range: 6),
+        R("furnace.choke", s => new OxygenCandleVoice(s), (v, c) => v.Choke = c.V, shared: "furnace", spot: "furnace", db: -6, range: 6),
+
         // 누수 지점마다 3D 쉿 소리 (HUL-01). 세기는 0.3L/s에서 다 차므로 크기는 실제 유입량으로 낸다.
         R("{p}.hiss", s => new LeakHissVoice(s), (v, c) =>
         {
