@@ -1,4 +1,4 @@
-// 항법 (교범 05쪽 '자이로컴퍼스와 항법 계산기').
+// 항법 (교범 05쪽 '자이로컴퍼스와 항법 계산기'). heading.off의 '맞추지 않음'(unaligned)은 WP23: 사례 도중 명령(at)으로 자이로를 끄고 다시 켠다.
 {
   "pairs": {
     "heading.off": {
@@ -9,7 +9,8 @@
       "sees": [
         [ { "q": "cue.gyro.warble", "unit": "cue", "above": 0.5 } ],
         [ { "calc": "headingGap", "unit": "deg", "trend": 240, "above": 2, "says": "1분에 약 1도씩 계속 벌어진다" } ],
-        [ { "q": "panel.lamp.nav", "is": "warning" } ]
+        [ { "q": "panel.lamp.nav", "is": "warning" } ],
+        [ { "q": "cue.gyro.settleLamp", "unit": "cue", "above": 0.5 }, { "calc": "headingGap", "unit": "deg", "above": 2.5, "for": 60, "says": "차이가 일정하다" } ]
       ],
       "checks": [
         {
@@ -21,6 +22,12 @@
           "undo": [ { "cmd": "tool.hand" } ],
           "all": [ { "measure": "stethoscope", "target": "gyro.case", "unit": "cue", "above": 0.4, "says": "청진기" } ],
           "verdict": "NAV-01"
+        },
+        {
+          "all": [ { "q": "cue.gyro.settleLamp", "unit": "cue", "above": 0.5 },
+                   { "calc": "headingGap", "unit": "deg", "above": 2.5, "says": "차이가 일정하다" },
+                   { "calc": "headingGap", "unit": "deg", "trend": 120, "below": 0.5, "says": "차이가 늘지 않는다" } ],
+          "verdict": "unaligned"
         }
       ],
       "verdicts": {
@@ -30,12 +37,18 @@
           "says": "(NAV-01)",
           "do": [ { "procedure": "proc.gyro.bearing" }, { "align": "gyro" } ],
           "verify": { "all": [ { "q": "cue.gyro.warble", "unit": "cue", "below": 0.3 }, { "calc": "headingGap", "unit": "deg", "below": 1 } ], "within": 120, "hold": 30 }
+        },
+        "unaligned": {
+          "says": "맞추지 않음",
+          "do": [ { "align": "gyro" } ],
+          "verify": { "all": [ { "calc": "headingGap", "unit": "deg", "below": 1 } ], "within": 30, "hold": 5 }
         }
       },
       "exposure": { "setup": { "depthM": 120, "throttle": 0.5 }, "seconds": 60 },
       "cases": [
         { "expect": "NAV-01", "inject": [ { "fault": "NAV-01" } ] },
         { "expect": "unsettled", "setup": { "devices": { "gyrocompass": false } }, "seconds": 35 },
+        { "expect": "unaligned", "seconds": 600, "at": [ { "seconds": 9, "cmd": "gyro.switch.off" }, { "seconds": 44, "cmd": "gyro.switch.on" } ] },
         { "expect": "none" }
       ]
     },

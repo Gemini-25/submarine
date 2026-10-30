@@ -52,7 +52,7 @@ public class DiagnosisDataTests
     public void The_real_data_and_the_frozen_golden_data_load()
     {
         Assert.NotNull(TestData.Data.Diagnosis);
-        Assert.Equal(15 + 1 + 3 + 2 + 3, TestData.Data.Diagnosis!.Pairs.Count); // Tier A 15 + 밸러스트(WP18) 1 + 감각 2차(WP20) 3 + switch.drop, o2.low(WP17) 2 + WP19 3 (steam.leak, fore.alarm, chamber.rising)
+        Assert.Equal(15 + 1 + 3 + 2 + 3 + 1, TestData.Data.Diagnosis!.Pairs.Count); // Tier A 15 + 밸러스트(WP18) 1 + 감각 2차(WP20) 3 + switch.drop, o2.low(WP17) 2 + WP19 3 (steam.leak, fore.alarm, chamber.rising) + WP23 1 (junction.dew)
         var golden = GameData.LoadFromDirectory(Path.Combine(TestData.FixtureDir, "golden-data"));
         Assert.Null(golden.Diagnosis);
     }
@@ -147,6 +147,25 @@ public class DiagnosisDataTests
         Rejects("명령 없는 단계에는 before와 until만", (nav, n => n["proc.gyro.bearing"]!["steps"]![2]!["wait"]!["then"] = JsonNode.Parse("""[ { "q": "cue.gyro.hum", "unit": "cue", "below": 0.5 } ]""")));
         Rejects("release는 마지막 명령 뒤", (nav, n => n["proc.gyro.bearing"]!["steps"]![2]!["wait"]!["release"] = true));
         Rejects("repeatFrom", ("procedures/hull.json", n => n["proc.shaft.repack"]!["steps"]![2]!["repeatFrom"] = "part.leak.shaft_packing.prop.glandLife"));
+    }
+
+    /// <summary>
+    /// WP23: 절차 기다림의 틀 변수는 그 절차를 부르는 판정의 묶음 값으로 펼친다. 묶을 판정이 없는 변수나 그 값으로 읽을 수 없는 경로는 오류다.
+    /// 사례 도중 명령(at)은 사례 시간 안, 시간 순서, 읽을 수 있는 명령이어야 한다. align gauge는 기준 계기가 있는 계기만 받는다.
+    /// </summary>
+    [Fact]
+    public void Wp23_waits_case_commands_and_gauge_alignment()
+    {
+        const string ballast = "procedures/ballast.json";
+        Rejects("묶이지 않은 틀 변수", (ballast, n => n["proc.ballast.repack"]!["steps"]![13]!["wait"]!["until"]![0]!["q"] = "reading.ballast.{tank}.glass"));
+        Rejects("reading.ballast.fore.flow", (ballast, n => n["proc.ballast.repack"]!["steps"]![13]!["wait"]!["until"]![0]!["q"] = "reading.ballast.{t}.flow"));
+        Rejects("사례 시간", (Nav, n => Pair(n, "heading.off")["cases"]![2]!["at"]![1]!["seconds"] = 900));
+        Rejects("시간 순서", (Nav, n => Pair(n, "heading.off")["cases"]![2]!["at"]![0]!["seconds"] = 100));
+        Rejects("cases[2].at", (Nav, n => Pair(n, "heading.off")["cases"]![2]!["at"]![0]!["cmd"] = "gyro.switch.sideways"));
+        Rejects("기준 계기나 영점 나사가 없다", (Senses, n => Pair(n, "gauge.voltage")["verdicts"]!["SNS-05"]!["do"]![1]!["bind"]!["gauge"] = "depth"));
+        Rejects("align gauge에는 bind", (Senses, n => Pair(n, "gauge.voltage")["verdicts"]!["SNS-05"]!["do"]![1]!["bind"] = new JsonObject()));
+        Rejects("tries는 retry와 함께", ("procedures/switchboard.json", n => n["proc.junction.dry"]!["steps"]![1]!["wait"]!["tries"] = 3));
+        Rejects("redo는 retry와 함께", ("procedures/switchboard.json", n => n["proc.junction.dry"]!["steps"]![5]!["wait"]!["redo"] = 7));
     }
 
     /// <summary>

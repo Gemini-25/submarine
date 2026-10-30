@@ -36,7 +36,7 @@ public sealed class ObservableQuery
     };
 
     /// <summary>그대로 같아야 통과하는 경로.</summary>
-    static readonly string[] Exact = { "panel.on", "crew.hand", "crew.tool", "crew.stunned", "time" };
+    static readonly string[] Exact = { "panel.on", "crew.hand", "crew.tool", "crew.stunned", "time", "hatch.closed" };
 
     /// <summary>사람이 몸으로 알아채는 사건. 나머지(FaultInjected, PartStateChanged...)는 정답을 알려 주므로 거른다.</summary>
     public static readonly IReadOnlyList<SimEventKind> PerceivedEvents = Array.AsReadOnly(new[]

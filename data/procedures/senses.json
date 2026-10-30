@@ -77,7 +77,7 @@
     "grade": "temporary",
     "steps": [
       { "type": "Inspect", "text": "현창 너머의 불빛이 누렇게 흔들리는지, 탐조등 몸통에서 지직거리는 소리가 나는지 본다. 전압이 정상인데 그렇다면 탄소봉 간격이 벌어진 것이다." },
-      { "type": "Work", "text": "탄소봉 보내기 손잡이를 손으로 네 번 돌린다. 한 번에 간격이 한 눈금 좁아진다. 응급 수리이므로 그 뒤 탄소봉을 간다.", "cmd": "searchlight.feed.turn", "tool": "hand", "repeat": 4, "hazard": "봉이 다 타면 다시 꺼진다." },
+      { "type": "Work", "text": "탄소봉 보내기 손잡이를 한 번씩 돌리며 지직거림이 그칠 때까지, 네 번까지 돌린다. 한 번에 간격이 한 눈금 좁아지고, 봉 끝이 표시 눈금에 닿으면 더 돌지 않는다. 응급 수리이므로 그 뒤 탄소봉을 간다.", "cmd": "searchlight.feed.turn", "tool": "hand", "repeat": 4, "hazard": "봉이 다 타면 다시 꺼진다.", "wait": { "while": [ { "q": "cue.searchlight.sputter", "unit": "cue", "above": 0.05 } ], "max": 60 } },
       { "type": "Test", "text": "불빛이 하얗고 고르게 되었는지 본다." }
     ]
   },
@@ -87,7 +87,7 @@
     "grade": "proper",
     "steps": [
       { "type": "Isolate", "text": "끝벽의 탐조등 레버를 내려 탐조등을 끈다.", "cmd": "device.searchlight.off" },
-      { "type": "Inspect", "text": "2분 넘게 기다린 뒤 탐조등 몸통을 맨손으로 살짝 만져 본다. 따뜻한 정도로 식을 때까지 기다린다.", "cmd": "searchlight.housing.touch", "tool": "hand" },
+      { "type": "Inspect", "text": "2분 넘게 기다린 뒤 탐조등 몸통을 맨손으로 살짝 만져 본다. 따뜻한 정도로 식을 때까지 기다린다.", "cmd": "searchlight.housing.touch", "tool": "hand", "wait": { "before": 125, "retry": [ { "touched": "searchlight.housing", "unit": "band", "above": 2.5 } ], "every": 10, "max": 600 } },
       { "type": "Open", "text": "장전 문 걸쇠 두 개를 젖힌다.", "cmd": "searchlight.latch.{n}.loosen", "tool": "hand", "repeat": 2, "requires": "몸통이 60°C 아래로 식었을 것", "hazard": "뜨거울 때 걸쇠와 문을 만지면 손을 덴다." },
       { "type": "Open", "text": "장전 문을 아래로 연다.", "cmd": "searchlight.door.open", "tool": "hand", "requires": "몸통이 식었을 것", "hazard": "화상" },
       { "type": "Remove", "text": "타고 남은 탄소봉 한 쌍을 뽑는다.", "cmd": "searchlight.rods.pull", "tool": "hand", "hazard": "화상" },

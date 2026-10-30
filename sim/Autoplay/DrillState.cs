@@ -33,6 +33,8 @@ internal sealed class Op
     public List<double> Baseline { get; set; } = new();
     public int Tries { get; set; }
     public bool Release { get; set; }
+    /// <summary>절차 기다림의 묶음 값 "k=v;k=v" (절차의 bind). null이면 일의 묶음 값을 쓴다.</summary>
+    public string? Bind { get; set; }
     /// <summary>지켜보기의 최솟값과 최댓값.</summary>
     public double Lo { get; set; } = double.PositiveInfinity;
     public double Hi { get; set; } = double.NegativeInfinity;
@@ -62,6 +64,8 @@ internal sealed class Job
     public int Priority { get; set; }
     public long Decided { get; set; }
     public double Telegraph { get; set; } = double.NaN;
+    /// <summary>이 일이 시작할 때 격벽 해치가 이미 닫혀 있어 닫기를 건너뛰었다: 끝의 다시 열기도 건너뛴다 (WP23).</summary>
+    public bool HatchKept { get; set; }
     public List<string> CircuitsOn { get; set; } = new();
     public int Attempts { get; set; }
     public long VerifyStart { get; set; } = -1;

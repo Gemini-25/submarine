@@ -225,6 +225,7 @@ public sealed class ProcedureStep
 /// 절차 단계의 기다림 (WP16). before는 명령 전에 그만큼 쉬고, until은 명령 전에 조건이 설 때까지, then은 명령을 낸 뒤 조건이 설 때까지 붙든다.
 /// retry는 만지기 명령 뒤 만진 결과(touched)가 서면 every 뒤 같은 명령을 다시 낸다. max를 넘기면 그 일은 멈춘다.
 /// release는 until 동안 손을 놓는다 (절차의 마지막 상태 변경 명령 뒤, 명령 없는 단계에서만).
+/// while과 redo는 WP23: 아래 설명.
 /// </summary>
 public sealed class StepWait
 {
@@ -235,6 +236,12 @@ public sealed class StepWait
     [Optional] public double Every { get; set; } = 1;
     public double Max { get; set; }
     [Optional] public bool Release { get; set; }
+    /// <summary>WP23: 되풀이하는 단계에서 명령마다 먼저 본다. 서지 않으면 그 단계의 남은 명령을 하지 않는다 (예: 지직거림이 그치면 손잡이를 더 돌리지 않는다).</summary>
+    [Optional] public List<CondDef> While { get; set; } = new();
+    /// <summary>WP23: retry가 서면 다시 만지기 전에 이 단계(0부터 센 자리)를 다시 한다 (예: 축축하면 다시 닦고 만진다).</summary>
+    [Optional] public int? Redo { get; set; }
+    /// <summary>WP23: retry로 다시 만지기를 이만큼 하고도 서면 그 일을 그만둔다(솔버는 그 일만 gave_up으로 끝내고 손을 놓는다).</summary>
+    [Optional] public int? Tries { get; set; }
 }
 
 /// <summary>미리 짠 임무 (data/missions/*.json). M1은 위기 훈련 하나.</summary>
