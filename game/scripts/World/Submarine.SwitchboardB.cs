@@ -7,7 +7,7 @@ namespace DeepLine.Game.World;
 
 /// <summary>
 /// 배전반 2차 (M2 WP17, ELC-02): 회로마다 칼날 스위치 접점의 장치 넷. 집게 나사(knife.Cx.clamp, 드라이버 ¼바퀴),
-/// 칼날(knife.Cx.blade, 줄질; 전압계를 대면 칼날 위아래 강하), 위 집게(knife.Cx.jaw, 늘 살아 있다), 받침(knife.Cx.base, 만지기).
+/// 칼날(knife.Cx.blade, 줄질; 내린 칼날에 전압계를 대면 버스 전압), 스위치를 올린 채 M1 스위치 물체(switch.Cx)에 전압계를 대면 칼날 위아래 강하, 위 집게(knife.Cx.jaw, 늘 살아 있다), 받침(knife.Cx.base, 만지기).
 /// 장치 ID의 머리 'switch'는 내장 명령이라 'knife'를 쓴다. 배치의 표지 switch.Cx.clamp를 지우고 같은 자리에 집게 나사를 붙인다.
 /// 전류계는 WP8의 바늘(ammeter.Cx)을 그대로 쓴다.
 ///
@@ -52,7 +52,12 @@ public partial class Submarine
             var bladeGreen = Geo.Box(pivot, new Vector3(0.014f, 0.16f, 0.01f), new Vector3(0, 0.11f, 0), green);
             var bladeSoot = Geo.Box(pivot, new Vector3(0.015f, 0.03f, 0.011f), new Vector3(0, 0.185f, 0), soot);
             var blade = Add(Binder.Bind(board, $"knife.{c}.blade", new Vector3(0.05f, 0.04f, 0.08f), new Vector3(x, 1.46f, 0.24f), "switchboard"));
-            blade.MeasureTarget = $"switch.{c}";
+            blade.MeasureTarget = $"switch.{c}"; // 내린 칼날에 대면 버스 전압 (열린 접점)
+            // 올린 칼날은 M1 스위치 조준 상자 안에 있다. 전압계를 쥐고 그 스위치에 대면 칼날 위아래 강하를 잰다(교범 24 가르기).
+            var sw = Interactables[$"switch.{c}"];
+            sw.MeasureTarget = $"switch.{c}";
+            var swGesture = sw.GestureFor;
+            sw.GestureFor = h => h.Tool == "voltmeter" ? GestureKind.Probe : swGesture(h);
 
             // 받침: 받침판 아래쪽 사기 턱 (손을 대어 온도를 본다). 스위치 조준 상자 바로 아래.
             Geo.Box(board, new Vector3(0.09f, 0.05f, 0.016f), new Vector3(x, 1.38f, 0.05f), Geo.Mat(new Color(0.75f, 0.72f, 0.65f), 0.5f, 0));
