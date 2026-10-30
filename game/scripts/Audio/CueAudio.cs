@@ -86,6 +86,8 @@ public static class CueAudio
         // 축 패킹 (HUL-03). 물이 튀는 소리는 전용 목소리가 없어 역류 목소리의 물방울과 출렁임으로,
         // 과조임의 끽끽 소리는 전동기 목소리의 베어링 고음(3.1kHz)으로 자리를 채운다. 회전음은 추진 스로틀을 따른다.
         R("shaft.spray", s => new BackflowVoice(s), (v, c) => v.Amount = Math.Min(1f, 0.85f * c.V), range: 4),
+        // 열린 역류 밸브 보닛으로 쏟아지는 바닷물 (WTR-03 위험 건너뛰기, WP17). 축 패킹처럼 전용 목소리가 없어 역류 목소리로 자리를 채운다.
+        R("checkvalve.spill", s => new BackflowVoice(s), (v, c) => v.Amount = c.V, range: 4),
         R("shaft.squeal", s => new MotorVoice(s), (v, c) =>
         {
             var d = Device(c.S, DeepLine.Sim.Data.Bindings.Propulsion);

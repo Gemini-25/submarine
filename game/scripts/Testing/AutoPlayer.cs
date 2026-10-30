@@ -69,6 +69,7 @@ public partial class AutoPlayer : Node
         ["drill-cable"] = DrillCableSuite,
         ["drill-power"] = DrillPowerSuite,
         ["drill-switchboard"] = DrillSwitchboardSuite,
+        ["drill-water-b"] = DrillWaterBSuite,
     };
 
     async Task Run()
