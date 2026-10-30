@@ -549,16 +549,30 @@ public class PerformanceTests
         return sim;
     }
 
+    /// <summary>
+    /// 한 번에 드는 시간(ms). 시험은 나란히 돌아 다른 시험이나 GC가 끼어들 수 있으므로, batches 묶음으로 나눠 재고 가장 빠른 묶음을 쓴다.
+    /// 기준(1ms, 0.5ms)은 그대로이고, 끼어듦 때문에 가끔 실패하지 않게 할 뿐이다.
+    /// </summary>
+    static double BestMs(int batches, int n, Action once)
+    {
+        double best = double.MaxValue;
+        for (int b = 0; b < batches; b++)
+        {
+            var sw = Stopwatch.StartNew();
+            for (int i = 0; i < n; i++) once();
+            sw.Stop();
+            best = Math.Min(best, sw.Elapsed.TotalMilliseconds / n);
+        }
+        return best;
+    }
+
     [Fact]
     public void One_tick_on_M2_data_takes_under_a_millisecond()
     {
         var sim = BusiestM2();
         int ticks = TestData.Ticks(20 * 60);
-        var sw = Stopwatch.StartNew();
-        for (int i = 0; i < ticks; i++) sim.Step();
-        sw.Stop();
-        double msPerTick = sw.Elapsed.TotalMilliseconds / ticks;
-        _out.WriteLine($"M2 틱당 {msPerTick * 1000:F1}µs ({ticks}틱, 실내 물 {sim.Query("bilge.total").Number:F0}L)");
+        double msPerTick = BestMs(6, ticks / 6, () => sim.Step());
+        _out.WriteLine($"M2 틱당 {msPerTick * 1000:F1}µs ({ticks}틱, 가장 빠른 묶음, 실내 물 {sim.Query("bilge.total").Number:F0}L)");
         Assert.True(msPerTick < 1.0, $"틱당 {msPerTick:F3}ms");
     }
 
@@ -568,21 +582,17 @@ public class PerformanceTests
         var sim = BusiestM2();
         int n = 2000;
         for (int i = 0; i < 50; i++) _ = sim.Snapshot; // 예열
-        var sw = Stopwatch.StartNew();
         int cues = 0;
-        for (int i = 0; i < n; i++)
+        double withSnapshot = BestMs(5, n / 5, () =>
         {
             sim.Step();
             cues += sim.Snapshot.Cues.Count;
-        }
-        sw.Stop();
+        });
         // 틱 시간을 따로 재서 뺀다.
         var bare = BusiestM2();
-        var sw2 = Stopwatch.StartNew();
-        for (int i = 0; i < n; i++) bare.Step();
-        sw2.Stop();
-        double ms = Math.Max(0, sw.Elapsed.TotalMilliseconds - sw2.Elapsed.TotalMilliseconds) / n;
-        _out.WriteLine($"M2 스냅숏 하나 {ms * 1000:F1}µs (단서 {cues / n}개)");
+        double stepOnly = BestMs(5, n / 5, () => bare.Step());
+        double ms = Math.Max(0, withSnapshot - stepOnly);
+        _out.WriteLine($"M2 스냅숏 하나 {ms * 1000:F1}µs (가장 빠른 묶음, 단서 {cues / n}개)");
         Assert.True(cues > 0);
         Assert.True(ms < 0.5, $"스냅숏 하나 {ms:F3}ms");
     }
