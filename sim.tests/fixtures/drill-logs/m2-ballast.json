@@ -1,5 +1,5 @@
 {
-  "mission": "m2-ballast", "seed": 1804, "dataStamp": "d441d8afcea624f2", "handTicks": 12,
+  "mission": "m2-ballast", "seed": 1804, "dataStamp": "a3c67edc86af9c1a", "handTicks": 12,
   "finalTick": 4828, "finalHash": 1000052133344978825, "status": "succeeded",
   "findings": [
     {"tick":2020,"pair":"attitude.tilt","verdict":"WTR-04","bind":"t=fore","outcome":"fixed"},

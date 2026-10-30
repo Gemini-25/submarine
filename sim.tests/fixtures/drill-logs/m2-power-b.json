@@ -1,5 +1,5 @@
 {
-  "mission": "m2-power-b", "seed": 1903, "dataStamp": "d441d8afcea624f2", "handTicks": 12,
+  "mission": "m2-power-b", "seed": 1903, "dataStamp": "a3c67edc86af9c1a", "handTicks": 12,
   "finalTick": 2208, "finalHash": 16130946035011840975, "status": "succeeded",
   "findings": [
     {"tick":888,"pair":"junction.dew","verdict":"PWR-03","bind":"","outcome":"fixed"},

@@ -483,6 +483,26 @@ public class DrillLogTests
         Assert.DoesNotContain(log.Lines, l => l.Tick > parked && l.Tick < cleaned && l.Step.Kind == PlanKind.Decide);
     }
 
+    /// <summary>
+    /// 시운전에서 오래 둔 베어링이 C3 퓨즈를 끊는다 (DECISIONS WP16 열린 질문, WP23). 마모를 0.97로 넣은 자료로 시운전에 WTR-02를 더한다.
+    /// 퓨즈는 축 패킹 일 도중에 끊긴다. 분기함은 이미 말렸으므로, 그을린 C3 퓨즈와 끊기기 전의 높은 펌프 전류로
+    /// 낡은 퓨즈나 누전이 아니라 WTR-02로 판정하고 베어링과 퓨즈를 함께 간다 (교범 03쪽 '펌프 전류 자체가 높다', 04쪽 'C3 퓨즈를 갈아도 또 끊긴다').
+    /// </summary>
+    [Fact]
+    public void A_neglected_bearing_that_blows_c3_in_the_shakedown_is_read_as_wtr02()
+    {
+        var data = DiagnosisDataTests.Load(("faults.json", n => n["WTR-02"]!["wear"] = 0.97),
+            ("missions/m2-shakedown.json", n => n["events"]!.AsArray().Add(System.Text.Json.Nodes.JsonNode.Parse("""{ "atSeconds": 0, "fault": "WTR-02" }"""))));
+        var events = new List<SimEvent>();
+        var log = DrillRunner.Solve(data, "m2-shakedown", hooks: new DrillHooks { EveryEvent = events.Add });
+        Assert.Equal("succeeded", log.Status);
+        Assert.Contains(events, e => e.Kind == SimEventKind.FuseBlown && e.Subject == "C3");
+        Assert.DoesNotContain(events, e => e.Kind is SimEventKind.Hurt or SimEventKind.Shock or SimEventKind.Pinch or SimEventKind.CommandRejected or SimEventKind.Explosion);
+        Assert.Contains(log.Findings, f => f.Pair == "fuse.blown" && f.Verdict == "WTR-02" && f.Bind == "c=C3" && f.Outcome == "fixed");
+        Assert.DoesNotContain(log.Findings, f => f.Pair == "fuse.blown" && f.Verdict is "ELC-01" or "ELC-03");
+        Assert.DoesNotContain(events.Where(e => e.Tick > log.Findings.First(f => f.Verdict == "WTR-02").Tick), e => e.Kind == SimEventKind.FuseBlown);
+    }
+
     /// <summary>계기 영점(align gauge): 손에 든 전압계로 버스 바를 재고, 그 차이만큼 영점 나사를 돌려 바늘을 1V 안에 맞춘다.</summary>
     [Fact]
     public void The_gauge_is_zeroed_against_the_handheld_voltmeter()

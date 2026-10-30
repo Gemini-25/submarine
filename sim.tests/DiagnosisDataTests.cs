@@ -150,6 +150,23 @@ public class DiagnosisDataTests
     }
 
     /// <summary>
+    /// WP23: 절차 기다림의 틀 변수는 그 절차를 부르는 판정의 묶음 값으로 펼친다. 묶을 판정이 없는 변수나 그 값으로 읽을 수 없는 경로는 오류다.
+    /// 사례 도중 명령(at)은 사례 시간 안, 시간 순서, 읽을 수 있는 명령이어야 한다. align gauge는 기준 계기가 있는 계기만 받는다.
+    /// </summary>
+    [Fact]
+    public void Wp23_waits_case_commands_and_gauge_alignment()
+    {
+        const string ballast = "procedures/ballast.json";
+        Rejects("묶이지 않은 틀 변수", (ballast, n => n["proc.ballast.repack"]!["steps"]![13]!["wait"]!["until"]![0]!["q"] = "reading.ballast.{tank}.glass"));
+        Rejects("reading.ballast.fore.flow", (ballast, n => n["proc.ballast.repack"]!["steps"]![13]!["wait"]!["until"]![0]!["q"] = "reading.ballast.{t}.flow"));
+        Rejects("사례 시간", (Nav, n => Pair(n, "heading.off")["cases"]![2]!["at"]![1]!["seconds"] = 900));
+        Rejects("시간 순서", (Nav, n => Pair(n, "heading.off")["cases"]![2]!["at"]![0]!["seconds"] = 100));
+        Rejects("cases[2].at", (Nav, n => Pair(n, "heading.off")["cases"]![2]!["at"]![0]!["cmd"] = "gyro.switch.sideways"));
+        Rejects("기준 계기나 영점 나사가 없다", (Senses, n => Pair(n, "gauge.voltage")["verdicts"]!["SNS-05"]!["do"]![1]!["bind"]!["gauge"] = "depth"));
+        Rejects("align gauge에는 bind", (Senses, n => Pair(n, "gauge.voltage")["verdicts"]!["SNS-05"]!["do"]![1]!["bind"] = new JsonObject()));
+    }
+
+    /// <summary>
     /// 고장이 손 자리 값을 쓰면 그 값은 정답이 된다. 축 패킹은 절차의 repeatFrom이 먼저 걸리고(DataValidator),
     /// 아무 절차도 읽지 않는 덮개는 진단 검사기의 규칙 15가 잡는다.
     /// </summary>

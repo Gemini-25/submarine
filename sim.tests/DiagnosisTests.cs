@@ -198,6 +198,17 @@ public class DiagnosisTests
                 var book = Book.From(TestData.Data, null);
                 var solver = new DrillSolver(book, new ObservableQuery(sim), new DrillOptions(new[] { only }, Act: false, EvaluateAtTick: at));
                 byte[]? snap = null;
+                // 도중 명령 (WP23): 그 틱이 되면 다음 틱 전에 낸다.
+                var pending = new Queue<CaseCommand>(cs.At);
+                void Due(Simulation s)
+                {
+                    while (pending.Count > 0 && s.Tick >= TestData.Ticks(pending.Peek().Seconds))
+                    {
+                        var cc = pending.Dequeue();
+                        s.Apply(new Command(cc.Cmd, cc.Value));
+                    }
+                }
+                Due(sim);
                 var log = DrillRunner.Run(sim, solver, book, new DrillHooks
                 {
                     PauseAt = (s, _) =>
@@ -205,6 +216,7 @@ public class DiagnosisTests
                         if (snap == null && s.Tick >= at) snap = s.SaveState();
                         return false;
                     },
+                    EveryTick = Due,
                 });
                 var world = new Simulation(TestData.Data, 1, setup);
                 world.RestoreState(snap!);

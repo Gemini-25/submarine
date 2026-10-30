@@ -1,4 +1,4 @@
-// 배전반 (교범 03쪽 '퓨즈 단선과 누전 가르기', '분기함, 퓨즈 철사, 탄 배선').
+// 배전반 (교범 03쪽 '퓨즈 단선과 누전 가르기', '분기함, 퓨즈 철사, 탄 배선'). fuse.blown의 'C3 퓨즈와 높던 펌프 전류 → WTR-02'는 WP23 (오래 둔 베어링이 C3 퓨즈를 끊는 경우).
 {
   "pairs": {
     "fuse.blown": {
@@ -19,6 +19,15 @@
           "verdict": "ELC-03"
         },
         {
+          "each": { "c": "C3" },
+          "all": [
+            { "q": "cue.fuse.{c}.blackened", "unit": "cue", "above": 0.5 },
+            { "q": "panel.gauge.pumpCurrent", "unit": "A", "peak": 300, "above": 3.5, "says": "펌프 전류 자체가 높다" },
+            { "q": "cue.junction.{c}.dew", "unit": "cue", "below": 0.3, "says": "말라 있다" }
+          ],
+          "verdict": "WTR-02"
+        },
+        {
           "each": { "c": "circuits" },
           "prep": [ { "cmd": "tool.voltmeter" } ],
           "undo": [ { "cmd": "tool.hand" } ],
@@ -30,6 +39,17 @@
         }
       ],
       "verdicts": {
+        "WTR-02": {
+          "fault": "WTR-02",
+          "says": "장비 과부하",
+          "do": [
+            { "procedure": "proc.bearing.replace", "if": [ { "q": "inventory.pump_bearing", "unit": "none", "above": 0.5 } ] },
+            { "procedure": "proc.bearing.oil", "if": [ { "q": "inventory.pump_bearing", "unit": "none", "below": 0.5 }, { "q": "cue.pump.oilcup", "unit": "cue", "below": 0.5 } ] },
+            { "procedure": "proc.fuse.replace", "bind": { "circuit": "{c}" } },
+            { "restore": "switches" }
+          ],
+          "verify": { "all": [ { "q": "cue.fuse.{c}.blackened", "unit": "cue", "below": 0.5 }, { "q": "cue.pump.hum", "unit": "cue", "above": 0.5 }, { "q": "cue.pump.grind", "unit": "cue", "below": 0.3 } ], "within": 120, "hold": 10 }
+        },
         "ELC-03": {
           "fault": "ELC-03",
           "says": "누전",
@@ -68,6 +88,7 @@
       "cases": [
         { "expect": "ELC-03", "bind": { "c": "C1" }, "inject": [ { "fault": "ELC-03", "part": "junction.C1" } ] },
         { "expect": "ELC-01", "bind": { "c": "C2" }, "inject": [ { "fault": "ELC-01", "part": "fuse.C2" } ] },
+        { "expect": "WTR-02", "bind": { "c": "C3" }, "inject": [ { "fault": "WTR-02" } ], "seconds": 1800 },
         { "expect": "none" }
       ]
     },

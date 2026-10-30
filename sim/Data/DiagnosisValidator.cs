@@ -350,6 +350,13 @@ static class DiagnosisValidator
                         $"{w}: bind 키 [{string.Join(", ", cs.Bind.Keys)}]가 판정 {cs.Expect}의 변수 [{string.Join(", ", need ?? new SortedSet<string>())}]와 다르다");
                 Check(cs.Via == null || dx.Pairs.Any(p => p.Id == cs.Via), $"{w}: via '{cs.Via}' 쌍이 없다");
                 Check(cs.Seconds is null or > 0, $"{w}: seconds > 0");
+                double caseSeconds = cs.Seconds ?? pair.Exposure.Seconds;
+                foreach (var cc in cs.At)
+                {
+                    Check(cc.Seconds >= 0 && cc.Seconds < caseSeconds, $"{w}.at: 명령 '{cc.Cmd}'의 seconds는 0 이상이고 사례 시간({caseSeconds}초)보다 짧아야 한다");
+                    ParseCmd(cc.Cmd, $"{w}.at");
+                }
+                Check(cs.At.Zip(cs.At.Skip(1)).All(z => z.First.Seconds <= z.Second.Seconds), $"{w}.at: 명령은 시간 순서여야 한다");
             }
         }
 
