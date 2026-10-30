@@ -108,7 +108,7 @@ public partial class Submarine
         Stations["winch"] = (new Vector3(1.45f, 1.2f, 0.1f), new Vector3(1.42f, 0.45f, 0.95f));
         Stations["pump"] = (new Vector3(1.3f, 0.95f, 0.25f), new Vector3(0.93f, 0.9f, -0.9f));
         Stations["locker.aft"] = (new Vector3(1.5f, 1.6f, -0.3f), new Vector3(1.5f, 1.7f, -1.05f));
-        Stations["toolboard"] = (new Vector3(3.6f, 1.45f, -0.7f), new Vector3(2.76f, 1.38f, -0.82f));
+        Stations["toolboard"] = (new Vector3(3.45f, 1.5f, -0.5f), new Vector3(2.76f, 1.42f, -0.82f));
         Stations["ballast"] = (new Vector3(3.65f, 1.35f, 0.75f), new Vector3(2.76f, 1.3f, 0.82f));
         Stations["scrubber"] = (new Vector3(3.0f, 1.1f, -0.2f), new Vector3(3.0f, 0.45f, -1.0f));
         Stations["fan"] = (new Vector3(FanPos.X, 1.45f, 0.45f), FanPos);
