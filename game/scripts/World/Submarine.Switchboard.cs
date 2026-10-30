@@ -6,16 +6,13 @@ using Godot;
 namespace DeepLine.Game.World;
 
 /// <summary>
-/// 배전반 Tier A (M2 WP8): 분기함 여덟의 동작(나사, 덮개, 상자, 케이블), 배전반 전류계 바늘, 납땜인두 전원,
-/// 저항 브리지의 최소 대기(분기함 선택 손잡이와 검류계). 퓨즈 대용 철사와 절연 테이프 칸은 본선의 예비품 칸(Submarine.Lockers.cs)이다.
+/// 배전반 Tier A (M2 WP8): 분기함 여덟의 동작(나사, 덮개, 상자, 케이블), 배전반 전류계 바늘, 납땜인두 전원.
+/// 퓨즈 대용 철사와 절연 테이프 칸은 본선의 예비품 칸(Submarine.Lockers.cs)이다. 저항 브리지는 계산 도구(Gadgets/ResistanceBridge.cs)다.
 /// 모습과 자리는 배치(WP6, Submarine.Layout.cs)가 지었고, 여기서는 표지를 지우고 같은 ID로 실제 물체를 붙인다.
-/// 판정은 시뮬레이션이 한다. 계산 도구로서의 브리지(다이얼과 평형)는 WP22 몫이라 gadget.bridge는 건드리지 않는다.
+/// 판정은 시뮬레이션이 한다. 분기함 절연을 재는 저항 측정 브리지는 계산 도구(WP22, Gadgets/ResistanceBridge.cs)에 있다.
 /// </summary>
 public partial class Submarine
 {
-    /// <summary>저항 브리지 선택 손잡이가 가리키는 분기함 (표현 전용, 저장하지 않는다). 빈 문자열이면 끊음.</summary>
-    public string BridgeLead { get; private set; } = "";
-
     void BuildSwitchboardTierA(Func<string, double> query)
     {
         if (!Binder.Has("junction.C1.cover")) return; // 분기함 장치가 없는 데이터(M1)
@@ -23,7 +20,6 @@ public partial class Submarine
         BindAmmeters();
         BuildFuseWireCoils();
         BuildIronSwitch();
-        BuildBridgeLead(query);
     }
 
     // ── 분기함 ───────────────────────────────────────────
@@ -215,57 +211,6 @@ public partial class Submarine
         foreach (var d in s.Devices)
             if (d.Id == "soldering_iron") return d;
         return null;
-    }
-
-    // ── 저항 브리지 (최소 대기) ───────────────────────────
-
-    /// <summary>
-    /// 브리지 상자 앞면의 선택 손잡이(bridge.lead): 누를 때마다 분기함 C1~C8, 끊음 순으로 넘어간다(표현 전용, 명령 없음).
-    /// 검류계 바늘은 고른 분기함의 절연(measure.bridge.insulation.Cx)을 로그 눈금으로 보인다: f = (log10 MΩ + 2) / 4,
-    /// 큰 눈금 0.01·0.1·1·10·100MΩ, 단위 글씨 MΩ. 회로가 살아 있어 읽을 수 없으면(NaN) 바늘이 한 자리에 서지 않고 떨고,
-    /// 끊음이면 열린 선처럼 오른쪽 끝에 쉰다. 다이얼로 평형을 맞추는 계산 도구는 WP22가 만든다.
-    /// </summary>
-    void BuildBridgeLead(Func<string, double> query)
-    {
-        var desk = GetNode<Node3D>("M2Layout/CommDesk");
-        var gauge = desk.GetNodeOrNull<KitGauge>("Dial/Gauge");
-        var m = Mount(desk, "BridgeLead", new Vector3(6.52f, 0.83f, 0.824f), Vector3.Forward);
-        var knob = new Node3D();
-        m.AddChild(knob);
-        var mb = new MeshBuilder();
-        mb.Cylinder(ArtMat.Bakelite, Kit.AlongAxis(Vector3.Back, new Vector3(0, 0, 0.008f)), 0.018f, 0.016f, 12, 0.003f);
-        mb.Box(ArtMat.Brass, new Vector3(0, 0.01f, 0.017f), new Vector3(0.004f, 0.02f, 0.003f), 0.001f);
-        mb.Instance(knob, "Knob");
-        var label = Geo.Text(m, "끊음", new Vector3(0, 0.032f, 0.002f), 0.012f, Geo.Cream);
-        // 검류계 눈금: f = (log10 MΩ + 2) / 4, 큰 눈금 0.01, 0.1, 1, 10, 100MΩ.
-        if (gauge != null)
-        {
-            GaugeLabels(gauge, 0.035f, new[] { "0.01", "0.1", "1", "10", "100" });
-            // 배치가 단위 자리에 쓴 '검류계'를 단위 'MΩ'(옴 기호 U+2126, 나눔고딕에 있는 글자)로 바꾼다 (양 끝 숫자와 겹치지 않는 짧은 글씨).
-            foreach (var l in gauge.GetChildren().OfType<Label3D>().Where(l => l.Text == "검류계")) l.Text = "M\u2126";
-        }
-        var leads = _data.Circuits.Select(c => c.Id).Append("").ToArray();
-        var it = Add(Interactable.Create(m, "bridge.lead", "브리지 선택 손잡이", new Vector3(0.05f, 0.05f, 0.03f), new Vector3(0, 0, 0.012f), "commdesk"));
-        it.CommandFor = (_, mo) =>
-        {
-            if (mo == Motion.Click) BridgeLead = leads[(Array.IndexOf(leads, BridgeLead) + 1) % leads.Length];
-            return null;
-        };
-        float t = 0;
-        OnUpdate((s, dt) =>
-        {
-            int k = Array.IndexOf(leads, BridgeLead);
-            knob.RotationDegrees = new Vector3(0, 0, -k * 30);
-            label.Text = BridgeLead.Length == 0 ? "끊음" : $"분기함 {BridgeLead}";
-            if (gauge == null) return;
-            t += dt;
-            // 끊음이면 열린 선처럼 오른쪽 끝에 쉰다. 회로가 살아 있어 읽을 수 없으면(NaN) 바늘이 한 자리에 서지 않고 떤다(가운데는 평형으로 읽히므로).
-            double mohm = BridgeLead.Length == 0 ? 0 : query($"measure.bridge.insulation.{BridgeLead}");
-            float f = BridgeLead.Length == 0 ? 1
-                : double.IsNaN(mohm) ? 0.5f + 0.35f * Mathf.Sin(t * 9)
-                : (float)Math.Clamp((Math.Log10(Math.Max(mohm, 1e-3)) + 2) / 4, 0, 1);
-            gauge.SetFraction(f);
-        });
     }
 
     /// <summary>계기 큰 눈금 숫자 (Kit.Gauge의 labels와 같은 자리).</summary>

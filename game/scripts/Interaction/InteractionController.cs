@@ -24,6 +24,8 @@ public partial class InteractionController : Node
     public const float ScrubPixels = 70;
     /// <summary>원 그리기의 반지름. 이보다 작은 원은 손목 떨림으로 본다.</summary>
     public const float RotateRadius = 60;
+    /// <summary>장치 다이얼 한 칸에 필요한 마우스 이동(픽셀).</summary>
+    public const float DialPixels = 30;
     /// <summary>나무망치를 한 번 휘두르는 시간(초). 휘두르는 중에는 다시 칠 수 없다.</summary>
     public const double SwingSeconds = 0.45;
 
@@ -252,6 +254,7 @@ public partial class InteractionController : Node
                 break;
 
             case GestureKind.Rotate:
+            case GestureKind.Wheel:
             {
                 if (g.Fired) return;
                 var before = g.Virt;
@@ -264,10 +267,28 @@ public partial class InteractionController : Node
                     g.Turns += d / Mathf.Tau;
                 }
                 it.Preview?.Invoke(g.Turns);
-                if (g.Turns >= it.Turns) { g.Fired = true; Fire(it, Motion.Ccw); }
+                if (g.Kind == GestureKind.Wheel)
+                {
+                    // 바퀴는 놓을 때까지 계속 돈다: Turns 바퀴마다 한 번씩 낸다.
+                    while (g.Turns >= it.Turns) { g.Turns -= it.Turns; Fire(it, Motion.Ccw); }
+                    while (g.Turns <= -it.Turns) { g.Turns += it.Turns; Fire(it, Motion.Cw); }
+                }
+                else if (g.Turns >= it.Turns) { g.Fired = true; Fire(it, Motion.Ccw); }
                 else if (g.Turns <= -it.Turns) { g.Fired = true; Fire(it, Motion.Cw); }
                 break;
             }
+
+            case GestureKind.Dial:
+                // 위로 끌면 한 칸씩 올린다. 칸을 넘을 때마다 한 번.
+                g.Acc.Y -= rel.Y;
+                while (g.Acc.Y >= DialPixels) { g.Acc.Y -= DialPixels; Fire(it, Motion.Up); }
+                while (g.Acc.Y <= -DialPixels) { g.Acc.Y += DialPixels; Fire(it, Motion.Down); }
+                it.Preview?.Invoke(g.Acc.Y / DialPixels);
+                break;
+
+            case GestureKind.DragPlane:
+                it.PlaneMove?.Invoke(rel);
+                break;
 
             case GestureKind.Stroke:
             {
