@@ -315,7 +315,9 @@ static class DeviceRules
             double drag = PumpBearing.Drag(w);
             // 덮개가 열려 공기를 빨면 막힌 것처럼 헛돈다. 바구니가 없으면 막힘도 없다.
             double starve = Systems.WaterSystem.PumpStarvation(w);
-            return Math.Max(0, 1 - pr.ClogLoadDrop * starve + pr.DragLoadGain * drag);
+            // 배출 밸브를 잠그면 물을 밀어내지 못해 힘이 덜 든다 (WTR-03 갈래, WP17). 규칙이 없으면 0이라 막힘 쪽 그대로.
+            double unload = Math.Max(pr.ClogLoadDrop * starve, CheckValve.DeadHeadDrop(w));
+            return Math.Max(0, 1 - unload + pr.DragLoadGain * drag);
         }
         return 1;
     }

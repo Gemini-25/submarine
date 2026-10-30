@@ -84,6 +84,7 @@
     "set": {
       "stuck": 1
     },
+    "clearedWhen": "self.stuck < 0.01 && self.present >= 0.5 && self.bonnetOpen == 0",
     "baseRatePerHour": 0.01
   },
   "HUL-01": {

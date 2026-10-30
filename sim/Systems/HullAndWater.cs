@@ -130,12 +130,12 @@ static class WaterSystem
         }
         if (w.Mechanics.HasSeaPaths) SeaPaths.Flow(w);
 
-        // 2. 전동 펌프. 배출량 = 정격 × (1 − 흡입구 막힘), 역류 방지 밸브가 열린 채 고착되면 되돌아온다.
+        // 2. 전동 펌프. 배출량 = 정격 × (1 − 흡입구 막힘) × 배출 밸브 열림, 역류 방지 밸브가 열린 채 고착되면(판이 빠지거나 보닛이 열려도) 되돌아온다.
         var pump = w.Devices[w.Pump];
         if (pump.Running)
         {
-            double stuck = w.Part("pump.check_valve").Get("stuck");
-            water.PumpGrossLps = wt.PumpRatedLps * Curve.Clamp01(1 - PumpStarvation(w));
+            double stuck = CheckValve.Blocked(w);
+            water.PumpGrossLps = wt.PumpRatedLps * Curve.Clamp01(1 - PumpStarvation(w)) * CheckValve.DischargeOpen(w);
             double net = water.PumpGrossLps * Curve.Clamp01(1 - stuck);
             double removed = Math.Min(water.Bilge[w.PumpBilge], net * dt);
             water.Bilge[w.PumpBilge] -= removed;

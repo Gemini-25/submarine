@@ -1,0 +1,33 @@
+{
+  "name": "계통 훈련: 역류 방지 밸브",
+  "briefing": [
+    "모선 아르고스호 → 모스호 기관사. 수심 300m 정박 훈련.",
+    "후방 빌지에 물이 고였다. 배수 펌프는 평소처럼 도는데 빌지 수위가 줄지 않는다는 보고다. 펌프 앞에서 듣고 재어 원인을 찾고, 교범(Tab)대로 고칠 것.",
+    "펌프를 정식으로 고쳐 빌지 수위를 40L 아래로 1분 동안 유지하면 훈련을 마친다. 고친 뒤 보닛과 볼트, 배출 밸브를 모두 제자리에 둘 것."
+  ],
+  "seed": 5317,
+  "setup": {
+    "depthM": 300,
+    "switches": {
+      "C3": true
+    },
+    "bilges": {
+      "bilge.aft": 120
+    }
+  },
+  "events": [
+    {
+      "atSeconds": 0,
+      "fault": "WTR-03"
+    }
+  ],
+  "success": {
+    "assert": "part.pump.check_valve.prop.stuck < 0.05 && part.pump.check_valve.prop.present == 1 && part.pump.check_valve.prop.bonnetOpen == 0 && part.pump.check_valve.prop.bonnetBolt1 == 1 && part.pump.check_valve.prop.bonnetBolt2 == 1 && part.pump.check_valve.prop.bonnetBolt3 == 1 && part.pump.check_valve.prop.bonnetBolt4 == 1 && pump.bonnetInflow < 0.01 && pump.discharge > 0.99 && device.bilge_pump.running == 1 && bilge.total < 40",
+    "holdSeconds": 60,
+    "objectives": [
+      "역류 방지 밸브를 분해 청소한다",
+      "빌지 수위를 40L 아래로 1분 동안 유지한다"
+    ]
+  },
+  "timeLimitSeconds": 1800
+}
