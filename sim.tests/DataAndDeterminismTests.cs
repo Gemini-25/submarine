@@ -453,4 +453,64 @@ public class PerformanceTests
         _out.WriteLine($"틱당 {msPerTick * 1000:F1}µs ({ticks}틱)");
         Assert.True(msPerTick < 1.0, $"틱당 {msPerTick:F3}ms");
     }
+
+    /// <summary>
+    /// M2 자료에서 가장 바쁜 세계 (WP23): 시운전 설정 위에 모든 회로를 올리고 탐조등, 청음기, 윈치를 켠 채 2차 고장 열을 모두 넣는다.
+    /// 증기, 기울기, 챔버, 현창, 접점, 화로, 감각 모듈이 다 돈다. 틱 하나는 1ms, 스냅숏 하나는 0.5ms 아래다.
+    /// </summary>
+    static Simulation BusiestM2()
+    {
+        // 임무 없이 시운전의 설정만 쓴다 (임무가 끝나 세계가 멈추지 않게).
+        var sim = new Simulation(TestData.Data, 1905, TestData.Data.Mission("m2-shakedown").Setup);
+        foreach (var c in TestData.Data.Circuits) sim.Cmd($"switch.{c.Id}.on");
+        foreach (var d in new[] { "searchlight", "hydrophone", "hook_winch" }) sim.Cmd($"device.{d}.on");
+        sim.Cmd("candle.light");
+        foreach (var (f, p) in new (string, string?)[]
+                 {
+                     ("PWR-03", null), ("SNS-01", "panel.bulb.hull"), ("HUL-03", null),
+                     ("ELC-02", "contact.C1"), ("AIR-03", null), ("WTR-03", null), ("WTR-04", null), ("HUL-02", "leak.viewport.1"), ("HUL-04", null),
+                     ("SNS-02", "panel.wiring"), ("SNS-04", "searchlight.rods"), ("SNS-05", "gauge.voltage"), ("NAV-01", null), ("CBL-01", null),
+                 })
+            sim.Inject(f, p);
+        sim.Run(5); // 예열
+        return sim;
+    }
+
+    [Fact]
+    public void One_tick_on_M2_data_takes_under_a_millisecond()
+    {
+        var sim = BusiestM2();
+        int ticks = TestData.Ticks(20 * 60);
+        var sw = Stopwatch.StartNew();
+        for (int i = 0; i < ticks; i++) sim.Step();
+        sw.Stop();
+        double msPerTick = sw.Elapsed.TotalMilliseconds / ticks;
+        _out.WriteLine($"M2 틱당 {msPerTick * 1000:F1}µs ({ticks}틱, 실내 물 {sim.Query("bilge.total").Number:F0}L)");
+        Assert.True(msPerTick < 1.0, $"틱당 {msPerTick:F3}ms");
+    }
+
+    [Fact]
+    public void One_snapshot_on_M2_data_takes_under_half_a_millisecond()
+    {
+        var sim = BusiestM2();
+        int n = 2000;
+        for (int i = 0; i < 50; i++) _ = sim.Snapshot; // 예열
+        var sw = Stopwatch.StartNew();
+        int cues = 0;
+        for (int i = 0; i < n; i++)
+        {
+            sim.Step();
+            cues += sim.Snapshot.Cues.Count;
+        }
+        sw.Stop();
+        // 틱 시간을 따로 재서 뺀다.
+        var bare = BusiestM2();
+        var sw2 = Stopwatch.StartNew();
+        for (int i = 0; i < n; i++) bare.Step();
+        sw2.Stop();
+        double ms = Math.Max(0, sw.Elapsed.TotalMilliseconds - sw2.Elapsed.TotalMilliseconds) / n;
+        _out.WriteLine($"M2 스냅숏 하나 {ms * 1000:F1}µs (단서 {cues / n}개)");
+        Assert.True(cues > 0);
+        Assert.True(ms < 0.5, $"스냅숏 하나 {ms:F3}ms");
+    }
 }

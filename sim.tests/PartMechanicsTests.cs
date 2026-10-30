@@ -551,6 +551,12 @@ public class PartMechanicsTests
                 Directory.CreateDirectory(Path.GetDirectoryName(to)!);
                 File.Copy(f, to);
             }
+            // 축압기 고장을 넣는 진단 사례(윈치 쌍의 'PWR-03이면 판정 없음', WP23)도 뺀다.
+            string cable = Path.Combine(dir.FullName, "diagnosis", "cable.json");
+            var node = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(cable), null, new System.Text.Json.JsonDocumentOptions { CommentHandling = System.Text.Json.JsonCommentHandling.Skip })!;
+            var cases = node["pairs"]!["winch.weak"]!["cases"]!.AsArray();
+            foreach (var c in cases.Where(c => c!["inject"]?.AsArray().Any(i => (string?)i!["fault"] == "PWR-03") == true).ToList()) cases.Remove(c);
+            File.WriteAllText(cable, node.ToJsonString());
             var off = new Simulation(GameData.LoadFromDirectory(dir.FullName), 1);
             Assert.False(off.World.Mechanics.Steam);
         }

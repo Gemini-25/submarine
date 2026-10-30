@@ -29,6 +29,8 @@ public sealed class Book
     public required double AdvancePerRevM { get; init; }
     /// <summary>전령기 눈금 (교범에 인쇄된 값). 없으면 비어 있다.</summary>
     public required IReadOnlyList<double> TelegraphNotches { get; init; }
+    /// <summary>상황판 계기 → (눈금 끝, 영점 나사 한 칸의 몫) (교범 02쪽 눈금과 41쪽 영점 보정). 감각 계기 부품이 없으면 비어 있다.</summary>
+    public required IReadOnlyDictionary<string, double[]> Gauges { get; init; }
     public required string MissionId { get; init; }
     public required string MissionName { get; init; }
     public required IReadOnlyList<string> Briefing { get; init; }
@@ -55,6 +57,14 @@ public sealed class Book
         var nav = data.Tuning.Nav;
         var procs = new SortedDictionary<string, ProcedureDef>(StringComparer.Ordinal);
         foreach (var p in data.Procedures) procs[p.Id] = p;
+        var gauges = new SortedDictionary<string, double[]>(StringComparer.Ordinal);
+        if (data.Tuning.Senses?.Gauges is { } gt)
+            foreach (var f in data.Fixtures.Instances.Where(f => f.Def.Kind == FixtureKind.Adjuster && f.Id.StartsWith("gauge.", StringComparison.Ordinal)
+                                                                && f.Id.EndsWith(".zero", StringComparison.Ordinal) && f.Params.ContainsKey("zeroStep")))
+            {
+                string g = f.Id[6..^5];
+                if (gt.FullScale.TryGetValue(g, out double fs)) gauges[g] = new[] { fs, f.Params["zeroStep"] };
+            }
         var book = new Book
         {
             Diagnosis = dx,
@@ -69,6 +79,7 @@ public sealed class Book
             DeviationCard = nav?.DeviationCard.Select(x => x.ToArray()).ToArray() ?? Array.Empty<double[]>(),
             AdvancePerRevM = nav?.AdvancePerRevM ?? 0,
             TelegraphNotches = data.Tuning.Power?.TelegraphNotches.ToArray() ?? Array.Empty<double>(),
+            Gauges = gauges,
             MissionId = m.Id,
             MissionName = m.Name,
             Briefing = m.Briefing.ToArray(),
@@ -86,7 +97,7 @@ public sealed class Book
         Canon(sb, b.Diagnosis.Margins);
         Canon(sb, b.Diagnosis.Pairs);
         Canon(sb, b.Procedures);
-        Canon(sb, new object[] { b.TicksPerSecond, b.BeltSlots, b.Tools, b.DeviationCard, b.AdvancePerRevM, b.TelegraphNotches, b.Rounds });
+        Canon(sb, new object[] { b.TicksPerSecond, b.BeltSlots, b.Tools, b.DeviationCard, b.AdvancePerRevM, b.TelegraphNotches, b.Rounds, b.Gauges });
         ulong h = 14695981039346656037UL;
         foreach (byte x in Encoding.UTF8.GetBytes(sb.ToString())) { h ^= x; h *= 1099511628211UL; }
         return h.ToString("x16", System.Globalization.CultureInfo.InvariantCulture);

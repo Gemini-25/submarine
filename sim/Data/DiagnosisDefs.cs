@@ -200,6 +200,16 @@ public sealed class CaseDef
     [Optional] public double? Seconds { get; set; }
     /// <summary>이 원인을 먼저 알아채는 다른 쌍.</summary>
     [Optional] public string? Via { get; set; }
+    /// <summary>노출 도중에 내는 명령 (WP23): 예를 들어 자이로를 끄고 다시 켜서 '맞추지 않음'을 만든다. 초는 노출 시작부터.</summary>
+    [Optional] public List<CaseCommand> At { get; set; } = new();
+}
+
+/// <summary>사례 도중의 명령 하나.</summary>
+public sealed class CaseCommand
+{
+    public double Seconds { get; set; }
+    public string Cmd { get; set; } = "";
+    [Optional] public double Value { get; set; }
 }
 
 public sealed class InjectDef

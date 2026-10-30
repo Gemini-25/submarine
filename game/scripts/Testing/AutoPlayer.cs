@@ -96,9 +96,9 @@ public partial class AutoPlayer : Node
             foreach (var name in names)
             {
                 // drill:<임무>는 그 훈련 하나를 DrillSolver로 손동작 실행한다 (WP16, DrillAutoTest.cs).
-                if (name.StartsWith("drill:", StringComparison.Ordinal) && TierADrills.Contains(name[6..])) all[name] = () => DrillSuite(name[6..]);
+                if (name.StartsWith("drill:", StringComparison.Ordinal) && AllDrills.Contains(name[6..])) all[name] = () => DrillSuite(name[6..]);
                 // drill:<임무>:replay는 golden 기록의 Do만 손동작으로 따라 한다.
-                if (name.Length > "drill:".Length + ":replay".Length && name.StartsWith("drill:", StringComparison.Ordinal) && name.EndsWith(":replay", StringComparison.Ordinal) && TierADrills.Contains(name[6..^7]))
+                if (name.Length > "drill:".Length + ":replay".Length && name.StartsWith("drill:", StringComparison.Ordinal) && name.EndsWith(":replay", StringComparison.Ordinal) && AllDrills.Contains(name[6..^7]))
                     all[name] = () => DrillReplaySuite(name[6..^7]);
                 if (!all.TryGetValue(name, out var suite)) { Check(false, $"모르는 확인 묶음 '{name}' (있는 것: {string.Join(", ", all.Keys)}, drill:<임무>, drill:<임무>:replay)"); continue; }
                 GD.Print($"AUTOTEST 묶음 {name}");

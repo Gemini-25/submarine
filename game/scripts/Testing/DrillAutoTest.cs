@@ -17,13 +17,16 @@ namespace DeepLine.Game.Testing;
 /// </summary>
 public partial class AutoPlayer
 {
-    /// <summary>Tier A 훈련 여덟 (drills 묶음이 이 순서로 돈다).</summary>
-    static readonly string[] TierADrills =
-        { "m2-power-a", "m2-switchboard-a", "m2-air-a", "m2-water-a", "m2-hull-a", "m2-senses-a", "m2-nav", "m2-cable" };
+    /// <summary>M2 훈련 열여섯: Tier A 여덟(WP16)과 2차 여덟(WP23). drills 묶음이 이 순서로 돈다.</summary>
+    static readonly string[] AllDrills =
+    {
+        "m2-power-a", "m2-switchboard-a", "m2-air-a", "m2-water-a", "m2-hull-a", "m2-senses-a", "m2-nav", "m2-cable",
+        "m2-switchboard-b", "m2-air-b", "m2-water-b", "m2-ballast", "m2-senses-b", "m2-power-b", "m2-hull-b", "m2-shakedown",
+    };
 
     async Task AllDrillsSuite()
     {
-        foreach (var m in TierADrills)
+        foreach (var m in AllDrills)
         {
             GD.Print($"AUTOTEST 묶음 drill:{m}");
             await DrillSuite(m);
@@ -215,6 +218,7 @@ public partial class AutoPlayer
         else if (cmd == "hand.drop" && Snap.Crew.Hand == "cell_dead") await CrateDrop();
         else if (cmd.StartsWith("device.hook_winch.", StringComparison.Ordinal)) await MotorSwitch(cmd);
         else if (cmd.StartsWith("device.hydrophone.", StringComparison.Ordinal)) await HydrophoneSwitch(cmd);
+        else if (cmd.StartsWith("device.searchlight.", StringComparison.Ordinal)) await SearchlightLever(cmd);
         else if (cmd.StartsWith("device.", StringComparison.Ordinal)) await PerformDevice(cmd);
         else if (cmd.StartsWith("shaft.", StringComparison.Ordinal)) await PerformDrill(cmd);
         else await PerformDrill(cmd); // 축 패킹 자리에서 웅크리고 있었으면 일어선 뒤 공용 Perform

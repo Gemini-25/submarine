@@ -1,4 +1,4 @@
-// 동력: 증기 축압기 (교범 03쪽 '동력'의 축압기 줄, 22쪽 '가르기'). WP19.
+// 동력: 증기 축압기 (교범 03쪽 '동력'의 축압기 줄, 22쪽 '가르기'). WP19. 분기함 이슬(junction.dew)은 WP23 (22쪽 '끝난 뒤 확인').
 {
   "pairs": {
     "steam.leak": {
@@ -32,6 +32,53 @@
         { "expect": "PWR-03", "inject": [ { "fault": "PWR-03" } ] },
         { "expect": "none", "inject": [ { "fault": "ELC-03", "part": "junction.C3" } ] },
         { "expect": "none" }
+      ]
+        },
+    "junction.dew": {
+      "no": 30,
+      "priority": 36,
+      "page": "03-진단-표-전기와-동력.md",
+      "section": "동력",
+      "sees": [
+        [ { "q": "cue.junction.C1.dew", "unit": "cue", "above": 0.3, "says": "분기함에 이슬" } ],
+        [ { "q": "cue.junction.C2.dew", "unit": "cue", "above": 0.3, "says": "분기함에 이슬" } ],
+        [ { "q": "cue.junction.C3.dew", "unit": "cue", "above": 0.3, "says": "분기함에 이슬" } ],
+        [ { "q": "cue.junction.C4.dew", "unit": "cue", "above": 0.3, "says": "분기함에 이슬" } ],
+        [ { "q": "cue.junction.C5.dew", "unit": "cue", "above": 0.3, "says": "분기함에 이슬" } ],
+        [ { "q": "cue.junction.C6.dew", "unit": "cue", "above": 0.3, "says": "분기함에 이슬" } ],
+        [ { "q": "cue.junction.C7.dew", "unit": "cue", "above": 0.3, "says": "분기함에 이슬" } ],
+        [ { "q": "cue.junction.C8.dew", "unit": "cue", "above": 0.3, "says": "분기함에 이슬" } ]
+      ],
+      "checks": [
+        {
+          "all": [ { "q": "cue.steam.hiss", "unit": "cue", "above": 0.3, "says": "관 이음에서 김과 쉿 소리" } ],
+          "verdict": "PWR-03"
+        },
+        {
+          "each": { "z": "fore,mid,aft" },
+          "all": [ { "q": "zone.{z}.alarm", "unit": "none", "above": 0.5 } ],
+          "verdict": "flooding"
+        },
+        {
+          "each": { "c": "circuits" },
+          "all": [ { "q": "cue.junction.{c}.dew", "unit": "cue", "above": 0.3, "says": "분기함에 이슬" },
+                   { "q": "cue.steam.hiss", "unit": "cue", "below": 0.2 } ],
+          "verdict": "ELC-03"
+        }
+      ],
+      "verdicts": {
+        "PWR-03": { "fault": "PWR-03", "says": "증기 축압기 누설", "same": "steam.leak" },
+        "flooding": { "says": "그 구역의 침수", "do": [] },
+        "ELC-03": { "fault": "ELC-03", "says": "분기함 건조와 피복 감기", "same": "fuse.blown" }
+      },
+      "exposure": { "setup": { "depthM": 300, "switches": { "C3": true }, "parts": [ { "part": "junction.C3", "prop": "moisture", "value": 0.62 } ] }, "seconds": 120 },
+      "cases": [
+        { "expect": "PWR-03", "inject": [ { "fault": "PWR-03" } ] },
+        { "expect": "ELC-03", "bind": { "c": "C3" } },
+        { "expect": "flooding", "bind": { "z": "aft" }, "setup": { "depthM": 600, "hatchClosed": true },
+          "inject": [ { "fault": "WTR-01" }, { "fault": "HUL-01", "part": "leak.rivet.09" }, { "fault": "HUL-01", "part": "leak.rivet.10" },
+                      { "fault": "HUL-01", "part": "leak.rivet.11" }, { "fault": "HUL-01", "part": "leak.rivet.12" } ] },
+        { "expect": "none", "setup": { "parts": [ { "part": "junction.C3", "prop": "moisture", "value": 0.3 } ] } }
       ]
     }
   }

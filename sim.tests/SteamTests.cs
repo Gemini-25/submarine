@@ -577,9 +577,13 @@ public class SteamTests
     {
         var a = Faulted();
         Assert.Equal(TestData.T.Noise.Actions["scrape"].Level, PeakActionNoise(a, ProcedureRunner.ExpandWithBelt(a, TestData.Data.Procedure("proc.steam.gasket"))));
-        // 감기의 가장 큰 손동작은 밸브(3)다. 명세의 'Noise 2'는 감기 자체의 소리다.
+        // 감기의 가장 큰 손동작은 격벽 해치(6)다. WP23이 해치 닫기와 다시 열기를 절차에 넣었다 (열린 해치 문이 축압기를 가린다).
+        // 그 밖에는 밸브(3)가 가장 크다. 명세의 'Noise 2'는 감기 자체의 소리다.
         var b = Faulted();
-        Assert.Equal(TestData.T.Noise.Actions["valve"].Level, PeakActionNoise(b, ProcedureRunner.ExpandWithBelt(b, TestData.Data.Procedure("proc.steam.wrap"))));
+        Assert.Equal(TestData.T.Noise.Actions["hatch"].Level, PeakActionNoise(b, ProcedureRunner.ExpandWithBelt(b, TestData.Data.Procedure("proc.steam.wrap"))));
+        var c = Faulted();
+        var wrapOnly = ProcedureRunner.ExpandWithBelt(c, TestData.Data.Procedure("proc.steam.wrap")).Where(x => !x.Cmd.StartsWith("hatch.", StringComparison.Ordinal)).ToList();
+        Assert.Equal(TestData.T.Noise.Actions["valve"].Level, PeakActionNoise(c, wrapOnly));
     }
 
     [Fact]

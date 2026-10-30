@@ -289,7 +289,11 @@ static class DataValidator
             check(w.Retry.Count == 0 || step.Cmd?.EndsWith(".touch", StringComparison.Ordinal) == true, $"{at}: retry는 만지기(.touch) 명령 단계에만 쓴다");
             check(step.Cmd != null || (w.Then.Count == 0 && w.Retry.Count == 0), $"{at}: 명령 없는 단계에는 before와 until만 쓴다");
             check(w.Then.Count == 0 || step.Cmd != null, $"{at}: then은 명령 있는 단계에만 쓴다");
-            check(w.Before != null || w.Until.Count > 0 || w.Then.Count > 0 || w.Retry.Count > 0, $"{at}: 기다릴 것이 없다");
+            check(w.Before != null || w.Until.Count > 0 || w.Then.Count > 0 || w.Retry.Count > 0 || w.While.Count > 0, $"{at}: 기다릴 것이 없다");
+            check(w.While.Count == 0 || step.Cmd != null, $"{at}: while은 명령 있는 단계에만 쓴다");
+            check(w.Redo == null || (w.Retry.Count > 0 && w.Redo >= 0 && w.Redo < i && p.Steps[w.Redo.Value].Cmd != null),
+                $"{at}: redo는 retry와 함께, 앞선 명령 있는 단계의 자리(0부터)를 가리킨다");
+            check(w.Tries == null || (w.Retry.Count > 0 && w.Tries > 0), $"{at}: tries는 retry와 함께, 1 이상");
             if (w.Release)
                 check(step.Cmd == null && w.Until.Count > 0 && i > lastCmd, $"{at}: release는 마지막 명령 뒤의 명령 없는 단계에서 until과 함께만 쓴다");
         }

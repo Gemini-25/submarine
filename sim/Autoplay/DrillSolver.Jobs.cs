@@ -22,6 +22,8 @@ public sealed partial class DrillSolver
         "conclude" => ProcessConclude(op),
         "action" => ProcessAction(op),
         "jobdone" => ProcessJobDone(op),
+        "zero" => ProcessZero(op),
+        "while" => ProcessWhile(op),
         _ => throw new InvalidOperationException($"모르는 연산 '{op.Kind}'"),
     };
 
@@ -47,12 +49,22 @@ public sealed partial class DrillSolver
         }
         // 전령기: 손잡이는 한 눈금씩 움직인다. 지금 눈금에서 목표 쪽으로 한 눈금씩 내고, 낼 때마다 다시 읽는다.
         if (cmd == "propulsion.set" && _book.TelegraphNotches.Count > 0) return Telegraph(op);
+        // 격벽 해치: 이 일을 시작할 때 이미 닫혀 있던 해치(침수 때문에 닫아 둔 것일 수 있다)는 끝에 다시 열지 않는다 (WP23).
+        if (cmd == "hatch.open" && JobOf(op.Job) is { HatchKept: true })
+        {
+            _s.Agenda.RemoveAt(0);
+            return Emit(PlanKind.Skip, 0, cmd: cmd, text: "kept", job: JobName(op.Job), jobStep: op.Step, note: op.Origin);
+        }
         // 이미 그 자리: 손 자리 값을 보면 할 필요가 없는 명령은 건너뛴다 (거부 'already'를 내지 않는다).
         if (AlreadyThere(cmd))
         {
+            if (cmd == "hatch.close" && JobOf(op.Job) is { } kept) kept.HatchKept = true;
             _s.Agenda.RemoveAt(0);
             return Emit(PlanKind.Skip, 0, cmd: cmd, text: "already", job: JobName(op.Job), jobStep: op.Step, note: op.Origin);
         }
+        // 여러 칸 레버(흡입 선택 레버): 손잡이는 한 칸씩 움직인다. 이웃하지 않은 자리로 가는 명령은 가운데 자리를 차례로 낸다 (WP23).
+        if (LeverNotch(cmd) is { } notch)
+            return Emit(PlanKind.Do, Hand, cmd: notch, text: "notch", job: JobName(op.Job), jobStep: op.Step, note: op.Note ?? op.Origin);
         // 바닥에서 줍기: 공구판으로 가지러 갈 도구가 바닥에 있으면 줍는다.
         if (cmd.StartsWith("toolboard.take.", StringComparison.Ordinal))
         {
@@ -68,7 +80,8 @@ public sealed partial class DrillSolver
         if (_s.Agenda.Count > 1 && _s.Agenda[1] is { Kind: "until", Which: "then", Start: < 0 } then)
         {
             then.Start = Now;
-            then.Baseline = WaitConds(then).Conds.Select(c => c.Delta ? DeltaSource(c) : double.NaN).ToList();
+            var tb = WaitBind(then);
+            then.Baseline = WaitConds(then).Conds.Select(c => c.Delta ? DeltaSource(c, tb) : double.NaN).ToList();
         }
         _s.Agenda.RemoveAt(0);
         return Emit(PlanKind.Do, Hand, cmd: cmd, value: op.Value, value2: op.Value2, text: op.Which == "floor" ? "floor" : null,
@@ -107,8 +120,28 @@ public sealed partial class DrillSolver
         return Emit(PlanKind.Do, Hand, cmd: "propulsion.set", value: next, job: JobName(op.Job), jobStep: op.Step, note: op.Note ?? op.Origin);
     }
 
+    /// <summary>레버 명령의 목표 자리가 지금 자리와 이웃하지 않으면 목표 쪽 이웃 자리의 명령. 아니면 null.</summary>
+    string? LeverNotch(string cmd)
+    {
+        int dot = cmd.LastIndexOf('.');
+        if (dot <= 0 || !_book.Fixtures.TryGetValue(cmd[..dot], out var f) || f.Kind != FixtureKind.Lever || f.Prop == null) return null;
+        string path = $"part.{f.PartId}.prop.{f.Prop}";
+        if (!_book.HandPositions.Contains(path)) return null;
+        int now = (int)Math.Round(_q.Number(path)), goal = IndexOf(f.Positions, cmd[(dot + 1)..]);
+        if (goal < 0 || now < 0 || now >= f.Positions.Count || Math.Abs(goal - now) <= 1) return null;
+        return $"{f.Id}.{f.Positions[now + Math.Sign(goal - now)]}";
+    }
+
+    static int IndexOf(IReadOnlyList<string> list, string x)
+    {
+        for (int i = 0; i < list.Count; i++) if (list[i] == x) return i;
+        return -1;
+    }
+
     bool AlreadyThere(string cmd)
     {
+        // 격벽 해치: 문이 보인다. 이미 그 자리면 내지 않는다 (Godot의 해치 손동작은 열림과 닫힘을 맞바꾼다).
+        if (cmd is "hatch.close" or "hatch.open") return (_q.Number("hatch.closed") >= 0.5) == (cmd == "hatch.close");
         int dot = cmd.LastIndexOf('.');
         if (dot <= 0 || !_book.Fixtures.TryGetValue(cmd[..dot], out var f) || f.Prop == null) return false;
         string verb = cmd[(dot + 1)..];
@@ -133,6 +166,20 @@ public sealed partial class DrillSolver
         _s.Agenda.RemoveAt(0);
         double shown = op.Tool == "voltmeter" ? Systems.Units.ToDisplay("V", raw) : raw;
         return Emit(PlanKind.Measure, Look, tool: op.Tool, target: op.Target, reading: shown, pair: _s.Evaluating);
+    }
+
+    /// <summary>영점 나사: 방금 잰 기준 값과 지금 바늘의 차이를 한 칸의 몫으로 나눈 만큼 돌린다 (시뮬레이션 단위로 셈한다).</summary>
+    PlanStep? ProcessZero(Op op)
+    {
+        _s.Agenda.RemoveAt(0);
+        string g = op.Target!;
+        double reference = _s.Memo[op.Note!], needle = _q.Number("panel.gauge." + g);
+        _s.Memo.Remove(op.Note!);
+        var gauge = _book.Gauges[g];
+        var cmds = SensesDrill.ZeroCommands(g, needle, reference, gauge[0], gauge[1]);
+        if (cmds.Count > 0)
+            _s.Agenda.InsertRange(0, StepsToOps(new[] { new StepDef { Cmd = cmds[0], Tool = "screwdriver", Repeat = cmds.Count } }, NoBind, op.Origin!, op.Job));
+        return null;
     }
 
     PlanStep ProcessLamptest(Op op)
@@ -199,10 +246,15 @@ public sealed partial class DrillSolver
         }
         int hash = r.LastIndexOf('#');
         var w = _book.Procedures[r[..hash]].Steps[int.Parse(r[(hash + 1)..], System.Globalization.CultureInfo.InvariantCulture)].Wait!;
-        return (op.Which switch { "then" => w.Then, "retry" => w.Retry, _ => w.Until }, w.Every, w.Max);
+        return (op.Which switch { "then" => w.Then, "retry" => w.Retry, "while" => w.While, _ => w.Until }, w.Every, w.Max);
     }
 
-    double DeltaSource(CondDef c) => c.Q != null ? Display(c.Unit, c.Q, _q.Number(c.Q)) : c.Calc != null ? Calc(c.Calc) : double.NaN;
+    double DeltaSource(CondDef c, IReadOnlyDictionary<string, string> bind) =>
+        c.Q != null ? Display(c.Unit, Sub(c.Q, bind), _q.Number(Sub(c.Q, bind))) : c.Calc != null ? Calc(c.Calc) : double.NaN;
+
+    /// <summary>기다림의 묶음 값: 절차의 bind가 있으면 그것, 없으면 일의 묶음 값.</summary>
+    IReadOnlyDictionary<string, string> WaitBind(Op op) =>
+        op.Bind != null ? ParseBind(op.Bind) : JobOf(op.Job)?.Bind ?? (IReadOnlyDictionary<string, string>)NoBind;
 
     bool WaitHolds(Op op, IReadOnlyList<CondDef> conds, IReadOnlyDictionary<string, string> bind)
     {
@@ -211,7 +263,7 @@ public sealed partial class DrillSolver
             var c = conds[i];
             if (c.Delta)
             {
-                double now = DeltaSource(c), base0 = i < op.Baseline.Count ? op.Baseline[i] : double.NaN;
+                double now = DeltaSource(c, bind), base0 = i < op.Baseline.Count ? op.Baseline[i] : double.NaN;
                 if (!Judge(c, now - base0, null)) return false;
             }
             else if (Test(c, bind, $"wait:{op.WaitRef}:{i}", true, out _, out _) != R.True) return false;
@@ -222,22 +274,18 @@ public sealed partial class DrillSolver
     PlanStep? ProcessUntil(Op op)
     {
         var (conds, every, max) = WaitConds(op);
-        var bind = JobOf(op.Job)?.Bind ?? (IReadOnlyDictionary<string, string>)NoBind;
+        var bind = WaitBind(op);
         if (op.Start < 0)
         {
             op.Start = Now;
-            op.Baseline = conds.Select(c => c.Delta ? DeltaSource(c) : double.NaN).ToList();
+            op.Baseline = conds.Select(c => c.Delta ? DeltaSource(c, bind) : double.NaN).ToList();
         }
         if (WaitHolds(op, conds, bind))
         {
             _s.Agenda.RemoveAt(0);
             return null;
         }
-        if (Now - op.Start > _book.Ticks(max))
-        {
-            Stop(DrillOutcome.Stuck, "wait_timeout:" + op.WaitRef);
-            return null;
-        }
+        if (Now - op.Start > _book.Ticks(max)) return TimedOut(op, "wait_timeout:");
         if (op.Release && JobOf(op.Job) is { } job)
         {
             // 손을 놓는다: 이 일의 남은 연산을 치워 두고, 조건이 서면 다시 시작한다.
@@ -250,20 +298,78 @@ public sealed partial class DrillSolver
         return Emit(PlanKind.Wait, Math.Max(1, Math.Min(_book.Ticks(every), Poll)), job: JobName(op.Job), jobStep: op.Step, note: "until " + op.WaitRef);
     }
 
+    /// <summary>
+    /// 일의 기다림이 시간이나 횟수를 넘겼다 (WP23): 훈련 전체를 멈추지 않고 그 일만 그만두고(gave_up) 손을 놓는다.
+    /// 일에 딸리지 않은 기다림(확인 따위)이면 전처럼 멈춘다.
+    /// </summary>
+    PlanStep? TimedOut(Op op, string why)
+    {
+        if (JobOf(op.Job) is not { } job)
+        {
+            Stop(DrillOutcome.Stuck, why + op.WaitRef);
+            return null;
+        }
+        return GiveUp(job, why + op.WaitRef);
+    }
+
+    PlanStep GiveUp(Job job, string why)
+    {
+        _s.Agenda.RemoveAll(o => o.Job == job.Id);
+        job.Parked = new List<Op>();
+        job.Phase = "done";
+        SetKey(job.Key, "failed", job.Attempts);
+        string bt = BindText(job.Bind);
+        _s.Findings.Add(new DrillFinding(Now, job.Pair, job.Verdict, bt, "gave_up"));
+        _s.QuietSince = Now;
+        return Emit(PlanKind.Note, 0, pair: job.Pair, verdict: job.Verdict, bind: bt, job: JobName(job.Id), note: "gave_up " + why);
+    }
+
+    StepWait? StepWaitOf(string origin, int step) =>
+        _book.Procedures.TryGetValue(origin, out var p) && step >= 0 && step < p.Steps.Count ? p.Steps[step].Wait : null;
+
+    /// <summary>while: 조건이 서면 그 명령을 하고, 서지 않으면 이 단계의 남은 명령을 하지 않는다.</summary>
+    PlanStep? ProcessWhile(Op op)
+    {
+        var (conds, _, _) = WaitConds(op);
+        _s.Agenda.RemoveAt(0);
+        if (WaitHolds(op, conds, WaitBind(op))) return null;
+        string? first = null;
+        while (_s.Agenda.Count > 0 && _s.Agenda[0].Job == op.Job && _s.Agenda[0].Origin == op.Origin && _s.Agenda[0].Step == op.Step)
+        {
+            if (_s.Agenda[0].Kind == "cmd") first ??= _s.Agenda[0].Cmd;
+            _s.Agenda.RemoveAt(0);
+        }
+        return first == null ? null : Emit(PlanKind.Skip, 0, cmd: first, text: "while", job: JobName(op.Job), jobStep: op.Step, note: op.Origin);
+    }
+
     /// <summary>만지기 뒤: 만진 결과가 retry 조건을 세우면 every 뒤 같은 곳을 다시 만진다.</summary>
     PlanStep? ProcessRetry(Op op)
     {
         var (conds, every, max) = WaitConds(op);
         if (op.Start < 0) op.Start = Now;
         _s.Agenda.RemoveAt(0);
-        if (!WaitHolds(op, conds, NoBind)) return null;
-        if (Now - op.Start > _book.Ticks(max))
-        {
-            Stop(DrillOutcome.Stuck, "wait_timeout:" + op.WaitRef);
-            return null;
-        }
+        if (!WaitHolds(op, conds, WaitBind(op))) return null;
+        if (Now - op.Start > _book.Ticks(max)) return TimedOut(op, "wait_timeout:");
+        // tries (WP23): 다시 만지기를 이만큼 했는데도 서면 그 일을 그만둔다 (원인이 남아 축축함이 그치지 않는 따위).
+        if (StepWaitOf(op.Origin!, op.Step)?.Tries is { } tries && op.Tries >= tries) return TimedOut(op, "retry_limit:");
         var again = op.Copy();
         again.Tries++;
+        if (StepWaitOf(op.Origin!, op.Step)?.Redo is { } redo)
+        {
+            // redo (WP23): 기다린 뒤 앞 단계를 다시 하고(예: 다시 닦기), 빈손으로 다시 만진다.
+            var rs = _book.Procedures[op.Origin!].Steps[redo];
+            var bind = WaitBind(op);
+            var ops = new List<Op> { new Op { Kind = "wait", Ticks = _book.Ticks(every), Job = op.Job, Step = op.Step, Note = "redo" } };
+            ops.AddRange(StepsToOps(new[]
+            {
+                new StepDef { Cmd = Sub(rs.Cmd!, bind), Tool = rs.Tool, Repeat = rs.Repeat },
+                new StepDef { Cmd = op.Cmd!, Tool = "hand" },
+            }, NoBind, op.Origin!, op.Job));
+            foreach (var o in ops) if (o.Kind == "cmd") { o.Step = op.Step; o.Note = "redo"; }
+            ops.Add(again);
+            _s.Agenda.InsertRange(0, ops);
+            return Emit(PlanKind.Note, 0, job: JobName(op.Job), jobStep: op.Step, note: "redo " + op.Target);
+        }
         _s.Agenda.InsertRange(0, new[]
         {
             new Op { Kind = "wait", Ticks = _book.Ticks(every), Job = op.Job, Step = op.Step, Note = "cool" },
@@ -279,20 +385,24 @@ public sealed partial class DrillSolver
         _book.BeltSlots == 0 ? Array.Empty<string>() : Enumerable.Range(1, _book.BeltSlots).Select(n => _q.Read($"crew.belt.{n}").Text ?? "").ToArray();
 
     /// <summary>펼친 절차 항목을 연산으로: 기다림은 before → wait, until → until, 명령, then → until, retry → retry.</summary>
-    List<Op> ToOps(IReadOnlyList<ProcedureRunner.PlanItem> items, int job)
+    List<Op> ToOps(IReadOnlyList<ProcedureRunner.PlanItem> items, int job, IReadOnlyDictionary<string, string>? bind = null)
     {
+        string? bt = bind is { Count: > 0 } ? BindText(bind) : null;
         var ops = new List<Op>();
         foreach (var item in items)
         {
             var w = item.Wait;
             string wref = $"{item.Origin}#{item.Step}";
             if (w?.Before is { } before) ops.Add(new Op { Kind = "wait", Ticks = _book.Ticks(before), Job = job, Step = item.Step, Origin = item.Origin, Note = "wait " + wref });
-            if (w is { Until.Count: > 0 }) ops.Add(new Op { Kind = "until", Which = "until", WaitRef = wref, Release = w.Release, Job = job, Step = item.Step, Origin = item.Origin });
+            if (w is { Until.Count: > 0 }) ops.Add(new Op { Kind = "until", Which = "until", WaitRef = wref, Release = w.Release, Job = job, Step = item.Step, Origin = item.Origin, Bind = bt });
             if (item.Command is not { } c) continue;
+            // while (WP23): 되풀이 단계의 손 명령마다 먼저 본다 (도구 고르기는 빼고).
+            if (!c.Cmd.StartsWith("tool.", StringComparison.Ordinal) && StepWaitOf(item.Origin, item.Step) is { While.Count: > 0 })
+                ops.Add(new Op { Kind = "while", WaitRef = wref, Which = "while", Job = job, Step = item.Step, Origin = item.Origin, Bind = bt });
             ops.Add(new Op { Kind = "cmd", Cmd = c.Cmd, Value = c.Value, Value2 = c.Value2, Origin = item.Origin, Step = item.Step, Job = job });
-            if (w is { Then.Count: > 0 }) ops.Add(new Op { Kind = "until", Which = "then", WaitRef = wref, Job = job, Step = item.Step, Origin = item.Origin });
+            if (w is { Then.Count: > 0 }) ops.Add(new Op { Kind = "until", Which = "then", WaitRef = wref, Job = job, Step = item.Step, Origin = item.Origin, Bind = bt });
             if (w is { Retry.Count: > 0 })
-                ops.Add(new Op { Kind = "retry", Which = "retry", WaitRef = wref, Cmd = c.Cmd, Target = c.Cmd[..c.Cmd.LastIndexOf('.')], Job = job, Step = item.Step, Origin = item.Origin });
+                ops.Add(new Op { Kind = "retry", Which = "retry", WaitRef = wref, Cmd = c.Cmd, Target = c.Cmd[..c.Cmd.LastIndexOf('.')], Job = job, Step = item.Step, Origin = item.Origin, Bind = bt });
         }
         var first = ops.FirstOrDefault(o => o.Kind == "cmd");
         if (first != null) first.First = true;
@@ -338,11 +448,11 @@ public sealed partial class DrillSolver
             var head = job.Parked[0];
             var (conds, _, max) = WaitConds(head);
             // ProcessUntil과 같은 순서: 조건이 섰으면 시간이 지났어도 다시 시작한다 (손이 다른 일로 오래 바빴을 수 있다).
-            if (!WaitHolds(head, conds, job.Bind))
+            if (!WaitHolds(head, conds, WaitBind(head)))
             {
                 if (Now - head.Start > _book.Ticks(max))
                 {
-                    Stop(DrillOutcome.Stuck, "wait_timeout:" + head.WaitRef);
+                    GiveUp(job, "wait_timeout:" + head.WaitRef);
                     return true;
                 }
                 continue;
@@ -394,7 +504,7 @@ public sealed partial class DrillSolver
                 }
             job.Blocked = false;
             if (a.If.Count > 0) next.Value = 1;
-            ops.AddRange(ToOps(items, job.Id));
+            ops.AddRange(ToOps(items, job.Id, bind));
         }
         else if (a.Cmds.Count > 0) ops.AddRange(StepsToOps(a.Cmds, job.Bind, origin, job.Id));
         else if (a.Restore == "switches")
@@ -409,6 +519,15 @@ public sealed partial class DrillSolver
                 ops.Add(new Op { Kind = "cmd", Cmd = "propulsion.set", Value = job.Telegraph, Origin = origin, Step = op.Step, Job = job.Id });
         }
         else if (a.Align == "gyro") ops.AddRange(CommandsToOps(NavDrill.AlignCommands(_q, _book), origin, job.Id));
+        else if (a.Align == "gauge")
+        {
+            // 기준 계기를 손에 들고 재고, 그 값과 바늘의 차이만큼 영점 나사를 돌린다 (교범 41쪽). 나사 수는 잰 뒤에 셈한다.
+            string g = Sub(a.Bind["gauge"], job.Bind);
+            var (tool, target) = DiagnosisValidator.ZeroReferences[g];
+            ops.AddRange(CommandsToOps(new[] { "tool." + tool }, origin, job.Id));
+            ops.Add(new Op { Kind = "measure", Tool = tool, Target = target, Note = $"m:{tool}:{target}", Job = job.Id, Step = op.Step });
+            ops.Add(new Op { Kind = "zero", Target = g, Note = $"m:{tool}:{target}", Origin = origin, Job = job.Id, Step = op.Step });
+        }
         else if (a.Reset == "navcomp") ops.AddRange(CommandsToOps(NavDrill.ResetCommands(_q, _book), origin, job.Id));
         else if (a.Wait is { } secs) ops.Add(new Op { Kind = "wait", Ticks = _book.Ticks(secs), Job = job.Id, Step = op.Step, Note = "wait " + origin });
         ops.Add(next);
