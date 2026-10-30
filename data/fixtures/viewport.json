@@ -12,7 +12,6 @@
       "zone": "fore",
       "prop": "deadlight",
       "heldBy": "dogs",
-      "gesture": "down",
       "verbs": {
         "open": { "tool": "hand", "noise": "cover" },
         "close": { "tool": "hand", "noise": "cover" }

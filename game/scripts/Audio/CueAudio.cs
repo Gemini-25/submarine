@@ -176,6 +176,22 @@ public static class CueAudio
             v.ShaftHz = 10f + 36f * (float)c.S.Cues.FirstOrDefault(x => x.Id == "propulsion.hum").Value;
             v.BrushWear = 0.4f + 0.6f * c.V;
         }, spot: "motor", range: 6),
+        // 증기 축압기 (PWR-03, WP19): 이음의 쉿 소리는 새는 정도와 통 압력을, 빼기 밸브는 안전밸브의 큰 소리를 쓴다.
+        R("steam.hiss", s => new SteamHissVoice(s), (v, c) =>
+        {
+            v.Leak = c.V;
+            v.Pressure = (float)Math.Clamp(PartValue(c.S, "steam.accumulator", "pressure"), 0, 1);
+            v.SafetyValve = 0;
+        }, range: 5),
+        R("steam.vent", s => new SteamHissVoice(s), (v, c) =>
+        {
+            v.Leak = 0;
+            v.Pressure = Math.Min(1f, c.V);
+            v.SafetyValve = c.V;
+        }, range: 10),
+        // 현창 (HUL-02, WP19)과 케이블 챔버 (HUL-04, WP19): 졸졸 흐르는 소리와 바닥 아래의 꾸르륵 소리. 키트에 전용 목소리가 없어 역류 목소리로.
+        R("viewport.{v}.trickle", s => new BackflowVoice(s), (v, c) => v.Amount = Math.Min(1f, 0.6f * c.V), db: -6, range: 3),
+        R("chamber.gurgle", s => new BackflowVoice(s), (v, c) => v.Amount = c.V, db: -4, range: 5),
         // 젖은 분기함의 누설 (ELC-03): 희미한 지직거림. 키트에 전용 목소리가 없어 칼날 스위치 지직거림을 작게 쓴다.
         R("junction.{c}.sizzle", s => new KnifeSwitchCrackleVoice(s), (v, c) =>
         {
@@ -233,6 +249,14 @@ public static class CueAudio
 
     static Regex Compile(string frame) =>
         new("^" + Regex.Replace(Regex.Escape(frame), @"\\\{[A-Za-z_]+}", "(.+)") + "$", RegexOptions.CultureInvariant);
+
+    /// <summary>보이는 부품 값 (없으면 0).</summary>
+    static double PartValue(SimSnapshot s, string part, string prop)
+    {
+        foreach (var p in s.Parts)
+            if (p.Id == part) return p.Props.TryGetValue(prop, out var v) ? v : 0;
+        return 0;
+    }
 
     static DeviceView? Device(SimSnapshot s, string id)
     {
