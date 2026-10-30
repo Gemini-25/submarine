@@ -417,6 +417,9 @@ public class SteamTests
             "tool.wrench", "steam.flange.bolt.1.tighten");
         Assert.Equal("flange_closed", Reason("tool.scraper", "steam.flange.face.scrape"));
         Assert.Equal("flange_closed", Reason("tool.hand", "locker.take.gasket", "steam.gasket.insert"));
+        // 플랜지가 벌어져 김이 뿜는 중에는 '새는 곳이 없다'가 아니라 '벌어져 있다'.
+        Do(sim, "locker.return.gasket");
+        Assert.Equal("flange_open", Reason("locker.take.packing_tape", "steam.joint.wrap"));
     }
 
     // ── 윈치 보조 ───────────────────────────────────────
@@ -457,6 +460,25 @@ public class SteamTests
         }
         Assert.InRange(at, 8 * 60, 15 * 60);
         Assert.Equal(TestData.T.Steam!.DewBoxes["junction.C4"], 0.25);
+    }
+
+    [Fact]
+    public void Left_alone_for_thirty_minutes_the_steam_does_not_wet_the_other_boxes()
+    {
+        // 이슬은 후방(C3, C8)과 dewBoxes(C4)에만 맺는다. 실내 습도만으로는 다른 분기함이 누전 문턱 0.6에 닿지 않는다.
+        foreach (var start in new[] { 0.35, 0.7 }) // 기준 습도, 그리고 훈련(m2-power-b, m2-shakedown)의 시작 습도
+        {
+            var sim = TestData.NewSim(setup: TestData.Setup(s =>
+            {
+                s.DepthM = 300;
+                s.Switches["C3"] = true;
+                s.Parts = new List<PartSetup> { new() { Part = "air.humidity", Prop = "rh", Value = start } };
+            }));
+            sim.Inject("PWR-03");
+            sim.Run(30 * 60);
+            foreach (var c in new[] { "C1", "C2", "C5", "C6", "C7" })
+                Assert.True(sim.Q($"circuit.{c}.moisture") < 0.6, $"rh {start}로 시작해 30분 뒤 {c} 습기 {sim.Q($"circuit.{c}.moisture"):F2}");
+        }
     }
 
     [Fact]

@@ -9,7 +9,7 @@
     "winchUsePerSecond": 0.0015,
     "lampWarnBelow": 0.4,
     "riseC": 188,
-    "rhPerLeak": 4,
+    "rhPerLeak": 2,
     "dewPerLeak": 3,
     "dewCreepPerMin": 0.16,
     "dewBoxes": { "junction.C4": 0.25 },

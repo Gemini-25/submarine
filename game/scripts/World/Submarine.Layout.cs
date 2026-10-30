@@ -705,6 +705,7 @@ public partial class Submarine
     {
         var m = Mount(root, "PanelAdditions", new Vector3(Length - 0.01f, 0, 0), Vector3.Left);
         var mb = new MeshBuilder();
+        var zeroSlots = new MeshBuilder();
         var lamps = Bindings.PanelLamps;
         for (int i = 0; i < lamps.Count; i++)
         {
@@ -716,7 +717,8 @@ public partial class Submarine
         {
             float x = -0.77f + gi * 0.22f;
             mb.Cylinder(ArtMat.Brass, Kit.AlongAxis(Vector3.Back, new Vector3(x + 0.085f, 1.25f, 0.06f)), 0.011f, 0.012f, 10);
-            mb.Box(ArtMat.BlackEnamel, new Vector3(x + 0.085f, 1.25f, 0.0665f), new Vector3(0.016f, 0.003f, 0.002f), 0);
+            // 영점 나사의 홈은 감각 계통(WP20)이 돌리므로 따로 짓는다 (ZeroSlots).
+            zeroSlots.Box(ArtMat.BlackEnamel, new Vector3(x + 0.085f, 1.25f, 0.0665f), new Vector3(0.016f, 0.003f, 0.002f), 0);
             Marker(m, $"gauge.{id}.zero", $"{Gauges[gi].Label} 계기 영점 나사", new Vector3(x + 0.085f, 1.25f, 0.115f), new Vector3(0.03f, 0.03f, 0.02f), "panel");
             Marker(m, $"gauge.{id}.glass", $"{Gauges[gi].Label} 계기 유리", new Vector3(x, 1.33f, 0.1f), new Vector3(0.12f, 0.12f, 0.02f), "panel");
         }
@@ -727,7 +729,11 @@ public partial class Submarine
         float lx = -1.07f;
         mb.Box(ArtMat.Machinery, new Vector3(lx, 1.25f, 0.01f), new Vector3(0.12f, 0.5f, 0.02f), 0.004f);
         // 기관 전령기 손잡이는 움직이는 물체라 Submarine.Power가 단다.
-        Lever(mb, new Vector3(lx, 1.37f, 0.03f), new Vector3(lx, 1.45f, 0.06f), 0.024f);
+        // 탐조등 레버는 감각 계통(WP20)이 움직이는 모습으로 바꾸므로 따로 짓는다 (SearchlightLeverStatic).
+        var slLever = new MeshBuilder();
+        Lever(slLever, new Vector3(lx, 1.37f, 0.03f), new Vector3(lx, 1.45f, 0.06f), 0.024f);
+        slLever.Instance(m, "SearchlightLeverStatic", NoShadow);
+        zeroSlots.Instance(m, "ZeroSlots", NoShadow);
         mb.Instance(m, "Additions", NoShadow);
         var glass = new MeshBuilder();
         foreach (var (gi, _) in DriftGauges)

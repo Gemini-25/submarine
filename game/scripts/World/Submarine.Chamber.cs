@@ -44,12 +44,12 @@ public partial class Submarine
             var db = new MeshBuilder();
             db.Box(ArtMat.BareSteel, Vector3.Zero, new Vector3(0.06f, 0.016f, 0.025f), 0.004f);
             db.Instance(dog, "Lever", NoShadow);
-            DogVisual(RebindMarker($"chamber.hatch.dog.{k + 1}"), dog, Vector3.Up, a, 90);
+            DogVisual(RebindMarker($"chamber.hatch.dog.{k + 1}"), dog, Vector3.Up, a, -90); // 위에서 볼 때 시계 방향으로 조여 눕는다
         }
 
-        // 조임 바퀴: 배치의 'SqueezeWheel' 안 HandWheel(축 +Z)이 돈다. 한 칸이 4분의 1바퀴.
+        // 조임 바퀴: 배치의 'SqueezeWheel' 안 HandWheel(축 +Z, 위를 본다)이 돈다. 한 칸이 4분의 1바퀴, 조이면 위에서 볼 때 시계 방향.
         var squeeze = RebindMarker("chamber.squeeze");
-        if (n.GetNodeOrNull<Node3D>("SqueezeWheel")?.GetChildren().OfType<Node3D>().FirstOrDefault() is { } hw) WheelVisual(squeeze, hw, Vector3.Back, 90);
+        if (n.GetNodeOrNull<Node3D>("SqueezeWheel")?.GetChildren().OfType<Node3D>().FirstOrDefault() is { } hw) WheelVisual(squeeze, hw, Vector3.Back, -90); // 조임(up)이 시계 방향 (37쪽)
         else GD.PushError("케이블 챔버: 배치에 'SqueezeWheel'이 없다");
 
         // 우물: 배치의 'Well'(벽, 바닥, 놋쇠 고리, 고무 원판, 구운 나사)을 숨기고 다시 굽는다. 고무 원판은 밀봉 모양으로, 나사는 머리마다 따로.
@@ -116,7 +116,7 @@ public partial class Submarine
 
     /// <summary>
     /// 걸쇠 하나 (챔버 해치, 현창 덮개): 조이면(1) axis를 따라 tightDeg만큼 돌아 눕고, 풀면 baseRad 자리로 돌아온다.
-    /// 원 그리기 중에는 손을 따라 돈다. 걸쇠는 볼트 종류(돌리기, 1.5바퀴)라 레버 도우미의 끌기와 맞지 않아 따로 둔다.
+    /// 원 그리기 중에는 손을 따라 돈다(조이기는 시계 방향이라 손동작의 Turns가 음수다). 걸쇠는 볼트 종류(돌리기, 1.5바퀴)라 레버 도우미의 끌기와 맞지 않아 따로 둔다.
     /// </summary>
     void DogVisual(Interactable it, Node3D dog, Vector3 axis, float baseRad, float tightDeg)
     {
@@ -126,7 +126,7 @@ public partial class Submarine
         OnUpdate((s, dt) =>
         {
             float target = PartProp(s, f.PartId, f.Prop!, 1) >= 0.5 ? tightDeg : 0;
-            if (!float.IsNaN(turning)) target = Math.Clamp(target + turning * tightDeg / 1.5f, Math.Min(0, tightDeg), Math.Max(0, tightDeg));
+            if (!float.IsNaN(turning)) target = Math.Clamp(target - turning * tightDeg / 1.5f, Math.Min(0, tightDeg), Math.Max(0, tightDeg));
             angle = Approach(angle, target, 360, dt);
             dog.Basis = new Basis(axis.Normalized(), baseRad + Mathf.DegToRad(angle));
         });

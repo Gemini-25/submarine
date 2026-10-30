@@ -75,6 +75,7 @@ public partial class Submarine : Node3D
         BuildSwitchboardTierA(query); // 분기함, 전류계, 납땜인두 전원 (WP8)
         BuildBallast(); // 밸러스트 조절반: 흡입 선택기, 침수 밸브, 탱크 유리관, 경사계 (WP18)
         BuildTierB(); // WP19: 증기 축압기, 현창 둘, 케이블 챔버 (Submarine.Steam/Viewport/Chamber)
+        BuildSensesB(); // 감각 2차 (WP20): 상황판 배선함, 탐조등과 레버와 현창 불빛, 계기 유리와 영점 나사
         BuildGadgets(); // 계산 도구: 탁상 계산기, 계산자, 계산 도표, 저항 측정 브리지 (WP22)
     }
 

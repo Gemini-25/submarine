@@ -45,22 +45,24 @@ public partial class Submarine
     public Node3D? SteamStopWheel { get; private set; }
 
     /// <summary>
-    /// 밸브 바퀴: 열린 바퀴 수 × 360°로 줄기 축(+Y)을 따라 돌고, 한 바퀴에 rise만큼 올라간다(네 살 바퀴는 90°마다 같아 보여서).
+    /// 밸브 바퀴: 열린 바퀴 수 × 360°로 줄기 축(+Y)을 따라 돌고, 한 바퀴에 rise만큼 오르내린다(네 살 바퀴는 90°마다 같아 보여서).
+    /// 평소 자리(parts.json의 처음 값)가 배치의 높이이고, 닫을수록 내려간다.
     /// 원 그리기 중에는 손을 따라 돈다.
     /// </summary>
     void ValveWheelVisual(Interactable it, Node3D wheel, float rise)
     {
         var f = Binder.Instance(it.Id);
-        var rest = wheel.Position;
-        float turning = float.NaN, angle = 0;
+        var rest = wheel.Position; // 배치는 바퀴를 줄기 끝에 둔다. 평소 자리(정지 밸브는 끝까지 엶)를 그 높이로 삼는다.
+        double home = _data.Parts.First(p => p.Id == f.PartId).Props[f.Prop!];
+        float turning = float.NaN, angle = (float)home * 360;
         it.Preview = t => turning = t;
         OnUpdate((s, dt) =>
         {
             float open = (float)PartProp(s, f.PartId, f.Prop!, 0);
             float target = open * 360 + (float.IsNaN(turning) ? 0 : turning * 360);
             angle = Approach(angle, target, 720, dt);
-            wheel.Basis = new Basis(Vector3.Up, Mathf.DegToRad(-angle));
-            wheel.Position = rest + new Vector3(0, rise * angle / 360, 0);
+            wheel.Basis = new Basis(Vector3.Up, Mathf.DegToRad(angle)); // 공통 WheelVisual과 같은 부호: 반시계(열기)로 손을 따라 돈다
+            wheel.Position = rest + new Vector3(0, rise * (angle / 360 - (float)home), 0);
         });
     }
 

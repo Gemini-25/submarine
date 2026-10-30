@@ -57,8 +57,9 @@ public class DataValidationTests
         var sim = TestData.NewSim();
         sim.Run(1);
         var saved = sim.SaveState();
-        // 사물함 칸 하나를 빼면 저장본의 사물함 배열 길이가 달라진다.
-        var other = LoadModified("tuning.json", n => n["inventory"]!["locker"]!.AsObject().Remove("jumper_bar"));
+        // 사물함 칸 하나를 빼면 저장본의 사물함 배열 길이가 달라진다. 진단 자료의 절차가 꺼내지 않는 칸(침투유)을 뺀다
+        // (진단 검사기는 판정의 절차가 꺼내는 예비품마다 재고 경로가 있는지 본다).
+        var other = LoadModified("tuning.json", n => n["inventory"]!["locker"]!.AsObject().Remove("penetrating_oil"));
         var restored = new Simulation(other, 1);
         Assert.Throws<InvalidDataException>(() => restored.RestoreState(saved));
     }

@@ -110,7 +110,19 @@
         "type": "Test",
         "text": "조종 레버를 감기에 두고, 줄 계수기 눈금이 5m 줄어들 때까지 감아 올린다.",
         "cmd": "winch.control.haul",
-        "tool": "hand"
+        "tool": "hand",
+        "wait": {
+          "then": [
+            {
+              "q": "reading.winch.line",
+              "unit": "m",
+              "delta": true,
+              "below": -5
+            }
+          ],
+          "every": 1,
+          "max": 60
+        }
       },
       {
         "type": "Test",

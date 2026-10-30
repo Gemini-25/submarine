@@ -18,6 +18,15 @@ static class Viewport
     public static bool Secured(Part part) =>
         PropRef.Resolve(part, "deadlight").Get(1) < 0.5 && PropRef.Resolve(part, "dog1").Get() >= 0.5 && PropRef.Resolve(part, "dog2").Get() >= 0.5;
 
+    /// <summary>밀봉이 앉아 있다: 밀봉이 꽂히고 테가 붙고 테 볼트 여섯이 다 조여 있다.</summary>
+    static bool Seated(Part part)
+    {
+        if (PropRef.Resolve(part, "present").Get(1) < 0.5 || PropRef.Resolve(part, "ringOff").Get() >= 0.5) return false;
+        for (int k = 1; k <= 6; k++)
+            if (PropRef.Resolve(part, $"ringBolt{k}").Get(1) < 0.5) return false;
+        return true;
+    }
+
     /// <summary>밀봉 열화와 금을 한 틱 진행하고 누수 면적 배율을 돌려준다. 현창이 아니면 정확히 1.</summary>
     public static double Update(SimWorld w, Part part)
     {
@@ -38,7 +47,8 @@ static class Viewport
             integrity = Math.Max(0, integrity - t.DecayPerSecond * w.Dt);
             part.Set("integrity", integrity);
             // 열화는 앉은 밀봉 자체가 상한 것이라, 볼트를 다시 조여도(seat 갈고리) 되돌아오지 않는다.
-            if (seatQ.Get(1) > integrity) seatQ.Set(integrity);
+            // 밀봉이 앉아 있을 때만 깎는다: 새 밀봉을 끼우고 테를 다 조이기 전에는 integrity가 옛 값이라 새 밀봉을 깎으면 안 된다.
+            if (Seated(part) && seatQ.Get(1) > integrity) seatQ.Set(integrity);
             if (integrity <= t.CrackAt)
             {
                 crack.Set(1);

@@ -129,6 +129,30 @@ public class ViewportTests
     }
 
     [Fact]
+    public void Resealing_with_the_deadlight_open_sprays_but_still_seats_the_new_seal()
+    {
+        // 위험 건너뛰기의 결과는 다치는 것이다. 열화가 끼우는 중인 새 밀봉을 깎아 수리가 소리 없이 실패하면 안 된다.
+        var sim = Faulted();
+        var cmds = Plan(sim).Where(c => !c.Contains(".deadlight.", StringComparison.Ordinal) && !c.Contains(".dog.", StringComparison.Ordinal)).ToList();
+        var events = new List<SimEvent>();
+        foreach (var c in cmds)
+        {
+            var ev = Do(sim, new[] { c });
+            events.AddRange(ev);
+            if (ev.Any(e => e.Kind == SimEventKind.Hurt))
+            {
+                // 물을 맞으면 몸을 추스르고, 떨어뜨린 렌치를 주워 다시 쥔다(WP2: 물 분출 때 든 도구를 떨어뜨린다).
+                sim.Run(2.5);
+                if (sim.QS("crew.tool") != "wrench") events.AddRange(Do(sim, new[] { "tool.pickup.wrench", "tool.wrench" }));
+            }
+        }
+        Assert.Contains(events, e => e.Kind == SimEventKind.Hurt && e.Detail == "spray");
+        Assert.DoesNotContain(events, e => e.Kind == SimEventKind.CommandRejected);
+        Assert.Equal(0.95, sim.Q(P + "integrity"), 9);
+        Assert.Equal("", sim.QS($"part.{Vp}.fault"));
+    }
+
+    [Fact]
     public void Tightening_the_ring_without_a_seal_leaks_more_and_keeps_the_fault()
     {
         var sim = Faulted();

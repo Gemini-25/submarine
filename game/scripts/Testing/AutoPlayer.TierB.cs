@@ -51,6 +51,7 @@ public partial class AutoPlayer
 
     async Task DrillTierBBody(string mission, Func<int> hurts)
     {
+        if (mission == "m2-hull-b") await CheckDogPreview();
         var q = new ObservableQuery(_main.Runner.Sim);
         var drill = new TierBDrill();
         var done = new List<string>();
@@ -115,6 +116,28 @@ public partial class AutoPlayer
         Check(s.Status == MissionStatus.Succeeded, $"{mission}이 성공하지 않았다: {s.Status} {s.FailReason}");
         Check(hurts() == 0, $"{mission}: 절차대로 했는데 {hurts()}번 다쳤다");
         Check(s.Water.SubmergedCells == 0, $"{mission}: 축전지가 잠겼다");
+    }
+
+    /// <summary>
+    /// 걸쇠는 원을 그리는 동안 손을 따라 돈다: 풀린 걸쇠에 조이는 쪽(시계 방향, Turns 음수) 반 바퀴를 미리 보이면 모양이 바뀐다.
+    /// 현창 걸쇠와 챔버 해치 걸쇠가 같은 도우미(DogVisual)를 쓴다.
+    /// </summary>
+    async Task CheckDogPreview()
+    {
+        foreach (var id in new[] { "viewport.1.dog.1", "chamber.hatch.dog.1" })
+        {
+            var it = _main.Sub.Interactables[id];
+            var dog = it.GetParent<Node3D>().GetNode<Node3D>("Dog1"); // 걸쇠 모양은 표지와 같은 부모 아래에 있다
+            await Frame(3);
+            var before = dog.Basis;
+            var f = Data.Fixtures.Instances.First(x => x.Id == id);
+            bool tight = _main.Sub.PartProp(Snap, f.PartId, f.Prop!, 0) >= 0.5;
+            it.Preview?.Invoke(tight ? 0.75f : -0.75f); // 조인 걸쇠는 푸는 쪽(반시계), 풀린 걸쇠는 조이는 쪽(시계)
+            await ToSignal(GetTree().CreateTimer(0.4), SceneTreeTimer.SignalName.Timeout);
+            Check(!dog.Basis.IsEqualApprox(before), $"'{id}'를 반 바퀴 돌리는 동안 걸쇠가 손을 따라 돌지 않는다");
+            it.Preview?.Invoke(float.NaN);
+            await ToSignal(GetTree().CreateTimer(0.4), SceneTreeTimer.SignalName.Timeout);
+        }
     }
 
     /// <summary>안쪽 해치가 열린 챔버 우물을 가로질러 걷는다. 사람만 밟는 판 덕에 발이 바닥 높이 아래로 내려가지 않아야 한다.</summary>

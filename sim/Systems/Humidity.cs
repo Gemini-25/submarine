@@ -19,7 +19,7 @@ sealed class HumidityRuntime
     {
         public required Part Part;
         public required int Zone;
-        public PropRef Moisture, Taped, Trapped, CoverOpen, Screw1, Screw2;
+        public PropRef Moisture, Taped, Trapped, CoverOpen, Screw1, Screw2, Screw3, Screw4;
     }
 
     readonly HumidityTuning _t;
@@ -54,6 +54,8 @@ sealed class HumidityRuntime
                 CoverOpen = PropRef.Resolve(p, "coverOpen"),
                 Screw1 = PropRef.Resolve(p, "screw1"),
                 Screw2 = PropRef.Resolve(p, "screw2"),
+                Screw3 = PropRef.Resolve(p, "screw3"), // 나사가 넷인 상자 (상황판 배선함, WP20)
+                Screw4 = PropRef.Resolve(p, "screw4"),
             });
         }
         return new HumidityRuntime(t, rh, boxes.ToArray());
@@ -88,7 +90,8 @@ sealed class HumidityRuntime
             double rate = _t.CreepPerMin;
             if (Steam.Dew(w, b.Part.Id, b.Zone) > 0) rate = Math.Max(rate, w.T.Steam!.DewCreepPerMin); // 증기 이슬은 더 빨리 맺는다 (WP19)
             if (b.Taped.Get() >= 0.5) rate *= _t.TapedFactor;
-            if (b.CoverOpen.Get() >= 0.5 || b.Screw1.Get(1) < 0.5 || b.Screw2.Get(1) < 0.5) rate *= _t.LooseFactor;
+            if (b.CoverOpen.Get() >= 0.5 || b.Screw1.Get(1) < 0.5 || b.Screw2.Get(1) < 0.5 || b.Screw3.Get(1) < 0.5 || b.Screw4.Get(1) < 0.5)
+                rate *= _t.LooseFactor;
             double next = m + Math.Max(0, target - m) * Math.Min(1, rate * perTick);
             if (b.Trapped.Get() >= 0.5)
                 next = Math.Max(next, m + Math.Max(0, _t.TrappedMoisture - m) * Math.Min(1, _t.TrappedCreepPerMin * perTick));

@@ -139,7 +139,6 @@ public class ObservationTests
     [InlineData("hydrometer", "bus")]
     [InlineData("stethoscope", "pump.nope")]
     [InlineData("bridge", "insulation.C0")]
-    [InlineData("bridge", "panel.wiring")]   // 상황판 배선함 부품이 아직 없다 (WP20)
     [InlineData("bridge", "tube.hydrophone.tube.9")]  // 그런 진공관이 없다
     [InlineData("bridge", "tube.hydrophone.case")]    // 진공관이 아니다
     [InlineData("lamptest", "bus")]
@@ -339,6 +338,8 @@ public class ObservationTests
             File.WriteAllText(Path.Combine(dir, "observables", "air.json"), """
                 { "cues": { "fan.rattle": { "sense": "Feel", "anchor": "vent_fan", "q": "device.vent_fan.temp", "map": [[20,0],[80,1]], "caption": "cue.fan.hum" } } }
                 """);
+            // 공기 진단 자료는 지운 단서(팬 리본, 멎은 팬 소리)를 읽는다 (검사기가 컴파일해 본다).
+            File.Delete(Path.Combine(dir, "diagnosis", "air.json"));
         });
         Assert.Contains(data.Cues, c => c.Id == "fan.rattle");
         Assert.Contains(data.Cues, c => c.Id == "fan.hum");
@@ -373,6 +374,8 @@ public class ObservationTests
     [InlineData("inventory.fuse")]
     [InlineData("mission.status")]
     [InlineData("time")]
+    [InlineData("crew.belt.1")]
+    [InlineData("toolboard.wrench")]
     public void Observable_paths_pass(string path)
     {
         var q = new ObservableQuery(TestData.NewSim());
@@ -391,11 +394,36 @@ public class ObservationTests
     [InlineData("battery.voltage")]
     [InlineData("cue.")]
     [InlineData("panel")]
+    [InlineData("toolboard.take.wrench")]
+    [InlineData("device.hydrophone.temp")]
+    [InlineData("device.bilge_pump.temp")]
+    [InlineData("circuit.C1.fuse")]
+    [InlineData("part.panel.bulb.water.prop.burnt")]
+    [InlineData("part.hydrophone.tube.1.prop.filament")]
+    [InlineData("part.winch.brake.prop.lining")]
+    [InlineData("part.cell.3.prop.health")]
     public void Hidden_paths_are_refused(string path)
     {
         var q = new ObservableQuery(TestData.NewSim());
         Assert.False(ObservableQuery.IsObservable(path));
+        Assert.False(ObservableQuery.IsHandPosition(path, TestData.Data));
         Assert.Throws<UnobservableException>(() => q.Read(path));
+    }
+
+    /// <summary>
+    /// 손 자리 값 (WP16): 화면이 그리는 장치의 주 상태 값(너트 칸, 덮개)은 관찰 경로가 아니어도 읽힌다.
+    /// visible이어도 고장이 쓰는 값(탄 전구, 필라멘트, 라이닝)은 위의 거절 목록에 있다.
+    /// </summary>
+    [Theory]
+    [InlineData("part.leak.shaft_packing.prop.nutA")]
+    [InlineData("part.junction.C6.prop.coverOpen")]
+    [InlineData("part.battery.deck.prop.open")]
+    public void Hand_positions_are_read(string path)
+    {
+        var q = new ObservableQuery(TestData.NewSim());
+        Assert.False(ObservableQuery.IsObservable(path));
+        Assert.True(ObservableQuery.IsHandPosition(path, TestData.Data));
+        _ = q.Read(path);
     }
 
     [Fact]

@@ -32,6 +32,8 @@ static class SensesSystem
     {
         if (!w.Mechanics.Senses) return;
         Tubes.Decay(w);
+        Searchlight.Burn(w); // WP20: 탄소봉 (SNS-04)
+        PanelWiring.Creep(w); // WP20: 상황판 배선함이 같은 함의 C4 분기함을 따라 젖는다 (SNS-02)
     }
 }
 

@@ -1,0 +1,38 @@
+// 동력: 증기 축압기 (교범 03쪽 '동력'의 축압기 줄, 22쪽 '가르기'). WP19.
+{
+  "pairs": {
+    "steam.leak": {
+      "no": 20,
+      "priority": 35,
+      "page": "03-진단-표-전기와-동력.md",
+      "section": "동력",
+      "sees": [
+        [ { "q": "cue.steam.hiss", "unit": "cue", "above": 0.3, "says": "관 이음에서 김과 쉿 소리" } ]
+      ],
+      "checks": [
+        {
+          "all": [ { "q": "cue.steam.plume", "unit": "cue", "above": 0.3 },
+                   { "q": "reading.steam.pressure", "unit": "kgcm2", "trend": 60, "below": -0.1, "says": "축압기 압력계가 처지고" } ],
+          "verdict": "PWR-03"
+        }
+      ],
+      "verdicts": {
+        "PWR-03": {
+          "fault": "PWR-03",
+          "says": "증기 축압기 누설",
+          "do": [
+            { "procedure": "proc.steam.gasket", "if": [ { "q": "inventory.gasket", "unit": "none", "above": 0.5 } ] },
+            { "procedure": "proc.steam.wrap", "if": [ { "q": "inventory.gasket", "unit": "none", "below": 0.5 } ] }
+          ],
+          "verify": { "all": [ { "q": "cue.steam.hiss", "unit": "cue", "below": 0.1 } ], "within": 120, "hold": 10 }
+        }
+      },
+      "exposure": { "setup": { "depthM": 300, "switches": { "C3": true } }, "seconds": 120 },
+      "cases": [
+        { "expect": "PWR-03", "inject": [ { "fault": "PWR-03" } ] },
+        { "expect": "none", "inject": [ { "fault": "ELC-03", "part": "junction.C3" } ] },
+        { "expect": "none" }
+      ]
+    }
+  }
+}

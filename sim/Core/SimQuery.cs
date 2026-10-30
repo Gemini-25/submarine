@@ -441,6 +441,20 @@ static class SimQuery
                 }
                 throw Unknown();
             }
+            // 탐조등 (M2 WP20, SNS-04): searchlight.brightness(현창 너머 불빛 0~1), warmth(누런 정도), flicker(켜진 채 흔들리는 세기).
+            // 탄소봉 부품이 없으면 모르는 경로다.
+            case "searchlight":
+            {
+                End(2);
+                if (!w.TryPart(Searchlight.PartId, out _) || !w.TryDeviceIndex(Searchlight.DeviceId, out int lamp)) throw Unknown();
+                return At(1) switch
+                {
+                    "brightness" => x => QueryValue.Of(Searchlight.Brightness(x, lamp)),
+                    "warmth" => x => QueryValue.Of(x.Devices[lamp].Running ? Searchlight.Warmth(x) : 0),
+                    "flicker" => x => QueryValue.Of(x.Devices[lamp].Running ? Searchlight.Instability(x) : 0),
+                    _ => throw Unknown(),
+                };
+            }
             // 항법 (M2 WP14): 자이로와 항법 계산기의 파생 값. 상태 부품이 없으면 모르는 경로다.
             case "nav":
                 End(2);

@@ -229,12 +229,13 @@ static class DataValidator
                 if (step.RepeatFrom is { } from)
                 {
                     // 되풀이 횟수는 사람이 보는 값(부품의 visible)에서만 읽는다. 조이는 순서(order)와는 함께 쓰지 않는다.
-                    Check(Autoplay.ObservableQuery.IsVisiblePartProp(from, d),
-                        $"procedures.{p.Id}: repeatFrom '{from}'은 part.<부품>.prop.<값> 꼴이고 그 값이 부품의 visible에 있어야 한다");
+                    Check(Autoplay.ObservableQuery.IsHandPosition(from, d),
+                        $"procedures.{p.Id}: repeatFrom '{from}'은 손 자리 값(part.<부품>.prop.<장치의 주 상태 값>, visible이고 고장이 쓰지 않는 것)이어야 한다");
                     Check(step.Order.Count == 0, $"procedures.{p.Id}: repeatFrom과 order는 함께 쓸 수 없다");
                     Check(step.Cmd != null, $"procedures.{p.Id}: repeatFrom에는 cmd가 있어야 한다");
                 }
             }
+            ValidateWaits(p, Check);
         }
 
         foreach (var m in d.Missions)
@@ -265,5 +266,29 @@ static class DataValidator
 
         if (errors.Count > 0)
             throw new DataValidationException(errors);
+    }
+
+    /// <summary>
+    /// 절차 단계의 기다림 모양 (WP16). 조건 경로는 진단 자료가 있을 때 DiagnosisValidator가 컴파일해 본다.
+    /// release는 절차의 마지막 상태 변경 명령 뒤에 있는 명령 없는 단계에만 쓴다 (덮개를 연 채 손을 놓지 않게).
+    /// </summary>
+    static void ValidateWaits(ProcedureDef p, Action<bool, string> check)
+    {
+        int lastCmd = p.Steps.FindLastIndex(s => s.Cmd != null);
+        for (int i = 0; i < p.Steps.Count; i++)
+        {
+            var step = p.Steps[i];
+            if (step.Wait is not { } w) continue;
+            string at = $"procedures.{p.Id}.steps[{i}].wait";
+            check(w.Max > 0, $"{at}: max > 0");
+            check(w.Every > 0, $"{at}: every > 0");
+            check(w.Before is null or > 0, $"{at}: before > 0");
+            check(w.Retry.Count == 0 || step.Cmd?.EndsWith(".touch", StringComparison.Ordinal) == true, $"{at}: retry는 만지기(.touch) 명령 단계에만 쓴다");
+            check(step.Cmd != null || (w.Then.Count == 0 && w.Retry.Count == 0), $"{at}: 명령 없는 단계에는 before와 until만 쓴다");
+            check(w.Then.Count == 0 || step.Cmd != null, $"{at}: then은 명령 있는 단계에만 쓴다");
+            check(w.Before != null || w.Until.Count > 0 || w.Then.Count > 0 || w.Retry.Count > 0, $"{at}: 기다릴 것이 없다");
+            if (w.Release)
+                check(step.Cmd == null && w.Until.Count > 0 && i > lastCmd, $"{at}: release는 마지막 명령 뒤의 명령 없는 단계에서 until과 함께만 쓴다");
+        }
     }
 }
