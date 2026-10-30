@@ -459,7 +459,7 @@ public class SteamTests
             if (sim.Q("circuit.C4.moisture") > 0.5) at = s;
         }
         Assert.InRange(at, 8 * 60, 15 * 60);
-        Assert.Equal(TestData.T.Steam!.DewBoxes["junction.C4"], 0.25);
+        Assert.Equal(0.25, TestData.T.Steam!.DewBoxes["junction.C4"]);
     }
 
     [Fact]

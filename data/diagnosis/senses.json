@@ -1,6 +1,124 @@
-// 감각 (교범 05쪽 '상황판 전구와 청음기 진공관').
+// 감각 (교범 05쪽 '상황판 전구와 청음기 진공관'). panel.crossed, gauge.voltage, searchlight.weak는 WP20(2차 고장).
 {
   "pairs": {
+    "panel.crossed": {
+      "no": 16,
+      "priority": 8,
+      "page": "05-진단-표-공기-감각-항법-케이블.md",
+      "section": "상황판 전구와 청음기 진공관",
+      "sees": [
+        [ { "q": "panel.on", "unit": "none", "above": 0.5 },
+          { "q": "panel.lamp.hull", "not": "off", "says": "선체 표시등이 켜졌는데 구역 경고등은 모두 꺼져 있다" },
+          { "q": "zone.fore.alarm", "unit": "none", "below": 0.5 }, { "q": "zone.mid.alarm", "unit": "none", "below": 0.5 }, { "q": "zone.aft.alarm", "unit": "none", "below": 0.5 } ]
+      ],
+      "checks": [
+        {
+          "all": [ { "q": "cue.panel.wiring.dew", "unit": "cue", "above": 0.3, "says": "배선함에 이슬" }, { "lamptest": "water", "unit": "none", "above": 0.5, "says": "램프 시험은 여덟 전구가 모두 켜진다" } ],
+          "verdict": "SNS-02"
+        }
+      ],
+      "verdicts": {
+        "SNS-02": {
+          "fault": "SNS-02",
+          "says": "상황판 배선 오표시",
+          "do": [ { "procedure": "proc.panelwiring.dry" } ],
+          "verify": { "all": [ { "q": "cue.panel.wiring.dew", "unit": "cue", "below": 0.1 }, { "q": "panel.lamp.hull", "is": "off" } ], "within": 10, "hold": 5 }
+        }
+      },
+      "exposure": { "setup": { "depthM": 300, "bilges": { "bilge.aft": 150 } }, "seconds": 5 },
+      "cases": [
+        { "expect": "SNS-02", "inject": [ { "fault": "SNS-02", "part": "panel.wiring" } ] },
+        { "expect": "none", "inject": [ { "fault": "SNS-01", "part": "panel.bulb.water" } ] },
+        { "expect": "none" }
+      ]
+    },
+    "gauge.voltage": {
+      "no": 17,
+      "priority": 45,
+      "page": "05-진단-표-공기-감각-항법-케이블.md",
+      "section": "상황판 전구와 청음기 진공관",
+      "sees": [
+        [ { "q": "panel.gauge.voltage", "unit": "V", "below": 105, "for": 10, "says": "전압 바늘이 낮은데" },
+          { "q": "panel.lamp.power", "is": "off", "says": "동력 표시등이 꺼져 있다" } ]
+      ],
+      "checks": [
+        {
+          "prep": [ { "cmd": "tool.voltmeter" } ],
+          "undo": [ { "cmd": "tool.hand" } ],
+          "all": [ { "q": "panel.gauge.voltage", "unit": "V", "below": 105, "typical": 102 }, { "measure": "voltmeter", "target": "bus", "unit": "V", "above": 110, "typical": 120, "says": "손에 든 전압계로 버스 바를 잰다" } ],
+          "verdict": "SNS-05"
+        }
+      ],
+      "verdicts": {
+        "SNS-05": {
+          "fault": "SNS-05",
+          "says": "상황판 계기 영점 보정",
+          "do": [ { "procedure": "proc.gauge.zero", "bind": { "gauge": "voltage" } } ],
+          "verify": { "all": [ { "q": "panel.gauge.voltage", "unit": "V", "above": 115 } ], "within": 10, "hold": 5 }
+        }
+      },
+      "exposure": { "setup": { "depthM": 300 }, "seconds": 15 },
+      "cases": [
+        { "expect": "SNS-05", "inject": [ { "fault": "SNS-05", "part": "gauge.voltage" } ] },
+        { "expect": "none", "inject": [ { "fault": "PWR-01", "part": "cell.3" } ] },
+        { "expect": "none" }
+      ]
+    },
+    "searchlight.weak": {
+      "no": 18,
+      "priority": 55,
+      "page": "05-진단-표-공기-감각-항법-케이블.md",
+      "section": "상황판 전구와 청음기 진공관",
+      "sees": [
+        [ { "q": "cue.searchlight.sputter", "unit": "cue", "above": 0.2, "says": "누렇게 흔들리고 지직거린다" } ],
+        [ { "q": "panel.lamp.senses", "not": "off" }, { "q": "cue.searchlight.arc", "unit": "cue", "below": 0.5, "says": "탐조등을 켜 두었는데 불빛과 소리가 없다" },
+          { "q": "cue.hydrophone.listen", "unit": "cue", "above": 0.5 } ]
+      ],
+      "checks": [
+        {
+          "prep": [ { "cmd": "tool.voltmeter" } ],
+          "undo": [ { "cmd": "tool.hand" } ],
+          "all": [ { "measure": "voltmeter", "target": "bus", "unit": "V", "below": 102, "says": "손에 든 전압계로 버스 바를 잰다" } ],
+          "verdict": "low_voltage"
+        },
+        {
+          "all": [ { "q": "cue.searchlight.sputter", "unit": "cue", "above": 0.2, "says": "지직거린다" } ],
+          "verdict": "SNS-04"
+        },
+        {
+          "all": [ { "q": "cue.searchlight.arc", "unit": "cue", "below": 0.5 } ],
+          "verdict": "rods.out"
+        }
+      ],
+      "verdicts": {
+        "low_voltage": { "says": "전압 저하", "do": [] },
+        "rods.out": {
+          "fault": "SNS-04",
+          "says": "탄소봉 소모",
+          "do": [
+            { "procedure": "proc.arc.rods", "if": [ { "q": "inventory.carbon_rods", "unit": "none", "above": 0.5 } ] },
+            { "procedure": "proc.arc.feed", "if": [ { "q": "inventory.carbon_rods", "unit": "none", "below": 0.5 } ] }
+          ],
+          "verify": { "all": [ { "q": "cue.searchlight.sputter", "unit": "cue", "below": 0.05 }, { "q": "cue.searchlight.glow", "unit": "cue", "above": 0.9 } ], "within": 20, "hold": 10 }
+        },
+        "SNS-04": {
+          "fault": "SNS-04",
+          "says": "탐조등 탄소봉 교체",
+          "do": [
+            { "procedure": "proc.arc.rods", "if": [ { "q": "inventory.carbon_rods", "unit": "none", "above": 0.5 } ] },
+            { "procedure": "proc.arc.feed", "if": [ { "q": "inventory.carbon_rods", "unit": "none", "below": 0.5 } ] }
+          ],
+          "verify": { "all": [ { "q": "cue.searchlight.sputter", "unit": "cue", "below": 0.05 }, { "q": "cue.searchlight.glow", "unit": "cue", "above": 0.9 } ], "within": 20, "hold": 10 }
+        }
+      },
+      "exposure": { "setup": { "depthM": 300, "devices": { "searchlight": true } }, "seconds": 5 },
+      "cases": [
+        { "expect": "SNS-04", "inject": [ { "fault": "SNS-04", "part": "searchlight.rods" } ] },
+        { "expect": "rods.out", "inject": [ { "fault": "SNS-04", "part": "searchlight.rods" } ], "seconds": 150 },
+        { "expect": "low_voltage", "setup": { "batteryCharge": 0.15 } },
+        { "expect": "none" }
+      ]
+    },
     "bell.nolamp": {
       "no": 10,
       "priority": 5,

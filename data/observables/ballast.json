@@ -1,0 +1,128 @@
+{
+  "cues": {
+    "ballast.fore.rush": {
+      "sense": "Sound",
+      "anchor": "ballast.fore.flood",
+      "q": "ballast.fore.flood",
+      "map": [
+        [
+          0,
+          0
+        ],
+        [
+          0.05,
+          0.2
+        ],
+        [
+          1,
+          1
+        ]
+      ],
+      "caption": "cue.ballast.fore.rush"
+    },
+    "ballast.fore.weep": {
+      "sense": "Sight",
+      "anchor": "ballast.fore.body",
+      "q": "ballast.fore.weep",
+      "map": [
+        [
+          0,
+          0
+        ],
+        [
+          0.01,
+          0.3
+        ],
+        [
+          0.1,
+          1
+        ]
+      ],
+      "caption": "cue.ballast.fore.weep"
+    },
+    "ballast.aft.rush": {
+      "sense": "Sound",
+      "anchor": "ballast.aft.flood",
+      "q": "ballast.aft.flood",
+      "map": [
+        [
+          0,
+          0
+        ],
+        [
+          0.05,
+          0.2
+        ],
+        [
+          1,
+          1
+        ]
+      ],
+      "caption": "cue.ballast.aft.rush"
+    },
+    "ballast.aft.weep": {
+      "sense": "Sight",
+      "anchor": "ballast.aft.body",
+      "q": "ballast.aft.weep",
+      "map": [
+        [
+          0,
+          0
+        ],
+        [
+          0.01,
+          0.3
+        ],
+        [
+          0.1,
+          1
+        ]
+      ],
+      "caption": "cue.ballast.aft.weep"
+    },
+    "hull.groan": {
+      "sense": "Sound",
+      "anchor": "pump.suction",
+      "q": "attitude.trim",
+      "map": [
+        [
+          -15,
+          1
+        ],
+        [
+          -4,
+          0
+        ],
+        [
+          4,
+          0
+        ],
+        [
+          15,
+          1
+        ]
+      ],
+      "caption": "cue.hull.groan"
+    }
+  },
+  "instruments": {
+    "ballast.fore.glass": {
+      "anchor": "ballast.fore.flood",
+      "q": "ballast.fore.water",
+      "unit": "L",
+      "label": "reading.ballast.fore.glass"
+    },
+    "ballast.aft.glass": {
+      "anchor": "ballast.aft.flood",
+      "q": "ballast.aft.water",
+      "unit": "L",
+      "label": "reading.ballast.aft.glass"
+    },
+    "inclinometer": {
+      "anchor": "pump.suction",
+      "q": "attitude.trim",
+      "unit": "deg",
+      "label": "reading.inclinometer"
+    }
+  }
+}

@@ -259,6 +259,10 @@ public partial class ProceduralAudio : Node3D
                 _sparkSrc.Player.GlobalPosition = _sub.SoundSpots.TryGetValue(e.Subject, out var sp) ? sp : Spot(e.Subject, Vector3.Zero);
                 _spark.Blow();
                 break;
+            // 바닥의 도구가 기울기로 구른다 (WP18): 구르기 시작하는 자리에서 덜그럭.
+            case SimEventKind.ToolRolled:
+                Mallet(Spot($"floortool.{e.Subject}", Camera), 0.25f, -8);
+                break;
             case SimEventKind.Explosion:
                 _impactSrc.Player.GlobalPosition = Camera;
                 _impact.Strike(1);

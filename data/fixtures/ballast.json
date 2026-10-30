@@ -6,13 +6,319 @@
       "kind": "lever",
       "zone": "mid",
       "prop": "pos",
-      "positions": [ "bilge", "fore", "aft", "chamber" ],
+      "positions": [
+        "bilge",
+        "fore",
+        "aft",
+        "chamber"
+      ],
       "verbs": {
-        "bilge": { "tool": "hand", "noise": "lever" },
-        "fore": { "tool": "hand", "noise": "lever" },
-        "aft": { "tool": "hand", "noise": "lever" },
-        "chamber": { "tool": "hand", "noise": "lever" }
+        "bilge": {
+          "tool": "hand",
+          "noise": "lever"
+        },
+        "fore": {
+          "tool": "hand",
+          "noise": "lever"
+        },
+        "aft": {
+          "tool": "hand",
+          "noise": "lever"
+        },
+        "chamber": {
+          "tool": "hand",
+          "noise": "lever"
+        }
+      }
+    },
+    {
+      "id": "ballast.{t}.flood",
+      "bind": {
+        "t": "fore,aft"
+      },
+      "part": "ballast.{t}.valve",
+      "kind": "valve",
+      "zone": "mid",
+      "prop": "open",
+      "turns": 4,
+      "seizedProp": "stuck",
+      "verbs": {
+        "open": {
+          "tool": "hand",
+          "noise": "valve",
+          "effects": [
+            {
+              "add": "turned",
+              "by": 1,
+              "max": 4
+            },
+            {
+              "if": "self.freeArmed >= 0.5",
+              "add": "freeLife",
+              "by": "-$freeOpLife",
+              "min": 0
+            },
+            {
+              "if": "self.gland >= 5",
+              "set": "stuck",
+              "to": 1
+            }
+          ]
+        },
+        "close": {
+          "tool": "hand",
+          "noise": "valve",
+          "effects": [
+            {
+              "add": "turned",
+              "by": -1,
+              "min": 0
+            },
+            {
+              "if": "self.freeArmed >= 0.5",
+              "add": "freeLife",
+              "by": "-$freeOpLife",
+              "min": 0
+            },
+            {
+              "if": "self.gland >= 5",
+              "set": "stuck",
+              "to": 1
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "ballast.{t}.gland",
+      "bind": {
+        "t": "fore,aft"
+      },
+      "part": "ballast.{t}.valve",
+      "kind": "adjuster",
+      "zone": "mid",
+      "prop": "gland",
+      "min": 0,
+      "max": 5,
+      "step": 1,
+      "verbs": {
+        "up": {
+          "tool": "wrench",
+          "noise": "wrench",
+          "rejectIf": [
+            {
+              "if": "self.packingOut >= 0.5",
+              "reason": "packing_empty"
+            }
+          ]
+        },
+        "down": {
+          "tool": "wrench",
+          "noise": "wrench",
+          "hazards": [
+            {
+              "if": "self.open >= 0.5 && self.gland <= 1",
+              "hazard": "spray"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "ballast.{t}.packing",
+      "bind": {
+        "t": "fore,aft"
+      },
+      "part": "ballast.{t}.valve",
+      "kind": "work",
+      "zone": "mid",
+      "verbs": {
+        "hook": {
+          "gesture": "stroke",
+          "tool": "packing_hook",
+          "noise": "hook",
+          "rejectIf": [
+            {
+              "if": "self.gland >= 0.5",
+              "reason": "gland_nut_tight"
+            },
+            {
+              "if": "self.packingOut >= 2",
+              "reason": "packing_empty"
+            },
+            {
+              "if": "crew.hand != ''",
+              "reason": "hand_full"
+            }
+          ],
+          "hazards": [
+            {
+              "if": "self.open >= 0.5",
+              "hazard": "spray"
+            }
+          ],
+          "effects": [
+            {
+              "add": "packingOut",
+              "by": 1,
+              "max": 2
+            },
+            {
+              "if": "self.packingOut >= 2",
+              "give": "packing_old"
+            }
+          ]
+        },
+        "wrap": {
+          "gesture": "rotate",
+          "tool": "hand",
+          "hold": "packing_cord",
+          "noise": "wrap",
+          "rejectIf": [
+            {
+              "if": "self.gland >= 0.5",
+              "reason": "gland_nut_tight"
+            },
+            {
+              "if": "self.packingOut < 2",
+              "reason": "packing_full"
+            }
+          ],
+          "hazards": [
+            {
+              "if": "self.open >= 0.5",
+              "hazard": "spray"
+            }
+          ],
+          "effects": [
+            {
+              "add": "wrap",
+              "by": 1,
+              "max": 3
+            },
+            {
+              "if": "self.wrap >= 3",
+              "set": "corroded",
+              "to": 0
+            },
+            {
+              "if": "self.wrap >= 3",
+              "set": "stuck",
+              "to": 0
+            },
+            {
+              "if": "self.wrap >= 3",
+              "set": "freeArmed",
+              "to": 0
+            },
+            {
+              "if": "self.wrap >= 3",
+              "set": "freePatch",
+              "to": 0
+            },
+            {
+              "if": "self.wrap >= 3",
+              "set": "packingOut",
+              "to": 0
+            },
+            {
+              "if": "self.wrap >= 3",
+              "consume": true
+            },
+            {
+              "if": "self.wrap >= 3",
+              "set": "wrap",
+              "to": 0
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "ballast.{t}.stem",
+      "bind": {
+        "t": "fore,aft"
+      },
+      "part": "ballast.{t}.valve",
+      "kind": "work",
+      "zone": "mid",
+      "verbs": {
+        "oil": {
+          "gesture": "stroke",
+          "tool": "hand",
+          "hold": "penetrating_oil",
+          "noise": "oil",
+          "rejectIf": [
+            {
+              "if": "self.soakArmed >= 0.5",
+              "reason": "stem_soaking"
+            }
+          ],
+          "effects": [
+            {
+              "set": "oil",
+              "to": 1
+            },
+            {
+              "arm": "soakLife",
+              "to": "$soakS"
+            },
+            {
+              "consume": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "ballast.{t}.body",
+      "bind": {
+        "t": "fore,aft"
+      },
+      "part": "ballast.{t}.valve",
+      "kind": "work",
+      "zone": "mid",
+      "prop": "strikes",
+      "verbs": {
+        "strike": {
+          "gesture": "strike",
+          "tool": "engineer_hammer",
+          "noise": "hammer",
+          "count": 3,
+          "onComplete": [
+            {
+              "if": "self.stuck >= 0.5 && self.corroded >= 0.5",
+              "quality": "temporary"
+            },
+            {
+              "if": "self.stuck >= 0.5 && self.corroded >= 0.5",
+              "set": "freePatch",
+              "to": 1
+            },
+            {
+              "if": "self.stuck >= 0.5 && self.corroded >= 0.5",
+              "arm": "freeLife",
+              "to": "$freeLifeS"
+            },
+            {
+              "set": "stuck",
+              "to": 0
+            },
+            {
+              "set": "strikes",
+              "to": 0
+            }
+          ]
+        }
+      },
+      "touch": {
+        "wet": "self.gland <= 2"
       }
     }
-  ]
+  ],
+  "params": {
+    "freeLifeS": 600,
+    "freeOpLife": 200,
+    "soakS": 30
+  }
 }

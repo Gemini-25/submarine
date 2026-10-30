@@ -262,6 +262,7 @@ static class DataValidator
         Systems.Suction.Validate(d, errors);
         Systems.Steam.Validate(d, errors);
         Systems.Chamber.Validate(d, errors);
+        Systems.Attitude.Validate(d, errors);
         SwitchboardTuningValidator.Validate(d, errors);
 
         if (errors.Count > 0)

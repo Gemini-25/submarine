@@ -22,6 +22,7 @@ static class AttitudeSystem
     public static void Update(SimWorld w)
     {
         if (!w.Mechanics.Attitude) return;
+        Attitude.Update(w); // WP18: sim/Systems/Attitude.cs
     }
 }
 

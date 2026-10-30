@@ -481,7 +481,7 @@ public partial class Submarine
             mb.Cylinder(ArtMat.Bronze, Kit.AlongAxis(Vector3.Back, new Vector3(x, 1.4f, 0.025f)), 0.025f, 0.03f, 12);
             Bolt(mb, new Vector3(x, 1.4f, 0.042f), Vector3.Back, 0.03f);
             mb.Box(ArtMat.Bronze, new Vector3(x + side * 0.14f, 1.55f, 0.035f), new Vector3(0.05f, 0.07f, 0.05f), 0.008f);
-            Wheel(m, new Vector3(x, 1.55f, 0.1f), Vector3.Back, 0.07f);
+            Wheel(m, new Vector3(x, 1.55f, 0.1f), Vector3.Back, 0.07f).Name = side > 0 ? "FloodWheelFore" : "FloodWheelAft"; // 같은 이름 둘이면 둘째가 임시 이름을 받는다
         }
         // 탱크 유리관: 앞 탱크 z 0.55, 뒤 탱크 z 0.75. 붉은 금이 정상 수위.
         foreach (var (label, x) in new[] { ("전방\n탱크", 0.275f), ("후방\n탱크", 0.075f) })

@@ -71,6 +71,7 @@ public partial class AutoPlayer : Node
         ["drill-power"] = DrillPowerSuite,
         ["drill-switchboard"] = DrillSwitchboardSuite,
         ["drill-power-b"] = DrillPowerBSuite, ["drill-hull-b"] = DrillHullBSuite, ["drill-shakedown"] = DrillShakedownSuite, // WP19 (AutoPlayer.TierB.cs)
+        ["drill-ballast"] = DrillBallastSuite,
         ["drills"] = AllDrillsSuite,
         ["instruments"] = InstrumentsSuite,
     };
@@ -561,6 +562,7 @@ public partial class AutoPlayer : Node
         Step(HandSeconds);
         Check(Snap.Crew.Belt.SequenceEqual(Data.Tuning.ToolBoard!.InitialBelt), $"공구띠가 처음으로 돌아오지 않았다: {string.Join(", ", Snap.Crew.Belt)}");
         GD.Print("AUTOTEST: 공구판, 공구띠 키, 거부 글, 바닥에 내려놓고 줍기 확인");
+        await ToolsRollingCheck(); // 기울어 구르는 도구 (WP18, AutoPlayer.Ballast.cs)
     }
 
     /// <summary>

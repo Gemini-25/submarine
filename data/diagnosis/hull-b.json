@@ -2,7 +2,7 @@
 {
   "pairs": {
     "fore.alarm": {
-      "no": 21,
+      "no": 26,
       "priority": 15,
       "urgent": true,
       "page": "04-진단-표-물과-선체.md",
@@ -40,7 +40,7 @@
       ]
     },
     "chamber.rising": {
-      "no": 22,
+      "no": 27,
       "priority": 40,
       "page": "04-진단-표-물과-선체.md",
       "section": "선체",
