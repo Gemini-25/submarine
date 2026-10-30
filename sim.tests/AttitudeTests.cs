@@ -473,3 +473,134 @@ public class BallastValveTests
         Assert.Equal(100, sim.Q("depth"));
     }
 }
+
+/// <summary>훈련 m2-ballast (M2 WP18): 풀 수 있고, 아무것도 안 하면 실패하고, 기록이 같은 해시로 재생되고, 수리 중간 저장에서 이어 간다.</summary>
+public class BallastDrillTests
+{
+    readonly ITestOutputHelper _out;
+    public BallastDrillTests(ITestOutputHelper output) => _out = output;
+
+    const double Human = 0.6;
+    const string Mission = "m2-ballast";
+
+    /// <summary>판단은 BallastDrill(사람이 보는 것만), 절차는 ExpandWithBelt. 명령 기록을 돌려준다 (Godot 묶음과 같은 계획).</summary>
+    public static List<(long Tick, string Cmd)> Solve(Simulation sim, Action<Simulation>? everyStep = null)
+    {
+        var q = new Autoplay.ObservableQuery(sim);
+        var log = new List<(long, string)>();
+        var at = sim.Data.Tuning.Attitude!;
+        double soak = sim.Data.Fixtures.Instances.First(f => f.Id == "ballast.fore.stem").Params["soakS"];
+        bool repaired = false;
+        void Tick() { sim.Step(); everyStep?.Invoke(sim); }
+        void Run(IEnumerable<string> cmds)
+        {
+            foreach (var cmd in cmds)
+            {
+                var wait = Autoplay.BallastDrill.WaitAfter(cmd, q, at.TankNominalL, soak);
+                sim.Apply(new Command(cmd));
+                log.Add((sim.Tick, cmd));
+                for (int i = 0; i < TestData.Ticks(Human); i++) Tick();
+                while (wait != null && !wait(q) && sim.Status == MissionStatus.Running) Tick();
+            }
+        }
+        while (sim.Status == MissionStatus.Running && sim.Q("time") < sim.Mission!.TimeLimitSeconds)
+        {
+            string? high = repaired ? null : Autoplay.BallastDrill.HighTank(q, at.TankNominalL, at.LampWarnDeg);
+            if (high != null)
+            {
+                repaired = true;
+                Run(Repair.ProcedureRunner.ExpandWithBelt(sim, sim.Data.Procedure("proc.ballast.repack"), new Dictionary<string, string> { ["t"] = high }).Select(c => c.Cmd));
+                continue;
+            }
+            string? low = repaired ? Autoplay.BallastDrill.LowTank(q, at.TankNominalL) : null;
+            if (low != null)
+            {
+                Run(Autoplay.BallastDrill.Refill(low));
+                continue;
+            }
+            Tick();
+        }
+        return log;
+    }
+
+    [Fact]
+    public void Drill_m2_ballast_is_solvable_without_harm()
+    {
+        var sim = new Simulation();
+        sim.StartMission(TestData.Data, Mission);
+        var events = new List<SimEvent>();
+        double max = 0;
+        var log = Solve(sim, s => { events.AddRange(s.DrainEvents()); max = Math.Max(max, s.Q("attitude.trim")); });
+        _out.WriteLine($"{sim.Q("time") / 60:F1}분에 {sim.Status}, 최대 기울기 {max:F1}도, 명령 {log.Count}개");
+        Assert.Equal(MissionStatus.Succeeded, sim.Status);
+        Assert.DoesNotContain(events, e => e.Kind is SimEventKind.CommandRejected or SimEventKind.Shock or SimEventKind.Pinch or SimEventKind.Hurt);
+        Assert.Equal(0, sim.Q("battery.submerged"));
+        Assert.Contains(log, x => x.Cmd == "ballast.aft.flood.open"); // 너무 뺀 뒤 탱크를 채운다
+        Assert.Contains(log, x => x.Cmd == "ballast.fore.packing.wrap");
+        Assert.True(max > TestData.T.Attitude!.LampWarnDeg);
+    }
+
+    [Fact]
+    public void Drill_m2_ballast_fails_if_nothing_is_done()
+    {
+        var sim = new Simulation();
+        sim.StartMission(TestData.Data, Mission);
+        int limit = TestData.Ticks(sim.Mission!.TimeLimitSeconds) + 2;
+        for (int i = 0; i < limit && sim.Status == MissionStatus.Running; i++) sim.Step();
+        Assert.Equal(MissionStatus.Failed, sim.Status);
+    }
+
+    [Fact]
+    public void The_emergency_alone_does_not_finish_the_drill()
+    {
+        var sim = new Simulation();
+        sim.StartMission(TestData.Data, Mission);
+        sim.Run(300);
+        BallastValveTests.Follow(sim, "proc.ballast.hammer");
+        sim.Run(120);
+        Assert.Equal(MissionStatus.Running, sim.Status);
+    }
+
+    static void Replay(Simulation sim, IReadOnlyList<(long Tick, string Cmd)> log, long end)
+    {
+        int k = 0;
+        while (k < log.Count && log[k].Tick < sim.Tick) k++;
+        while (sim.Tick < end)
+        {
+            while (k < log.Count && log[k].Tick == sim.Tick) sim.Apply(new Command(log[k++].Cmd));
+            sim.Step();
+        }
+    }
+
+    [Fact]
+    public void Drill_log_replays_to_the_same_hash_and_survives_save_and_restore_mid_repack()
+    {
+        var a = new Simulation();
+        a.StartMission(TestData.Data, Mission);
+        byte[]? saved = null;
+        long savedTick = 0;
+        var log = Solve(a, s =>
+        {
+            // 헌 패킹을 하나 끌어낸 때(갈고리를 든 채, 너트가 풀려 축 둘레로 물이 새는 중) 저장한다.
+            if (saved == null && s.Q("part.ballast.fore.valve.prop.packingOut") >= 1)
+            {
+                saved = s.SaveState();
+                savedTick = s.Tick;
+            }
+        });
+        Assert.NotNull(saved);
+        Assert.Equal(MissionStatus.Succeeded, a.Status);
+        ulong final = a.StateHash();
+        long end = a.Tick;
+        var b = new Simulation();
+        b.StartMission(TestData.Data, Mission);
+        Replay(b, log, end);
+        Assert.Equal(final, b.StateHash());
+        var c = new Simulation();
+        c.StartMission(TestData.Data, Mission);
+        c.RestoreState(saved!);
+        Assert.Equal(savedTick, c.Tick);
+        Replay(c, log, end);
+        Assert.Equal(final, c.StateHash());
+    }
+}

@@ -1,0 +1,37 @@
+{
+  "name": "밸러스트 훈련: 기우는 배",
+  "briefing": [
+    "모선 아르고스호 → 모스호 기관사. 수심 100m에서 정지 상태로 트림 시험 중.",
+    "앞선 당직이 뒤 트림 탱크를 붉은 금보다 조금 더 빼 놓았다. 전동 배수 펌프 회로(C3)는 살아 있다.",
+    "배가 기울면 경사계와 탱크 유리관을 보고, 교범(Tab)에서 맞는 수리를 찾아 할 것. 두 탱크를 붉은 금에 맞추고, 침수 밸브를 정식으로 고치고, 흡입 선택 레버를 빌지에 되돌린 채 1분을 버티면 훈련을 마친다."
+  ],
+  "seed": 1804,
+  "setup": {
+    "depthM": 100,
+    "switches": {
+      "C3": true
+    },
+    "parts": [
+      {
+        "part": "ballast.tank.aft",
+        "prop": "water",
+        "value": 120
+      }
+    ]
+  },
+  "events": [
+    {
+      "atSeconds": 5,
+      "fault": "WTR-04"
+    }
+  ],
+  "success": {
+    "assert": "ballast.fore.water >= 140 && ballast.fore.water <= 160 && ballast.aft.water >= 140 && ballast.aft.water <= 160 && ballast.fore.open == 0 && ballast.aft.open == 0 && pump.suction == 'bilge' && part.ballast.fore.valve.prop.corroded < 0.5 && part.ballast.fore.valve.prop.gland == 3",
+    "holdSeconds": 60,
+    "objectives": [
+      "기우는 까닭을 찾아 침수 밸브를 정식으로 고친다",
+      "두 탱크를 붉은 금에 맞추고 흡입 선택 레버를 빌지로 되돌린 채 1분을 버틴다"
+    ]
+  },
+  "timeLimitSeconds": 1200
+}

@@ -111,6 +111,7 @@ public class Diagnosability
         ("WTR-01", null), ("WTR-02", null), ("WTR-03", null), ("HUL-01", "leak.rivet.09"),
         // M2 계통 작업이 더한 고장 (같은 하네스, 같은 노출 설정)
         ("HUL-03", null),
+        ("WTR-04", null), // 밸러스트 밸브 고착 (WP18)
     };
 
     /// <summary>노출 설정: 배수 펌프를 돌리고 후방 빌지에 물을 둔다 (펌프 고장이 드러나게). 수심은 기본 300m.</summary>
@@ -197,6 +198,10 @@ public class Diagnosability
         // 축 패킹과 후방 리벳 이음: 둘 다 후방 경고등. 축 고리 둘레의 물과 이음새의 쉿 소리로 가른다 (교범 04 '축 패킹').
         Splits("HUL-03", "HUL-01", "cue.shaft.stream");
         Splits("HUL-03", "HUL-01", "cue.leak.rivet.09.hiss");
+        // 기울기: 밸러스트 밸브 고착과 한쪽 침수. 탱크 유리관과 탱크로 드는 물소리로 가른다 (교범 04 '기울기', 32쪽).
+        Splits("WTR-04", "HUL-01", "reading.ballast.fore.glass");
+        Splits("WTR-04", "HUL-01", "cue.ballast.fore.rush");
+        Splits("WTR-04", "HUL-01", "reading.inclinometer");
     }
 
     /// <summary>
