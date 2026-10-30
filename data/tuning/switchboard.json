@@ -11,7 +11,8 @@
     "coolingWPerC": 0.2,
     "burnC": 90,
     "corrosionGrowthPerSecond": 0.001,
-    "arcFromV": 10,
+    "growFrom": 0.25,
+    "arcFromV": 12,
     "arcSpanV": 30,
     "arcsPerSecond": 0.5,
     "panelWarnDropV": 12
