@@ -22,6 +22,8 @@ public sealed class ContactsTuning
     public double BurnC { get; set; }
     /// <summary>burnC 위에서 1초에 늘어나는 corrosion.</summary>
     public double CorrosionGrowthPerSecond { get; set; }
+    /// <summary>녹이 이 값 아래면 뜨거워도 자라지 않는다. ELC-02 clearedWhen의 문턱과 같게 둔다.</summary>
+    public double GrowFrom { get; set; }
     /// <summary>아크가 튀기 시작하는 강하 (V)와, 아크가 초당 arcsPerSecond번에 닿는 강하까지의 폭 (V).</summary>
     public double ArcFromV { get; set; }
     public double ArcSpanV { get; set; }
@@ -43,5 +45,6 @@ static class ContactsTuningValidator
             errors.Add("tuning.contacts: dropK ≥ 0, floorFraction 0~1, clampRelief 0~1");
         if (t.HeatCapacityJPerC <= 0 || t.CoolingWPerC <= 0) errors.Add("tuning.contacts: heatCapacityJPerC > 0, coolingWPerC > 0");
         if (t.ArcSpanV <= 0) errors.Add("tuning.contacts.arcSpanV > 0");
+        if (t.GrowFrom is < 0 or > 1) errors.Add("tuning.contacts.growFrom 0~1");
     }
 }

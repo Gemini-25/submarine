@@ -564,6 +564,7 @@ public class ContactDiagnosability
     {
         ("ELC-02.C1", "ELC-02", "contact.C1"), ("ELC-02.C3", "ELC-02", "contact.C3"), ("PWR-01", "PWR-01", "cell.3"),
         ("ELC-01.C1", "ELC-01", "fuse.C1"), ("ELC-03.C1", "ELC-03", "junction.C1"), ("WTR-02", "WTR-02", null),
+        ("ELC-02.C5", "ELC-02", "contact.C5"), ("ELC-01.C5", "ELC-01", "fuse.C5"), ("ELC-03.C3", "ELC-03", "junction.C3"),
     };
 
     static SortedDictionary<string, DiagnosisHarness.Element> Run(string? fault, string? part)
@@ -581,12 +582,16 @@ public class ContactDiagnosability
     static readonly Lazy<SortedDictionary<string, DiagnosisHarness.Element>> _baseline = new(() => Run(null, null));
     static readonly Lazy<Dictionary<string, SortedDictionary<string, DiagnosisHarness.Element>>> _vectors =
         new(() => Cases.ToDictionary(c => c.Key, c => Run(c.Fault, c.Part)));
+    static readonly Lazy<Dictionary<string, SortedDictionary<string, DiagnosisHarness.Element>>> _m0 =
+        new(() => Diagnosability.M0Faults.ToDictionary(f => f.Fault, f => Run(f.Fault, f.Part)));
 
     [Fact]
     public void Elc02_is_noticeable_documented_and_distinct()
     {
-        foreach (var key in new[] { "ELC-02.C1", "ELC-02.C3" })
+        foreach (var key in new[] { "ELC-02.C1", "ELC-02.C3", "ELC-02.C5" })
         {
+            foreach (var (fault, vector) in _m0.Value)
+                Assert.True(DiagnosisHarness.Separating(_vectors.Value[key], vector).Count > 0, $"{key}와 {fault}의 관찰 벡터가 같다");
             var sep = DiagnosisHarness.Separating(_vectors.Value[key], _baseline.Value);
             Assert.NotEmpty(sep);
             foreach (var k in sep) Assert.True(DiagnosisHarness.Documented(k, TestData.Data), $"{key}를 드러내는 '{k}'에 문구가 없다");
@@ -614,5 +619,8 @@ public class ContactDiagnosability
         // 같은 회로의 퓨즈 단선, 누전과는 회로가 살아 있는지와 칼날 소리로 갈린다.
         Assert.True(v["ELC-02.C1"]["measure.voltmeter.circuit.C1"].Differs(v["ELC-01.C1"]["measure.voltmeter.circuit.C1"]));
         Assert.True(v["ELC-02.C1"]["cue.knife.C1.crackle"].Differs(v["ELC-03.C1"]["cue.knife.C1.crackle"]));
+        // 항법 회로: 퓨즈가 끊기면 부하 단자가 0, 접점이 상하면 낮지만 살아 있다. 배수 회로의 누전과는 칼날 소리로 갈린다.
+        Assert.True(v["ELC-02.C5"]["measure.voltmeter.circuit.C5"].Differs(v["ELC-01.C5"]["measure.voltmeter.circuit.C5"]));
+        Assert.True(v["ELC-02.C3"]["cue.knife.C3.crackle"].Differs(v["ELC-03.C3"]["cue.knife.C3.crackle"]));
     }
 }

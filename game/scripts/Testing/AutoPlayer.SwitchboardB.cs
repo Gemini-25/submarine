@@ -31,12 +31,20 @@ public partial class AutoPlayer
         Check(!_main.Sub.Interactables.ContainsKey("switch.C1.clamp"), "배치 표지 switch.C1.clamp가 남아 있다");
 
         // 칼날 위아래를 잰다 (교범 24 가르기): 스위치를 올린 회로에서 10V 넘는 곳.
+        // 전압계를 쥐고 올린 칼날(스위치 물체)에 대어 잰다.
+        if (_main.Hands.KeyForTool("voltmeter") == 0) await Perform("toolboard.take.voltmeter");
+        await Perform("tool.voltmeter");
+        Step(HandSeconds);
+        await Frame();
         var bad = new List<string>();
         foreach (var c in Data.Circuits)
         {
-            double v = _main.Runner.Sim.Measure("voltmeter", $"switch.{c.Id}") * 120;
+            double v = await ProbeVolts($"switch.{c.Id}");
             if (Snap.Circuits.First(x => x.Id == c.Id).Energized && v > 10) bad.Add(c.Id);
         }
+        await Perform("tool.hand");
+        Step(HandSeconds);
+        await Frame();
         Check(bad.SequenceEqual(new[] { "C1", "C5" }), $"강하가 큰 회로가 C1, C5가 아니다: {string.Join(", ", bad)}");
         foreach (var c in bad) await FollowWithBelt("proc.contact.file", c);
 

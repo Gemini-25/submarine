@@ -91,7 +91,9 @@ sealed class ContactRefs
             temp += (heatW - (temp - ambient) * t.CoolingWPerC) / t.HeatCapacityJPerC * w.Dt;
             TempC[c].Set(temp);
 
-            if (temp > t.BurnC && !IsBurnt(c))
+            // 녹은 접점이 뜨겁고, 집게를 더 조이지 않았고, 이미 녹이 문턱(growFrom) 이상일 때만 자란다.
+            // 조인 집게는 그 수명 동안 접점을 붙들고, 고쳐진 것으로 판정된 접점(녹 < growFrom)은 스스로 되살아나지 않는다.
+            if (temp > t.BurnC && !IsBurnt(c) && Clamp[c].Get() < 0.5 && Corrosion[c].Get() >= t.GrowFrom)
             {
                 double corrosion = Math.Min(1, Corrosion[c].Get() + t.CorrosionGrowthPerSecond * w.Dt);
                 Corrosion[c].Set(corrosion);
