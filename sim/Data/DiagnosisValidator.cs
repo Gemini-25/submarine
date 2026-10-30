@@ -136,7 +136,13 @@ static class DiagnosisValidator
             }
             if (c.Measure != null)
                 Check(HandTools.Contains(c.Measure) || FixedTools.Contains(c.Measure), $"{where}: measure 도구 '{c.Measure}'를 모른다");
-            if (c.Touched != null) Check(d.Fixtures.Instances.Any(f => f.Id == c.Touched && f.Def.Touch != null), $"{where}: touched '{c.Touched}'는 만질 수 있는 장치가 아니다");
+            if (c.Touched != null)
+                foreach (var b in Expansions(vars))
+                {
+                    string tk = Sub(c.Touched, b);
+                    if (Unbound(tk, where)) continue;
+                    Check(d.Fixtures.Instances.Any(f => f.Id == tk && f.Def.Touch != null), $"{where}: touched '{tk}'는 만질 수 있는 장치가 아니다");
+                }
 
             foreach (var b in Expansions(vars))
             {
@@ -388,6 +394,7 @@ static class DiagnosisValidator
                     : new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal);
                 foreach (var c in wait.Until) Cond(c, w + ".until", Place.Wait, none);
                 foreach (var c in wait.Then) Cond(c, w + ".then", Place.Wait, none);
+                foreach (var c in wait.While) Cond(c, w + ".while", Place.Wait, none);
                 string? touched = p.Steps[i].Cmd is { } cmd && cmd.EndsWith(".touch", StringComparison.Ordinal) ? cmd[..^6] : null;
                 foreach (var c in wait.Retry) Cond(c, w + ".retry", Place.Retry, none, touched);
             }

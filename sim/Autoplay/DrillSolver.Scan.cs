@@ -98,7 +98,7 @@ public sealed partial class DrillSolver
         }
         else if (c.Touched != null)
         {
-            if (!_s.Touches.TryGetValue(c.Touched, out var t)) return R.False;
+            if (!_s.Touches.TryGetValue(Sub(c.Touched, b), out var t)) return R.False;
             v = t.Band;
             text = t.Detail;
         }

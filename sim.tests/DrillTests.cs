@@ -56,10 +56,11 @@ public class DrillTests
     {
         var harm = new List<SimEvent>();
         long lastDo = -1000, minGap = long.MaxValue;
+        Simulation? world = null;
         var hooks = new DrillHooks
         {
             EveryEvent = e => { if (Harm.Contains(e.Kind)) harm.Add(e); },
-            EveryTick = s => Assert.Equal(0, s.Query("battery.submerged").Number),
+            EveryTick = s => { world = s; Assert.Equal(0, s.Query("battery.submerged").Number); },
             BeforeStep = (s, step) =>
             {
                 if (step.Kind == PlanKind.Do)
@@ -78,6 +79,9 @@ public class DrillTests
         Assert.True(log.FinalTick < TestData.Ticks(TestData.Data.Mission(mission).TimeLimitSeconds));
         Assert.Empty(harm);
         Assert.True(minGap >= 12, $"잇닿은 손 명령 사이가 {minGap}틱");
+        // 숨은 결함이 남지 않는다 (WP23 검토): 젖은 채 테이프를 감아 물기가 갇힌 분기함이 없다. 성공 조건은 이것을 보지 않는다.
+        foreach (var c in TestData.Data.Circuits)
+            Assert.True(world!.Query($"part.junction.{c.Id}.prop.trapped").Number == 0, $"{mission}: {c.Id} 분기함에 물기가 갇혔다");
         var (fixedExpected, notes) = Expected[mission];
         Assert.Equal(fixedExpected.OrderBy(x => x, StringComparer.Ordinal), log.Findings.Where(f => f.Outcome == "fixed").Select(Name).OrderBy(x => x, StringComparer.Ordinal));
         foreach (var f in log.Findings.Where(f => f.Outcome != "fixed"))
@@ -190,6 +194,7 @@ public class DrillLogTests
     [InlineData("m2-air-b", "park")]
     [InlineData("m2-water-b", "prop:pump.check_valve.bonnetOpen")]
     [InlineData("m2-ballast", "phase:wait:proc.ballast.repack#13")]
+    [InlineData("m2-ballast", "prop:ballast.fore.valve.soakArmed")]
     [InlineData("m2-senses-b", "prop:searchlight.rods.doorOpen")]
     [InlineData("m2-power-b", "phase:wait:proc.steam.gasket#4")]
     [InlineData("m2-hull-b", "phase:wait:proc.chamber.reseal#4")]
@@ -412,6 +417,16 @@ public class DrillLogTests
         // 동력: 전령기를 한 눈금씩 내리고 되돌린다.
         var power = Solved("m2-power-a").Lines.Where(l => l.Step.Cmd == "propulsion.set" && l.Step.Kind == PlanKind.Do).Select(l => l.Step.Value).ToList();
         Assert.Equal(new[] { 0.5, 0.25, 0, 0.25, 0.5, 0.75 }, power.Take(6));
+        // 흡입 선택 레버: 빌지에서 챔버까지, 챔버에서 빌지까지 한 칸씩 (가운데 자리는 notch).
+        var lever = Solved("m2-hull-b").Lines.Where(l => l.Step.Kind == PlanKind.Do && l.Step.Cmd?.StartsWith("pump.suction.", StringComparison.Ordinal) == true)
+            .Select(l => l.Step.Cmd + (l.Step.Text == "notch" ? "*" : "")).ToList();
+        Assert.Equal(new[] { "pump.suction.fore*", "pump.suction.aft*", "pump.suction.chamber", "pump.suction.aft*", "pump.suction.fore*", "pump.suction.bilge" }, lever);
+        // 탐조등: 끄고 2분 넘게 기다린 뒤에야 몸통을 만진다.
+        var sb = Solved("m2-senses-b").Lines;
+        Assert.True(sb.First(l => l.Step.Cmd == "searchlight.housing.touch").Tick - sb.First(l => l.Step.Cmd == "device.searchlight.off" && l.Step.Note == "proc.arc.rods").Tick >= TestData.Ticks(120));
+        // 분기함: 닦은 뒤 만져 보고, 축축하지 않을 때 감는다.
+        var pb = Solved("m2-power-b").Lines;
+        Assert.True(pb.First(l => l.Step.Cmd == "junction.C3.box.touch").Tick < pb.First(l => l.Step.Cmd == "junction.C3.cable.wrap").Tick);
         // 자이로: 윙 소리가 멎기 전에는 뚜껑 나사를 풀지 않는다.
         var nav = Solved("m2-nav").Lines;
         long gyroOff = nav.First(l => l.Step.Cmd == "gyro.switch.off").Tick, screw = nav.First(l => l.Step.Cmd == "gyro.case.screw.1.loosen").Tick;
@@ -501,6 +516,97 @@ public class DrillLogTests
         Assert.Contains(log.Findings, f => f.Pair == "fuse.blown" && f.Verdict == "WTR-02" && f.Bind == "c=C3" && f.Outcome == "fixed");
         Assert.DoesNotContain(log.Findings, f => f.Pair == "fuse.blown" && f.Verdict is "ELC-01" or "ELC-03");
         Assert.DoesNotContain(events.Where(e => e.Tick > log.Findings.First(f => f.Verdict == "WTR-02").Tick), e => e.Kind == SimEventKind.FuseBlown);
+    }
+
+    /// <summary>
+    /// 해치가 처음부터 닫혀 있으면(침수 때문에 닫아 두었을 수 있다) 축압기 일은 해치를 닫지도 다시 열지도 않는다 (WP23 검토).
+    /// </summary>
+    [Fact]
+    public void A_closed_bulkhead_hatch_stays_closed_after_the_steam_job()
+    {
+        var data = DataValidationTests.LoadModified(Path.Combine("missions", "m2-power-b.json"), n => n["setup"]!["hatchClosed"] = true);
+        Simulation? world = null;
+        var log = DrillRunner.Solve(data, "m2-power-b", hooks: new DrillHooks { EveryTick = s => world = s });
+        Assert.Equal("succeeded", log.Status);
+        Assert.Equal(PlanKind.Skip, log.Lines.First(l => l.Step.Cmd == "hatch.close").Step.Kind);
+        Assert.DoesNotContain(log.Lines, l => l.Step.Kind == PlanKind.Do && l.Step.Cmd == "hatch.open");
+        Assert.Contains(log.Lines, l => l.Step.Kind == PlanKind.Skip && l.Step.Cmd == "hatch.open" && l.Step.Text == "kept");
+        Assert.Equal(1, world!.Query("hatch.closed").Number);
+        // 열린 채 시작한 기본 훈련은 닫고 다시 연다.
+        var open = DrillLogTests.Solved("m2-power-b").Lines;
+        Assert.Contains(open, l => l.Step.Kind == PlanKind.Do && l.Step.Cmd == "hatch.close");
+        Assert.Contains(open, l => l.Step.Kind == PlanKind.Do && l.Step.Cmd == "hatch.open");
+    }
+
+    /// <summary>
+    /// 예비 탄소봉이 없으면 보내기 손잡이로 버티되, 지직거림이 그치면 더 돌리지 않는다 (표시 눈금에 닿아 거부되지 않는다).
+    /// 응급 수리만으로는 훈련이 끝나지 않으므로 성공은 보지 않는다.
+    /// </summary>
+    [Fact]
+    public void Without_carbon_rods_the_feed_knob_is_not_turned_past_the_mark()
+    {
+        var data = DataValidationTests.LoadModified("tuning.json", n => n["inventory"]!["locker"]!["carbon_rods"] = 0);
+        var sim = new Simulation();
+        sim.StartMission(data, "m2-senses-b");
+        var book = Book.From(data, "m2-senses-b");
+        var events = new List<SimEvent>();
+        var solver = new DrillSolver(book, new ObservableQuery(sim));
+        var log = DrillRunner.Run(sim, solver, book, new DrillHooks { EveryEvent = events.Add });
+        Assert.Contains(log.Lines, l => l.Step.Kind == PlanKind.Do && l.Step.Cmd == "searchlight.feed.turn");
+        Assert.DoesNotContain(events, e => e.Kind is SimEventKind.CommandRejected or SimEventKind.Hurt or SimEventKind.Shock or SimEventKind.Pinch);
+        Assert.True(solver.Outcome == DrillOutcome.Done, $"{solver.Outcome} {solver.StopReason}");
+    }
+
+    /// <summary>
+    /// 침투유가 없으면 굳은 침수 밸브를 망치로 풀고(응급), 탱크를 붉은 금까지 뺀다. 망치로 푼 밸브는 정한 때에 다시 굳는다.
+    /// 응급 수리만으로는 훈련이 끝나지 않으므로 성공은 보지 않는다.
+    /// </summary>
+    [Fact]
+    public void Without_penetrating_oil_the_seized_valve_is_hammered()
+    {
+        var data = DataValidationTests.LoadModified("tuning.json", n => n["inventory"]!["locker"]!["penetrating_oil"] = 0);
+        var sim = new Simulation();
+        sim.StartMission(data, "m2-ballast");
+        var book = Book.From(data, "m2-ballast");
+        var events = new List<SimEvent>();
+        var solver = new DrillSolver(book, new ObservableQuery(sim));
+        double foreAtHammerEnd = double.NaN;
+        var log = DrillRunner.Run(sim, solver, book, new DrillHooks
+        {
+            EveryEvent = events.Add,
+            BeforeStep = (s, step) => { if (step.Kind == PlanKind.Do && step.Cmd == "pump.suction.bilge" && step.Note == "proc.ballast.hammer") foreAtHammerEnd = s.Query("reading.ballast.fore.glass").Number; },
+        });
+        Assert.Equal(3, log.Lines.Count(l => l.Step.Kind == PlanKind.Do && l.Step.Cmd == "ballast.fore.body.strike"));
+        Assert.Contains(log.Lines, l => l.Step.Kind == PlanKind.Wait && l.Step.Note == "until proc.ballast.hammer#5");
+        Assert.InRange(foreAtHammerEnd, 140, 160);
+        Assert.Contains(events, e => e.Kind == SimEventKind.TempRepairFailed && e.Subject == "ballast.fore.valve");
+        Assert.DoesNotContain(events, e => e.Kind is SimEventKind.CommandRejected or SimEventKind.Hurt or SimEventKind.Shock or SimEventKind.Pinch);
+        Assert.True(solver.Outcome == DrillOutcome.Done, $"{solver.Outcome} {solver.StopReason}");
+    }
+
+    /// <summary>
+    /// 예비 개스킷이 없으면 관의 증기를 1.5kg/cm² 아래로 뺀 뒤 감는다. 다치지 않고, 거부되는 명령 없이 끝난다.
+    /// 감은 이음은 조금 새어 공기가 마르지 않으므로 분기함 말리기를 되풀이하다 시간이 다한다 (성공은 보지 않는다).
+    /// </summary>
+    [Fact]
+    public void Without_a_gasket_the_joint_is_wrapped_below_the_line_pressure()
+    {
+        var data = DataValidationTests.LoadModified("tuning.json", n => n["inventory"]!["locker"]!["gasket"] = 0);
+        var sim = new Simulation();
+        sim.StartMission(data, "m2-power-b");
+        var book = Book.From(data, "m2-power-b");
+        var events = new List<SimEvent>();
+        var lines = new List<double>();
+        var solver = new DrillSolver(book, new ObservableQuery(sim));
+        var log = DrillRunner.Run(sim, solver, book, new DrillHooks
+        {
+            EveryEvent = events.Add,
+            BeforeStep = (s, step) => { if (step.Kind == PlanKind.Do && step.Cmd == "steam.joint.wrap") lines.Add(s.Query("reading.steam.line").Number); },
+        });
+        Assert.NotEmpty(lines);
+        Assert.All(lines, v => Assert.True(v < 1.5, $"감을 때 관 압력 {v:F2}kg/cm²"));
+        Assert.DoesNotContain(events, e => e.Kind is SimEventKind.CommandRejected or SimEventKind.Hurt or SimEventKind.Shock or SimEventKind.Pinch);
+        Assert.True(solver.Outcome == DrillOutcome.Done, $"{solver.Outcome} {solver.StopReason}");
     }
 
     /// <summary>계기 영점(align gauge): 손에 든 전압계로 버스 바를 재고, 그 차이만큼 영점 나사를 돌려 바늘을 1V 안에 맞춘다.</summary>
@@ -670,14 +776,21 @@ public class DrillElsewhereTests
     [InlineData("m2-hull-a", "HUL-01", "leak.rivet.10", "aft.alarm/HUL-01", "point=leak.rivet.10")]
     [InlineData("m2-senses-a", "SNS-03", "hydrophone.tube.2", "hydrophone.noisy/SNS-03", "tube=2")]
     [InlineData("m2-hull-b", "HUL-02", "leak.viewport.2", "fore.alarm/HUL-02", "v=2")]
+    [InlineData("m2-switchboard-b", "ELC-02", "contact.C4", "switch.drop/ELC-02", "c=C4")]
     public void Solver_finds_the_fault_wherever_it_is(string mission, string fault, string part, string verdict, string bind)
     {
         var data = DataValidationTests.LoadModified(Path.Combine("missions", mission + ".json"), n =>
         {
             foreach (var e in n["events"]!.AsArray())
-                if ((string?)e!["fault"] == fault) e["part"] = part;
+                if ((string?)e!["fault"] == fault && (mission != "m2-switchboard-b" || (string?)e["part"] == "contact.C5")) e["part"] = part;
             if (mission == "m2-switchboard-a")
                 n["success"]!["assert"] = ((string)n["success"]!["assert"]!).Replace("C1", "C2", StringComparison.Ordinal);
+            if (mission == "m2-switchboard-b" && part == "contact.C4")
+            {
+                // 탐조등을 켜고 C5 대신 C4 접점을 상하게 한다: 탄소봉이 아니라 C4 칼날을 다듬어야 한다 (헷갈리는 쌍 '약한 탐조등').
+                n["setup"]!["devices"] = System.Text.Json.Nodes.JsonNode.Parse("""{ "searchlight": true }""");
+                n["success"]!["assert"] = ((string)n["success"]!["assert"]!).Replace("C5", "C4", StringComparison.Ordinal);
+            }
             if (mission == "m2-hull-b")
                 n["success"]!["assert"] = ((string)n["success"]!["assert"]!).Replace("leak.viewport.1", "leak.viewport.2", StringComparison.Ordinal);
             if (mission == "m2-senses-a")
@@ -686,5 +799,6 @@ public class DrillElsewhereTests
         var log = DrillRunner.Solve(data, mission);
         Assert.Equal("succeeded", log.Status);
         Assert.Contains(log.Findings, f => $"{f.Pair}/{f.Verdict}" == verdict && f.Bind == bind && f.Outcome == "fixed");
+        if (part == "contact.C4") Assert.DoesNotContain(log.Lines, l => l.Step.Note?.StartsWith("proc.arc.", StringComparison.Ordinal) == true);
     }
 }

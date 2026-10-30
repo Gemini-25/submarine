@@ -132,7 +132,7 @@ public class DiagnosisTests
                 // 기다림이 있는 단계는 펼친 절차에 실제로 나온다.
                 var bind = p.Bind.ToDictionary(b => b, _ => "1");
                 Assert.Contains(ProcedureRunner.ExpandSteps(p, bind, TestData.T.ToolBoard!.InitialBelt), item => item.Step == i && item.Wait == s.Wait);
-                var m = Regex.Match(s.Text, @"(\d+)\s*(분|초) 뒤");
+                var m = Regex.Match(s.Text, @"(\d+)\s*(분|초)(?: 넘게)?\s*(뒤|기다)");
                 if (m.Success && s.Wait.Before is { } before)
                 {
                     double said = double.Parse(m.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture) * (m.Groups[2].Value == "분" ? 60 : 1);
@@ -140,7 +140,7 @@ public class DiagnosisTests
                     n++;
                 }
             }
-        Assert.True(n >= 1);
+        Assert.True(n >= 3, $"글과 견준 before 기다림 {n}개");
     }
 
     [Fact]
@@ -177,7 +177,23 @@ public class DiagnosisTests
 
     /// <summary>사례 하나를 돌린 결과: sees가 섰는가, 판정(없으면 null)과 묶음 값, 평가 틱의 세계.</summary>
     /// Log는 그 쌍을 평가한 솔버 기록이다: 누르기와 지켜보기 값은 거기의 Look 걸음에서 읽는다.
-    internal sealed record CaseRun(bool Sees, string? Verdict, string? Bind, Simulation World, DrillLog Log);
+    /// Peaks는 그 쌍의 peak 조건이 읽는 경로마다 노출 동안의 (틱, 표시값)이다 (WP23: peak 문턱도 여유를 본다).
+    internal sealed record CaseRun(bool Sees, string? Verdict, string? Bind, Simulation World, DrillLog Log, long At,
+        IReadOnlyDictionary<string, List<(long Tick, double Value)>> Peaks);
+
+    /// <summary>쌍의 확인 가운데 peak 조건의 경로를 each 값마다 펼친 것과 그 단위.</summary>
+    static IEnumerable<(string Path, string? Unit)> PeakPaths(PairDef pair)
+    {
+        var book = Book.From(TestData.Data, null);
+        foreach (var ch in pair.Checks)
+            foreach (var c in ch.All.Where(c => c.Peak != null && c.Q != null))
+            {
+                if (ch.Each.Count == 0) { yield return (c.Q!, c.Unit); continue; }
+                var (name, src) = ch.Each.First();
+                foreach (var v in book.EachValues[src])
+                    yield return (FixtureCatalog.Expand(c.Q!, new Dictionary<string, string> { [name] = v }), c.Unit);
+            }
+    }
 
     static readonly Dictionary<(string, int), CaseRun> _runs = new();
 
@@ -190,6 +206,8 @@ public class DiagnosisTests
             var cs = pair.Cases[index];
             var setup = Merge(pair.Exposure.Setup, cs.Setup);
             long at = TestData.Ticks(cs.Seconds ?? pair.Exposure.Seconds);
+            var peakPaths = PeakPaths(pair).Distinct().ToList();
+            var peaks = peakPaths.Select(p => p.Path).Distinct().ToDictionary(p => p, _ => new List<(long, double)>(), StringComparer.Ordinal);
 
             (DrillSolver Solver, Simulation World, DrillLog Log) Go(string only)
             {
@@ -200,6 +218,15 @@ public class DiagnosisTests
                 byte[]? snap = null;
                 // 도중 명령 (WP23): 그 틱이 되면 다음 틱 전에 낸다.
                 var pending = new Queue<CaseCommand>(cs.At);
+                void Record(Simulation s)
+                {
+                    foreach (var (path, unit) in peakPaths)
+                    {
+                        double n = s.Query(path).Number;
+                        if (unit is "V" or "A" or "Lpm" && !path.StartsWith("reading.", StringComparison.Ordinal)) n = Systems.Units.ToDisplay(unit, n);
+                        peaks[path].Add((s.Tick, n));
+                    }
+                }
                 void Due(Simulation s)
                 {
                     while (pending.Count > 0 && s.Tick >= TestData.Ticks(pending.Peek().Seconds))
@@ -216,7 +243,7 @@ public class DiagnosisTests
                         if (snap == null && s.Tick >= at) snap = s.SaveState();
                         return false;
                     },
-                    EveryTick = Due,
+                    EveryTick = s => { Due(s); Record(s); },
                 });
                 var world = new Simulation(TestData.Data, 1, setup);
                 world.RestoreState(snap!);
@@ -224,9 +251,10 @@ public class DiagnosisTests
             }
 
             var (main, world, mainLog) = Go(pair.Id);
+            var mainPeaks = peaks.ToDictionary(kv => kv.Key, kv => kv.Value.ToList(), StringComparer.Ordinal);
             bool sees = cs.Via == null ? main.SeesStood == true : Go(cs.Via).Solver.SeesStood == true;
             var decided = main.Findings.FirstOrDefault(f => f.Outcome == "decided");
-            return _runs[(pairId, index)] = new CaseRun(sees, decided?.Verdict, decided?.Bind, world, mainLog);
+            return _runs[(pairId, index)] = new CaseRun(sees, decided?.Verdict, decided?.Bind, world, mainLog, at, mainPeaks);
         }
     }
 
@@ -281,6 +309,13 @@ public class DiagnosisTests
             string target = Sub(c.Target!);
             var m = r.Log.Lines.LastOrDefault(l => l.Step.Kind == PlanKind.Measure && l.Step.Tool == c.Measure && l.Step.Target == target);
             if (m?.Step.Reading is { } mv) return (mv, null);
+        }
+        if (c.Peak != null && c.Q != null && r.Peaks.TryGetValue(Sub(c.Q), out var hist))
+        {
+            // 평가 틱까지 peak초 동안의 가장 큰 표시값 (솔버의 Windowed와 같은 창).
+            long from = r.At - TestData.Ticks(c.Peak.Value);
+            var window = hist.Where(h => h.Tick >= from && h.Tick <= r.At).Select(h => h.Value).ToList();
+            return window.Count > 0 ? (window.Max(), null) : null;
         }
         return Value(c, bind, r.World);
     }

@@ -82,6 +82,14 @@
           "verdict": "low_voltage"
         },
         {
+          "each": { "c": "C4" },
+          "prep": [ { "cmd": "tool.voltmeter" } ],
+          "undo": [ { "cmd": "tool.hand" } ],
+          "all": [ { "q": "cue.circuit.{c}.lamp", "unit": "cue", "above": 0.5 },
+                   { "measure": "voltmeter", "target": "switch.{c}", "unit": "V", "above": 10, "says": "C4 스위치 양쪽 전압 차" } ],
+          "verdict": "ELC-02"
+        },
+        {
           "all": [ { "q": "cue.searchlight.sputter", "unit": "cue", "above": 0.2, "says": "지직거린다" } ],
           "verdict": "SNS-04"
         },
@@ -92,6 +100,7 @@
       ],
       "verdicts": {
         "low_voltage": { "says": "전압 저하", "do": [] },
+        "ELC-02": { "fault": "ELC-02", "says": "C4 칼날 스위치 접점 부식", "same": "switch.drop" },
         "rods.out": {
           "fault": "SNS-04",
           "says": "탄소봉 소모",
@@ -115,6 +124,7 @@
       "cases": [
         { "expect": "SNS-04", "inject": [ { "fault": "SNS-04", "part": "searchlight.rods" } ] },
         { "expect": "rods.out", "inject": [ { "fault": "SNS-04", "part": "searchlight.rods" } ], "seconds": 150 },
+        { "expect": "ELC-02", "bind": { "c": "C4" }, "inject": [ { "fault": "ELC-02", "part": "contact.C4" } ] },
         { "expect": "low_voltage", "setup": { "batteryCharge": 0.15 } },
         { "expect": "none" }
       ]

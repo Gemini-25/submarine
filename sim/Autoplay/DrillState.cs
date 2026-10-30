@@ -64,6 +64,8 @@ internal sealed class Job
     public int Priority { get; set; }
     public long Decided { get; set; }
     public double Telegraph { get; set; } = double.NaN;
+    /// <summary>이 일이 시작할 때 격벽 해치가 이미 닫혀 있어 닫기를 건너뛰었다: 끝의 다시 열기도 건너뛴다 (WP23).</summary>
+    public bool HatchKept { get; set; }
     public List<string> CircuitsOn { get; set; } = new();
     public int Attempts { get; set; }
     public long VerifyStart { get; set; } = -1;

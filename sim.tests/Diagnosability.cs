@@ -766,14 +766,31 @@ public class FaultMatrixDiagnosability
     /// 교범 03~05쪽의 가르기 줄: C2 퓨즈와 팬 정지, 축 회전계가 고른 계수기 톱니와 오르내리는 브러시, 물 표시등 전구와 베어링 마모.
     /// 2차(설계의 헷갈리는 쌍 표): 어두운 실내등과 낮은 전압 바늘(셀 열화, 접점 부식, 계기 영점), 뜨거운 펌프(베어링과 C3 접점),
     /// 오르지 않는 산소(화로와 C2 퓨즈), 전방 경고등(현창과 전방 리벳), 같은 퓨즈(분기함 누전과 증기), 배수가 없음(막힘과 역류 밸브),
-    /// 켜진 표시등(배선 엇갈림과 실제 누수), 약한 탐조등(탄소봉과 청음기 진공관).
+    /// 켜진 표시등(배선 엇갈림과 실제 누수), 기우는 배(밸러스트 밸브와 침수), 약한 탐조등(탄소봉과 C4 접점, 낮은 전압),
+    /// 청음기(진공관과 C4 퓨즈), 약한 윈치(라이닝과 증기 축압기), 분기함 이슬(증기와 침수).
+    /// 셋째 값은 상대 고장을 넣을 부품이다 (null이면 그 고장의 노출 사례나 기본 부품).
     /// </summary>
-    static readonly (string, string)[] Confusable =
+    static readonly (string A, string B, string? PartB)[] Confusable =
     {
-        ("ELC-01", "AIR-01"), ("NAV-02", "PWR-02"), ("SNS-01", "WTR-02"),
-        ("PWR-01", "ELC-02"), ("PWR-01", "SNS-05"), ("ELC-02", "SNS-05"), ("WTR-02", "ELC-02"), ("AIR-03", "ELC-01"), ("HUL-02", "HUL-01"),
-        ("ELC-03", "PWR-03"), ("WTR-01", "WTR-03"), ("SNS-02", "HUL-01"), ("SNS-04", "SNS-03"), ("WTR-04", "HUL-01"),
+        ("ELC-01", "AIR-01", null), ("NAV-02", "PWR-02", null), ("SNS-01", "WTR-02", null),
+        ("PWR-01", "ELC-02", null), ("PWR-01", "SNS-05", null), ("ELC-02", "SNS-05", null), ("WTR-02", "ELC-02", "contact.C3"), ("AIR-03", "ELC-01", null),
+        ("HUL-02", "HUL-01", "leak.rivet.02"), ("ELC-03", "PWR-03", null), ("WTR-01", "WTR-03", null), ("SNS-02", "HUL-01", null), ("WTR-04", "HUL-01", null),
+        ("SNS-04", "ELC-02", "contact.C4"), ("SNS-04", "PWR-01", null), ("SNS-03", "ELC-01", "fuse.C4"), ("CBL-01", "PWR-03", null), ("PWR-03", "HUL-01", null),
     };
+
+    /// <summary>fault의 상대 고장들: (상대, 넣을 부품). 같은 계통, 함께 쓰는 표시등, 헷갈리는 쌍 표. 쌍 표의 부품이 있으면 그 부품으로 한 번 더 넣는다.</summary>
+    static IEnumerable<(string Other, string? Part)> Partners(string fault)
+    {
+        string? DefaultPart(string f) => Exposure(f).Part ?? TestData.Data.Faults.First(x => x.Id == f).DefaultPart;
+        var seen = new HashSet<(string, string?)>();
+        foreach (var o in DiagnosisTests.All.Where(o => o != fault && (SystemOf(o) == SystemOf(fault) || LampsOf(o).Overlaps(LampsOf(fault)))))
+            if (seen.Add((o, DefaultPart(o)))) yield return (o, DefaultPart(o));
+        foreach (var c in Confusable)
+        {
+            var (o, part) = c.A == fault ? (c.B, c.PartB ?? DefaultPart(c.B)) : c.B == fault ? (c.A, DefaultPart(c.A)) : (null, null);
+            if (o != null && seen.Add((o, part))) yield return (o, part);
+        }
+    }
 
     static string SystemOf(string fault) => TestData.Data.Faults.First(f => f.Id == fault).System;
 
@@ -822,17 +839,21 @@ public class FaultMatrixDiagnosability
             // 같은 계통, 그리고 표시등을 함께 쓰는 고장끼리 (설계 5.2절 2): SNS-01(물 표시등 전구)과 WTR-01·02, C2의 ELC-01과 AIR-01 같은 것.
             // 교범의 가르기 표가 짚는 헷갈리는 쌍도 견준다 (표시등을 함께 쓰지 않아도).
             var compared = new List<string>();
-            foreach (var other in DiagnosisTests.All.Where(o => o != fault && (SystemOf(o) == SystemOf(fault) || LampsOf(o).Overlaps(LampsOf(fault))
-                                                                                || Confusable.Contains((fault, o)) || Confusable.Contains((o, fault)))))
+            foreach (var (other, otherPart) in Partners(fault))
             {
-                string? otherPart = Exposure(other).Part ?? TestData.Data.Faults.First(f => f.Id == other).DefaultPart;
                 var theirs = Observe(setup, seconds, other, otherPart);
                 var split = DiagnosisHarness.Separating(mine, theirs);
-                Assert.True(split.Count > 0, $"{fault}와 {other}가 {fault}의 노출에서 구별되지 않는다");
-                compared.Add($"{other}({split[0]})");
+                Assert.True(split.Count > 0, $"{fault}와 {other}({otherPart})가 {fault}의 노출에서 구별되지 않는다");
+                compared.Add($"{other}@{otherPart}({split[0]})");
             }
             _out.WriteLine($"  견준 고장: {string.Join(", ", compared)}");
-            if (Confusable.Any(c => c.Item1 == fault || c.Item2 == fault)) Assert.NotEmpty(compared);
+            // 헷갈리는 쌍 표의 짝은 저마다 그 부품으로 실제로 견주었다.
+            foreach (var c in Confusable.Where(c => c.A == fault || c.B == fault))
+            {
+                string other = c.A == fault ? c.B : c.A;
+                string? want = c.A == fault ? c.PartB : null;
+                Assert.Contains(compared, x => x.StartsWith(other + "@", StringComparison.Ordinal) && (want == null || x.StartsWith($"{other}@{want}(", StringComparison.Ordinal)));
+            }
         }
     }
 }

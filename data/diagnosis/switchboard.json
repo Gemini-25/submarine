@@ -89,6 +89,7 @@
         { "expect": "ELC-03", "bind": { "c": "C1" }, "inject": [ { "fault": "ELC-03", "part": "junction.C1" } ] },
         { "expect": "ELC-01", "bind": { "c": "C2" }, "inject": [ { "fault": "ELC-01", "part": "fuse.C2" } ] },
         { "expect": "WTR-02", "bind": { "c": "C3" }, "inject": [ { "fault": "WTR-02" } ], "seconds": 1800 },
+        { "expect": "ELC-01", "bind": { "c": "C3" }, "inject": [ { "fault": "ELC-01", "part": "fuse.C3" } ] },
         { "expect": "none" }
       ]
     },

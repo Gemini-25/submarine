@@ -68,8 +68,8 @@
       ],
       "verdicts": {
         "PWR-03": { "fault": "PWR-03", "says": "증기 축압기 누설", "same": "steam.leak" },
-        "flooding": { "says": "그 구역의 침수", "section": "04-진단-표-물과-선체.md#기울기", "do": [] },
-        "ELC-03": { "fault": "ELC-03", "says": "분기함 건조와 피복 감기", "section": "분기함, 퓨즈 철사, 탄 배선", "same": "fuse.blown" }
+        "flooding": { "says": "그 구역의 침수", "do": [] },
+        "ELC-03": { "fault": "ELC-03", "says": "분기함 건조와 피복 감기", "same": "fuse.blown" }
       },
       "exposure": { "setup": { "depthM": 300, "switches": { "C3": true }, "parts": [ { "part": "junction.C3", "prop": "moisture", "value": 0.62 } ] }, "seconds": 120 },
       "cases": [

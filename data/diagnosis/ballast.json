@@ -26,7 +26,8 @@
         },
         {
           "each": { "t": "fore,aft" },
-          "all": [ { "q": "reading.ballast.{t}.glass", "unit": "L", "below": 140, "says": "한 탱크 유리관이 붉은 금 아래" } ],
+          "all": [ { "q": "reading.ballast.{t}.glass", "unit": "L", "below": 140, "says": "한 탱크 유리관이 붉은 금 아래" },
+                   { "q": "part.pump.suction.prop.pos", "unit": "none", "below": 0.5, "says": "레버가 첫째 칸" } ],
           "verdict": "refill"
         },
         {
@@ -51,7 +52,7 @@
           "verify": { "all": [ { "q": "part.pump.suction.prop.pos", "unit": "none", "below": 0.5 } ], "within": 5 }
         },
         "refill": {
-          "says": "그 탱크의 침수 밸브를 한 바퀴 열고",
+          "says": "앞서 탱크를 너무 뺐다",
           "do": [
             { "cmds": [ { "tool": "hand", "cmd": "ballast.{t}.flood.open" } ] },
             { "wait": 1, "until": [ { "q": "reading.ballast.{t}.glass", "unit": "L", "above": 149 } ], "every": 1, "max": 600 },

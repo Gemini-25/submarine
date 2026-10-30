@@ -1,12 +1,12 @@
 {
-  "mission": "m2-switchboard-a", "seed": 808, "dataStamp": "a3c67edc86af9c1a", "handTicks": 12,
-  "finalTick": 1472, "finalHash": 5257346125085191226, "status": "succeeded",
+  "mission": "m2-switchboard-a", "seed": 808, "dataStamp": "0d9c7889e6606646", "handTicks": 12,
+  "finalTick": 1496, "finalHash": 8745470993854752358, "status": "succeeded",
   "findings": [
     {"tick":584,"pair":"junction.burnt","verdict":"burnt_wiring","bind":"c=C6","outcome":"fixed"},
-    {"tick":992,"pair":"fuse.blown","verdict":"ELC-03","bind":"c=C1","outcome":"fixed"}
+    {"tick":1016,"pair":"fuse.blown","verdict":"ELC-03","bind":"c=C1","outcome":"fixed"}
   ],
   "hashes": [
-    {"tick":1200,"hash":7026022369687416536}
+    {"tick":1200,"hash":4453782658581363117}
   ],
   "lines": [
     {"tick":0,"step":{"seq":1,"kind":"Wait","ticks":20,"value":0,"value2":0,"jobStep":-1,"note":"look"}},
@@ -66,27 +66,29 @@
     {"tick":620,"step":{"seq":55,"kind":"Do","ticks":12,"cmd":"junction.C1.box.dry","value":0,"value2":0,"job":"fuse.blown/ELC-03","jobStep":4,"note":"proc.junction.dry"}},
     {"tick":632,"step":{"seq":56,"kind":"Do","ticks":12,"cmd":"junction.C1.box.dry","value":0,"value2":0,"job":"fuse.blown/ELC-03","jobStep":4,"note":"proc.junction.dry"}},
     {"tick":644,"step":{"seq":57,"kind":"Do","ticks":12,"cmd":"tool.hand","value":0,"value2":0,"job":"fuse.blown/ELC-03","jobStep":5,"note":"proc.junction.dry"}},
-    {"tick":656,"step":{"seq":58,"kind":"Do","ticks":12,"cmd":"locker.take.insulating_tape","value":0,"value2":0,"job":"fuse.blown/ELC-03","jobStep":5,"note":"proc.junction.dry"}},
-    {"tick":668,"step":{"seq":59,"kind":"Do","ticks":12,"cmd":"junction.C1.cable.wrap","value":0,"value2":0,"job":"fuse.blown/ELC-03","jobStep":6,"note":"proc.junction.dry"}},
-    {"tick":680,"step":{"seq":60,"kind":"Do","ticks":12,"cmd":"junction.C1.cable.wrap","value":0,"value2":0,"job":"fuse.blown/ELC-03","jobStep":6,"note":"proc.junction.dry"}},
-    {"tick":692,"step":{"seq":61,"kind":"Do","ticks":12,"cmd":"junction.C1.cable.wrap","value":0,"value2":0,"job":"fuse.blown/ELC-03","jobStep":6,"note":"proc.junction.dry"}},
-    {"tick":704,"step":{"seq":62,"kind":"Do","ticks":12,"cmd":"junction.C1.cover.close","value":0,"value2":0,"job":"fuse.blown/ELC-03","jobStep":7,"note":"proc.junction.dry"}},
-    {"tick":716,"step":{"seq":63,"kind":"Do","ticks":12,"cmd":"tool.screwdriver","value":0,"value2":0,"job":"fuse.blown/ELC-03","jobStep":8,"note":"proc.junction.dry"}},
-    {"tick":728,"step":{"seq":64,"kind":"Do","ticks":12,"cmd":"junction.C1.screw.1.tighten","value":0,"value2":0,"job":"fuse.blown/ELC-03","jobStep":8,"note":"proc.junction.dry"}},
-    {"tick":740,"step":{"seq":65,"kind":"Do","ticks":12,"cmd":"junction.C1.screw.2.tighten","value":0,"value2":0,"job":"fuse.blown/ELC-03","jobStep":8,"note":"proc.junction.dry"}},
-    {"tick":752,"step":{"seq":66,"kind":"Do","ticks":12,"cmd":"tool.hand","value":0,"value2":0,"job":"fuse.blown/ELC-03","jobStep":10,"note":"proc.junction.dry"}},
-    {"tick":764,"step":{"seq":67,"kind":"Do","ticks":12,"cmd":"switch.C1.on","value":0,"value2":0,"job":"fuse.blown/ELC-03","jobStep":10,"note":"proc.junction.dry"}},
-    {"tick":776,"step":{"seq":68,"kind":"Do","ticks":12,"cmd":"tool.hand","value":0,"value2":0,"job":"fuse.blown/ELC-03","jobStep":1,"note":"proc.fuse.replace"}},
-    {"tick":788,"step":{"seq":69,"kind":"Do","ticks":12,"cmd":"switch.C1.off","value":0,"value2":0,"job":"fuse.blown/ELC-03","jobStep":1,"note":"proc.fuse.replace"}},
-    {"tick":800,"step":{"seq":70,"kind":"Do","ticks":12,"cmd":"tool.hand","value":0,"value2":0,"job":"fuse.blown/ELC-03","jobStep":2,"note":"proc.fuse.replace"}},
-    {"tick":812,"step":{"seq":71,"kind":"Do","ticks":12,"cmd":"fuse.C1.pull","value":0,"value2":0,"job":"fuse.blown/ELC-03","jobStep":2,"note":"proc.fuse.replace"}},
-    {"tick":824,"step":{"seq":72,"kind":"Do","ticks":12,"cmd":"hand.drop","value":0,"value2":0,"job":"fuse.blown/ELC-03","jobStep":3,"note":"proc.fuse.replace"}},
-    {"tick":836,"step":{"seq":73,"kind":"Do","ticks":12,"cmd":"locker.take.fuse","value":0,"value2":0,"job":"fuse.blown/ELC-03","jobStep":4,"note":"proc.fuse.replace"}},
-    {"tick":848,"step":{"seq":74,"kind":"Do","ticks":12,"cmd":"fuse.C1.insert","value":0,"value2":0,"job":"fuse.blown/ELC-03","jobStep":5,"note":"proc.fuse.replace"}},
-    {"tick":860,"step":{"seq":75,"kind":"Do","ticks":12,"cmd":"switch.C1.on","value":0,"value2":0,"job":"fuse.blown/ELC-03","jobStep":6,"note":"proc.fuse.replace"}},
-    {"tick":872,"step":{"seq":76,"kind":"Wait","ticks":120,"value":0,"value2":0,"jobStep":-1,"note":"idle"}},
-    {"tick":992,"step":{"seq":82,"kind":"Verify","ticks":0,"value":0,"value2":0,"pair":"fuse.blown","verdict":"ELC-03","bind":"c=C1","jobStep":-1,"ok":true}},
-    {"tick":992,"step":{"seq":83,"kind":"Wait","ticks":480,"value":0,"value2":0,"jobStep":-1,"note":"idle"}},
-    {"tick":1472,"step":{"seq":107,"kind":"Done","ticks":0,"value":0,"value2":0,"jobStep":-1,"note":"succeeded"}}
+    {"tick":656,"step":{"seq":58,"kind":"Do","ticks":12,"cmd":"junction.C1.box.touch","value":0,"value2":0,"job":"fuse.blown/ELC-03","jobStep":5,"note":"proc.junction.dry"}},
+    {"tick":668,"step":{"seq":59,"kind":"Do","ticks":12,"cmd":"tool.hand","value":0,"value2":0,"job":"fuse.blown/ELC-03","jobStep":6,"note":"proc.junction.dry"}},
+    {"tick":680,"step":{"seq":60,"kind":"Do","ticks":12,"cmd":"locker.take.insulating_tape","value":0,"value2":0,"job":"fuse.blown/ELC-03","jobStep":6,"note":"proc.junction.dry"}},
+    {"tick":692,"step":{"seq":61,"kind":"Do","ticks":12,"cmd":"junction.C1.cable.wrap","value":0,"value2":0,"job":"fuse.blown/ELC-03","jobStep":7,"note":"proc.junction.dry"}},
+    {"tick":704,"step":{"seq":62,"kind":"Do","ticks":12,"cmd":"junction.C1.cable.wrap","value":0,"value2":0,"job":"fuse.blown/ELC-03","jobStep":7,"note":"proc.junction.dry"}},
+    {"tick":716,"step":{"seq":63,"kind":"Do","ticks":12,"cmd":"junction.C1.cable.wrap","value":0,"value2":0,"job":"fuse.blown/ELC-03","jobStep":7,"note":"proc.junction.dry"}},
+    {"tick":728,"step":{"seq":64,"kind":"Do","ticks":12,"cmd":"junction.C1.cover.close","value":0,"value2":0,"job":"fuse.blown/ELC-03","jobStep":8,"note":"proc.junction.dry"}},
+    {"tick":740,"step":{"seq":65,"kind":"Do","ticks":12,"cmd":"tool.screwdriver","value":0,"value2":0,"job":"fuse.blown/ELC-03","jobStep":9,"note":"proc.junction.dry"}},
+    {"tick":752,"step":{"seq":66,"kind":"Do","ticks":12,"cmd":"junction.C1.screw.1.tighten","value":0,"value2":0,"job":"fuse.blown/ELC-03","jobStep":9,"note":"proc.junction.dry"}},
+    {"tick":764,"step":{"seq":67,"kind":"Do","ticks":12,"cmd":"junction.C1.screw.2.tighten","value":0,"value2":0,"job":"fuse.blown/ELC-03","jobStep":9,"note":"proc.junction.dry"}},
+    {"tick":776,"step":{"seq":68,"kind":"Do","ticks":12,"cmd":"tool.hand","value":0,"value2":0,"job":"fuse.blown/ELC-03","jobStep":11,"note":"proc.junction.dry"}},
+    {"tick":788,"step":{"seq":69,"kind":"Do","ticks":12,"cmd":"switch.C1.on","value":0,"value2":0,"job":"fuse.blown/ELC-03","jobStep":11,"note":"proc.junction.dry"}},
+    {"tick":800,"step":{"seq":70,"kind":"Do","ticks":12,"cmd":"tool.hand","value":0,"value2":0,"job":"fuse.blown/ELC-03","jobStep":1,"note":"proc.fuse.replace"}},
+    {"tick":812,"step":{"seq":71,"kind":"Do","ticks":12,"cmd":"switch.C1.off","value":0,"value2":0,"job":"fuse.blown/ELC-03","jobStep":1,"note":"proc.fuse.replace"}},
+    {"tick":824,"step":{"seq":72,"kind":"Do","ticks":12,"cmd":"tool.hand","value":0,"value2":0,"job":"fuse.blown/ELC-03","jobStep":2,"note":"proc.fuse.replace"}},
+    {"tick":836,"step":{"seq":73,"kind":"Do","ticks":12,"cmd":"fuse.C1.pull","value":0,"value2":0,"job":"fuse.blown/ELC-03","jobStep":2,"note":"proc.fuse.replace"}},
+    {"tick":848,"step":{"seq":74,"kind":"Do","ticks":12,"cmd":"hand.drop","value":0,"value2":0,"job":"fuse.blown/ELC-03","jobStep":3,"note":"proc.fuse.replace"}},
+    {"tick":860,"step":{"seq":75,"kind":"Do","ticks":12,"cmd":"locker.take.fuse","value":0,"value2":0,"job":"fuse.blown/ELC-03","jobStep":4,"note":"proc.fuse.replace"}},
+    {"tick":872,"step":{"seq":76,"kind":"Do","ticks":12,"cmd":"fuse.C1.insert","value":0,"value2":0,"job":"fuse.blown/ELC-03","jobStep":5,"note":"proc.fuse.replace"}},
+    {"tick":884,"step":{"seq":77,"kind":"Do","ticks":12,"cmd":"switch.C1.on","value":0,"value2":0,"job":"fuse.blown/ELC-03","jobStep":6,"note":"proc.fuse.replace"}},
+    {"tick":896,"step":{"seq":78,"kind":"Wait","ticks":120,"value":0,"value2":0,"jobStep":-1,"note":"idle"}},
+    {"tick":1016,"step":{"seq":84,"kind":"Verify","ticks":0,"value":0,"value2":0,"pair":"fuse.blown","verdict":"ELC-03","bind":"c=C1","jobStep":-1,"ok":true}},
+    {"tick":1016,"step":{"seq":85,"kind":"Wait","ticks":480,"value":0,"value2":0,"jobStep":-1,"note":"idle"}},
+    {"tick":1496,"step":{"seq":109,"kind":"Done","ticks":0,"value":0,"value2":0,"jobStep":-1,"note":"succeeded"}}
   ]
 }
