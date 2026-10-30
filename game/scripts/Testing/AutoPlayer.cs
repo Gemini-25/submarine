@@ -50,7 +50,7 @@ public partial class AutoPlayer : Node
     }
 
     /// <summary>
-    /// 묶음(suite) 이름 → 확인. --autotest=crisis,hands 처럼 고르고, 비우면 전부 돈다.
+    /// 묶음(suite) 이름 → 확인. --autotest=crisis,hands 처럼 고르고, 비우면 OptIn을 뺀 전부가 돈다.
     /// 새 묶음은 여기에 더하고 tools/godot-check.sh의 기본 목록에도 적는다.
     /// </summary>
     Dictionary<string, Func<Task>> Suites() => new(StringComparer.Ordinal)
@@ -79,7 +79,14 @@ public partial class AutoPlayer : Node
         ["instruments"] = InstrumentsSuite,
         ["drill-switchboard-b"] = DrillSwitchboardBSuite,
         ["figures"] = FiguresSuite,
+        ["figures-full"] = FiguresFullSuite,
     };
+
+    /// <summary>
+    /// 이름을 불러야만 도는 묶음. figures-full은 그림 194장의 정의를 손동작까지 다시 계산해 7분쯤 걸리므로 기본 실행(예산 4분)에서 뺀다.
+    /// 기본 실행의 figures가 지문으로 낡은 그림을 잡고, 장면이나 그림을 바꾼 작업 묶음과 마일스톤 마감에서 figures-full을 돌린다.
+    /// </summary>
+    static readonly HashSet<string> OptIn = new(StringComparer.Ordinal) { "figures-full" };
 
     async Task Run()
     {
@@ -92,7 +99,7 @@ public partial class AutoPlayer : Node
             if (FigureOut.Length > 0) all = new() { ["make-figures"] = () => Figures(render: true) };
             var names = args.TryGetValue("autotest", out var list) && list.Length > 0
                 ? list.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                : all.Keys.ToArray();
+                : all.Keys.Where(k => !OptIn.Contains(k)).ToArray();
             foreach (var name in names)
             {
                 // drill:<임무>는 그 훈련 하나를 DrillSolver로 손동작 실행한다 (WP16, DrillAutoTest.cs).

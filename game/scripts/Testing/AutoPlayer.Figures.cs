@@ -13,9 +13,11 @@ namespace DeepLine.Game.Testing;
 /// <summary>
 /// 교범 그림 (WP26). 정의는 data/manual/fig/figures.json.
 /// --figures=폴더: 그림을 만들어 폴더에 16색 PNG로 쓴다 (화면이 있어야 한다: tools/make-figures.sh).
-/// figures 묶음(헤드리스): 그림을 그리지 않고 모든 정의를 다시 계산한다. 카메라가 선체 안에 있고, 부르는 번호의 대상이 장면에 있고,
-/// 투영한 자리가 그 칸 안이며 다른 물체에 가리지 않고(조준선 검사), 순서 띠의 절차가 손동작으로 끝까지 다치지 않고 도는지 본다.
-/// 배치나 장비가 옮겨져 그림 정의가 낡으면 이 묶음이 실패한다.
+/// figures 묶음(헤드리스, 기본 실행): 그림마다 지문만 다시 셈해 figures.lock.json과 견준다. 정의, 부르는 물체와 서는 자리,
+/// 절차의 단계, 도식의 입력이 그림을 만든 때와 같은지 본다. 몇 초면 끝난다.
+/// figures-full 묶음(헤드리스, 따로 부른다): 그림을 그리지 않고 모든 정의를 다시 계산한다. 카메라가 선체 안에 있고, 부르는 번호의 대상이 장면에 있고,
+/// 투영한 자리가 그 칸 안이며 다른 물체에 가리지 않고(조준선 검사), 순서 띠의 절차가 손동작으로 끝까지 다치지 않고 도는지 본다(약 7분).
+/// 배치나 장비가 옮겨져 그림 정의가 낡으면 두 묶음 모두 실패한다.
 /// </summary>
 public partial class AutoPlayer
 {
@@ -33,9 +35,11 @@ public partial class AutoPlayer
     /// <summary>배치도 위아래 여백 (번호와 이름을 다는 곳).</summary>
     const int PlanMargin = 46;
 
-    Task FiguresSuite() => Figures(render: false);
+    Task FiguresSuite() => Figures(render: false, full: false);
+    Task FiguresFullSuite() => Figures(render: false, full: true);
 
-    async Task Figures(bool render)
+    /// <summary>render면 그림을 만든다(늘 다시 계산한다). 아니면 확인만 한다: full이면 정의를 다시 계산하고, 아니면 지문만 견준다.</summary>
+    async Task Figures(bool render, bool full = true)
     {
         string dataDir = DataPaths.DataDir(DataPaths.UserArgs());
         string path = Path.Combine(DataPaths.ManualDir(dataDir), "fig", "figures.json");
@@ -101,9 +105,11 @@ public partial class AutoPlayer
                 var earlier = _failures.ToList();
                 _failures.Clear();
                 Sheet? sheet = null;
+                string print = "";
                 try
                 {
-                    sheet = await MakeFigure(spec, render);
+                    if (render || full) sheet = await MakeFigure(spec, render);
+                    print = Fingerprint(spec, defs[name]!.ToJsonString(), rest);
                 }
                 catch (Exception e) when (e is KeyNotFoundException or ArgumentException or InvalidOperationException or FormatException)
                 {
@@ -124,7 +130,6 @@ public partial class AutoPlayer
                     }
                     continue;
                 }
-                string print = Fingerprint(spec, defs[name]!.ToJsonString(), rest);
                 if (render && sheet != null)
                 {
                     string file = Path.Combine(FigureOut, name + ".png");
