@@ -84,7 +84,7 @@ public static class StandPoints
         // ── 중앙 ──
         new("toolboard", At(3.4f, -0.45f), false, Tools(), None),
         new("ballast", At(3.45f, 0.5f), false,
-            [ "ballast.fore.flood", "ballast.aft.flood", "ballast.fore.gland", "ballast.aft.gland", "ballast.fore.body", "ballast.aft.body", "pump.suction" ], None),
+            [ "ballast.fore.flood", "ballast.aft.flood", "ballast.fore.gland", "ballast.aft.gland", "ballast.fore.body", "ballast.aft.body", "pump.suction", "ballast.fore.stem", "ballast.aft.stem", "ballast.fore.packing", "ballast.aft.packing" ], None),
         new("scrubber", At(3.05f, -0.35f), false, [ "scrubber.lid", "scrubber.clamp.1", "scrubber.clamp.2", "scrubber.canister" ], None),
         new("fan", At(3.85f, 0.25f), false, [ "fan.guard", "fan.guard.nut.1", "fan.guard.nut.2", "fan.motor", "fan.hub", "fan.bearing", "fan.blades" ], None),
         new("junctions", At(3.65f, 0.5f), true, [ ..Junction("C1"), ..Junction("C2"), ..Junction("C6"), ..Junction("C7"), "device.soldering_iron" ], None),

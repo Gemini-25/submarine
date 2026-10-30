@@ -287,6 +287,7 @@ public partial class Main : Node3D
         Player.Locked = modal || Runner.Snapshot.Crew.Stunned;
         string hand = Runner.Snapshot.Crew.Hand;
         Player.SpeedFactor = hand.Length > 0 && Runner.Data.Items.TryGetValue(hand, out var item) && item.Heavy ? 0.6f : 1f;
+        Player.TrimDeg = (float)Runner.Snapshot.Readings.FirstOrDefault(r => r.Id == "inclinometer").Value; // 기울기 (WP18), 없으면 0
         Sub.Apply(Runner.Snapshot, (float)delta);
 
         if (_smokeFrames >= 0 && --_smokeFrames < 0)

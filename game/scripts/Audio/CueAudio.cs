@@ -101,6 +101,11 @@ public static class CueAudio
             v.BearingWear = 0.5f + 0.5f * c.V;
         }, db: -10, range: 5),
 
+        // 밸러스트 (WTR-04, WP18). 탱크로 물이 차오르는 소리는 전용 목소리가 없어 역류 목소리의 출렁임으로 자리를 채운다.
+        // 기울기가 크면 선체가 삐걱거린다 (설계 'Sounds per fault'의 HullCreakVoice ∝ 기울기).
+        R("ballast.{t}.rush", s => new BackflowVoice(s), (v, c) => v.Amount = c.V, db: -4, range: 6),
+        R("hull.groan", s => new HullCreakVoice(s), (v, c) => v.Stress = c.V, db: -6, range: 14),
+
         // 축전지 셀이 끓는 소리 (PWR-01 자리표시: 키트에 전용 목소리가 없어 물방울 섞인 낮은 쉿 소리로).
         R("cell.{n}.fizz", s => new LeakHissVoice(s), (v, c) =>
         {

@@ -1,16 +1,16 @@
 {
-  "mission": "m2-water-a", "seed": 5150, "dataStamp": "b5879dd3ba3117e6", "handTicks": 12,
-  "finalTick": 6384, "finalHash": 10926993997014582902, "status": "succeeded",
+  "mission": "m2-water-a", "seed": 5150, "dataStamp": "829ceebb9dab2209", "handTicks": 12,
+  "finalTick": 6384, "finalHash": 17493091884573748584, "status": "succeeded",
   "findings": [
     {"tick":536,"pair":"pump.noflow","verdict":"WTR-01","bind":"","outcome":"fixed"},
     {"tick":4624,"pair":"pump.hot","verdict":"WTR-02","bind":"","outcome":"fixed"}
   ],
   "hashes": [
-    {"tick":1200,"hash":14517082006724130048},
-    {"tick":2400,"hash":9536513099164385914},
-    {"tick":3600,"hash":11921604816316367194},
-    {"tick":4800,"hash":14076950785806630213},
-    {"tick":6000,"hash":6300286187605318566}
+    {"tick":1200,"hash":11838336018778361265},
+    {"tick":2400,"hash":10123999632507001222},
+    {"tick":3600,"hash":6247133724240633570},
+    {"tick":4800,"hash":6532157420062229735},
+    {"tick":6000,"hash":12800562342887823641}
   ],
   "lines": [
     {"tick":0,"step":{"seq":1,"kind":"Wait","ticks":20,"value":0,"value2":0,"jobStep":-1,"note":"look"}},

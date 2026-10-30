@@ -137,7 +137,7 @@
       ]
     },
     "switch.drop": {
-      "no": 16,
+      "no": 20,
       "priority": 35,
       "page": "03-진단-표-전기와-동력.md",
       "section": "배전반",

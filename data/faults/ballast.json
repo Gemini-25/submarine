@@ -1,0 +1,17 @@
+{
+  "WTR-04": {
+    "name": "밸러스트 밸브 고착",
+    "system": "water",
+    "partKind": "flood_valve",
+    "defaultPart": "ballast.fore.valve",
+    "state": "Fault",
+    "set": {
+      "corroded": 1,
+      "open": 1,
+      "stuck": 1,
+      "turned": 1
+    },
+    "clearedWhen": "self.stuck < 0.5 && self.corroded < 0.5 && self.packingOut <= 0 && self.gland >= 1",
+    "baseRatePerHour": 0
+  }
+}

@@ -260,6 +260,7 @@ static class DataValidator
         Systems.Navigation.Validate(d, errors);
         Systems.CableGear.Validate(d, errors);
         Systems.Suction.Validate(d, errors);
+        Systems.Attitude.Validate(d, errors);
         SwitchboardTuningValidator.Validate(d, errors);
         ContactsTuningValidator.Validate(d, errors);
         AirTuningValidator.Validate(d, errors);
