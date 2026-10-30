@@ -2,7 +2,7 @@
 {
   "pairs": {
     "attitude.tilt": {
-      "no": 18,
+      "no": 19,
       "priority": 30,
       "page": "04-진단-표-물과-선체.md",
       "section": "기울기",

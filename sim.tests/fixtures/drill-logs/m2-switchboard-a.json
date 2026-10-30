@@ -1,5 +1,5 @@
 {
-  "mission": "m2-switchboard-a", "seed": 808, "dataStamp": "948d486f50d08efb", "handTicks": 12,
+  "mission": "m2-switchboard-a", "seed": 808, "dataStamp": "829ceebb9dab2209", "handTicks": 12,
   "finalTick": 1472, "finalHash": 15789085717587489265, "status": "succeeded",
   "findings": [
     {"tick":584,"pair":"junction.burnt","verdict":"burnt_wiring","bind":"c=C6","outcome":"fixed"},
