@@ -86,6 +86,7 @@ public partial class Main : Node3D
         Hud = new Hud { Name = "Hud" };
         AddChild(Hud);
         Hud.Setup(Runner, Hands, Player);
+        Hud.MissionPicked += SwitchMission;
         Manual = new ManualOverlay { Name = "Manual" };
         AddChild(Manual);
         Manual.Setup(Runner, DataPaths.ManualDir(dataDir));
@@ -182,6 +183,7 @@ public partial class Main : Node3D
         if (Player.InWorkView) Player.LeaveWorkView();
         Player.PlaceAt(Sub.SpawnPoint, Sub.SpawnLookAt);
         Hud.HideResult();
+        Hud.RefreshBriefing();
         Sub.Apply(Runner.Snapshot, 0);
         if (!_automated)
         {
@@ -189,6 +191,14 @@ public partial class Main : Node3D
             Hud.ShowBriefing(true);
             Input.MouseMode = Input.MouseModeEnum.Visible;
         }
+    }
+
+    /// <summary>지시서 화면의 훈련 고르기: 그 임무로 처음부터 다시 시작한다.</summary>
+    public void SwitchMission(string missionId)
+    {
+        Runner.Start(Runner.Data, missionId);
+        Restart();
+        GD.Print($"임무를 바꿨다: {missionId}");
     }
 
     bool Modal => Manual.IsOpen || Notepad.IsOpen || Hud.BriefingOpen || Hud.ResultOpen || (Debug?.ConsoleOpen ?? false);
@@ -211,6 +221,8 @@ public partial class Main : Node3D
         if (_automated && e is not InputEventKey) return;
         if (Hud.BriefingOpen)
         {
+            // 훈련 목록 위의 누르기는 목록이 받는다(그 훈련을 고른다).
+            if (e is InputEventMouseButton mb && Hud.PickerHasPoint(mb.Position)) return;
             if (e is InputEventKey { Pressed: true, PhysicalKeycode: Key.Enter or Key.KpEnter or Key.Space }
                 || e is InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Left })
             {
