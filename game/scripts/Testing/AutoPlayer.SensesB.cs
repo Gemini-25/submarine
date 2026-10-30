@@ -58,7 +58,9 @@ public partial class AutoPlayer
             Step(HandSeconds);
             double afterTap = q.Number("panel.gauge.voltage");
             GD.Print($"AUTOTEST: 전압계 유리를 두드리니 바늘 {beforeTap * 120:F2}V → {afterTap * 120:F2}V");
-            Check(afterTap != beforeTap, "유리를 두드렸는데 걸린 바늘이 뛰지 않았다");
+            // 배선함 수리로 상황판 전원이 끊겼다 들어와 걸린 바늘이 이미 제자리에 있고, 버스 전압은 거의 바뀌지 않는다.
+            // 그래서 이 훈련에서는 두드려도 한 칸(0.75V)만큼 뛰지 않는다 (교범 41쪽: 그때는 기준 계기로만 가른다).
+            Check(Math.Abs(afterTap - beforeTap) * 120 < 0.75, $"전압 바늘이 두드리자 {Math.Abs(afterTap - beforeTap) * 120:F2}V 뛰었다 (이 훈련에서는 거의 뛰지 않아야)");
             var fs = Data.Tuning.Senses!.Gauges!.FullScale["voltage"];
             double step = Data.Fixtures.Instances.First(f => f.Id == "gauge.voltage.zero").Params["zeroStep"];
             await FollowSensesB("proc.gauge.zero", new Dictionary<string, string> { ["gauge"] = "voltage" }, after: c =>

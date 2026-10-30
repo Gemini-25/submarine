@@ -300,7 +300,7 @@ public class SensesBTests
     }
 
     [Theory]
-    [InlineData(2, 300, 420, 420, 540)]   // 아직 흔들리는 동안 돌린 경우
+    [InlineData(2, 300, 360, 420, 480)]   // 아직 흔들리는 동안 돌린 경우
     [InlineData(150, 180, 300, 300, 420)] // 아크가 꺼진 뒤 돌린 경우
     public void Feeding_the_rods_is_temporary_then_the_rods_can_be_replaced(double before, int sputterMin, int sputterMax, int outMin, int outMax)
     {
@@ -526,25 +526,65 @@ public class SensesBTests
     [Fact]
     public void Zeroing_without_wiping_the_pivot_leaves_a_sticking_needle_and_the_fault()
     {
-        var sim = NewSim();
-        sim.Inject("SNS-05");
+        // 총전류계: 납땜인두(C7) 하나의 전류가 걸림 폭(눈금 끝의 3%)보다 작아 걸린 바늘이 드러난다 (교범 41쪽 '값이 바뀌면 다시 어긋난다')
+        var sim = NewSim(s => s.Switches["C7"] = true);
+        sim.Inject("SNS-05", "gauge.current");
         sim.Run(2);
-        double bus = sim.Measure("voltmeter", "bus");
-        // 바늘이 걸린 자리(최대 걸림 폭만큼 아래)에서 맞춘 셈이 되게, 맞추기 전에 바늘을 걸림 폭 아래에 두고 맞춘다
-        Follow(sim, "proc.gauge.zero", new() { ["gauge"] = "voltage" }, skip: c => c == "gauge.voltage.wipe",
-            after: c => c == "gauge.voltage.glass.open" ? Zero(sim, "voltage", bus - 0.03 * TestData.T.Senses!.Gauges!.FullScale["voltage"] * 0.9) : Array.Empty<Command>());
+        double Truth()
+        {
+            double t = 0;
+            for (int c = 1; c <= 8; c++) t += sim.Q($"circuit.C{c}.current");
+            return t;
+        }
+        double fs = TestData.T.Senses!.Gauges!.FullScale["current"], notch = 0.005 * fs;
+        var bind = new Dictionary<string, string> { ["gauge"] = "current" };
+        Follow(sim, "proc.gauge.zero", bind, skip: c => c == "gauge.current.wipe",
+            after: c => c == "gauge.current.glass.open" ? Zero(sim, "current", Truth()) : Array.Empty<Command>());
         sim.Run(1);
-        Assert.Equal("SNS-05", sim.QS("part.gauge.voltage.fault"));
-        Assert.True(sim.Q("part.gauge.voltage.prop.stick") > 0);
-        double needle = sim.Q("panel.gauge.voltage");
-        Assert.True(Math.Abs(bus - needle) * 120 > 0.75, $"버스 {bus * 120}, 바늘 {needle * 120}");
-        // 다시 한다 (축을 닦고 맞춘다)
-        var again = Follow(sim, "proc.gauge.zero", new() { ["gauge"] = "voltage" },
-            after: c => c == "gauge.voltage.wipe" ? Zero(sim, "voltage", sim.Measure("voltmeter", "bus")) : Array.Empty<Command>());
+        Assert.True(Math.Abs(sim.Q("part.gauge.current.prop.offset")) < 0.01); // 영점은 맞았다
+        Assert.True(sim.Q("part.gauge.current.prop.stick") > 0);
+        Assert.Equal("SNS-05", sim.QS("part.gauge.current.fault"));           // 고장은 걸림 때문에만 남는다
+        // 맞춘 뒤 한 번 두드려 바늘을 제자리에 두고, 값이 걸림 폭보다 작게 바뀌면 바늘이 따라가지 않는다
+        sim.Cmd("tool.hand");
+        sim.Cmd("gauge.current.tap");
+        sim.Run(Pace);
+        Assert.True(Math.Abs(Truth() - sim.Q("panel.gauge.current")) <= notch, "영점이 맞아 두드린 바늘은 실제 값에 있다");
+        sim.Cmd("device.soldering_iron.on");
+        sim.Run(2);
+        double needle = sim.Q("panel.gauge.current");
+        Assert.True(Math.Abs(Truth() - needle) > notch, $"실제 {Truth()}, 바늘 {needle}");
+        sim.Cmd("gauge.current.tap");
+        sim.Run(Pace);
+        Assert.True(Math.Abs(Truth() - sim.Q("panel.gauge.current")) <= notch, "두드리면 제자리로 간다");
+        // 다시 한다 (축을 닦고 맞춘다): 그 뒤에는 두드리지 않아도 따라간다
+        var again = Follow(sim, "proc.gauge.zero", bind,
+            after: c => c == "gauge.current.wipe" ? Zero(sim, "current", Truth()) : Array.Empty<Command>());
         Assert.DoesNotContain(again, e => Harm.Contains(e.Kind));
         sim.Run(1);
-        Assert.Equal("normal", sim.QS("part.gauge.voltage.state"));
-        Assert.True(Math.Abs(sim.Measure("voltmeter", "bus") - sim.Q("panel.gauge.voltage")) * 120 <= 0.75);
+        Assert.Equal("normal", sim.QS("part.gauge.current.state"));
+        sim.Cmd("tool.hand");
+        sim.Cmd("device.soldering_iron.off");
+        sim.Run(2);
+        Assert.True(Math.Abs(Truth() - sim.Q("panel.gauge.current")) <= notch);
+    }
+
+    [Fact]
+    public void Drying_unseated_terminals_in_a_humid_cabin_does_not_read_repaired()
+    {
+        // 습한 선실(rh 0.7)에서는 걸레로 0.2 아래까지 마르지 않는다: 단자를 고정하지 않으면 엇갈림이 남고 고친 것으로 읽히지 않는다
+        var sim = NewSim(s => SetPart(s, "air.humidity", "rh", 0.7));
+        sim.Inject("SNS-02");
+        sim.Run(2);
+        var events = Follow(sim, "proc.panelwiring.dry", None, skip: c => c == "panel.wiring.terminals.reseat");
+        Assert.DoesNotContain(events, e => e.Kind == SimEventKind.PartRepaired && e.Subject == "panel.wiring");
+        sim.Run(2);
+        Assert.Equal("SNS-02", sim.QS("part.panel.wiring.fault"));
+        Assert.True(PanelWiringCrossed(sim));
+        // 단자를 고정하면 지워진다
+        var again = Follow(sim, "proc.panelwiring.dry", None);
+        Assert.Contains(again, e => e.Kind == SimEventKind.PartRepaired && e.Subject == "panel.wiring");
+        sim.Run(2);
+        Assert.False(PanelWiringCrossed(sim));
     }
 
     [Fact]

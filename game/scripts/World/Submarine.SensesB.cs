@@ -38,11 +38,11 @@ public partial class Submarine
         const string part = "panel.wiring";
         var inside = new Node3D { Name = "Inside" };
         m.AddChild(inside);
-        Geo.Box(inside, new Vector3(0.22f, 0.07f, 0.004f), new Vector3(0, 0.0f, 0.081f), Geo.Mat(Geo.Cream, 0.5f, 0));
+        Geo.Box(inside, new Vector3(0.22f, 0.07f, 0.004f), new Vector3(0, 0.0f, 0.081f), Geo.Mat(Geo.Cream, 0.5f, 0)); // 위 절반이 닦는 판, 아래 줄이 단자 나사
         var terminals = new Node3D[6];
         for (int k = 0; k < 6; k++)
         {
-            terminals[k] = new Node3D { Position = new Vector3(-0.085f + k * 0.034f, 0, 0.085f) };
+            terminals[k] = new Node3D { Position = new Vector3(-0.085f + k * 0.034f, -0.02f, 0.085f) };
             inside.AddChild(terminals[k]);
             Geo.Cyl(terminals[k], 0.006f, 0.004f, Vector3.Zero, Geo.Brass, 10).RotationDegrees = new Vector3(90, 0, 0);
             Geo.Box(terminals[k], new Vector3(0.009f, 0.0015f, 0.0015f), new Vector3(0, 0, 0.0025f), Geo.Bakelite);
@@ -79,7 +79,7 @@ public partial class Submarine
         var coverIt = Add(Binder.Bind(hinge, "panel.wiring.cover", new Vector3(0.03f, 0.1f, 0.012f), new Vector3(0.255f, 0, 0.008f), "panelbox"));
         CoverVisual(coverIt, hinge, Vector3.Down, 110);
         for (int n = 0; n < 4; n++) BoltVisual(Rebind($"panel.wiring.screw.{n + 1}"), heads[n], 0.006f);
-        // 단자판(위 절반)과 단자 나사 줄(아래 절반): 덮개 안의 메시 위. 닫힌 덮개 너머로도 겨냥되고 막힘은 시뮬레이션이 판정한다.
+        // 단자판(위 절반, y +0.02)과 단자 나사 줄(아래 절반, y −0.02의 나사 여섯): 덮개 안의 메시 위. 닫힌 덮개 너머로도 겨냥되고 막힘은 시뮬레이션이 판정한다.
         Add(Binder.Bind(m, "panel.wiring.strip", new Vector3(0.2f, 0.03f, 0.012f), new Vector3(0, 0.02f, 0.088f), "panelbox"));
         Add(Binder.Bind(m, "panel.wiring.terminals", new Vector3(0.2f, 0.03f, 0.012f), new Vector3(0, -0.02f, 0.088f), "panelbox"));
 
@@ -150,10 +150,10 @@ public partial class Submarine
 
         // 보내기 손잡이: 돌리는 동안 손을 따라 돈다 (돈 것이 보이게 돌기 하나).
         var knob = new Node3D { Name = "Spin" };
-        Mount(n, "FeedKnob", new Vector3(7.39f, 2.05f, 0), Vector3.Left).AddChild(knob);
+        Mount(n, "FeedKnob", new Vector3(7.39f, 2.05f, 0), Vector3.Left).AddChild(knob); // 몸통 면(x 7.40)에 붙는다
         var kb = new MeshBuilder();
-        kb.Cylinder(ArtMat.Bakelite, Kit.AlongAxis(Vector3.Back, new Vector3(0, 0, 0.01f)), 0.022f, 0.02f, 14, 0.004f);
-        kb.Box(ArtMat.Brass, new Vector3(0, 0.016f, 0.021f), new Vector3(0.006f, 0.01f, 0.004f), 0.001f);
+        kb.Cylinder(ArtMat.Bakelite, Kit.AlongAxis(Vector3.Back, Vector3.Zero), 0.022f, 0.02f, 14, 0.004f);
+        kb.Box(ArtMat.Brass, new Vector3(0, 0.016f, 0.011f), new Vector3(0.006f, 0.01f, 0.004f), 0.001f);
         kb.Instance(knob, "Knob", NoShadow);
         var feed = Rebind("searchlight.feed");
         float feedTurn = float.NaN, feedAngle = 0;
