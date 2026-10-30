@@ -1,0 +1,89 @@
+// 감각 (교범 05쪽 '상황판 전구와 청음기 진공관').
+{
+  "pairs": {
+    "bell.nolamp": {
+      "no": 10,
+      "priority": 5,
+      "page": "05-진단-표-공기-감각-항법-케이블.md",
+      "section": "상황판 전구와 청음기 진공관",
+      "sees": [
+        [ { "heard": "bell.nolamp", "unit": "none", "above": 0.5, "says": "경보 벨이 울렸으나 새로 켜지거나 색이 바뀐 표시등이 없다" } ],
+        [ { "q": "panel.gauge.bilge", "unit": "L", "above": 60 },
+          { "q": "panel.lamp.water", "is": "off", "says": "현장에 이상이 보이는데 그 계통 표시등이 꺼져 있다" },
+          { "q": "panel.on", "unit": "none", "above": 0.5 } ]
+      ],
+      "checks": [
+        {
+          "each": { "lamp": "power,switchboard,air,water,hull,senses,nav,cable" },
+          "all": [
+            { "q": "panel.on", "unit": "none", "above": 0.5 },
+            { "lamptest": "{lamp}", "unit": "none", "below": 0.5, "says": "그 표시등만 켜지지 않는다" }
+          ],
+          "verdict": "SNS-01"
+        }
+      ],
+      "verdicts": {
+        "SNS-01": {
+          "fault": "SNS-01",
+          "says": "상황판 전구 소손",
+          "do": [ { "procedure": "proc.bulb.replace", "bind": { "lamp": "{lamp}" }, "if": [ { "q": "inventory.panel_bulb", "unit": "none", "above": 0.5 } ] } ],
+          "verify": { "all": [ { "q": "cue.panel.bulb.{lamp}.black", "unit": "cue", "below": 0.5 } ], "within": 30 }
+        }
+      },
+      "exposure": { "setup": { "depthM": 300, "bilges": { "bilge.aft": 150 } }, "seconds": 5 },
+      "cases": [
+        { "expect": "SNS-01", "bind": { "lamp": "water" }, "inject": [ { "fault": "SNS-01", "part": "panel.bulb.water" } ] },
+        { "expect": "none" }
+      ]
+    },
+    "hydrophone.noisy": {
+      "no": 11,
+      "priority": 50,
+      "page": "05-진단-표-공기-감각-항법-케이블.md",
+      "section": "상황판 전구와 청음기 진공관",
+      "sees": [
+        [ { "q": "cue.hydrophone.hiss", "unit": "cue", "above": 0.3, "says": "헤드폰 잡음이 점점 커진다" } ],
+        [ { "q": "panel.lamp.senses", "not": "off" } ],
+        [ { "q": "panel.on", "unit": "none", "for": 3, "below": 0.5, "says": "상황판도 꺼졌다" } ]
+      ],
+      "checks": [
+        {
+          "each": { "c": "C4" },
+          "all": [ { "q": "panel.on", "unit": "none", "below": 0.5 }, { "q": "cue.fuse.{c}.blackened", "unit": "cue", "above": 0.5, "says": "배전반의 C4" } ],
+          "verdict": "ELC-01"
+        },
+        {
+          "all": [ { "q": "panel.on", "unit": "none", "above": 0.5 }, { "q": "panel.gauge.voltage", "unit": "V", "below": 80, "typical": 72, "says": "상황판 전압 계기" } ],
+          "verdict": "low_voltage"
+        },
+        {
+          "each": { "tube": "1..2" },
+          "pick": "only",
+          "all": [ { "q": "panel.on", "unit": "none", "above": 0.5 },
+                   { "q": "cue.hydrophone.tube.{tube}.glow", "unit": "cue", "below": 0.6, "says": "한 필라멘트만 흐리거나 꺼져 있다" } ],
+          "verdict": "SNS-03"
+        }
+      ],
+      "verdicts": {
+        "ELC-01": { "fault": "ELC-01", "says": "C4 퓨즈", "same": "fuse.blown" },
+        "low_voltage": { "says": "전압 저하", "do": [] },
+        "SNS-03": {
+          "fault": "SNS-03",
+          "says": "청음기 진공관 소손",
+          "do": [
+            { "procedure": "proc.tube.replace", "bind": { "tube": "{tube}" }, "if": [ { "q": "inventory.vacuum_tube", "unit": "none", "above": 0.5 } ] },
+            { "procedure": "proc.tube.salvage", "bind": { "tube": "{tube}" }, "if": [ { "q": "inventory.vacuum_tube", "unit": "none", "below": 0.5 } ] }
+          ],
+          "verify": { "all": [ { "q": "cue.hydrophone.hiss", "unit": "cue", "below": 0.3 }, { "q": "cue.hydrophone.tube.{tube}.glow", "unit": "cue", "above": 0.9 } ], "within": 60, "hold": 2 }
+        }
+      },
+      "exposure": { "setup": { "depthM": 300 }, "seconds": 60 },
+      "cases": [
+        { "expect": "SNS-03", "bind": { "tube": "1" }, "inject": [ { "fault": "SNS-03", "part": "hydrophone.tube.1" } ] },
+        { "expect": "ELC-01", "bind": { "c": "C4" }, "inject": [ { "fault": "ELC-01", "part": "fuse.C4" } ] },
+        { "expect": "low_voltage", "setup": { "batteryCharge": 0.1 } },
+        { "expect": "none" }
+      ]
+    }
+  }
+}

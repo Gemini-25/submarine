@@ -67,7 +67,17 @@ public partial class Submarine
             wheelMount.AddChild(spinner);
             Kit.HandWheel(spinner, 0.07f, 4);
             var flood = BindAtMarker(root, $"ballast.{tank}.flood");
-            WheelVisual(flood, spinner, Vector3.Back, 360);
+            // 바퀴의 보이는 자리는 상태 값 turned다(open은 고장이 쓰므로 보이지 않는 값이다, WP16 '손 자리 값' 규칙).
+            var ff = Binder.Instance(flood.Id);
+            float turning = float.NaN, angle = 0;
+            flood.Preview = t => turning = t;
+            OnUpdate((s, dt) =>
+            {
+                float target = (float)PartProp(s, ff.PartId, "turned", 0) * 360;
+                if (!float.IsNaN(turning)) target += turning * 360;
+                angle = Approach(angle, target, 720, dt);
+                spinner.Basis = new Basis(Vector3.Back, Mathf.DegToRad(angle));
+            });
 
             // 패킹 너트: 한 칸 90°(시계 방향이 조임). 풀면 앞으로 나온다.
             var nutMount = Mount(m, $"BallastGland_{tank}", new Vector3(x, 1.4f, 0.03f), Vector3.Back);

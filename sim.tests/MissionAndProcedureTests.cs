@@ -21,6 +21,7 @@ public class ProcedureTests
         var bind = new Dictionary<string, string> { ["circuit"] = "C3", ["point"] = "leak.rivet.09", ["cell"] = "3" };
         bind["lamp"] = "water"; bind["tube"] = "1"; // 감각 (WP13)
         bind["t"] = "fore"; // 밸러스트 (WP18)
+        bind["gauge"] = "voltage"; // 감각 (WP20)
         foreach (var p in TestData.Data.Procedures)
         {
             var sim = TestData.NewSim();

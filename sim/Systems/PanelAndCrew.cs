@@ -5,7 +5,7 @@ namespace DeepLine.Sim.Systems;
 
 /// <summary>
 /// 센서가 읽은 값. 상황판과 구역 경고등은 진짜 상태가 아니라 이것만 읽는다 (SPEC 3절, 7절).
-/// M0의 센서는 진짜 값을 그대로 통과시키는 이상적인 센서다. 센서 고장(SNS-01, 02, 05)은 M2에서 Sense()에 들어간다.
+/// M0의 센서는 진짜 값을 그대로 통과시키는 이상적인 센서다. M2의 센서 고장은 보이는 표시등(SNS-01 전구, SNS-02 배선)과 계기 바늘(SNS-05)에 들어간다.
 /// 배열은 SimWorld가 한 번 만들어 매 틱 다시 채운다 (상태가 아니라 계산용 버퍼).
 /// </summary>
 sealed class SensorReadings
@@ -90,13 +90,14 @@ static class PanelSystem
         Span<LampState> lamps = stackalloc LampState[PanelSystems.Names.Count];
         if (p.On)
         {
-            p.GaugeVoltage = s.Voltage;
-            p.GaugeCurrent = s.TotalCurrent;
+            // 계기 바늘: 계기 부품(SNS-05)이 있으면 영점이 틀어지고 걸린다. 없으면 센서 값 그대로.
+            p.GaugeVoltage = GaugeDrift.Needle(w, "voltage", p.GaugeVoltage, s.Voltage);
+            p.GaugeCurrent = GaugeDrift.Needle(w, "current", p.GaugeCurrent, s.TotalCurrent);
             p.GaugeCo2 = s.Co2;
             p.GaugeO2 = s.O2;
-            p.GaugeBilge = s.BilgeTotal;
-            p.GaugeDepth = s.Depth;
-            p.GaugePumpCurrent = s.PumpCurrent;
+            p.GaugeBilge = GaugeDrift.Needle(w, "bilge", p.GaugeBilge, s.BilgeTotal);
+            p.GaugeDepth = GaugeDrift.Needle(w, "depth", p.GaugeDepth, s.Depth);
+            p.GaugePumpCurrent = GaugeDrift.Needle(w, "pumpCurrent", p.GaugePumpCurrent, s.PumpCurrent);
             p.GaugePumpFlow = s.PumpFlow;
 
             lamps[PanelSystems.Power] = Max(

@@ -19,7 +19,8 @@
       "junction.C5": "fore",
       "junction.C6": "mid",
       "junction.C7": "mid",
-      "junction.C8": "aft"
+      "junction.C8": "aft",
+      "panel.wiring": "fore"
     }
   }
 }

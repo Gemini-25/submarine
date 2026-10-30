@@ -115,6 +115,9 @@ public static class CueAudio
             v.Gain = World.Submarine.Headphones ? 1f : 0.15f;
         }, shared: "hydrophone", spot: "hydrophone", range: 3),
         R("hydrophone.hiss", s => new HydrophoneVoice(s), (v, c) => v.TubeHealth = HydrophoneTubes(c.S), shared: "hydrophone", spot: "hydrophone", range: 3),
+        // 탐조등 (SNS-04, WP20): 아크의 웅웅 소리와, 탄소봉이 닳아 간격이 벌어지면 지직거림.
+        R("searchlight.arc", s => new ArcLampVoice(s), (v, c) => v.On = c.V >= 0.5f, shared: "searchlight", spot: "searchlight", range: 4),
+        R("searchlight.sputter", s => new ArcLampVoice(s), (v, c) => v.CarbonWear = c.V, shared: "searchlight", spot: "searchlight", range: 4),
         // 자이로컴퍼스 (NAV-01, WP14): 회전자 윙 소리(서면 목소리가 스스로 천천히 내려간다)와 닳은 베어링의 떨림.
         // 세기는 회전을 따르되, 끼임 문턱(회전 0.05) 위에서는 또렷이 들리게 바닥을 둔다. 음높이는 목소리의 켜짐과 꺼짐만 따른다.
         R("gyro.hum", s => new GyroVoice(s), (v, c) =>

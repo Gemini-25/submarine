@@ -65,11 +65,13 @@ public partial class AutoPlayer : Node
         ["drill-air"] = DrillAirSuite,
         ["drill-water"] = DrillWaterSuite,
         ["drill-senses"] = SensesDrillSuite,
+        ["drill-senses-b"] = SensesBDrillSuite,
         ["drill-nav"] = DrillNavSuite,
         ["drill-cable"] = DrillCableSuite,
         ["drill-power"] = DrillPowerSuite,
         ["drill-switchboard"] = DrillSwitchboardSuite,
         ["drill-ballast"] = DrillBallastSuite,
+        ["drills"] = AllDrillsSuite,
         ["instruments"] = InstrumentsSuite,
     };
 
@@ -85,7 +87,12 @@ public partial class AutoPlayer : Node
                 : all.Keys.ToArray();
             foreach (var name in names)
             {
-                if (!all.TryGetValue(name, out var suite)) { Check(false, $"모르는 확인 묶음 '{name}' (있는 것: {string.Join(", ", all.Keys)})"); continue; }
+                // drill:<임무>는 그 훈련 하나를 DrillSolver로 손동작 실행한다 (WP16, DrillAutoTest.cs).
+                if (name.StartsWith("drill:", StringComparison.Ordinal) && TierADrills.Contains(name[6..])) all[name] = () => DrillSuite(name[6..]);
+                // drill:<임무>:replay는 golden 기록의 Do만 손동작으로 따라 한다.
+                if (name.Length > "drill:".Length + ":replay".Length && name.StartsWith("drill:", StringComparison.Ordinal) && name.EndsWith(":replay", StringComparison.Ordinal) && TierADrills.Contains(name[6..^7]))
+                    all[name] = () => DrillReplaySuite(name[6..^7]);
+                if (!all.TryGetValue(name, out var suite)) { Check(false, $"모르는 확인 묶음 '{name}' (있는 것: {string.Join(", ", all.Keys)}, drill:<임무>, drill:<임무>:replay)"); continue; }
                 GD.Print($"AUTOTEST 묶음 {name}");
                 await suite();
                 if (_failures.Count > 0) break;
@@ -596,6 +603,14 @@ public partial class AutoPlayer : Node
         // M1 물체가 아닌 것 가운데 자리 표(StandPoints)에 있는 대상은 그 자리에 선다(필요하면 웅크린다). 책상 밑 분기함처럼 아무 데서나 닿지 않는 것 (WP8).
         // M1 물체(M1 묶음 crisis, hands)는 예전처럼 대상마다 계산한 자리에 선다.
         var known = _main.Sub.M1Ids.Contains(id) ? null : StandPoints.All.FirstOrDefault(st => st.Open.Length == 0 && st.Targets.Contains(id));
+        // 덮개 안의 물체(갑판 판 아래 셀처럼 자리 표에 여는 덮개가 적힌 것)는 그 작업 자리에 서서(필요하면 웅크려) 겨냥한다.
+        // 덮개는 부르는 쪽이 절차대로 이미 열었다. fixtures 묶음의 AimFromStandPoints, 동력의 PowerPerform과 같은 길이다 (WP16에서 하나로).
+        var inside = known != null || _main.Sub.M1Ids.Contains(id) ? null : StandPoints.All.FirstOrDefault(st => st.Open.Length > 0 && st.Targets.Contains(id));
+        if (inside != null)
+        {
+            if (await StandAt(inside) && await AimFrom(inside, id)) return it;
+            return null;
+        }
         if (known != null)
         {
             stand = known.Feet;
@@ -613,7 +628,7 @@ public partial class AutoPlayer : Node
             await Frame();
             _main.Player.LookAt3D(it.GlobalPosition);
             var hit = _main.Hands.RayPick();
-            if (hit == it) return it;
+            if (hit == it && _main.Hands.Hovered == it) return it; // 손이 가리키는 것(Hovered)까지 그 물체여야 손동작이 그 물체에 간다
             if (Time.GetTicksMsec() - start > 3000)
             {
                 Check(false, $"'{id}'를 조준할 수 없다 (서 있는 곳 {stand}, 조준선에 걸린 것: {hit?.Id ?? "벽이나 허공"})");
