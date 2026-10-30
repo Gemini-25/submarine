@@ -205,7 +205,7 @@
           "tool": "hand",
           "noise": "cover",
           "rejectIf": [ { "if": "self.latchOpen == 0", "reason": "latch_shut" } ],
-          "hazards": [ { "if": "self.tempC >= $hotHandC", "hazard": "burn" } ]
+          "hazards": [ { "if": "self.tempC >= $hotHandC || air.candleSeconds > 0", "hazard": "burn" } ]
         },
         "close": { "tool": "hand", "noise": "cover" }
       }
@@ -221,7 +221,7 @@
           "tool": "scraper",
           "noise": "scrape",
           "rejectIf": [ { "if": "self.doorOpen == 0", "reason": "door_closed" } ],
-          "hazards": [ { "if": "self.tempC >= $hotHandC", "hazard": "burn" } ],
+          "hazards": [ { "if": "self.tempC >= $hotHandC || air.candleSeconds > 0", "hazard": "burn" } ],
           "effects": [ { "add": "ash", "by": "-$scrapeAsh", "min": 0, "max": 1 } ]
         }
       }

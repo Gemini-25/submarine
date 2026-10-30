@@ -36,7 +36,7 @@
       "note": "C2 부하 단자에 전압이 있다: 점화기 회로가 아니다"
     },
     {
-      "always": "air.o2 < 18.02",
+      "always": "air.o2 < 18.02 && panel.gauge.o2 < 18.02",
       "toTick": 12000,
       "note": "양초 산소가 사람의 소비만큼밖에 나오지 않는다"
     },
@@ -44,6 +44,11 @@
       "byTick": 12100,
       "assert": "air.candleSeconds == 0 && cue.furnace.smoke == 0 && part.o2.furnace.prop.ash > 0.95",
       "note": "다 탄 양초가 재를 더 남긴다"
+    },
+    {
+      "byTick": 30000,
+      "assert": "panel.lamp.air == 'warning' && panel.gauge.o2 < 17.1",
+      "note": "양초가 산소를 내지 못해 17% 아래로 내려가면 공기 표시등이 주의로 켜진다"
     },
     {
       "never": "panel.lamp.air == 'fault'",

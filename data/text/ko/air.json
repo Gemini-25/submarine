@@ -23,7 +23,7 @@
   "reason.need_canister": "새 흡수제 통을 들고 있지 않다.",
   "reason.need_fan_bearing": "끼울 팬 베어링을 쥐고 있지 않다.",
   "cue.furnace.burn": "산소 화로 안에서 양초가 치익 소리를 내며 탄다",
-  "cue.furnace.choke": "양초가 콜록이듯 끊기며 답답하게 탄다",
+  "cue.furnace.choke": "산소 화로 안에서 양초 타는 소리가 먹먹하게 끊긴다",
   "cue.furnace.smoke": "산소 화로 문틈으로 연기가 샌다",
   "cue.furnace.acrid": "매캐한 냄새",
   "fixture.o2.furnace": "산소 화로 몸통",

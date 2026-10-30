@@ -85,7 +85,7 @@ public partial class Submarine
         latch.Cylinder(ArtMat.BareSteel, Kit.AlongAxis(Vector3.Forward, Vector3.Zero), 0.008f, 0.012f, 8);
         latch.Instance(pivot, "Latch");
         var latchIt = Add(Binder.Bind(root, "o2.furnace.latch", new Vector3(0.04f, 0.06f, 0.02f), new Vector3(4.76f, 0.38f, f - 0.02f), station));
-        LeverVisual(latchIt, pivot, Vector3.Back, new[] { 0f, 80f });
+        LeverVisual(latchIt, pivot, Vector3.Back, new[] { 0f, -80f });
 
         // 재받이 앞 턱, 배기구, 몸통 위(만져 보기)
         Add(Binder.Bind(root, "o2.furnace.grate", new Vector3(0.2f, 0.03f, 0.026f), new Vector3(4.58f, 0.268f, f - 0.016f), station));
