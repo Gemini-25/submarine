@@ -825,6 +825,12 @@ These rules apply to every page.
   - unit conversions: `{{v:path}}`, `{{a:path}}`, `{{lpm:path}}`, `{{kgcm2:path}}`.
 - The overlay uses the same renderer.
 
+**Figures (WP26)**
+- A figure is one line of its own: `![그림 30-1. 배수 펌프의 베어링 뚜껑과 볼트 번호](fig/30-bearing-cover.png)`. The number is `그림 <page>-<n>`, counted from 1 on each page without gaps; the body refers to it as `(그림 30-1)`. Placeholders work inside the caption. No other images, links, HTML or code blocks.
+- Figures are never drawn by hand. Each one is defined in `data/manual/fig/figures.json` and made by `tools/make-figures.sh` from the real scene (state set by commands and procedures, fixed camera, ink-line pass) or drawn from data (circuit and flow diagrams, bolt order). The Godot `figures` suite fails when a definition goes stale.
+- No new Korean inside a figure: only callout numbers, Latin tags (A, B) and equipment names from `data/text/ko` or the data. The meaning of every number goes in the Markdown under the figure, usually as the order of the page's 무엇이 있나 table.
+- Every page carries at least three figures (`ManualTests`). Pages that add a fault add its figures in the same work package.
+
 **Rules carried over from M1**
 - The M1 pages keep their prose; only their numbers become placeholders. A snapshot test proves they render exactly as today.
 - Procedure titles must appear as a page title (`# `) or a section heading (`## `). This changes the M1 rule, which required the page's first `# ` line; the sim test and the Godot `CheckOverlays` change together.

@@ -21,6 +21,7 @@ namespace DeepLine.Game;
 ///   --smoke=프레임         그만큼 돌리고 끝낸다 (헤드리스 스모크 테스트)
 ///   --autotest             자동 플레이어가 손동작으로 위기를 넘기고 결과를 종료 코드로 알린다
 ///   --screenshot=폴더       정해진 자리에서 화면을 찍고 끝낸다
+///   --figures=폴더          교범 그림(data/manual/fig/figures.json)을 만들어 폴더에 쓰고 끝낸다 (--only=이름,이름 으로 몇 장만)
 /// </summary>
 public partial class Main : Node3D
 {
@@ -106,6 +107,11 @@ public partial class Main : Node3D
         {
             _automated = true;
             AddChild(new AutoPlayer { Name = "AutoPlayer" });
+        }
+        else if (_args.TryGetValue("figures", out var figDir))
+        {
+            _automated = true;
+            AddChild(new AutoPlayer { Name = "AutoPlayer", FigureOut = Path.GetFullPath(figDir.Length > 0 ? figDir : Path.Combine(DataPaths.ManualDir(dataDir), "fig")) });
         }
         else if (_args.TryGetValue("screenshot", out var shotDir))
         {

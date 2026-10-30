@@ -8,6 +8,8 @@ namespace DeepLine.Game.UI;
 /// <summary>
 /// 정비 교범. 언제든 Tab으로 펼친다 (SPEC 6, 7절). 펼쳐 둔 동안에도 시뮬레이션은 흐른다.
 /// 첫 장은 이번 임무의 지시서, 그다음은 data/manual의 페이지들(ManualText로 자리표시자를 채운 것), 마지막 장은 조작 안내다.
+/// 그림(data/manual/fig의 PNG, WP26)은 실행 중에 읽어 교범 폭에 맞춰 줄여 넣고(실제 크기보다 키우지 않는다), 아래에 설명을 단다.
+/// 그림을 누르면 화면 가득 크게 본다.
 /// </summary>
 public partial class ManualOverlay : CanvasLayer
 {
@@ -55,7 +57,14 @@ public partial class ManualOverlay : CanvasLayer
         ("선체", 33, 37), ("감각", 38, 41), ("항법", 42, 43), ("케이블", 44, 45),
     };
 
-    readonly List<(string Title, Func<string> Body)> _pages = new();
+    readonly List<(string Title, Func<List<MarkdownBb.Block>> Body)> _pages = new();
+    /// <summary>그림 파일 경로(교범 폴더 기준) → 읽은 그림. 처음 펼 때 읽는다.</summary>
+    readonly Dictionary<string, ImageTexture?> _figures = new(StringComparer.Ordinal);
+    /// <summary>지금 쪽의 글 덩어리가 시작하는 문단 번호와 그 BBCode (절로 넘기기에 쓴다).</summary>
+    readonly List<(int Paragraph, string Bb)> _shownBlocks = new();
+    string _manualDir = "";
+    Control _zoom = null!;
+    TextureRect _zoomImage = null!;
     /// <summary>쪽마다 파일 번호 (지시서와 조작 안내는 -1)와 ## 절 제목.</summary>
     readonly List<(int Number, string[] Sections)> _meta = new();
     /// <summary>목록의 줄 → (쪽, 절 순번; -1이면 쪽 처음).</summary>
@@ -74,6 +83,7 @@ public partial class ManualOverlay : CanvasLayer
     public void Setup(SimRunner runner, string manualDir)
     {
         _runner = runner;
+        _manualDir = manualDir;
         Layer = 20;
         Visible = false;
 
@@ -121,12 +131,26 @@ public partial class ManualOverlay : CanvasLayer
         _text = UiKit.Rich(19, UiKit.Ink);
         _text.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
         _text.SizeFlagsVertical = Control.SizeFlags.ExpandFill;
+        _text.MetaUnderlined = false;
+        _text.MetaClicked += meta => { if (meta.AsString() is { } m && m.StartsWith("fig/", StringComparison.Ordinal)) Zoom(m); };
         h.AddChild(_text);
 
-        var foot = UiKit.Text("Tab 또는 Esc: 덮기    ↑ ↓: 장 넘기기    ← →: 계통 탭", 16, UiKit.Faded);
+        var foot = UiKit.Text("Tab 또는 Esc: 덮기    ↑ ↓: 장 넘기기    ← →: 계통 탭    그림을 누르면 크게 보기", 16, UiKit.Faded);
         v.AddChild(foot);
 
-        _pages.Add(("지시서", OrdersPage));
+        // 크게 보기: 화면을 덮는 종이 위에 그림 하나. 누르거나 Esc로 닫는다.
+        _zoom = UiKit.Full(new ColorRect { Color = new Color(0, 0, 0, 0.75f), MouseFilter = Control.MouseFilterEnum.Stop, Visible = false });
+        _zoomImage = UiKit.Full(new TextureRect
+        {
+            ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize, StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
+            TextureFilter = CanvasItem.TextureFilterEnum.Linear, MouseFilter = Control.MouseFilterEnum.Ignore,
+        });
+        _zoomImage.OffsetLeft = 24; _zoomImage.OffsetTop = 24; _zoomImage.OffsetRight = -24; _zoomImage.OffsetBottom = -24;
+        _zoom.AddChild(_zoomImage);
+        _zoom.GuiInput += e => { if (e is InputEventMouseButton { Pressed: true }) _zoom.Visible = false; };
+        AddChild(_zoom);
+
+        _pages.Add(("지시서", () => MarkdownBb.Blocks(OrdersPage())));
         _meta.Add((-1, Array.Empty<string>()));
         if (Directory.Exists(manualDir))
         {
@@ -144,8 +168,8 @@ public partial class ManualOverlay : CanvasLayer
                 }
                 string title = MarkdownBb.Title(md);
                 if (title.Length == 0) title = Path.GetFileNameWithoutExtension(file);
-                string bb = MarkdownBb.Convert(md);
-                _pages.Add((title, () => bb));
+                var blocks = MarkdownBb.Blocks(md);
+                _pages.Add((title, () => blocks));
                 string name = Path.GetFileName(file);
                 int number = name.Length >= 2 && char.IsAsciiDigit(name[0]) && char.IsAsciiDigit(name[1]) ? (name[0] - '0') * 10 + (name[1] - '0') : 0;
                 var sections = md.Split('\n').Where(l => l.StartsWith("## ", StringComparison.Ordinal)).Select(l => l[3..].Trim()).ToArray();
@@ -153,7 +177,7 @@ public partial class ManualOverlay : CanvasLayer
             }
         }
         else GD.PushWarning($"매뉴얼 폴더가 없습니다: {manualDir}");
-        string controls = MarkdownBb.Convert(ControlsText);
+        var controls = MarkdownBb.Blocks(ControlsText);
         _pages.Add(("조작 안내", () => controls));
         _meta.Add((-1, Array.Empty<string>()));
         Show(0);
@@ -162,7 +186,63 @@ public partial class ManualOverlay : CanvasLayer
     public int PageCount => _pages.Count;
     public IEnumerable<string> PageTitles => _pages.Select(p => p.Title);
     /// <summary>화면에 보일 본문 (BBCode). 자동 확인용.</summary>
-    public IEnumerable<string> PageBodies => _pages.Select(p => p.Body());
+    public IEnumerable<string> PageBodies => _pages.Select(p => string.Concat(p.Body().Select(b => b.Figure == null ? b.Bb : MarkdownBb.CaptionBb(b.Caption!))));
+
+    /// <summary>쪽마다 그림 (자동 확인용): 쪽 제목, 그림 경로, 읽은 그림의 크기(못 읽었으면 0).</summary>
+    public IEnumerable<(string Title, string Figure, Vector2I Size)> PageFigures =>
+        _pages.SelectMany(p => p.Body().Where(b => b.Figure != null).Select(b => (p.Title, b.Figure!, Figure(b.Figure!)?.GetSize() is { } sz ? (Vector2I)sz : Vector2I.Zero)));
+
+    /// <summary>그림을 읽는다 (한 번만). 없거나 깨졌으면 오류를 알리고 null.</summary>
+    ImageTexture? Figure(string path)
+    {
+        if (_figures.TryGetValue(path, out var tex)) return tex;
+        string file = Path.Combine(_manualDir, path);
+        var img = File.Exists(file) ? Image.LoadFromFile(file) : null;
+        if (img == null || img.IsEmpty()) GD.PushError($"교범 그림을 읽지 못했다: {file}");
+        tex = img == null || img.IsEmpty() ? null : ImageTexture.CreateFromImage(img);
+        _figures[path] = tex;
+        return tex;
+    }
+
+    /// <summary>그림을 화면 가득 크게 본다.</summary>
+    public void Zoom(string path)
+    {
+        if (Figure(path) is not { } tex) return;
+        _zoomImage.Texture = tex;
+        _zoom.Visible = true;
+    }
+
+    public bool Zoomed => _zoom.Visible;
+
+    /// <summary>쪽을 그린다: 글은 BBCode로, 그림은 교범 폭에 맞춰(실제 크기보다 키우지 않고) 가운데에, 누르면 크게 본다.</summary>
+    void Render(List<MarkdownBb.Block> blocks)
+    {
+        _text.Clear();
+        _shownBlocks.Clear();
+        float avail = _text.Size.X > 100 ? _text.Size.X - 28 : 900;
+        foreach (var b in blocks)
+        {
+            if (b.Figure == null)
+            {
+                _shownBlocks.Add((_text.GetParagraphCount() - 1, b.Bb));
+                _text.AppendText(b.Bb);
+                continue;
+            }
+            var tex = Figure(b.Figure);
+            if (tex != null)
+            {
+                var size = tex.GetSize();
+                float scale = Math.Min(1, avail / size.X);
+                _text.PushParagraph(HorizontalAlignment.Center);
+                _text.PushMeta(b.Figure);
+                _text.AddImage(tex, (int)(size.X * scale), (int)(size.Y * scale), tooltip: b.Caption ?? "");
+                _text.Pop();
+                _text.Pop();
+                _text.AppendText("\n");
+            }
+            _text.AppendText(MarkdownBb.CaptionBb(b.Caption ?? "") + "\n");
+        }
+    }
 
     string OrdersPage()
     {
@@ -183,7 +263,7 @@ public partial class ManualOverlay : CanvasLayer
         if (m.TimeLimitSeconds > 0) md.Append($"| 제한 시간 | {UiKit.Clock(m.TimeLimitSeconds)} |\n");
         if (m.HoldNeededSeconds > 0)
             md.Append($"| 정상 유지 | {(m.HoldSeconds > 0 ? $"{m.HoldSeconds:F0}초 / {m.HoldNeededSeconds:F0}초" : "아직 아님")} |\n");
-        return MarkdownBb.Convert(md.ToString());
+        return md.ToString();
     }
 
     /// <summary>탭에 드는 쪽인가. 지시서와 조작 안내는 늘 든다.</summary>
@@ -228,9 +308,12 @@ public partial class ManualOverlay : CanvasLayer
     /// <summary>## 절 제목이 있는 문단으로 넘긴다.</summary>
     void ScrollToSection(string heading)
     {
-        var lines = _text.Text.Split('\n');
-        int line = Array.FindIndex(lines, l => l.Contains(heading, StringComparison.Ordinal));
-        if (line >= 0) _text.ScrollToParagraph(line);
+        foreach (var (para, bb) in _shownBlocks)
+        {
+            var lines = bb.Split('\n');
+            int line = Array.FindIndex(lines, l => l.Contains(heading, StringComparison.Ordinal));
+            if (line >= 0) { _text.ScrollToParagraph(para + line); return; }
+        }
     }
 
     void Show(int page)
@@ -243,7 +326,7 @@ public partial class ManualOverlay : CanvasLayer
             _list.Select(row);
             _list.EnsureCurrentIsVisible();
         }
-        _text.Text = _pages[_page].Body();
+        Render(_pages[_page].Body());
         _text.ScrollToLine(0);
     }
 
@@ -271,13 +354,24 @@ public partial class ManualOverlay : CanvasLayer
         Show(i);
     }
 
+    /// <summary>쪽을 펴고 그 쪽의 ## 절로 넘긴다 (화면 찍기용).</summary>
+    public void ShowSection(string title, string heading)
+    {
+        ShowPage(title);
+        ScrollToSection(heading);
+    }
+
     public void Open()
     {
         Visible = true;
         if (_page == 0) Show(0);
     }
 
-    public void Close() => Visible = false;
+    public void Close()
+    {
+        _zoom.Visible = false;
+        Visible = false;
+    }
 
     public override void _Process(double delta)
     {
@@ -286,7 +380,7 @@ public partial class ManualOverlay : CanvasLayer
         if (_refresh > 0) return;
         _refresh = 1;
         var scroll = _text.GetVScrollBar().Value;
-        _text.Text = OrdersPage();
+        Render(MarkdownBb.Blocks(OrdersPage()));
         _text.GetVScrollBar().Value = scroll;
     }
 
@@ -303,6 +397,11 @@ public partial class ManualOverlay : CanvasLayer
         if (!Visible) return;
         if (e is InputEventKey { Pressed: true, Echo: false } k)
         {
+            if (_zoom.Visible)
+            {
+                if (k.PhysicalKeycode is Key.Escape) { _zoom.Visible = false; GetViewport().SetInputAsHandled(); }
+                return;
+            }
             if (k.PhysicalKeycode is Key.Down or Key.Pagedown) { Show(Step(+1)); GetViewport().SetInputAsHandled(); }
             else if (k.PhysicalKeycode is Key.Up or Key.Pageup) { Show(Step(-1)); GetViewport().SetInputAsHandled(); }
             else if (k.PhysicalKeycode is Key.Right) { SelectTab((_tab + 1) % Tabs.Length); GetViewport().SetInputAsHandled(); }

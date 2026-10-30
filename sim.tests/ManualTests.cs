@@ -119,8 +119,10 @@ public class ManualTests
         foreach (var p in Pages)
         {
             Assert.False(string.IsNullOrEmpty(p.Title), $"{p.File}에 '# ' 제목이 없다");
+            // 그림 줄의 파일 이름(fig/…)은 날 ID가 아니다
+            string text = FigureLine.Replace(p.Markdown, m => m.Groups[1].Value);
             foreach (var raw in new[] { "leak.rivet", ".pull", ".insert", "proc.", "strainer.", "{{", "}}" })
-                Assert.DoesNotContain(raw, p.Markdown);
+                Assert.DoesNotContain(raw, text);
         }
     }
 
@@ -159,5 +161,109 @@ public class ManualTests
         var e = Assert.Throws<DataValidationException>(() => ObservationTests.LoadWith(dir =>
             File.WriteAllText(Path.Combine(dir, "text", "ko", "extra.json"), new JsonObject { ["tool.wrench"] = "스패너" }.ToJsonString())));
         Assert.Contains(e.Errors, x => x.Contains("tool.wrench") && x.Contains("ko.json") && x.Contains("extra.json"));
+    }
+
+    // ── 교범 그림 (WP26) ──────────────────────────────────
+
+    static readonly System.Text.RegularExpressions.Regex FigureLine = new(@"^!\[(.+)\]\((fig/[^)\s]+)\)$", System.Text.RegularExpressions.RegexOptions.Multiline);
+    static readonly System.Text.RegularExpressions.Regex FigureNumber = new(@"^그림 (\d+)-(\d+)\. \S");
+    static string FigDir => Path.Combine(ManualDir, "fig");
+
+    /// <summary>2차 고장 쪽: 다른 세션이 고치는 중이라 그림을 아직 넣지 않았다. 본선이 그림을 넣으면 여기서 지운다.</summary>
+    static readonly HashSet<int> FiguresPending = new() { 13, 22, 24, 28, 31, 32, 35, 37, 40, 41 };
+
+    static int PageNumber(string file) => int.Parse(file[..2], System.Globalization.CultureInfo.InvariantCulture);
+
+    static IEnumerable<(string File, string Caption, string Path)> FigureLines() =>
+        Pages.SelectMany(p => FigureLine.Matches(p.Markdown.Replace("\r", "")).Select(m => (p.File, m.Groups[1].Value, m.Groups[2].Value)));
+
+    static Dictionary<string, JsonNode?> FigureDefs() =>
+        JsonNode.Parse(File.ReadAllText(Path.Combine(FigDir, "figures.json")))!.AsObject().ToDictionary(kv => kv.Key, kv => kv.Value);
+
+    [Fact]
+    public void Every_figure_line_points_to_a_file_and_a_definition()
+    {
+        var defs = FigureDefs();
+        foreach (var (file, caption, path) in FigureLines())
+        {
+            Assert.True(File.Exists(Path.Combine(ManualDir, path)), $"{file}: 그림 파일 {path}이 없다");
+            string name = Path.GetFileNameWithoutExtension(path);
+            Assert.True(defs.ContainsKey(name), $"{file}: 그림 {name}이 figures.json에 없다");
+            Assert.True(PageNumber(Path.GetFileName(path)) == PageNumber(file), $"{file}: 그림 {path}의 쪽 번호가 다르다");
+        }
+        // 그림 줄은 그 줄에 홀로 있어야 한다 (글 속의 그림은 그리지 않는다)
+        foreach (var p in Pages)
+            foreach (var line in p.Markdown.Split('\n'))
+                if (line.Contains("](fig/", StringComparison.Ordinal))
+                    Assert.Matches(FigureLine, line.Trim());
+    }
+
+    [Fact]
+    public void Every_defined_figure_is_used_on_exactly_one_page_once()
+    {
+        var used = FigureLines().GroupBy(f => Path.GetFileNameWithoutExtension(f.Path)).ToDictionary(g => g.Key, g => g.Count());
+        foreach (var name in FigureDefs().Keys)
+            Assert.True(used.GetValueOrDefault(name) == 1, $"그림 {name}이 교범에서 {used.GetValueOrDefault(name)}번 쓰였다");
+        foreach (var png in Directory.GetFiles(FigDir, "*.png"))
+            Assert.True(used.ContainsKey(Path.GetFileNameWithoutExtension(png)), $"쓰지 않는 그림 파일 {Path.GetFileName(png)}");
+    }
+
+    [Fact]
+    public void Figure_numbers_follow_the_page_without_gaps()
+    {
+        foreach (var page in FigureLines().GroupBy(f => f.File))
+        {
+            int expect = 1;
+            foreach (var (file, caption, _) in page)
+            {
+                var m = FigureNumber.Match(caption);
+                Assert.True(m.Success, $"{file}: 그림 설명이 '그림 <쪽>-<차례>. 설명' 꼴이 아니다: {caption}");
+                Assert.Equal(PageNumber(file), int.Parse(m.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture));
+                Assert.True(int.Parse(m.Groups[2].Value, System.Globalization.CultureInfo.InvariantCulture) == expect, $"{file}: '{caption}'의 차례가 {expect}이어야 한다");
+                expect++;
+            }
+        }
+        // 본문이 가리키는 (그림 n-k)는 그 쪽에 있다
+        foreach (var p in Pages)
+        {
+            var have = FigureLines().Where(f => f.File == p.File).Select(f => FigureNumber.Match(f.Caption).Groups[1].Value + "-" + FigureNumber.Match(f.Caption).Groups[2].Value).ToHashSet();
+            foreach (System.Text.RegularExpressions.Match m in System.Text.RegularExpressions.Regex.Matches(FigureLine.Replace(p.Markdown, ""), @"그림 (\d+-\d+)"))
+                Assert.True(have.Contains(m.Groups[1].Value), $"{p.File}: 본문이 가리키는 그림 {m.Groups[1].Value}이 이 쪽에 없다");
+        }
+    }
+
+    [Fact]
+    public void Every_page_has_at_least_three_figures()
+    {
+        foreach (var p in Pages)
+        {
+            if (FiguresPending.Contains(PageNumber(p.File))) continue;
+            int n = FigureLines().Count(f => f.File == p.File);
+            Assert.True(n >= 3, $"{p.File}에 그림이 {n}장뿐이다 (적어도 셋)");
+        }
+    }
+
+    /// <summary>폭 960 안팎, 16색 이하 팔레트 PNG, 한 장 평균 80KB 안, 모두 8MB 안.</summary>
+    [Fact]
+    public void Figures_keep_the_size_limits()
+    {
+        var files = Directory.GetFiles(FigDir, "*.png");
+        Assert.NotEmpty(files);
+        long total = 0;
+        foreach (var f in files)
+        {
+            var b = File.ReadAllBytes(f);
+            total += b.Length;
+            Assert.True(b.Length > 33 && b[12] == (byte)'I' && b[13] == (byte)'H', $"{Path.GetFileName(f)}: PNG가 아니다");
+            int w = (b[16] << 24) | (b[17] << 16) | (b[18] << 8) | b[19];
+            int colorType = b[25];
+            Assert.InRange(w, 400, 1000);
+            Assert.True(colorType == 3, $"{Path.GetFileName(f)}: 팔레트 PNG가 아니다 (색 형식 {colorType})");
+            int plte = Enumerable.Range(8, b.Length - 12).First(i => b[i] == (byte)'P' && b[i + 1] == (byte)'L' && b[i + 2] == (byte)'T' && b[i + 3] == (byte)'E');
+            int len = (b[plte - 4] << 24) | (b[plte - 3] << 16) | (b[plte - 2] << 8) | b[plte - 1];
+            Assert.True(len / 3 <= 16, $"{Path.GetFileName(f)}: 팔레트가 {len / 3}색");
+        }
+        Assert.True(total / files.Length <= 80 * 1024, $"그림 평균 {total / files.Length / 1024}KB");
+        Assert.True(total <= 8 * 1024 * 1024, $"그림 합계 {total / 1024 / 1024}MB");
     }
 }
