@@ -456,3 +456,47 @@ public class CableDiagnosability
         Assert.True(v["ELC-01"]["cue.siphon.tape"].Differs(b["cue.siphon.tape"]));
     }
 }
+
+/// <summary>
+/// 배수 펌프 가르기의 나머지 원인 (WP17 WTR-03): 잠근 채 둔 배출 밸브와 순서를 어겨 조인 보닛.
+/// 잠긴 배출 밸브는 막힘(WTR-01)과 자갈 소리로, 역류 밸브 고착(WTR-03)과 전류와 꾸르륵 소리로 갈린다(교범 04).
+/// 새는 보닛은 후방 리벳 이음(HUL-01)과 같은 후방 경고를 내지만 보닛의 물방울과 이음새 쉿 소리로 갈린다.
+/// </summary>
+public class CheckValveDiagnosability
+{
+    static SortedDictionary<string, DiagnosisHarness.Element> Run(string? fault, Action<MissionSetup>? more = null)
+    {
+        var sim = TestData.NewSim(setup: TestData.Setup(s =>
+        {
+            s.Switches["C3"] = true;
+            s.Bilges["bilge.aft"] = 150;
+            more?.Invoke(s);
+        }));
+        if (fault != null) sim.Inject(fault, fault == "HUL-01" ? "leak.rivet.09" : null);
+        sim.Run(60);
+        return DiagnosisHarness.Observe(new ObservableQuery(sim), TestData.Data);
+    }
+
+    [Fact]
+    public void Closed_discharge_and_a_weeping_bonnet_split_from_their_look_alikes()
+    {
+        var b = Run(null);
+        var closed = Run(null, s => s.Parts = new() { new() { Part = "pump.check_valve", Prop = "discharge", Value = 0 } });
+        var clog = Run("WTR-01");
+        var stuck = Run("WTR-03");
+        var weep = Run(null, s => s.Parts = new() { new() { Part = "pump.check_valve", Prop = "weep", Value = 1 } });
+        var rivet = Run("HUL-01");
+
+        foreach (var (v, name) in new[] { (closed, "배출 밸브 잠김"), (weep, "새는 보닛") })
+        {
+            var sep = DiagnosisHarness.Separating(v, b);
+            Assert.True(sep.Count > 0, $"{name}이 고장 없는 상태와 구별되지 않는다");
+            foreach (var k in sep) Assert.True(DiagnosisHarness.Documented(k, TestData.Data), $"{name}을 드러내는 '{k}'에 문구가 없다");
+        }
+        Assert.True(closed["cue.pump.gravel"].Differs(clog["cue.pump.gravel"]));
+        Assert.True(closed["panel.gauge.pumpCurrent"].Differs(stuck["panel.gauge.pumpCurrent"]));
+        Assert.True(closed["cue.pump.backflow"].Differs(stuck["cue.pump.backflow"]));
+        Assert.True(weep["cue.checkvalve.drip"].Differs(rivet["cue.checkvalve.drip"]));
+        Assert.True(weep["cue.leak.rivet.09.hiss"].Differs(rivet["cue.leak.rivet.09.hiss"]));
+    }
+}
