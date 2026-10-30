@@ -114,7 +114,7 @@
       },
       {
         "zone": "mid",
-        "areaCm2": 0.25,
+        "areaCm2": 0.2,
         "when": "self.gland >= 1 && self.gland <= 2"
       }
     ]
@@ -197,7 +197,7 @@
       },
       {
         "zone": "mid",
-        "areaCm2": 0.25,
+        "areaCm2": 0.2,
         "when": "self.gland >= 1 && self.gland <= 2"
       }
     ]

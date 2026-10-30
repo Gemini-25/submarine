@@ -192,6 +192,8 @@ static class SimQuery
                     "water" => x => QueryValue.Of(Parts.PropRef.Resolve(x, Attitude.TankPart(t), "water").Get()),
                     "flood" => x => QueryValue.Of(Attitude.FloodLps(x, t)),
                     "open" => x => QueryValue.Of(Parts.PropRef.Resolve(x, Attitude.ValvePart(t), "open").Get()),
+                    // 침수 밸브 축 둘레로 새는 바닷물 (L/s, 패킹 너트가 풀렸거나 덜 조였을 때의 바다 경로)
+                    "weep" => x => QueryValue.Of(PartSeaInflow(x, Attitude.ValvePart(t))),
                     _ => throw Unknown(),
                 };
             }
@@ -505,6 +507,15 @@ static class SimQuery
     }
 
     /// <summary>누수 지점 i의 부품에 달린 바다 경로로 지금 드는 물 (L/s).</summary>
+    static double PartSeaInflow(SimWorld w, string partId)
+    {
+        if (!w.Mechanics.HasSeaPaths || !w.TryPart(partId, out var part)) return 0;
+        double sum = 0;
+        foreach (var p in w.Mechanics.SeaPaths)
+            if (ReferenceEquals(p.Part, part)) sum += SeaPaths.Lps(w, p);
+        return sum;
+    }
+
     static double LeakSeaInflow(SimWorld w, int leak)
     {
         if (!w.Mechanics.HasSeaPaths) return 0;
