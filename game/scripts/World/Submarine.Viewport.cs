@@ -16,6 +16,39 @@ public partial class Submarine
     {
         for (int v = 1; v <= 2; v++)
             if (Binder.Has($"viewport.{v}.ring") && Interactables.ContainsKey($"viewport.{v}.ring")) BuildViewportFixture(v);
+        BuildViewportFog();
+    }
+
+    /// <summary>현창 유리의 김 서림 판 둘 (M1 유리 안쪽 면, Submarine.BuildFurniture).</summary>
+    public readonly List<MeshInstance3D> ViewportFog = new();
+
+    /// <summary>
+    /// 현창 유리의 김 서림 (단서 steam.fog). 증기가 새면 실내가 눅눅해져 유리가 뿌옇게 흐려진다(교범 22쪽).
+    /// 분기함 건조 절차는 김이 걷힌 뒤 시작하라고 하므로, 사람이 이 흐림을 보고 기다릴 수 있어야 한다.
+    /// M1 유리 안쪽 면에 얇은 흰 판을 겹쳐 단서 세기만큼 불투명하게 한다. 덮개를 닫으면 덮개 뒤로 가린다.
+    /// </summary>
+    void BuildViewportFog()
+    {
+        var mat = new StandardMaterial3D
+        {
+            AlbedoColor = new Color(0.86f, 0.88f, 0.86f, 0), Transparency = BaseMaterial3D.TransparencyEnum.Alpha, Roughness = 0.9f,
+        };
+        foreach (float z in new[] { -1f, 1f })
+        {
+            // 유리(반지름 0.13, 두께 0.065)는 벽에서 0.02 안쪽에 가운데가 있다. 김은 그 안쪽 면 바로 앞에 둔다.
+            var fog = Geo.Cyl(this, 0.13f, 0.002f, new Vector3(7.5f, 1.55f, z * (HalfWidth - 0.055f)), mat, 24);
+            fog.RotationDegrees = new Vector3(90, 0, 0);
+            fog.CastShadow = GeometryInstance3D.ShadowCastingSetting.Off;
+            fog.Name = z < 0 ? "ViewportFog1" : "ViewportFog2";
+            fog.Visible = false;
+            ViewportFog.Add(fog);
+        }
+        OnUpdate((s, _) =>
+        {
+            float fog = (float)CueOf(s, "steam.fog");
+            mat.AlbedoColor = new Color(0.86f, 0.88f, 0.86f, 0.85f * fog);
+            foreach (var f in ViewportFog) f.Visible = fog > 0.02f;
+        });
     }
 
     void BuildViewportFixture(int v)

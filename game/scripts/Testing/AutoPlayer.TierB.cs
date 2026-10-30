@@ -58,8 +58,10 @@ public partial class AutoPlayer
         Step(2);
         await Frame();
         double limit = Snap.Mission.TimeLimitSeconds;
+        double fogSeen = 0;
         while (Snap.Status == MissionStatus.Running && Snap.TimeSeconds < limit && _failures.Count == 0)
         {
+            CheckViewportFog(ref fogSeen);
             if (drill.Next(q, Data) is not { } job)
             {
                 Step(1);
@@ -111,11 +113,27 @@ public partial class AutoPlayer
         }
         await TierLeaveStation();
 
+        // 증기가 새는 훈련은 선내 김으로 현창이 흐려져야 한다(교범 22쪽). 분기함 건조는 김이 걷힌 뒤 시작한다.
+        if (mission is "m2-power-b" or "m2-shakedown")
+            Check(fogSeen > 0.3, $"{mission}: 증기가 새는 동안 현창 유리가 흐려지지 않았다 (김 단서 최대 {fogSeen:F2})");
         var s = Snap;
-        GD.Print($"AUTOTEST: {mission} {s.TimeSeconds / 60:F1}분에 {s.Status} {s.FailReason}, 한 일 {string.Join(", ", done)}, 다침(감전·끼임·화상·물 분출) {hurts()}");
+        GD.Print($"AUTOTEST: {mission} {s.TimeSeconds / 60:F1}분에 {s.Status} {s.FailReason}, 한 일 {string.Join(", ", done)}, 다침(감전·끼임·화상·물 분출) {hurts()}, 현창 김 최대 {fogSeen:F2}");
         Check(s.Status == MissionStatus.Succeeded, $"{mission}이 성공하지 않았다: {s.Status} {s.FailReason}");
         Check(hurts() == 0, $"{mission}: 절차대로 했는데 {hurts()}번 다쳤다");
         Check(s.Water.SubmergedCells == 0, $"{mission}: 축전지가 잠겼다");
+    }
+
+    /// <summary>현창의 김 판이 단서 steam.fog를 따른다: 단서가 있으면 보이고 그 세기만큼 불투명하며, 없으면 숨는다. 본 가장 큰 단서를 남긴다.</summary>
+    void CheckViewportFog(ref double seen)
+    {
+        double fog = Cue("steam.fog");
+        seen = Math.Max(seen, fog);
+        foreach (var f in _main.Sub.ViewportFog)
+        {
+            float alpha = ((StandardMaterial3D)f.GetActiveMaterial(0)).AlbedoColor.A;
+            Check(f.Visible == fog > 0.02 && Math.Abs(alpha - 0.85 * fog) < 0.05,
+                $"현창 김이 단서와 다르다: 단서 {fog:F2}, 보임 {f.Visible}, 불투명도 {alpha:F2}");
+        }
     }
 
     /// <summary>

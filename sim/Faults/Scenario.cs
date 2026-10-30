@@ -17,12 +17,12 @@ public sealed class ScenarioFile
     /// <summary>setup.depthM의 짧은 형태.</summary>
     public double? Depth { get; set; }
     public MissionSetup Setup { get; set; } = new();
-    /// <summary>실행할 틱 수. 없으면 기대값의 가장 늦은 틱.</summary>
+    /// <summary>실행할 틱 수. 없으면 기댓값의 가장 늦은 틱.</summary>
     public long? DurationTicks { get; set; }
     public List<ScenarioInject> Inject { get; set; } = new();
     public List<ScenarioCommand> Commands { get; set; } = new();
     public List<ScenarioExpect> Expect { get; set; } = new();
-    /// <summary>참이면 'eventually' 기대값들이 적힌 순서대로 처음 참이 되어야 한다.</summary>
+    /// <summary>참이면 'eventually' 기댓값들이 적힌 순서대로 처음 참이 되어야 한다.</summary>
     public bool Ordered { get; set; }
 
     public static readonly JsonSerializerOptions JsonOptions = new()
@@ -83,7 +83,7 @@ public sealed record ScenarioResult(string Name, IReadOnlyList<ExpectResult> Exp
             $"  [{(e.Passed ? "O" : "X")}] {e.Text}  처음 참: {(e.FirstTrueTick?.ToString() ?? "없음")}  {e.Message}"));
 }
 
-/// <summary>시나리오를 실행하고 기대값을 확인한다.</summary>
+/// <summary>시나리오를 실행하고 기댓값을 확인한다.</summary>
 public static class ScenarioRunner
 {
     sealed class Live
@@ -128,7 +128,7 @@ public static class ScenarioRunner
         }
 
         long duration = s.DurationTicks ?? (live.Count > 0 ? live.Max(l => l.To) : 0);
-        // 평가되지 않는 기대값이나 실행되지 않는 명령은 틀린 시나리오다. 조용히 통과시키지 않는다.
+        // 평가되지 않는 기댓값이나 실행되지 않는 명령은 틀린 시나리오다. 조용히 통과시키지 않는다.
         foreach (var l in live)
         {
             if (l.From > l.To) throw new InvalidDataException($"{s.Name}: '{l.Text}'의 fromTick {l.From}이 toTick {l.To}보다 크다");
@@ -202,7 +202,7 @@ public static class ScenarioRunner
                 if (l.FirstTrue < lastOrdered)
                 {
                     passed = false;
-                    msg = $"순서 위반: 틱 {l.FirstTrue}에 참이 됐지만 앞 기대값은 틱 {lastOrdered}";
+                    msg = $"순서 위반: 틱 {l.FirstTrue}에 참이 됐지만 앞 기댓값은 틱 {lastOrdered}";
                 }
                 lastOrdered = Math.Max(lastOrdered, l.FirstTrue!.Value);
             }

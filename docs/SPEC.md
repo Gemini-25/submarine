@@ -593,7 +593,7 @@ public interface ISimulation
 }
 ```
 
-틱 T의 상태는 Step()을 T번 한 뒤의 상태다. 기대값은 `byTick`(그때까지 한 번이라도 참), `atTick`(그 틱에 참), `always`/`never`(구간 내내)로 쓰고, 문법과 관측값 이름은 `sim/Faults/Assertion.cs`, `sim/Core/SimQuery.cs`에 있다.
+틱 T의 상태는 Step()을 T번 한 뒤의 상태다. 기댓값은 `byTick`(그때까지 한 번이라도 참), `atTick`(그 틱에 참), `always`/`never`(구간 내내)로 쓰고, 문법과 관측값 이름은 `sim/Faults/Assertion.cs`, `sim/Core/SimQuery.cs`에 있다.
 
 
 ### Godot 쪽 확인

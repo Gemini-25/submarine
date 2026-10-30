@@ -34,12 +34,14 @@ M2 '8대 계통'까지 들어 있다. 동력, 배전반, 공기, 물(배수와 �
 
 ## 게임 실행
 
-1. Godot에서 `game/project.godot`를 연다. 처음 열면 글꼴을 가져오고, 편집기 오른쪽 위의 '빌드' 버튼으로 C# 프로젝트를 빌드한다.
+1. Godot에서 `game/project.godot`를 연다. 처음 열면 Godot이 글꼴과 질감을 가져온다. 그다음 편집기 오른쪽 위의 '빌드' 버튼으로 C# 프로젝트를 빌드한다.
 2. F5(실행)로 시작한다. 데이터는 저장소의 `data/` 폴더를 그대로 읽는다.
 
-명령줄에서 바로 띄울 수도 있다. `--` 뒤의 `--mission=<임무 ID>`로 시작할 훈련을 고른다.
+명령줄에서 바로 띄울 수도 있다. `GODOT`에는 Godot 실행 파일 경로를 넣는다(`tools/fetch-godot.sh`가 알려 준다). 편집기로 한 번도 열지 않았거나 코드와 자산이 바뀌었다면 C# 빌드와 가져오기를 먼저 한다. `--` 뒤의 `--mission=<임무 ID>`로 시작할 훈련을 고른다.
 
 ```sh
+dotnet build game/DeepLine.Game.csproj        # C# 빌드
+"$GODOT" --headless --path game --import      # 글꼴과 질감 가져오기
 "$GODOT" --path game                          # 위기 훈련부터
 "$GODOT" --path game -- --mission=m2-air-a    # 공기 훈련 A부터
 ```
@@ -75,12 +77,12 @@ M2 '8대 계통'까지 들어 있다. 동력, 배전반, 공기, 물(배수와 �
 
 ## 정비 교범 (Tab)
 
-교범은 배에 실린 책이고, 게임 안에서 정답을 찾는 유일한 길이다. 원문은 `data/manual/*.md`이며, 정격 전류나 경보 문턱 같은 숫자는 `{{...}}` 자리표시자로 두어 시뮬레이션 데이터에서 채운다(`sim/Manual/ManualText.cs`). 그래서 튜닝 값을 바꾸면 교범의 숫자도 함께 바뀐다.
+교범은 배에 실린 책이고, 게임 안에서 정답을 찾는 유일한 길이다. 원문은 `data/manual/*.md`이다. 정격 전류나 경보 문턱 같은 숫자, 부품 이름, 사물함 재고, 손동작의 소음은 `{{...}}` 자리표시자로 두어 시뮬레이션 데이터에서 채운다(`sim/Manual/ManualText.cs`). 그래서 튜닝 값을 바꾸면 교범의 숫자도 함께 바뀐다. 절차 쪽의 수리 순서(도구와 예비품 표, 단계, 지킬 것)는 대부분 `{{procedure:...}}` 한 줄로 두고 `data/procedures*`에서 만든다. 그러니 단계는 마크다운이 아니라 절차 데이터에서 고친다.
 
-- **쪽 번호.** 00~19쪽은 배 전체에 관한 일반 쪽(상황판 읽는 법, 진단 표, 도구, 예비품, 재는 법, 계산 도구, 공기와 몸 상태, 침수 대응, 부력과 기울기)이다. 20쪽부터는 계통마다 수리 절차를 싣는다. 차례는 00쪽에 있다.
+- **쪽 번호.** 00~19쪽은 배 전체에 관한 일반 쪽(배 개요, 상황판 읽는 법, 진단 표, 손과 도구, 예비품, 재는 법, 계산 도구, 공기와 몸 상태, 소음 표, 침수 대응, 부력과 기울기)이다. 20쪽부터는 계통마다 수리 절차를 싣는다. 차례는 00쪽에 있다.
 - **계통 탭.** 위쪽 탭으로 한 계통의 쪽만 골라 볼 수 있다. 지시서와 조작 안내는 어느 탭에서나 보인다.
 - **읽는 순서.** 이상이 생기면 계통 상황판(02쪽)을 보고, 진단 표(03~05쪽)에서 원인을 하나로 좁힌 뒤 그 절차 쪽을 편다.
-- **그림.** 쪽마다 위치도, 부품 그림, 절차 순서 띠, 계통도가 들어 있다(`data/manual/fig/`). 장면 그림은 게임 장면을 그 상태로 맞춰 찍은 뒤 먹선 그림으로 바꾼 것이고, 계통도는 데이터에서 그린다. 그림 안에는 한국어를 굽지 않고 번호만 넣으며, 설명은 교범 본문의 캡션에 둔다. 정의는 `data/manual/fig/figures.json`, 다시 만드는 도구는 `tools/make-figures.sh`다.
+- **그림.** 00쪽(차례)을 뺀 모든 쪽에 그림이 세 장 이상 들어 있다(`data/manual/fig/`, 194장). 위치도와 부품 그림, 정상과 고장의 비교 그림이 많고, 절차 순서 띠는 20쪽부터의 절차 쪽에, 계통도는 01쪽과 13쪽에 있다. 장면 그림은 게임 장면을 그림에 필요한 상태로 맞춰 놓고 찍은 뒤 먹선 그림으로 바꾼 것이고, 계통도와 볼트 번호도, 계기 도식은 데이터에서 그린다. 그림 안에는 한국어 설명을 새로 쓰지 않고 번호와 장비 이름(`data/text/ko`의 이름 키)만 넣으며, 설명은 교범 본문의 캡션에 둔다. 정의는 `data/manual/fig/figures.json`, 다시 만드는 도구는 `tools/make-figures.sh`다.
 
 ## 시험
 
@@ -92,9 +94,9 @@ dotnet run --project tools/DeepLine.SimCli -- validate
 dotnet run --project tools/DeepLine.SimCli -- run sim.tests/scenarios/10-wtr01-clogged-intake-floods-battery.json --every 1200
 ```
 
-- **시나리오 시험** (`sim.tests/scenarios/*.json`): 고장을 넣고 증상이 기대한 순서와 시간 안에 나타나는지 본다.
-- **기준 해시** (`sim.tests/fixtures/golden-*`): 정해진 시드와 명령으로 돌린 마지막 상태의 해시. 규칙을 바꾸다 결과가 조금이라도 달라지면 실패한다. 다시 만드는 때와 이유는 `docs/DECISIONS.md`에 적는다.
-- **훈련 풀이** (`sim.tests/fixtures/drill-logs/*.json`): 규칙 기반 자동 플레이어(DrillSolver)가 상황판과 단서만 보고, 진단 자료(`data/diagnosis*`)로 원인을 좁혀 훈련을 끝까지 푼 기록이다. 진단 자료나 절차를 바꿔 기록이 달라지면 아래처럼 다시 만들고, 바뀐 줄이 의도한 것인지 확인한다.
+- **시나리오 시험** (`sim.tests/scenarios/*.json`): 고장을 넣고 증상이 기대한 순서대로, 기대한 시간 안에 나타나는지 본다.
+- **기준 해시** (`sim.tests/fixtures/golden-hashes.json`): 얼려 둔 데이터와 시나리오, 풀이 기록의 사본(`golden-data*/`, `golden-scenarios*/`, `golden-hand/`, `golden-drills-m2/`)을 정해진 시드와 명령으로 돌리며 1분(1200틱)마다(손 수리 기록은 1초마다), 그리고 끝에서 남긴 상태 해시 목록이다. 사본으로 돌리므로 `data/`를 고쳐도 바뀌지 않고, 규칙(코드)을 바꿔 결과가 조금이라도 달라지면 실패한다. 일부러 바꾼 것이면 `DEEPLINE_REGEN_GOLDEN=1 dotnet test sim.tests --filter "FullyQualifiedName~DeterminismTests"`로 다시 만들고, 바뀐 키는 커밋 메시지에, 언제 왜 다시 만들었는지는 `docs/DECISIONS.md`에 적는다.
+- **훈련 풀이** (`sim.tests/fixtures/drill-logs/*.json`): 규칙 기반 자동 플레이어(DrillSolver)가 상황판과 단서만 보고, 진단 자료(`data/diagnosis*`)로 원인을 좁혀 훈련을 끝까지 푼 기록이다. 진단 자료나 절차를 바꿔 기록이 달라지면 아래처럼 다시 만들고, 바뀐 줄이 의도한 것인지 확인한다. 같은 명령이 절차를 펼친 기록(`sim.tests/fixtures/expand-golden.txt`)도 다시 만든다. 그 절차를 그린 순서 띠와 볼트 번호도는 Godot의 `figures` 묶음이 낡았다고 알려 주므로 `tools/make-figures.sh <그림 이름>`으로 다시 만든다.
 
   ```sh
   DEEPLINE_REGEN_GOLDEN=1 dotnet test sim.tests --filter "FullyQualifiedName~DrillLogTests"
@@ -102,7 +104,7 @@ dotnet run --project tools/DeepLine.SimCli -- run sim.tests/scenarios/10-wtr01-c
 
 - **결정론.** 시뮬레이션 코어에서는 실제 시각, 시드 없는 난수, 플랫폼마다 마지막 자리가 다를 수 있는 수학 함수를 분석기로 막는다(`sim/BannedSymbols.txt`).
 
-SimCli의 `run`은 기대값 판정, 주요 사건, 시계열(CSV)을 출력한다. `--paths battery.voltage,bilge.total,...`로 볼 값을 고르고 `--csv 파일`로 저장한다. 경로 이름은 `sim/Core/SimQuery.cs`에 있다.
+SimCli의 `run`은 기댓값 판정, 주요 사건, 시계열(CSV)을 출력한다. `--paths battery.voltage,bilge.total,...`로 볼 값을 고르고 `--csv 파일`로 저장한다. 경로 이름은 `sim/Core/SimQuery.cs`에 있다.
 
 ### Godot 쪽 확인
 
@@ -112,23 +114,24 @@ Godot 쪽은 헤드리스로 띄워 자동 플레이어가 실제 손동작(조�
 tools/fetch-godot.sh                                                    # Godot 4.7.2 .NET 받기 (경로를 알려 준다)
 GODOT=/경로/Godot_v4.7.2-stable_mono_linux.x86_64 tools/check-all.sh   # dotnet test와 Godot 확인 전부 (커밋 전에)
 GODOT=... tools/godot-check.sh crisis workviews drills                 # 확인 묶음만 골라서
-GODOT=... tools/godot-check.sh --screenshots shots/                     # 화면 찍기 (xvfb-run 필요)
+GODOT=... tools/godot-check.sh crisis --screenshots shots/              # 위기 묶음 뒤에 화면 찍기 (묶음을 주지 않으면 확인 전부를 먼저 돈다. xvfb-run 필요)
 GODOT=... tools/make-figures.sh                                         # 교범 그림 다시 만들기 (xvfb-run 필요)
 ```
 
-자주 쓰는 확인 묶음은 다음과 같다. 전체 목록은 `tools/godot-check.sh` 머리말에 있다.
+자주 쓰는 확인 묶음은 다음과 같다. 묶음을 주지 않으면 `figures-full`을 뺀 전부가 돈다(헤드리스로 약 4분). 전체 목록은 `tools/godot-check.sh` 머리말에 있다.
 
 | 묶음 | 확인하는 것 |
 | --- | --- |
 | `crisis` | 위기 훈련 한 판 |
-| `hands` | 위험(감전, 화상, 끼임, 물줄기)과 손의 느낌 |
+| `hands` | 위험(감전, 끼임)과 손의 느낌(버팀목, 해치와 수동 펌프, 코킹) |
 | `reach`, `workviews` | 서 있는 자리에서 손이 닿는지, 작업 시점마다 대상이 화면에 들어오고 조준되는지 |
-| `fixtures`, `tools` | 데이터 장치의 손동작, 공구판과 공구띠, 도구와 물건의 모양 |
+| `fixtures`, `tools` | 데이터로 정의한 장치의 손동작, 공구판과 공구띠, 도구와 물건의 모양 |
 | `briefing` | 지시서 화면의 훈련 고르기 |
 | `drills` | M2 훈련 열여섯을 DrillSolver로 풀고, 걸음마다 손동작을 해 시뮬레이션 기록과 해시까지 견준다 |
 | `drill:<임무>` | 그 훈련 하나만. 예: `drill:m2-cable` |
 | `instruments` | 계산 도구(탁상 계산기, 계산자, 노모그램, 저항 브리지)를 손으로 다루기 |
-| `figures` | 교범 그림이 지금 장면, 절차, 데이터와 맞는지 |
+| `figures` | 교범 그림 194장의 지문(정의, 부르는 물체와 서는 자리, 절차, 도식의 입력)이 그림을 만든 때와 같은지 |
+| `figures-full` | 그림 정의를 손동작까지 다시 계산한다(약 7분). 기본 실행에는 없으니 장면이나 그림을 바꿨을 때 따로 부른다 |
 
 ## 폴더 구조
 
@@ -150,17 +153,17 @@ GODOT=... tools/make-figures.sh                                         # 교범
 | `data/observables*` | 현장 단서, 제자리 계기, 청진기 대상, 측정 수치(계산값이며 상태가 아니다) |
 | `data/missions/` | 훈련 임무(지시서, 고장, 시작 조건) |
 | `data/manual/` | 정비 교범(마크다운)과 그림(`fig/`) |
-| `data/text/ko/` | 화면에 나오는 한국어 문구 |
-| `game/` | Godot 프로젝트. `scripts/World/`(배 짓기), `Art/`(모델 키트, 재질), `Interaction/`과 `Player/`(손과 몸), `UI/`(상황판, 교범, 지시서), `Gadgets/`(계산 도구), `Testing/`(자동 플레이어, 화면 찍기) |
-| `instruments/` | 선내 계산 도구의 역학 `DeepLine.Instruments`와 시험. 화면 표시 전용이다 |
-| `audio/` | 상태 기반 절차적 소리 합성 `DeepLine.Audio`와 시험(M5에서 게임에 연결) |
+| `data/text/ko*` | 화면에 나오는 한국어 문구 |
+| `game/` | Godot 프로젝트. `scripts/World/`(배와 장비 짓기, 상황판), `Art/`(모델 키트, 재질), `Interaction/`과 `Player/`(손과 몸), `UI/`(조준 표시, 교범, 지시서와 결과, 메모장, 개발 도구), `Gadgets/`(계산 도구), `Audio/`(상태에서 만든 소리를 배 안 자리에 두기), `Sim/`(시뮬레이션 실행, 데이터 경로와 명령줄 인수), `Figures/`(교범 그림의 먹선 렌더러와 번호 붙이기), `Testing/`(자동 플레이어, 화면 찍기) |
+| `instruments/` | 선내 계산 도구의 동작 모델 `DeepLine.Instruments`와 시험. 화면 표시 전용이다 |
+| `audio/` | 상태 기반 절차적 소리 합성 `DeepLine.Audio`와 시험. 게임 소리(`game/scripts/Audio/`, 계산 도구)가 이미 이 목소리로 난다. 지금은 자리표시 음색이고 M5에서 음색을 다시 정한다 |
 | `tools/` | 개발 도구: SimCli(시나리오 실행), AudioRender(소리 데모를 WAV로), 확인과 그림 스크립트 |
 
 ## 문서
 
 | 문서 | 내용 |
 | --- | --- |
-| [docs/DESIGN.md](docs/DESIGN.md) | 게임 설계서: 세계, 이야기, 놀이의 고리 |
+| [docs/DESIGN.md](docs/DESIGN.md) | 게임 설계서: 세계, 이야기, 게임의 흐름 |
 | [docs/SPEC.md](docs/SPEC.md) | 개발 명세서: 계통 수치, 고장 목록, 데이터 형식, 마일스톤, 시험 전략, 열린 질문 |
 | [docs/DECISIONS.md](docs/DECISIONS.md) | 정한 것과 그 이유를 날짜순으로 적은 기록 |
 | [docs/REVIEW.md](docs/REVIEW.md) | 처음 설계 검토와 질문 |

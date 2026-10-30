@@ -61,6 +61,26 @@ public partial class ScreenshotTour : Node
         _main.Restart();
         _main.Runner.Paused = true;
 
+        // 현창 김 (WP23b): 증기가 새면 선내가 눅눅해져 현창 유리가 흐려진다(교범 22쪽). 동력 훈련 B를 4분 돌린 뒤 좌현 현창을 본다.
+        if (_main.Runner.Data.Missions.Any(m => m.Id == "m2-power-b"))
+        {
+            _main.Runner.Start(_main.Runner.Data, "m2-power-b");
+            _main.Restart();
+            _main.Runner.Paused = true;
+            _main.Runner.StepMany(240 * _main.Runner.Data.Tuning.TicksPerSecond);
+            var glass = new Vector3(7.5f, 1.55f, -1.17f);
+            _main.Player.PlaceAt(new Vector3(7.5f, 0.05f, -0.35f), glass);
+            for (int i = 0; i < 30; i++)
+            {
+                _main.Player.LookAt3D(glass);
+                await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            }
+            await Capture("15-viewport-fog");
+            _main.Runner.Start(_main.Runner.Data, first);
+            _main.Restart();
+            _main.Runner.Paused = true;
+        }
+
         // 증기 축압기 플랜지 (WP19): 개스킷을 꽂은 상태와 뺀 상태. 그릇 쪽은 해치를 닫아야 보인다.
         if (_main.Runner.Data.Parts.Any(p => p.Id == "steam.joint"))
         {
