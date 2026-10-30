@@ -8,7 +8,7 @@ namespace DeepLine.Sim.Tests;
 /// <summary>
 /// 공기 Tier B (M2 WP17): AIR-03 산소 화로 막힘.
 /// 명세 시험 계획 5절의 사례 종류를 덮는다: 증상(단서, 계기, 결정적 확인, 연쇄), 정식 수리, 응급 수리 없음, 위험 건너뛰기,
-/// 숨은 결함(걸쇠), 헛수리(AIR-01, AIR-02 절차), 재고(양초 네 대). 그리고 훈련 m2-air-b와 교범 28쪽.
+/// 숨은 결함(걸쇠), 헛수리('O2가 오르지 않음' 쌍의 C2 퓨즈 교체와 그 반대, 그리고 AIR-01·AIR-02 절차), 재고(양초 네 개). 그리고 훈련 m2-air-b와 교범 28쪽.
 /// 절차는 사람처럼(ExpandWithBelt, 명령 사이 0.6초) 따른다.
 /// </summary>
 public class FurnaceTests
@@ -33,10 +33,11 @@ public class FurnaceTests
         return events;
     }
 
-    static List<string> Plan(Simulation sim, string proc, Func<string, bool>? keep = null) =>
-        ProcedureRunner.ExpandWithBelt(sim, TestData.Data.Procedure(proc)).Select(c => c.Cmd).Where(c => keep?.Invoke(c) ?? true).ToList();
+    static List<string> Plan(Simulation sim, string proc, Func<string, bool>? keep = null, Dictionary<string, string>? bind = null) =>
+        ProcedureRunner.ExpandWithBelt(sim, TestData.Data.Procedure(proc), bind).Select(c => c.Cmd).Where(c => keep?.Invoke(c) ?? true).ToList();
 
-    static List<SimEvent> Follow(Simulation sim, string proc, Func<string, bool>? keep = null) => Do(sim, Plan(sim, proc, keep));
+    static List<SimEvent> Follow(Simulation sim, string proc, Func<string, bool>? keep = null, Dictionary<string, string>? bind = null) =>
+        Do(sim, Plan(sim, proc, keep, bind));
 
     static void NoHarm(List<SimEvent> events)
     {
@@ -185,13 +186,18 @@ public class FurnaceTests
         var plan = Plan(sim, "proc.furnace.clean");
         Assert.Equal(4, plan.Count(c => c == "o2.furnace.grate.scrape"));
         Assert.Equal(3, plan.Count(c => c == "o2.furnace.vent.prick"));
-        double peak = 0;
+        double peakAction = 0;
         var events = new List<SimEvent>();
         sim.DrainEvents();
         foreach (var c in plan)
         {
             sim.Cmd(c);
-            for (int i = 0; i < TestData.Ticks(Hand); i++) { sim.Step(); peak = Math.Max(peak, sim.Q("noise.current")); }
+            for (int i = 0; i < TestData.Ticks(Hand); i++)
+            {
+                sim.Step();
+                var acts = sim.World.Noise.Actions;
+                if (acts.Count > 0) peakAction = Math.Max(peakAction, acts.Max(a => a.Level));
+            }
             events.AddRange(sim.DrainEvents());
         }
         NoHarm(events);
@@ -210,7 +216,7 @@ public class FurnaceTests
         Assert.Equal(0, sim.Q("cue.furnace.smoke"));
         Assert.Equal(0, sim.Q("cue.furnace.choke"));
         // 소음 등급: 가장 큰 손동작은 긁기(8). '조용'은 아니지만 줄질(10)보다 작다.
-        Assert.True(peak <= TestData.T.Noise.Actions["scrape"].Level + TestData.Data.Devices.Where(d => d.DefaultOn).Sum(d => d.Noise) + 0.01);
+        Assert.Equal(TestData.T.Noise.Actions["scrape"].Level, peakAction);
     }
 
     [Fact]
@@ -238,6 +244,19 @@ public class FurnaceTests
         Assert.Equal(SimEventKind.Hurt, order[0].Kind);
         // 다쳐도 일은 된다(SPEC 6). 덴 뒤 손을 못 쓰는 동안의 명령은 거부되므로 재는 덜 긁혔다.
         Assert.Equal("o2.furnace.door.open", order[0].Subject);
+    }
+
+    [Fact]
+    public void Opening_the_door_right_after_lighting_burns_the_hand_at_the_door_although_the_body_is_still_cool()
+    {
+        var sim = Sim();
+        sim.Inject("AIR-03");
+        sim.Cmd("candle.light");
+        sim.Run(1);
+        Assert.True(Furnace(sim).Get("tempC") < 50, "몸통은 아직 데일 만큼 뜨겁지 않다");
+        var events = Follow(sim, "proc.furnace.clean", c => c != "o2.furnace.touch" && c != "candle.light");
+        var first = events.First(e => e.Kind == SimEventKind.Hurt && e.Detail == "burn");
+        Assert.Equal("o2.furnace.door.open", first.Subject);
     }
 
     // ── 숨은 결함 ────────────────────────────────────────
@@ -289,6 +308,38 @@ public class FurnaceTests
     }
 
     [Fact]
+    public void Replacing_the_C2_fuse_leaves_the_furnace_choked()
+    {
+        var sim = Sim(s => s.Air["o2"] = 18);
+        sim.Inject("AIR-03");
+        var events = Follow(sim, "proc.fuse.replace", bind: new() { ["circuit"] = "C2" });
+        NoHarm(events);
+        Assert.Contains(events, e => e.Kind == SimEventKind.PartRepaired && e.Subject == "fuse.C2");
+        sim.Run(5);
+        Assert.True(Math.Abs(O2Gain(sim, 300)) < 0.02, "C2 퓨즈를 갈아도 산소가 오르지 않는다");
+        Assert.True(sim.Q("cue.furnace.smoke") > 0.8);
+        Assert.Equal("AIR-03", Furnace(sim).ActiveFault);
+    }
+
+    [Fact]
+    public void Cleaning_the_furnace_does_not_relight_a_dead_igniter()
+    {
+        var sim = Sim();
+        sim.Inject("ELC-01", "fuse.C2");
+        sim.Run(5);
+        var events = Follow(sim, "proc.furnace.clean");
+        Assert.DoesNotContain(events, e => e.Kind is SimEventKind.Shock or SimEventKind.Pinch or SimEventKind.Hurt);
+        var rejected = events.Where(e => e.Kind == SimEventKind.CommandRejected).Select(e => e.Subject).ToList();
+        Assert.Equal(new[] { "candle.light" }, rejected);
+        // 성한 화로라 고장이 없으니 PartRepaired는 나지 않는다. 손댄 것은 화로뿐이고 화로는 깨끗한 그대로다.
+        Assert.DoesNotContain(events, e => e.Kind == SimEventKind.PartRepaired);
+        Assert.Equal("", Furnace(sim).ActiveFault);
+        Assert.Equal(0, Furnace(sim).Get("latchOpen"));
+        Assert.Equal(0, sim.Q("cue.igniter.glow"));
+        Assert.Equal("ELC-01", sim.QS("part.fuse.C2.fault"));
+    }
+
+    [Fact]
     public void Scraping_only_the_grate_is_not_enough_the_soot_in_the_vent_still_chokes_the_candle()
     {
         var sim = Sim();
@@ -313,7 +364,7 @@ public class FurnaceTests
         Assert.Equal(4, n);
         for (int i = 0; i < n; i++) O2Gain(sim, CandleSeconds + 1);
         Assert.Equal(0, sim.Q("inventory.candles"));
-        Assert.True(sim.Q("air.o2") < 18, "네 대를 다 태워도 산소가 그대로다");
+        Assert.True(sim.Q("air.o2") < 18, "네 개를 다 태워도 산소가 그대로다");
         Assert.Equal(1, Furnace(sim).Get("ash"));
         // 다 쓴 뒤에는 고쳐도 켤 양초가 없다.
         BurnOutAndCool(sim);
@@ -394,7 +445,7 @@ public class FurnaceTests
         Assert.Contains("걸쇠를 걸지 않으면", page);
         Assert.Contains("**양초가 타는 동안", page);
         Assert.Contains($"{ManualText.Number(Ft.LeakO2Factor, 1)}배", page);
-        Assert.Contains($"{TestData.T.Inventory.OxygenCandles}대", page);
+        Assert.Contains($"{TestData.T.Inventory.OxygenCandles}개뿐", page);
         foreach (var name in new[] { "긁개", "쑤시개 바늘", "빈손" }) Assert.Contains(name, page);
         Assert.Contains(TestData.Data.Faults.Single(f => f.Id == "AIR-03").Name, diag);
         Assert.Contains("AIR-03", diag);
