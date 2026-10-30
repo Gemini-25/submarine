@@ -5453,7 +5453,7 @@
         "hydrophone.door",
         "hydrophone.tube.1|hydrophone.tube.2",
         "hydrophone.switch",
-        "hydrophone",
+        "hydrophone@0.1,0,0",
         "gadget.headphones",
         "sonarset.tube.1"
       ],

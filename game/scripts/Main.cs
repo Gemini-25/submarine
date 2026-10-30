@@ -320,7 +320,7 @@ public partial class Main : Node3D
         string hand = Runner.Snapshot.Crew.Hand;
         Player.SpeedFactor = hand.Length > 0 && Runner.Data.Items.TryGetValue(hand, out var item) && item.Heavy ? 0.6f : 1f;
         Player.TrimDeg = (float)Runner.Snapshot.Readings.FirstOrDefault(r => r.Id == "inclinometer").Value; // 기울기 (WP18), 없으면 0
-        Sub.Apply(Runner.Snapshot, (float)delta);
+        if (!Figures.InkRenderer.Capturing) Sub.Apply(Runner.Snapshot, (float)delta); // 교범 그림을 찍는 동안은 장면을 멈춘다
 
         if (_smokeFrames >= 0 && --_smokeFrames < 0)
         {

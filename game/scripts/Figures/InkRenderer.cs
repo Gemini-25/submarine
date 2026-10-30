@@ -14,6 +14,12 @@ public partial class InkRenderer : Node
     /// <summary>찍을 때의 배율. 960 폭 그림은 1920 폭으로 찍어 줄인다(선이 고르게 된다).</summary>
     public const int Supersample = 2;
 
+    /// <summary>
+    /// 찍는 동안 참. 번호, 법선, 깊이를 서로 다른 프레임에 찍으므로, 그 사이에 장면이 움직이면(도는 팬 날개 같은 것)
+    /// 윤곽과 칠이 어긋난다. Main은 이 동안 장면 갱신(Submarine.Apply)을 멈춘다.
+    /// </summary>
+    public static bool Capturing { get; private set; }
+
     SubViewport _vp = null!;
     Camera3D _cam = null!;
     Shader _idShader = null!;
@@ -193,6 +199,7 @@ public partial class InkRenderer : Node
             cap.Albedo[id] = clear ? 0.9f : lum;
             if (accentRoots.Any(r => r == g || r.IsAncestorOf(g))) cap.Accent.Add(id);
         }
+        Capturing = true; // 여기부터 세 프레임을 찍는다 (위의 준비는 한 프레임 안에서 끝난다)
         try
         {
             foreach (var (g, m) in idMats) g.MaterialOverride = m;
@@ -213,6 +220,7 @@ public partial class InkRenderer : Node
         }
         finally
         {
+            Capturing = false;
             foreach (var (g, old) in swapped) g.MaterialOverride = old;
             foreach (var (g, m) in overlays) g.MaterialOverlay = m;
             foreach (var h in hidden) h.Visible = true;
