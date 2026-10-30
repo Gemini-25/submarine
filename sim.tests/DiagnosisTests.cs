@@ -168,7 +168,8 @@ public class DiagnosisTests
     }
 
     /// <summary>사례 하나를 돌린 결과: sees가 섰는가, 판정(없으면 null)과 묶음 값, 평가 틱의 세계.</summary>
-    internal sealed record CaseRun(bool Sees, string? Verdict, string? Bind, Simulation World);
+    /// Log는 그 쌍을 평가한 솔버 기록이다: 누르기와 지켜보기 값은 거기의 Look 걸음에서 읽는다.
+    internal sealed record CaseRun(bool Sees, string? Verdict, string? Bind, Simulation World, DrillLog Log);
 
     static readonly Dictionary<(string, int), CaseRun> _runs = new();
 
@@ -182,14 +183,14 @@ public class DiagnosisTests
             var setup = Merge(pair.Exposure.Setup, cs.Setup);
             long at = TestData.Ticks(cs.Seconds ?? pair.Exposure.Seconds);
 
-            (DrillSolver Solver, Simulation World) Go(string only)
+            (DrillSolver Solver, Simulation World, DrillLog Log) Go(string only, bool assume = false)
             {
                 var sim = new Simulation(TestData.Data, 1, setup);
                 foreach (var inj in cs.Inject) sim.Inject(inj.Fault, inj.Part);
                 var book = Book.From(TestData.Data, null);
-                var solver = new DrillSolver(book, new ObservableQuery(sim), new DrillOptions(new[] { only }, Act: false, EvaluateAtTick: at));
+                var solver = new DrillSolver(book, new ObservableQuery(sim), new DrillOptions(new[] { only }, Act: false, EvaluateAtTick: at, AssumeSees: assume));
                 byte[]? snap = null;
-                DrillRunner.Run(sim, solver, book, new DrillHooks
+                var log = DrillRunner.Run(sim, solver, book, new DrillHooks
                 {
                     PauseAt = (s, _) =>
                     {
@@ -199,13 +200,13 @@ public class DiagnosisTests
                 });
                 var world = new Simulation(TestData.Data, 1, setup);
                 world.RestoreState(snap!);
-                return (solver, world);
+                return (solver, world, log);
             }
 
-            var (main, world) = Go(pair.Id);
+            var (main, world, mainLog) = Go(pair.Id, cs.Via != null);
             bool sees = cs.Via == null ? main.SeesStood == true : Go(cs.Via).Solver.SeesStood == true;
             var decided = main.Findings.FirstOrDefault(f => f.Outcome == "decided");
-            return _runs[(pairId, index)] = new CaseRun(sees, decided?.Verdict, decided?.Bind, world);
+            return _runs[(pairId, index)] = new CaseRun(sees, decided?.Verdict, decided?.Bind, world, mainLog);
         }
     }
 
@@ -233,7 +234,39 @@ public class DiagnosisTests
 
     // ── 값: 교범의 값, 여유, 문턱 ──────────────────────────────────
 
-    /// <summary>평가 틱의 세계에서 조건의 지금 값 (표시 단위). 추세, 누르기, 들은 것처럼 한 순간으로 읽을 수 없으면 null.</summary>
+    /// <summary>
+    /// 사례에서 조건의 값 (표시 단위). 누르기와 지켜보기는 솔버 기록의 Look 걸음에서, 나머지는 평가 틱의 세계에서 읽는다.
+    /// pick all 확인처럼 묶음 값이 없으면 모든 값 가운데 문턱에 가장 가까운 값(below면 최댓값, above면 최솟값)이다.
+    /// 추세와 들은 것처럼 한 순간으로 읽을 수 없으면 null.
+    /// </summary>
+    static (double Num, string? Text)? Value(CondDef c, IReadOnlyDictionary<string, string> bind, CaseRun r, CheckDef? check = null)
+    {
+        if (check is { Each.Count: > 0 } && check.Each.Keys.Any(k => !bind.ContainsKey(k)))
+        {
+            var (name, src) = check.Each.First();
+            var vals = DiagnosisValidatorValues(src).Select(v => Value(c, new Dictionary<string, string>(bind) { [name] = v }, r)).Where(v => v is { Text: null }).Select(v => v!.Value.Num).ToList();
+            if (vals.Count == 0) return null;
+            return (c.Below != null ? vals.Max() : vals.Min(), null);
+        }
+        string Sub(string t) => FixtureCatalog.Expand(t, bind);
+        if (c.Press != null || c.Watch != null)
+        {
+            string path = Sub(c.Press != null ? c.Read! : c.Q!);
+            var look = r.Log.Lines.LastOrDefault(l => l.Step.Kind == PlanKind.Look && l.Step.Path == path && l.Step.Note == (c.Press != null ? "press" : "watch"));
+            return look?.Step.Reading is { } v ? (v, null) : null;
+        }
+        if (c.Measure != null)
+        {
+            // 손 도구 재기는 prep(덮개 열기 따위) 뒤에 한다: 솔버 기록의 Measure 걸음 값을 쓴다. 재지 않았으면 그 틱의 세계에서.
+            string target = Sub(c.Target!);
+            var m = r.Log.Lines.LastOrDefault(l => l.Step.Kind == PlanKind.Measure && l.Step.Tool == c.Measure && l.Step.Target == target);
+            if (m?.Step.Reading is { } mv) return (mv, null);
+        }
+        return Value(c, bind, r.World);
+    }
+
+    static IReadOnlyList<string> DiagnosisValidatorValues(string src) => Book.From(TestData.Data, null).EachValues[src];
+
     static (double Num, string? Text)? Value(CondDef c, IReadOnlyDictionary<string, string> bind, Simulation s)
     {
         string Sub(string t) => FixtureCatalog.Expand(t, bind);
@@ -301,7 +334,7 @@ public class DiagnosisTests
                 var conds = Winning(pair, cs.Expect).All.Concat(pair.Sees.SelectMany(x => x));
                 foreach (var c in conds.Where(c => c.Typical != null))
                 {
-                    if (Value(c, cs.Bind, r.World) is not { } v) continue;
+                    if (Value(c, cs.Bind, r) is not { } v) continue;
                     double t = c.Typical!.Value;
                     _out.WriteLine($"{pair.Id}[{i}] {c}: {v.Num:G4} (교범 {t})");
                     Assert.True(Math.Abs(v.Num - t) <= Math.Max(0.1 * Math.Abs(t), Margin(c) / 2), $"{pair.Id}[{i}] {c}: 시뮬레이션 {v.Num:G4}, 교범 {t}");
@@ -319,24 +352,24 @@ public class DiagnosisTests
             for (int i = 0; i < pair.Cases.Count; i++)
             {
                 var a = pair.Cases[i];
-                if (a.Expect == "none" || a.Via != null) continue;
+                if (a.Expect == "none") continue;
                 var check = Winning(pair, a.Expect);
                 for (int j = 0; j < pair.Cases.Count; j++)
                 {
                     var b = pair.Cases[j];
-                    if (b.Expect == a.Expect || b.Via != null || Overlaps(a, b)) continue;
+                    if (b.Expect == a.Expect || Overlaps(a, b)) continue;
                     int compared = 0;
                     bool separated = false;
                     // 확인은 위에서부터 보므로 B가 이긴 확인의 조건도 둘을 가른다.
-                    var conds = check.All.Select(c => (c, a.Bind)).ToList();
-                    if (b.Expect != "none") conds.AddRange(Winning(pair, b.Expect).All.Select(c => (c, b.Bind)));
-                    foreach (var (c, bind) in conds)
+                    var conds = check.All.Select(c => (c, a.Bind, check)).ToList();
+                    if (b.Expect != "none") conds.AddRange(Winning(pair, b.Expect).All.Select(c => (c, b.Bind, Winning(pair, b.Expect))));
+                    foreach (var (c, bind, ch) in conds)
                     {
-                        if (Value(c, bind, Run(pair.Id, i).World) is not { } va || Value(c, bind, Run(pair.Id, j).World) is not { } vb) continue;
+                        if (Value(c, bind, Run(pair.Id, i), ch) is not { } va || Value(c, bind, Run(pair.Id, j), ch) is not { } vb) continue;
                         compared++;
                         separated |= Differs(va, vb, c);
                     }
-                    if (compared == 0) continue; // 누르기, 들은 것처럼 한 순간으로 읽을 수 없는 확인
+                    Assert.True(compared > 0, $"{pair.Id}: {a.Expect}[{i}]/{b.Expect}[{j}]를 견줄 조건이 없다");
                     Assert.True(separated, $"{pair.Id}: {a.Expect}[{i}]와 {b.Expect}[{j}]가 '{a.Expect}' 확인의 조건으로 여유만큼 갈리지 않는다");
                 }
             }
@@ -351,17 +384,18 @@ public class DiagnosisTests
             for (int i = 0; i < pair.Cases.Count; i++)
             {
                 var a = pair.Cases[i];
-                if (a.Expect == "none" || a.Via != null) continue;
-                foreach (var c in Winning(pair, a.Expect).All.Where(c => c.Above != null || c.Below != null))
+                if (a.Expect == "none") continue;
+                var win = Winning(pair, a.Expect);
+                foreach (var c in win.All.Where(c => c.Above != null || c.Below != null))
                 {
-                    if (Value(c, a.Bind, Run(pair.Id, i).World) is not { } va || double.IsNaN(va.Num)) continue;
+                    if (Value(c, a.Bind, Run(pair.Id, i), win) is not { } va || double.IsNaN(va.Num)) continue;
                     double t = (c.Above ?? c.Below)!.Value, half = Margin(c) / 2;
                     bool Pass(double v) => c.Above != null ? v > t : v < t;
                     for (int j = 0; j < pair.Cases.Count; j++)
                     {
                         var b = pair.Cases[j];
-                        if (b.Expect == a.Expect || b.Via != null || Overlaps(a, b)) continue;
-                        if (Value(c, a.Bind, Run(pair.Id, j).World) is not { } vb || double.IsNaN(vb.Num) || Pass(vb.Num)) continue;
+                        if (b.Expect == a.Expect || Overlaps(a, b)) continue;
+                        if (Value(c, a.Bind, Run(pair.Id, j), win) is not { } vb || double.IsNaN(vb.Num) || Pass(vb.Num)) continue;
                         Assert.True(Math.Abs(va.Num - t) >= half && Math.Abs(vb.Num - t) >= half,
                             $"{pair.Id} {c}: {a.Expect}[{i}] {va.Num:G4}, {b.Expect}[{j}] {vb.Num:G4}, 문턱 {t}, 여유의 절반 {half}");
                         n++;

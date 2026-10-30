@@ -34,7 +34,9 @@
           "says": "프로펠러 축 패킹 누수",
           "do": [
             { "procedure": "proc.shaft.repack", "if": [ { "q": "inventory.packing_cord", "unit": "none", "above": 0.5 } ] },
-            { "procedure": "proc.shaft.gland", "if": [ { "q": "inventory.packing_cord", "unit": "none", "below": 0.5 } ] }
+            { "procedure": "proc.shaft.gland", "if": [ { "q": "inventory.packing_cord", "unit": "none", "below": 0.5 },
+                                                      { "q": "part.leak.shaft_packing.prop.nutA", "unit": "none", "below": 2.5 },
+                                                      { "q": "part.leak.shaft_packing.prop.nutB", "unit": "none", "below": 2.5 } ] }
           ],
           "verify": { "all": [ { "q": "cue.shaft.stream", "unit": "cue", "below": 0.3 } ], "within": 120 }
         }

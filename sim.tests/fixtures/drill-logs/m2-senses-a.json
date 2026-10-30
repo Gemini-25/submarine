@@ -1,5 +1,5 @@
 {
-  "mission": "m2-senses-a", "seed": 1313, "dataStamp": "69d8a12538c0db30", "handTicks": 12,
+  "mission": "m2-senses-a", "seed": 1313, "dataStamp": "db07ac9c5a8f33b5", "handTicks": 12,
   "finalTick": 2636, "finalHash": 8771978293704533368, "status": "succeeded",
   "findings": [
     {"tick":140,"pair":"bell.nolamp","verdict":"SNS-01","bind":"lamp=water","outcome":"fixed"},

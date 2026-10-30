@@ -208,10 +208,21 @@ public sealed partial class DrillSolver
         {
             if (_s.PairRest.TryGetValue(pair.Id, out long until) && until > Now) continue;
             if (!SeesStand(pair)) continue;
+            if (HandFull(pair)) return Emit(PlanKind.Note, 0, pair: pair.Id, note: "hand_full");
             Begin(pair, 0);
             return null;
         }
         return null;
+    }
+
+    /// <summary>
+    /// 확인은 손에 쥔 물건이 없을 때만 시작한다 (설계 3.9절). 쥐고 있으면 그 쌍을 한 번 둘러볼 동안 미룬다.
+    /// </summary>
+    bool HandFull(PairDef pair)
+    {
+        if ((_q.Read("crew.hand").Text ?? "").Length == 0) return false;
+        _s.PairRest[pair.Id] = Now + Poll;
+        return true;
     }
 
     void Begin(PairDef pair, int check)
@@ -403,6 +414,7 @@ public sealed partial class DrillSolver
         {
             var pair = _book.Diagnosis.Pair(id);
             if (_s.RoundAt.TryGetValue(id, out long last) && Now - last < _book.Ticks(pair.Round!.Every)) continue;
+            if (HandFull(pair)) return false;
             _s.RoundAt[id] = Now;
             Begin(pair, 0);
             return true;

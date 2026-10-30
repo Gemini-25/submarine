@@ -46,7 +46,8 @@
       "section": "자이로컴퍼스와 항법 계산기",
       "sees": [
         [ { "q": "cue.navcomp.stall", "unit": "cue", "peak": 10, "above": 0.5, "says": "몇 초씩 멎다가" } ],
-        [ { "calc": "distanceGap", "unit": "km", "trend": 240, "above": 0.05 } ]
+        [ { "calc": "distanceGap", "unit": "km", "trend": 240, "above": 0.05 } ],
+        [ { "calc": "distanceGap", "unit": "km", "for": 30, "above": 0.05, "says": "차이가 일정하다" } ]
       ],
       "checks": [
         {
@@ -61,6 +62,10 @@
             { "measure": "stethoscope", "target": "navcomp.unit", "unit": "cue", "above": 0.4 }
           ],
           "verdict": "NAV-02"
+        },
+        {
+          "all": [ { "calc": "distanceGap", "unit": "km", "above": 0.05 }, { "q": "cue.navcomp.stall", "unit": "cue", "peak": 20, "below": 0.5, "says": "계수기가 멎지 않는다" } ],
+          "verdict": "counter_unset"
         }
       ],
       "verdicts": {
@@ -70,12 +75,18 @@
           "says": "(NAV-02)",
           "do": [ { "procedure": "proc.navcomp.gear" }, { "reset": "navcomp" } ],
           "verify": { "all": [ { "calc": "distanceGap", "unit": "km", "below": 0.05 } ], "within": 60, "hold": 20 }
+        },
+        "counter_unset": {
+          "says": "계수기를 맞추지 않음",
+          "do": [ { "reset": "navcomp" } ],
+          "verify": { "all": [ { "calc": "distanceGap", "unit": "km", "below": 0.05 } ], "within": 30, "hold": 10 }
         }
       },
       "exposure": { "setup": { "depthM": 120, "throttle": 0.5 }, "seconds": 300 },
       "cases": [
         { "expect": "NAV-02", "inject": [ { "fault": "NAV-02" } ] },
         { "expect": "PWR-02", "inject": [ { "fault": "PWR-02" } ], "via": "motor.sparks" },
+        { "expect": "counter_unset", "setup": { "parts": [ { "part": "navcomp.unit", "prop": "counterKm", "value": 0.5 } ] }, "seconds": 60 },
         { "expect": "none" }
       ]
     }

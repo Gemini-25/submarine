@@ -1,5 +1,5 @@
 {
-  "mission": "m2-hull-a", "seed": 1203, "dataStamp": "69d8a12538c0db30", "handTicks": 12,
+  "mission": "m2-hull-a", "seed": 1203, "dataStamp": "db07ac9c5a8f33b5", "handTicks": 12,
   "finalTick": 1924, "finalHash": 15010626190704101459, "status": "succeeded",
   "findings": [
     {"tick":536,"pair":"aft.alarm","verdict":"HUL-03","bind":"","outcome":"fixed"},

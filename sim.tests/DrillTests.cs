@@ -227,7 +227,10 @@ public class DrillLogTests
         Assert.Throws<InvalidDataException>(() => DrillSolver.Restore(book, new ObservableQuery(sim), json.Replace(book.Stamp, "0000000000000000", StringComparison.Ordinal)));
     }
 
-    /// <summary>바닥에 내려놓은 렌치를 공구판에서 찾지 않고 줍는다. 그 자리에서 저장하고 복원해도 해 없이 끝난다 (기록 golden 밖의 만든 사례).</summary>
+    /// <summary>
+    /// 바닥에 내려놓은 렌치를 공구판에서 찾지 않고 줍는다. 렌치가 아직 바닥에 있는 채로 일 도중에 저장하고 복원하면,
+    /// 저장하지 않고 이어 간 쪽과 같은 틱, 해시, 기록 꼬리, 판정에 닿는다 (기록 golden 밖의 만든 사례).
+    /// </summary>
     [Fact]
     public void Solver_picks_tools_up_from_the_floor()
     {
@@ -241,22 +244,35 @@ public class DrillLogTests
         Assert.Equal("mid", a.Query("toolboard.wrench").Text);
         var book = Book.From(TestData.Data, "m2-air-a");
         var sa = DrillRunner.Begin(a, new DrillSolver(book, new ObservableQuery(a)));
-        bool Picked(Simulation s, DrillSolver _) => s.Query("toolboard.wrench").Text == "belt";
-        DrillRunner.Continue(sa, new DrillHooks { PauseAt = Picked });
+        DrillRunner.Continue(sa, new DrillHooks { PauseAt = (s, so) => s.Query("toolboard.wrench").Text == "mid" && so.Phase.StartsWith("job:", StringComparison.Ordinal) });
         Assert.True(sa.Paused);
-        Assert.Contains(sa.Log.Lines, l => l.Step.Cmd == "tool.pickup.wrench");
-        Assert.DoesNotContain(sa.Log.Lines, l => l.Step.Cmd == "toolboard.take.wrench");
+        byte[] simBytes = a.SaveState();
+        string json = sa.Solver.Save();
+        int savedLines = sa.Log.Lines.Count;
+        var harm = new List<SimEvent>();
+        var hooks = new DrillHooks { EveryEvent = e => { if (e.Kind is SimEventKind.Shock or SimEventKind.Pinch or SimEventKind.Hurt or SimEventKind.CommandRejected) harm.Add(e); } };
+        DrillRunner.Continue(sa, hooks);
+
         var b = new Simulation();
         b.StartMission(TestData.Data, "m2-air-a");
-        b.RestoreState(a.SaveState());
-        var sb = DrillRunner.Begin(b, DrillSolver.Restore(book, new ObservableQuery(b), sa.Solver.Save()));
-        var harm = new List<SimEvent>();
-        DrillRunner.Continue(sb, new DrillHooks { EveryEvent = e => { if (e.Kind is SimEventKind.Shock or SimEventKind.Pinch or SimEventKind.Hurt or SimEventKind.CommandRejected) harm.Add(e); } });
-        Assert.Equal("succeeded", b.Query("mission.status").Text);
+        b.RestoreState(simBytes);
+        var sb = DrillRunner.Begin(b, DrillSolver.Restore(book, new ObservableQuery(b), json));
+        DrillRunner.Continue(sb, hooks);
+
+        Assert.Equal("succeeded", a.Query("mission.status").Text);
         Assert.Empty(harm);
+        Assert.Contains(sa.Log.Lines, l => l.Step.Cmd == "tool.pickup.wrench" && l.Step.Text == "floor");
+        Assert.DoesNotContain(sa.Log.Lines, l => l.Step.Cmd == "toolboard.take.wrench");
+        Assert.Equal(a.Tick, b.Tick);
+        Assert.Equal(a.StateHash(), b.StateHash());
+        Assert.Equal(sa.Solver.Findings, sb.Solver.Findings);
+        Assert.Equal(sa.Log.Lines.Skip(savedLines).Select(DrillRunner.LineText), sb.Log.Lines.Select(DrillRunner.LineText));
     }
 
-    /// <summary>솔버는 ObservableQuery로만 세계를 본다: 필드에 정답 쪽 타입이 없고, 여덟 훈련에서 읽은 모든 경로가 관찰 경로나 손 자리 값이다.</summary>
+    /// <summary>
+    /// 솔버는 ObservableQuery로만 세계를 본다: 필드에 정답 쪽 타입이 없고, 여덟 훈련에서 Read로 읽은 모든 경로가 관찰 경로나 손 자리 값이다.
+    /// Read로 읽은 measure.*는 없고(도구 없이 재지 않는다), 도구로 잰 것(tool:)은 Measure 걸음 안에서만 나온다.
+    /// </summary>
     [Fact]
     public void Solver_reads_only_observables()
     {
@@ -280,14 +296,30 @@ public class DrillLogTests
         foreach (var mission in DrillTests.Expected.Keys)
         {
             var read = new SortedSet<string>(StringComparer.Ordinal);
+            var pending = new List<string>();
+            int measured = 0;
             var sim = new Simulation();
             sim.StartMission(TestData.Data, mission);
             var book = Book.From(TestData.Data, mission);
-            var log = DrillRunner.Run(sim, new DrillSolver(book, new ObservableQuery(sim, p => read.Add(p))), book);
-            Assert.Equal("succeeded", log.Status);
-            foreach (var p in read)
+            var hooks = new DrillHooks
             {
-                if (p.StartsWith("measure.", StringComparison.Ordinal)) continue; // 도구로 잰 값 (Measure 걸음)
+                // 읽기는 Next() 안에서 일어난다. 그 걸음이 나오면 그동안의 읽기를 그 걸음에 붙인다.
+                BeforeStep = (_, step) =>
+                {
+                    foreach (var p in pending.Where(p => p.StartsWith("tool:", StringComparison.Ordinal)))
+                    {
+                        Assert.True(step.Kind == PlanKind.Measure && p == $"tool:{step.Tool}.{step.Target}", $"{mission}: '{p}'가 Measure 걸음 밖에서 ({step.Kind} {step.Tool} {step.Target})");
+                        measured++;
+                    }
+                    pending.Clear();
+                },
+            };
+            var log = DrillRunner.Run(sim, new DrillSolver(book, new ObservableQuery(sim, p => { read.Add(p); pending.Add(p); })), book, hooks);
+            Assert.Equal("succeeded", log.Status);
+            Assert.DoesNotContain(read, p => p.StartsWith("measure.", StringComparison.Ordinal));
+            Assert.Equal(log.Lines.Count(l => l.Step.Kind == PlanKind.Measure), measured);
+            foreach (var p in read.Where(p => !p.StartsWith("tool:", StringComparison.Ordinal)))
+            {
                 Assert.True(ObservableQuery.IsObservable(p) || ObservableQuery.IsHandPosition(p, TestData.Data), $"{mission}: '{p}'");
                 Assert.True(!p.StartsWith("mission.", StringComparison.Ordinal) || p == "mission.status", $"{mission}: '{p}'");
             }
@@ -295,39 +327,45 @@ public class DrillLogTests
         }
     }
 
-    /// <summary>일마다 낸 명령을 다듬기(눈금, 건너뜀, 줍기, 맨손) 전으로 되접으면 ProcedureRunner.ExpandWithBelt(절차, 묶음, 시작 때 공구띠)와 같다.</summary>
+    /// <summary>
+    /// 일마다 낸 명령은 ProcedureRunner.ExpandSteps(절차, 묶음, 시작 때 공구띠, 그때의 손 자리 값)의 명령과 같다 (= ExpandWithBelt, repeatFrom을 읽음).
+    /// 되접는 것은 문서에 적은 다듬기뿐이다: 전령기 눈금 명령 여럿은 하나로, 바닥에서 줍기는 공구판에서 가져오기로. 맨손 다듬기는 메모가 달라 따로 빠진다.
+    /// </summary>
     [Theory]
     [MemberData(nameof(Drills))]
     public void Jobs_follow_ExpandWithBelt(string mission)
     {
-        var log = Solved(mission);
-        var byJob = log.Lines.Where(l => l.Step.Job != null && l.Step.Kind is PlanKind.Do or PlanKind.Skip).GroupBy(l => (l.Step.Job, l.Step.Note)).ToList();
-        int compared = 0;
-        foreach (var g in byJob)
+        var expected = new Dictionary<(string Job, string Origin), List<string>>();
+        var got = new Dictionary<(string Job, string Origin), List<string>>();
+        var decided = new Dictionary<string, string>(StringComparer.Ordinal);
+        var hooks = new DrillHooks
         {
-            string? origin = g.Key.Note;
-            if (origin == null || !origin.StartsWith("proc.", StringComparison.Ordinal)) continue;
-            var proc = TestData.Data.Procedure(origin);
-            var got = g.Where(l => l.Step.Note == origin).Select(l => l.Step.Cmd!).ToList();
-            // 되접기: 전령기는 첫 눈금 명령 하나로, 다듬기가 끼운 맨손은 뺀다.
-            var folded = new List<string>();
-            foreach (var c in got)
-                if (!(c == "propulsion.set" && folded.Count > 0 && folded[^1] == "propulsion.set")) folded.Add(c);
-            var plain = ProcedureRunner.Expand(proc, Bind(proc, log, g.Key.Job!)).Select(c => c.Cmd).Where(c => !c.StartsWith("tool", StringComparison.Ordinal)).ToList();
-            var gotPlain = folded.Where(c => !c.StartsWith("tool", StringComparison.Ordinal)).ToList();
-            Assert.Equal(plain, gotPlain);
-            compared++;
-        }
-        Assert.True(compared > 0);
-    }
-
-    static Dictionary<string, string> Bind(ProcedureDef proc, DrillLog log, string job)
-    {
-        var d = new Dictionary<string, string>(StringComparer.Ordinal);
-        var decide = log.Lines.Last(l => l.Step.Kind == PlanKind.Decide && $"{l.Step.Pair}/{l.Step.Verdict}" == job);
-        var b = (decide.Step.Bind ?? "").Split(';', StringSplitOptions.RemoveEmptyEntries).ToDictionary(kv => kv.Split('=')[0], kv => kv.Split('=')[1]);
-        foreach (var name in proc.Bind) d[name] = b.Values.Single();
-        return d;
+            BeforeStep = (s, step) =>
+            {
+                if (step.Kind == PlanKind.Decide) decided[$"{step.Pair}/{step.Verdict}"] = step.Bind ?? "";
+                if (step.Kind is not (PlanKind.Do or PlanKind.Skip) || step.Job == null || step.Note == null || !step.Note.StartsWith("proc.", StringComparison.Ordinal)) return;
+                var key = (step.Job, step.Note);
+                if (!got.ContainsKey(key))
+                {
+                    var proc = TestData.Data.Procedure(step.Note);
+                    var b = decided[step.Job].Split(';', StringSplitOptions.RemoveEmptyEntries).Select(kv => kv.Split('=')[1]).ToList();
+                    var bind = proc.Bind.ToDictionary(n => n, _ => b.Single());
+                    var belt = Enumerable.Range(1, TestData.T.ToolBoard!.BeltSlots).Select(n => s.Query($"crew.belt.{n}").Text ?? "").ToArray();
+                    expected[key] = ProcedureRunner.ExpandSteps(proc, bind, belt, new ObservableQuery(s).Read).Where(i => i.Command != null).Select(i => i.Command!.Cmd).ToList();
+                    got[key] = new List<string>();
+                }
+                string cmd = step.Cmd!.StartsWith("tool.pickup.", StringComparison.Ordinal) ? "toolboard.take." + step.Cmd[12..] : step.Cmd;
+                if (!(cmd == "propulsion.set" && got[key].Count > 0 && got[key][^1] == "propulsion.set")) got[key].Add(cmd);
+            },
+        };
+        var log = DrillRunner.Solve(TestData.Data, mission, hooks: hooks);
+        Assert.Equal("succeeded", log.Status);
+        foreach (var key in expected.Keys) Assert.Equal(expected[key], got[key]);
+        // 절차를 부르는 판정마다 하나 이상 견주었다.
+        var dx = TestData.Data.Diagnosis!;
+        int withProcedure = log.Findings.Count(f => f.Outcome == "fixed" && dx.Pair(f.Pair).Verdicts[f.Verdict] is var v
+                                                    && (v.Same != null ? dx.Pair(v.Same).Verdicts[f.Verdict] : v).Do.Any(a => a.Procedure != null));
+        Assert.True(expected.Count >= withProcedure && withProcedure > 0, $"견준 일 {expected.Count}, 절차를 부른 판정 {withProcedure}");
     }
 
     [Fact]
@@ -338,34 +376,153 @@ public class DrillLogTests
         long off = water.First(l => l.Step.Cmd == "switch.C3.off" && l.Step.Note == "proc.bearing.replace").Tick;
         long touch = water.First(l => l.Step.Cmd == "pump.body.touch").Tick;
         Assert.True(touch - off >= TestData.Ticks(180), $"{(touch - off) / 20.0}초");
+        // 물: 교범 04쪽 '펌프 베어링' 둘째 줄대로 거름망을 먼저 청소한다.
+        Assert.True(water.First(l => l.Step.Kind == PlanKind.Decide && l.Step.Verdict == "WTR-01").Tick < water.First(l => l.Step.Kind == PlanKind.Decide && l.Step.Verdict == "WTR-02").Tick);
         // 케이블: 첫 '조종 레버를 멈춤에'는 이미 그 자리라 건너뛴다.
         var cable = Solved("m2-cable").Lines;
         Assert.Equal(PlanKind.Skip, cable.First(l => l.Step.Cmd == "winch.control.stop").Step.Kind);
         // 동력: 전령기를 한 눈금씩 내리고 되돌린다.
         var power = Solved("m2-power-a").Lines.Where(l => l.Step.Cmd == "propulsion.set" && l.Step.Kind == PlanKind.Do).Select(l => l.Step.Value).ToList();
         Assert.Equal(new[] { 0.5, 0.25, 0, 0.25, 0.5, 0.75 }, power.Take(6));
-        // 선체: 너트 A를 칸 수(손 자리 값)만큼 푼다.
-        var hull = Solved("m2-hull-a").Lines;
-        Assert.Equal(2, hull.Count(l => l.Step.Cmd == "shaft.nut.A.down"));
         // 자이로: 윙 소리가 멎기 전에는 뚜껑 나사를 풀지 않는다.
         var nav = Solved("m2-nav").Lines;
         long gyroOff = nav.First(l => l.Step.Cmd == "gyro.switch.off").Tick, screw = nav.First(l => l.Step.Cmd == "gyro.case.screw.1.loosen").Tick;
         Assert.True(screw - gyroOff > TestData.Ticks(30));
     }
 
-    /// <summary>뜨거운 펌프와 오래 켠 청음기를 처음 만져도 데지 않는다 (만지기 전 기다림과 다시 만지기).</summary>
+    /// <summary>축 패킹 끈 교체는 너트 A를 손 자리 값(nutA)의 칸 수만큼 푼다 (repeatFrom). 처음 칸 수가 1이나 3이어도 풀고 성공한다.</summary>
     [Theory]
-    [InlineData("m2-water-a", 600)]
-    [InlineData("m2-senses-a", 600)]
-    public void The_first_touch_does_not_burn_after_a_long_run(string mission, double runFirst)
+    [InlineData(1)]
+    [InlineData(3)]
+    public void Hull_repack_reads_nutA(int k)
+    {
+        var data = DataValidationTests.LoadModified(Path.Combine("missions", "m2-hull-a.json"), n =>
+            n["setup"]!["parts"] = System.Text.Json.Nodes.JsonNode.Parse($"[{{\"part\":\"leak.shaft_packing\",\"prop\":\"nutA\",\"value\":{k}}},{{\"part\":\"leak.shaft_packing\",\"prop\":\"nutB\",\"value\":{k}}}]"));
+        var log = DrillRunner.Solve(data, "m2-hull-a");
+        Assert.Equal("succeeded", log.Status);
+        Assert.Equal(k, log.Lines.Count(l => l.Step.Cmd == "shaft.nut.A.down" && l.Step.Kind == PlanKind.Do));
+    }
+
+    /// <summary>
+    /// 뜨거운 장비를 처음 만져도 데지 않는다: 만지기 전 기다림과 다시 만지기(retry).
+    /// 청음기는 290초 켜 두어 몸체가 60°C를 넘은 뒤 시작한다. 첫 만지기는 뜨겁고(띠 3 이상), 식은 뒤 다시 만진다.
+    /// 배수 펌프는 과열 정지 온도를 낮춘 자료로 과열 정지가 난 뒤 시작한다.
+    /// </summary>
+    [Theory]
+    [InlineData("m2-senses-a")]
+    [InlineData("m2-water-a")]
+    public void The_first_touch_does_not_burn_after_a_long_run(string mission)
+    {
+        var data = mission == "m2-water-a"
+            ? DataValidationTests.LoadModified("devices.json", n => { n["bilge_pump"]!["cutoutC"] = 55; n["bilge_pump"]!["cutoutResetC"] = 50; })
+            : TestData.Data;
+        var sim = new Simulation();
+        sim.StartMission(data, mission);
+        var before = new List<SimEvent>();
+        if (mission == "m2-senses-a")
+        {
+            sim.Run(290);
+            Assert.True(sim.Query("device.hydrophone.temp").Number > 60, $"청음기 {sim.Query("device.hydrophone.temp").Number:F1}°C");
+        }
+        else
+        {
+            for (int i = 0; i < TestData.Ticks(600) && !before.Any(e => e.Kind == SimEventKind.DeviceCutout); i++) { sim.Step(); before.AddRange(sim.DrainEvents()); }
+            Assert.Contains(before, e => e.Kind == SimEventKind.DeviceCutout);
+        }
+        var book = Book.From(data, mission);
+        var events = new List<SimEvent>();
+        var log = DrillRunner.Run(sim, new DrillSolver(book, new ObservableQuery(sim)), book, new DrillHooks { EveryEvent = events.Add });
+        Assert.DoesNotContain(events, e => e.Kind == SimEventKind.Hurt);
+        Assert.Equal("succeeded", log.Status);
+        string fixture = mission == "m2-senses-a" ? "hydrophone" : "pump.body";
+        var touches = events.Where(e => e.Kind == SimEventKind.Touched && e.Subject == fixture).ToList();
+        Assert.NotEmpty(touches);
+        if (mission == "m2-senses-a")
+        {
+            Assert.True(touches[0].Value >= 3, $"첫 만지기 띠 {touches[0].Value}");
+            Assert.Contains(touches.Skip(1), t => t.Value <= 2);
+        }
+    }
+
+    /// <summary>예비 패킹 끈이 없으면 누름판 조이기로 버티되, 너트를 셋째 칸 넘게 조이지 않는다 (축이 도는 동안 넷째 칸이면 패킹이 탄다).</summary>
+    [Fact]
+    public void Without_packing_cord_the_gland_is_never_tightened_past_the_third_notch()
+    {
+        var data = DataValidationTests.LoadModified("tuning.json", n => n["inventory"]!["locker"]!["packing_cord"] = 0);
+        var sim = new Simulation();
+        sim.StartMission(data, "m2-hull-a");
+        var book = Book.From(data, "m2-hull-a");
+        var events = new List<SimEvent>();
+        double maxNut = 0, maxSmoke = 0;
+        var solver = new DrillSolver(book, new ObservableQuery(sim));
+        var log = DrillRunner.Run(sim, solver, book, new DrillHooks
+        {
+            EveryEvent = events.Add,
+            EveryTick = s =>
+            {
+                maxNut = Math.Max(maxNut, Math.Max(s.Query("part.leak.shaft_packing.prop.nutA").Number, s.Query("part.leak.shaft_packing.prop.nutB").Number));
+                maxSmoke = Math.Max(maxSmoke, s.Query("cue.shaft.smoke").Number);
+            },
+        });
+        Assert.Contains(log.Lines, l => l.Step.Cmd == "shaft.nut.A.up");
+        Assert.True(maxNut <= 3, $"너트가 {maxNut}칸까지 조여졌다");
+        Assert.True(maxSmoke < 0.3, $"축 패킹 상자 연기 {maxSmoke:F2}");
+        Assert.DoesNotContain(events, e => e.Kind is SimEventKind.Hurt or SimEventKind.Shock or SimEventKind.Pinch or SimEventKind.CommandRejected);
+        Assert.True(solver.Outcome == DrillOutcome.Done, $"{solver.Outcome} {solver.StopReason}");
+    }
+
+    /// <summary>예비 베어링이 없으면 기름칠로 버티되, 유리 기름 잔이 차 있는 동안에는 다시 기름칠하지 않는다 (cup_full 거부로 멈추지 않는다).</summary>
+    [Fact]
+    public void Without_a_spare_bearing_the_pump_is_oiled_only_when_the_cup_is_empty()
+    {
+        var data = DataValidationTests.LoadModified("tuning.json", n => n["inventory"]!["locker"]!["pump_bearing"] = 0);
+        var sim = new Simulation();
+        sim.StartMission(data, "m2-water-a");
+        var book = Book.From(data, "m2-water-a");
+        var events = new List<SimEvent>();
+        var solver = new DrillSolver(book, new ObservableQuery(sim));
+        var log = DrillRunner.Run(sim, solver, book, new DrillHooks { EveryEvent = events.Add });
+        Assert.Contains(log.Lines, l => l.Step.Cmd == "pump.oilcup.oil");
+        Assert.DoesNotContain(events, e => e.Kind is SimEventKind.Hurt or SimEventKind.Shock or SimEventKind.Pinch or SimEventKind.CommandRejected);
+        Assert.True(solver.Outcome == DrillOutcome.Done, $"{solver.Outcome} {solver.StopReason}");
+    }
+
+    /// <summary>
+    /// 손을 놓은 일(자이로 자리 잡기)은 손이 다른 일로 max보다 오래 바빴어도, 조건이 이미 섰으면 다시 시작한다 (시간 초과로 멈추지 않는다).
+    /// 계산기 일 뒤에 400초 기다림을 붙이고 자리 잡기 기다림의 max를 320초로 줄인 자료로 본다.
+    /// </summary>
+    [Fact]
+    public void A_parked_job_resumes_when_its_condition_holds_even_after_a_long_busy_hand()
+    {
+        var data = DiagnosisDataTests.Load(
+            ("diagnosis/nav.json", n => n["pairs"]!["distance.wrong"]!["verdicts"]!["NAV-02"]!["do"]!.AsArray().Add(System.Text.Json.Nodes.JsonNode.Parse("""{ "wait": 400 }"""))),
+            ("procedures/nav.json", n => n["proc.gyro.bearing"]!["steps"]!.AsArray().Last()!["wait"]!["max"] = 320));
+        var sim = new Simulation();
+        sim.StartMission(data, "m2-nav");
+        var book = Book.From(data, "m2-nav");
+        var solver = new DrillSolver(book, new ObservableQuery(sim));
+        var log = DrillRunner.Run(sim, solver, book);
+        Assert.True(solver.Outcome == DrillOutcome.Done, $"{solver.Outcome} {solver.StopReason}");
+        Assert.Equal("succeeded", log.Status);
+    }
+
+    /// <summary>손에 물건을 쥔 채로는 확인을 시작하지 않고 'hand_full'을 적는다 (설계 3.9절). 거부가 나지 않는다.</summary>
+    [Fact]
+    public void Checks_do_not_start_with_an_item_in_hand()
     {
         var sim = new Simulation();
-        sim.StartMission(TestData.Data, mission);
-        if (mission == "m2-water-a") sim.Run(runFirst / 2); // 과열 정지 뒤
-        var book = Book.From(TestData.Data, mission);
-        var hurt = new List<SimEvent>();
-        DrillRunner.Run(sim, new DrillSolver(book, new ObservableQuery(sim)), book, new DrillHooks { EveryEvent = e => { if (e.Kind == SimEventKind.Hurt) hurt.Add(e); } });
-        Assert.Empty(hurt);
+        sim.StartMission(TestData.Data, "m2-water-a");
+        sim.Apply(new Command("locker.take.fuse"));
+        sim.Step();
+        sim.DrainEvents();
+        Assert.Equal("fuse", sim.Query("crew.hand").Text);
+        var book = Book.From(TestData.Data, "m2-water-a");
+        var events = new List<SimEvent>();
+        var session = DrillRunner.Begin(sim, new DrillSolver(book, new ObservableQuery(sim)));
+        DrillRunner.Continue(session, new DrillHooks { EveryEvent = events.Add, PauseAt = (s, _) => s.Tick >= TestData.Ticks(30) });
+        Assert.Contains(session.Log.Lines, l => l.Step.Kind == PlanKind.Note && l.Step.Note == "hand_full");
+        Assert.DoesNotContain(session.Log.Lines, l => l.Step.Kind is PlanKind.Do or PlanKind.Measure);
+        Assert.DoesNotContain(events, e => e.Kind == SimEventKind.CommandRejected);
     }
 }
 

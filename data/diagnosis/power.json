@@ -17,6 +17,14 @@
           "undo": [ { "tool": "hand", "cmd": "battery.deck.close" } ],
           "all": [ { "measure": "voltmeter", "target": "cell.{cell}", "unit": "V", "below": 16, "typical": 13, "says": "한 셀만 약 13V" } ],
           "verdict": "PWR-01"
+        },
+        {
+          "each": { "cell": "cells" },
+          "pick": "all",
+          "prep": [ { "tool": "hand", "cmd": "battery.deck.open" }, { "cmd": "tool.hydrometer" } ],
+          "undo": [ { "tool": "hand", "cmd": "battery.deck.close" } ],
+          "all": [ { "measure": "hydrometer", "target": "cell.{cell}", "unit": "sg", "below": 1.20, "says": "비중도 고르게 낮으면" } ],
+          "verdict": "discharge"
         }
       ],
       "verdicts": {
@@ -29,12 +37,14 @@
             { "restore": "throttle" }
           ],
           "verify": { "all": [ { "q": "panel.gauge.voltage", "unit": "V", "above": 117 } ], "within": 120, "hold": 10 }
-        }
+        },
+        "discharge": { "says": "축전지가 방전된 것이다", "do": [] }
       },
       "exposure": { "setup": { "depthM": 300, "throttle": 0.75 }, "seconds": 60 },
       "cases": [
         { "expect": "PWR-01", "bind": { "cell": "3" }, "inject": [ { "fault": "PWR-01", "part": "cell.3" } ] },
         { "expect": "PWR-01", "bind": { "cell": "3" }, "inject": [ { "fault": "PWR-01", "part": "cell.3" }, { "fault": "PWR-02" } ] },
+        { "expect": "discharge", "setup": { "batteryCharge": 0.3 } },
         { "expect": "none" }
       ]
     },

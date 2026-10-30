@@ -11,7 +11,7 @@ public class DiagnosisDataTests
     static readonly JsonDocumentOptions Comments = new() { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true };
 
     /// <summary>자료를 임시 폴더에 복사하고 파일들을 고쳐서 읽는다 (주석 있는 조각도 고칠 수 있게 주석을 버리고 다시 쓴다).</summary>
-    static GameData Load(params (string File, Action<JsonNode> Mutate)[] edits)
+    internal static GameData Load(params (string File, Action<JsonNode> Mutate)[] edits)
     {
         var dir = Directory.CreateTempSubdirectory("deepline-dx-");
         try
@@ -120,7 +120,11 @@ public class DiagnosisDataTests
     public void Cases()
     {
         Rejects("종류가 다르다", (Power, n => Pair(n, "voltage.low")["cases"]![0]!["inject"]![0]!["part"] = "fuse.C3"));
-        Rejects("none 사례가 없다", (Water, n => Pair(n, "pump.hot")["cases"]!.AsArray().RemoveAt(1)));
+        Rejects("none 사례가 없다", (Water, n =>
+        {
+            var cases = Pair(n, "pump.hot")["cases"]!.AsArray();
+            foreach (var c in cases.Where(c => (string?)c!["expect"] == "none").ToList()) cases.Remove(c);
+        }));
     }
 
     [Fact]

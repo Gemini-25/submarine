@@ -22,7 +22,7 @@ public sealed class ObservableQuery
     readonly Simulation _sim;
     readonly Action<string>? _onRead;
 
-    /// <param name="onRead">읽은 경로마다 부른다 (시험의 읽기 감사).</param>
+    /// <param name="onRead">읽은 경로마다 부른다 (시험의 읽기 감사). 도구로 잰 것(Measure)은 "tool:&lt;도구&gt;.&lt;대상&gt;"로 알린다.</param>
     public ObservableQuery(Simulation sim, Action<string>? onRead = null)
     {
         _sim = sim;
@@ -94,7 +94,7 @@ public sealed class ObservableQuery
     /// <summary>도구로 잰 값 (measure.&lt;도구&gt;.&lt;대상&gt;와 같다).</summary>
     public double Measure(string tool, string target)
     {
-        _onRead?.Invoke($"measure.{tool}.{target}");
+        _onRead?.Invoke($"tool:{tool}.{target}"); // Read로 읽은 measure.*와 가르려고 다른 머리를 쓴다
         return _sim.Measure(tool, target);
     }
 

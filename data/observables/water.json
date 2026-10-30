@@ -1,5 +1,6 @@
 {
   "cues": {
-    "pump.oilweep": { "sense": "Sight", "anchor": "pump.cap", "q": "pump.weep", "while": "device.bilge_pump.running", "map": [[0, 0], [1, 0.6], [4, 1]], "caption": "cue.pump.oilweep" }
+    "pump.oilweep": { "sense": "Sight", "anchor": "pump.cap", "q": "pump.weep", "while": "device.bilge_pump.running", "map": [[0, 0], [1, 0.6], [4, 1]], "caption": "cue.pump.oilweep" },
+    "pump.oilcup": { "sense": "Sight", "anchor": "pump.cap", "q": "part.pump.bearing.prop.lube", "map": [[0, 0], [1, 1]], "caption": "cue.pump.oilcup" }
   }
 }

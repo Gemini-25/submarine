@@ -495,7 +495,30 @@ public class TierADiagnosability
         return DiagnosisHarness.Observe(new ObservableQuery(sim), TestData.Data);
     }
 
+    /// <summary>교범 03, 05쪽의 가르기 줄: C2 퓨즈와 팬 정지, 축 회전계가 고른 계수기 톱니와 오르내리는 브러시, 물 표시등 전구와 베어링 마모.</summary>
+    static readonly (string, string)[] Confusable = { ("ELC-01", "AIR-01"), ("NAV-02", "PWR-02"), ("SNS-01", "WTR-02") };
+
     static string SystemOf(string fault) => TestData.Data.Faults.First(f => f.Id == fault).System;
+
+    static readonly Dictionary<string, SortedSet<string>> _lamps = new(StringComparer.Ordinal);
+
+    /// <summary>그 고장이 자기 노출에서 쓰는 상황판 표시등: 바꾸거나 켜 두는 것. 전구 고장은 그 전구의 계통을 쓴다.</summary>
+    static SortedSet<string> LampsOf(string fault)
+    {
+        lock (_lamps)
+        {
+            if (_lamps.TryGetValue(fault, out var known)) return known;
+            var (setup, seconds, part) = Exposure(fault);
+            var a = Observe(setup, seconds, null, null);
+            var b = Observe(setup, seconds, fault, part);
+            // 바뀐 표시등과 그 노출에서 켜져 있는 표시등 (빌지가 찬 노출에서는 물 표시등이 바탕에서도 켜져 있다).
+            var set = new SortedSet<string>(DiagnosisHarness.Separating(a, b).Where(k => k.StartsWith("panel.lamp.", StringComparison.Ordinal)).Select(k => k[11..]), StringComparer.Ordinal);
+            foreach (var (k, v) in b)
+                if (k.StartsWith("panel.lamp.", StringComparison.Ordinal) && v.Text is not ("off" or null)) set.Add(k[11..]);
+            if (part != null && part.StartsWith("panel.bulb.", StringComparison.Ordinal)) set.Add(part[11..]);
+            return _lamps[fault] = set;
+        }
+    }
 
     /// <summary>쌍의 글귀가 인용한 원소인가: 그 고장을 후보로 둔 쌍의 조건이 이 경로를 읽고 says가 있다.</summary>
     static bool Cited(string path, string fault) =>
@@ -513,11 +536,14 @@ public class TierADiagnosability
             var baseline = Observe(setup, seconds, null, null);
             var mine = Observe(setup, seconds, fault, part);
             var sep = DiagnosisHarness.Separating(mine, baseline);
-            _out.WriteLine($"{fault}: {string.Join(", ", sep.Take(6))}");
+            _out.WriteLine($"{fault}: 표시등 [{string.Join(", ", LampsOf(fault))}], {string.Join(", ", sep.Take(6))}");
             Assert.True(sep.Count > 0, $"{fault}는 같은 노출의 고장 없는 상태와 구별되지 않는다");
             Assert.True(sep.Any(k => DiagnosisHarness.Documented(k, TestData.Data) || Cited(k, fault)), $"{fault}를 드러내는 원소에 문서가 없다: {string.Join(", ", sep)}");
 
-            foreach (var other in DiagnosisTests.TierA.Where(o => o != fault && SystemOf(o) == SystemOf(fault)))
+            // 같은 계통, 그리고 표시등을 함께 쓰는 고장끼리 (설계 5.2절 2): SNS-01(물 표시등 전구)과 WTR-01·02, C2의 ELC-01과 AIR-01 같은 것.
+            // 교범의 가르기 표가 짚는 헷갈리는 쌍도 견준다 (표시등을 함께 쓰지 않아도).
+            foreach (var other in DiagnosisTests.TierA.Where(o => o != fault && (SystemOf(o) == SystemOf(fault) || LampsOf(o).Overlaps(LampsOf(fault))
+                                                                                || Confusable.Contains((fault, o)) || Confusable.Contains((o, fault)))))
             {
                 string? otherPart = Exposure(other).Part ?? TestData.Data.Faults.First(f => f.Id == other).DefaultPart;
                 var theirs = Observe(setup, seconds, other, otherPart);

@@ -246,7 +246,8 @@ static class DiagnosisValidator
                     var lastUndo = ch.Undo.LastOrDefault();
                     Check(lastUndo != null && (lastUndo.Tool == "hand" || lastUndo.Cmd == "tool.hand"), $"{w}: undo는 빈손으로 끝나야 한다");
                 }
-                var keys = new SortedSet<string>(ch.Each.Keys, StringComparer.Ordinal);
+                // pick all은 모든 값에서 서야 하므로 아무 값도 묶지 않는다.
+                var keys = new SortedSet<string>(ch.Pick == "all" ? Enumerable.Empty<string>() : ch.Each.Keys, StringComparer.Ordinal);
                 boundBy[ch.Verdict] = boundBy.TryGetValue(ch.Verdict, out var prev) && prev != null
                     ? new SortedSet<string>(prev.Intersect(keys), StringComparer.Ordinal) : keys;
             }

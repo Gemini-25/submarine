@@ -61,7 +61,7 @@ public sealed partial class DrillSolver
             if (GameData.Zones.Contains(at))
             {
                 cmd = op.Cmd = $"tool.pickup.{tool}";
-                op.Note = "floor";
+                op.Which = "floor"; // 기록의 메모는 절차 그대로 두고 글(Text)에 줍기를 적는다
             }
         }
         // then 기다림의 바탕값은 명령을 내는 틱에 읽는다.
@@ -71,7 +71,8 @@ public sealed partial class DrillSolver
             then.Baseline = WaitConds(then).Conds.Select(c => c.Delta ? DeltaSource(c) : double.NaN).ToList();
         }
         _s.Agenda.RemoveAt(0);
-        return Emit(PlanKind.Do, Hand, cmd: cmd, value: op.Value, value2: op.Value2, job: JobName(op.Job), jobStep: op.Step, note: op.Note ?? op.Origin);
+        return Emit(PlanKind.Do, Hand, cmd: cmd, value: op.Value, value2: op.Value2, text: op.Which == "floor" ? "floor" : null,
+            job: JobName(op.Job), jobStep: op.Step, note: op.Note ?? op.Origin);
     }
 
     PlanStep? Telegraph(Op op)
@@ -153,11 +154,13 @@ public sealed partial class DrillSolver
         return Emit(PlanKind.Do, Hand, cmd: op.Cmd, pair: _s.Evaluating, note: "press");
     }
 
-    PlanStep? ProcessRead(Op op)
+    /// <summary>누르기 뒤 읽기: 읽은 값을 Look 걸음(0틱)으로 기록에 남긴다 (DiagnosisTests가 사례 값으로 쓴다).</summary>
+    PlanStep ProcessRead(Op op)
     {
-        _s.Memo[op.Note!] = _q.Number(op.Path!);
+        double v = _q.Number(op.Path!);
+        _s.Memo[op.Note!] = v;
         _s.Agenda.RemoveAt(0);
-        return null;
+        return Emit(PlanKind.Look, 0, path: op.Path, reading: v, pair: _s.Evaluating, note: "press");
     }
 
     PlanStep? ProcessWatch(Op op)
@@ -169,7 +172,7 @@ public sealed partial class DrillSolver
         {
             _s.Memo[op.Note!] = op.Hi - op.Lo;
             _s.Agenda.RemoveAt(0);
-            return null;
+            return Emit(PlanKind.Look, 0, path: op.Path, reading: op.Hi - op.Lo, pair: _s.Evaluating, note: "watch");
         }
         return Emit(PlanKind.Wait, 1, path: op.Path, pair: _s.Evaluating, note: "watch");
     }
@@ -334,12 +337,16 @@ public sealed partial class DrillSolver
         {
             var head = job.Parked[0];
             var (conds, _, max) = WaitConds(head);
-            if (Now - head.Start > _book.Ticks(max))
+            // ProcessUntil과 같은 순서: 조건이 섰으면 시간이 지났어도 다시 시작한다 (손이 다른 일로 오래 바빴을 수 있다).
+            if (!WaitHolds(head, conds, job.Bind))
             {
-                Stop(DrillOutcome.Stuck, "wait_timeout:" + head.WaitRef);
-                return true;
+                if (Now - head.Start > _book.Ticks(max))
+                {
+                    Stop(DrillOutcome.Stuck, "wait_timeout:" + head.WaitRef);
+                    return true;
+                }
+                continue;
             }
-            if (!WaitHolds(head, conds, job.Bind)) continue;
             _s.Agenda.AddRange(job.Parked);
             job.Parked = new List<Op>();
             job.Phase = "running";

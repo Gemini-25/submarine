@@ -24,9 +24,10 @@ public sealed record DrillFinding(long Tick, string Pair, string Verdict, string
 
 /// <summary>
 /// OnlyPairs: 이 쌍만 본다. Act=false: 판정을 적기만 하고 일을 만들지 않는다.
-/// EvaluateAtTick ≥ 0: 그 틱 전에는 기록 표본만 모으고, 그 틱에 sees가 섰는지 적은 뒤 확인을 평가하고 끝낸다 (DiagnosisTests).
+/// EvaluateAtTick ≥ 0: 그 틱 전에는 기록 표본만 모으고, 그 틱에 sees가 섰는지 적은 뒤, 섰으면 확인을 평가하고 끝낸다 (DiagnosisTests).
 /// </summary>
-public sealed record DrillOptions(IReadOnlyList<string>? OnlyPairs = null, bool Act = true, long EvaluateAtTick = -1);
+/// AssumeSees: EvaluateAtTick 모드에서 sees가 서지 않아도 확인을 평가한다 (다른 쌍이 먼저 알아채는 via 사례).
+public sealed record DrillOptions(IReadOnlyList<string>? OnlyPairs = null, bool Act = true, long EvaluateAtTick = -1, bool AssumeSees = false);
 
 /// <summary>실행기의 시험 고리.</summary>
 public sealed class DrillHooks
