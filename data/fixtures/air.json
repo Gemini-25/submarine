@@ -204,7 +204,7 @@
         "open": {
           "tool": "hand",
           "noise": "cover",
-          "rejectIf": [ { "if": "self.latchOpen == 0", "reason": "latch_shut" } ],
+          "rejectIf": [ { "if": "self.latchOpen == 0", "reason": "furnace_latch_shut" } ],
           "hazards": [ { "if": "self.tempC >= $hotHandC || air.candleSeconds > 0", "hazard": "burn" } ]
         },
         "close": { "tool": "hand", "noise": "cover" }

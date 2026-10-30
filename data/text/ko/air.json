@@ -32,5 +32,5 @@
   "fixture.o2.furnace.latch": "산소 화로 문 걸쇠",
   "fixture.o2.furnace.vent": "산소 화로 배기구",
   "reason.furnace_door_open": "문이 열려 있어 걸쇠가 걸리지 않는다.",
-  "reason.latch_shut": "걸쇠가 문을 잡고 있어 열리지 않는다."
+  "reason.furnace_latch_shut": "걸쇠가 문을 잡고 있어 열리지 않는다."
 }
