@@ -500,7 +500,7 @@ public class PartMechanicsTests
     {
         var sim = NewSim();
         var w = sim.World;
-        var none = Parts.PropRef.Resolve(w, "steam.accumulator", "pressure");
+        var none = Parts.PropRef.Resolve(w, "no.such.part", "pressure");
         Assert.False(none.Exists);
         Assert.Equal(-1, none.Index);
         Assert.Equal(0.7, none.Get(0.7));
@@ -538,20 +538,25 @@ public class PartMechanicsTests
     [Fact]
     public void A_state_part_turns_its_module_on()
     {
+        // 실제 데이터에는 축압기(steam.accumulator, WP19)가 있어 증기 모듈이 켜지고, 고장이 없으면 압력이 그대로다.
+        var on = TestData.NewSim();
+        Assert.True(on.World.Mechanics.Steam);
+        on.Run(5);
+        Assert.Equal(1, on.Q("part.steam.accumulator.prop.pressure"));
+
+        // 증기 조각 파일을 모두 빼면 상태 부품이 없어 모듈이 꺼진다.
         var dir = Directory.CreateTempSubdirectory("deepline-mod-");
         try
         {
-            foreach (var f in Directory.GetFiles(TestData.DataDir, "*.json", SearchOption.AllDirectories))
+            foreach (var f in Directory.GetFiles(TestData.DataDir, "*", SearchOption.AllDirectories))
             {
+                if (Path.GetFileName(f) == "steam.json") continue;
                 var to = Path.Combine(dir.FullName, Path.GetRelativePath(TestData.DataDir, f));
                 Directory.CreateDirectory(Path.GetDirectoryName(to)!);
                 File.Copy(f, to);
             }
-            Edit(dir.FullName, "parts.json", n => n["steam.accumulator"] = new JsonObject { ["kind"] = "accumulator", ["props"] = new JsonObject { ["pressure"] = 1 } });
-            var on = new Simulation(GameData.LoadFromDirectory(dir.FullName), 1);
-            Assert.True(on.World.Mechanics.Steam);
-            on.Run(5); // 빈 칸이라 아무 일도 없다
-            Assert.Equal(1, on.Q("part.steam.accumulator.prop.pressure"));
+            var off = new Simulation(GameData.LoadFromDirectory(dir.FullName), 1);
+            Assert.False(off.World.Mechanics.Steam);
         }
         finally
         {

@@ -1,0 +1,18 @@
+{
+  "cue.steam.fog": "현창 유리가 뿌옇게 흐려졌다",
+  "cue.steam.hiss": "축압기 관 이음에서 쉿 하고 증기가 새는 소리",
+  "cue.steam.plume": "관 이음에서 흰 김이 피어오른다",
+  "cue.steam.vent": "빼기 밸브에서 증기가 요란하게 빠지는 소리",
+  "fixture.steam.bleed": "빼기 밸브",
+  "fixture.steam.flange.bolt.{n}": "플랜지 볼트 {n}",
+  "fixture.steam.flange.face": "플랜지 면",
+  "fixture.steam.gasket": "축압기 개스킷",
+  "fixture.steam.joint": "축압기 관 이음",
+  "fixture.steam.stop": "축압기 정지 밸브",
+  "reading.steam.line": "관 압력계",
+  "reading.steam.pressure": "축압기 압력계",
+  "reason.flange_bolts_tight": "플랜지 볼트가 개스킷을 물고 있다.",
+  "reason.flange_open": "플랜지가 벌어져 있어 테이프가 붙지 않는다.",
+  "reason.gasket_in": "개스킷이 끼워져 있어 면에 긁개가 닿지 않는다.",
+  "reason.need_gasket": "끼울 개스킷을 쥐고 있지 않다."
+}

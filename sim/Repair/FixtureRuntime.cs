@@ -41,6 +41,15 @@ static class FixtureHooks
             double floor = w.Humidity is { } h ? Math.Min(m0, h.Target(w, v.Part)) : 0;
             v.Part.Set("moisture", Math.Max(Math.Max(0, m0 - jt.RagDry), floor));
         },
+        // 축압기 플랜지 볼트를 조였다 (WP19 PWR-03): 넷이 다 조여지면 개스킷이 앉는다. 이음 integrity = 개스킷 품질(gasketQ),
+        // 순서를 어겼으면(flangeBad) tuning.steam.misorderCap을 넘지 못한다. 같은 개스킷에 볼트만 다시 조이면 품질이 그대로다.
+        ["flangeSeat"] = (w, v) =>
+        {
+            if (w.T.Steam is not { } st || v.Fastening is not { } fl || !fl.AllTight() || !v.Part.HasProp("gasketQ")) return;
+            double q = v.Part.Get("gasketQ");
+            if (v.Part.HasProp("flangeBad") && v.Part.Get("flangeBad") >= 0.5) q = Math.Min(q, st.MisorderCap);
+            v.Part.Set("integrity", q);
+        },
     };
 }
 

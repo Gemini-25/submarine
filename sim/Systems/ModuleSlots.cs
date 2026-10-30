@@ -12,6 +12,7 @@ static class SteamSystem
     public static void Update(SimWorld w)
     {
         if (!w.Mechanics.Steam) return;
+        Steam.Update(w); // WP19: sim/Systems/Steam.cs
     }
 }
 

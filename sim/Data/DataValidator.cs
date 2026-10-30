@@ -259,6 +259,7 @@ static class DataValidator
         Systems.Navigation.Validate(d, errors);
         Systems.CableGear.Validate(d, errors);
         Systems.Suction.Validate(d, errors);
+        Systems.Steam.Validate(d, errors);
         SwitchboardTuningValidator.Validate(d, errors);
 
         if (errors.Count > 0)

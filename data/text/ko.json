@@ -80,6 +80,8 @@
   "reason.need_mallet": "손에 나무망치가 없다.",
   "reason.need_packing_cord": "감을 패킹 끈을 쥐고 있지 않다.",
   "reason.need_packing_hook": "손에 패킹 갈고리가 없다.",
+  "reason.need_packing_tape": "감을 테이프를 쥐고 있지 않다.",
+  "reason.need_scraper": "긁개 없이는 긁어지지 않는다.",
   "reason.need_screwdriver": "드라이버 없이는 나사가 돌아가지 않는다.",
   "reason.need_scrub_brush": "솔 없이는 문질러지지 않는다.",
   "reason.need_shore": "버팀목을 쥐고 있지 않다.",

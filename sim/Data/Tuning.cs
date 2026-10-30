@@ -50,6 +50,8 @@ public sealed class Tuning
     [Optional] public SuctionTuning? Suction { get; set; }
     /// <summary>트림과 밸러스트 탱크 (M2 WP18, data/tuning/attitude.json). 기울기 모듈의 상태 부품이 있으면 필요하다.</summary>
     [Optional] public AttitudeTuning? Attitude { get; set; }
+    /// <summary>증기 축압기와 배관 (M2 WP19 PWR-03, data/tuning/steam.json). 상태 부품 steam.accumulator가 있으면 필요하다.</summary>
+    [Optional] public SteamTuning? Steam { get; set; }
 }
 
 /// <summary>펌프 베어링 (WTR-02). 기름 잔의 기름은 저항(drag)을 줄이고, 뚜껑 볼트가 풀린 채 돌면 기름이 새고 빨리 닳는다.</summary>

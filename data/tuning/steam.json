@@ -1,0 +1,21 @@
+{
+  "steam": {
+    "lineVolume": 0.1,
+    "stopFlowPerSecond": 2,
+    "bleedPerSecond": 0.04,
+    "leakK": 0.002,
+    "wrapCut": 0.8,
+    "openFlangePerSecond": 0.05,
+    "winchUsePerSecond": 0.0015,
+    "wrapLifeSeconds": 900,
+    "lampWarnBelow": 0.4,
+    "riseC": 188,
+    "rhPerLeak": 2,
+    "dewPerLeak": 3,
+    "dewCreepPerMin": 0.16,
+    "misorderCap": 0.85,
+    "zone": "aft",
+    "ventNoise": 20,
+    "hissNoise": 6
+  }
+}
