@@ -36,6 +36,11 @@ public partial class ScreenshotTour : Node
     async Task Run()
     {
         Directory.CreateDirectory(_dir);
+        // 지시서와 훈련 고르기 (WP23): 시작할 때 보이는 화면.
+        _main.Hud.ShowBriefing(true);
+        for (int i = 0; i < 5; i++) await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+        await Capture("00-briefing");
+        _main.Hud.ShowBriefing(false);
         // 2분: 흡입구 막힘, 리벳 누수, C3 퓨즈 단선까지 일어난 뒤
         _main.Runner.StepMany(120 * _main.Runner.Data.Tuning.TicksPerSecond);
         foreach (var (name, eye, target) in Shots)
