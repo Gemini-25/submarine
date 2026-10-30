@@ -24,6 +24,9 @@ public partial class PlayerController : CharacterBody3D
     public bool Crouching { get; private set; }
     /// <summary>걸음 배율. 두 손이 드는 물건(흡수제 통, 예비 셀)을 들면 0.6 (Main이 정한다).</summary>
     public float SpeedFactor { get; set; } = 1;
+    /// <summary>배의 앞뒤 기울기 (도, 이물이 숙으면 양수; 경사계 읽기). 카메라가 기울고 비탈을 오를 때 느려진다 (M2 WP18).</summary>
+    public float TrimDeg { get; set; }
+    float _tilt;
     /// <summary>자동 테스트가 넣는 이동 입력(x 오른쪽, y 뒤쪽). null이면 키보드를 읽는다.</summary>
     public Vector2? AutoMove { get; set; }
     public string WorkStation { get; private set; } = "";
@@ -55,7 +58,7 @@ public partial class PlayerController : CharacterBody3D
     {
         GlobalPosition = feet;
         Velocity = Vector3.Zero;
-        var dir = lookAt - (feet + Vector3.Up * _eye);
+        var dir = Untilt(lookAt - (feet + Vector3.Up * _eye));
         Rotation = new Vector3(0, Mathf.Atan2(-dir.X, -dir.Z), 0);
         _pitch = Mathf.Atan2(dir.Y, new Vector2(dir.X, dir.Z).Length());
         _head.Rotation = new Vector3(_pitch, 0, 0);
@@ -65,7 +68,7 @@ public partial class PlayerController : CharacterBody3D
     /// <summary>시선을 한 점으로 돌린다 (자동 테스트와 작업 시점에서 돌아올 때).</summary>
     public void LookAt3D(Vector3 target)
     {
-        var dir = target - Camera.GlobalPosition;
+        var dir = Untilt(target - Camera.GlobalPosition);
         Rotation = new Vector3(0, Mathf.Atan2(-dir.X, -dir.Z), 0);
         _pitch = Mathf.Clamp(Mathf.Atan2(dir.Y, new Vector2(dir.X, dir.Z).Length()), -1.5f, 1.5f);
         _head.Rotation = new Vector3(_pitch, 0, 0);
@@ -127,7 +130,7 @@ public partial class PlayerController : CharacterBody3D
         if (canMove && AutoMove is { } auto) input = auto;
         input = input.LimitLength(1);
         var dir = (Transform.Basis * new Vector3(input.X, 0, input.Y)).Normalized();
-        float speed = (Crouching ? CrouchSpeed : WalkSpeed) * SpeedFactor;
+        float speed = (Crouching ? CrouchSpeed : WalkSpeed) * SpeedFactor * UphillFactor(dir);
         var v = Velocity;
         v.X = dir.X * speed;
         v.Z = dir.Z * speed;
@@ -138,12 +141,34 @@ public partial class PlayerController : CharacterBody3D
         bool zoom = !Locked && Input.IsMouseButtonPressed(MouseButton.Right);
         Camera.Fov = Mathf.Lerp(Camera.Fov, zoom ? ZoomFov : NormalFov, Math.Min(1, dt * 12));
 
+        // 사람은 중력에 맞춰 곧게 서므로 배 안에서 보면 기울기만큼 몸이 젖혀진다: 카메라를 배의 가로축(z) 둘레로 돌린다.
+        _tilt = Mathf.Lerp(_tilt, Mathf.DegToRad(TrimDeg), Math.Min(1, dt * 1.5f));
+        if (!InWorkView)
+        {
+            var axis = (_head.GlobalTransform.Basis.Inverse() * Vector3.Back).Normalized();
+            Camera.Basis = Mathf.Abs(_tilt) > 1e-5f ? new Basis(axis, -_tilt) : Basis.Identity;
+        }
+
         if (InWorkView)
         {
             _workBlend = Math.Min(1, _workBlend + dt * 3.5f);
             float t = _workBlend * _workBlend * (3 - 2 * _workBlend);
             Camera.GlobalTransform = _workFrom.InterpolateWith(_workTo, t);
         }
+    }
+
+    /// <summary>카메라는 머리 방향을 배의 가로축 둘레로 −기울기만큼 돌린 쪽을 본다. 한 점을 보려면 머리는 그 반대로 돌린 쪽을 봐야 한다.</summary>
+    Vector3 Untilt(Vector3 dir) => Mathf.Abs(_tilt) > 1e-5f ? new Basis(Vector3.Back, _tilt) * dir : dir;
+
+    /// <summary>비탈 걸음: 기울기가 10도를 넘으면 높은 쪽으로 걸을 때 느려지고, 25도를 넘으면 30%. 내리막과 옆걸음은 그대로.</summary>
+    float UphillFactor(Vector3 dir)
+    {
+        float a = Mathf.Abs(TrimDeg);
+        if (a <= 10 || dir == Vector3.Zero) return 1;
+        // 이물이 숙으면(양수) 고물 쪽(−x)이 오르막이다.
+        float uphill = Math.Max(0, TrimDeg > 0 ? -dir.X : dir.X);
+        float slow = a >= 25 ? 0.3f : 1 - 0.7f * (a - 10) / 15;
+        return Mathf.Lerp(1, slow, uphill);
     }
 
     bool HeadBlocked()

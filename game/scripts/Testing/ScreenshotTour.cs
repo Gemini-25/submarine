@@ -23,6 +23,7 @@ public partial class ScreenshotTour : Node
         ("05-aft-leak", new Vector3(3.3f, 1.6f, 0.2f), new Vector3(1.6f, 1.0f, -1.0f)),
         ("06-battery-well", new Vector3(6.2f, 1.6f, 0.4f), new Vector3(6.7f, -0.3f, 0)),
         ("08-mid-toolboard", new Vector3(3.6f, 1.5f, -0.4f), new Vector3(2.75f, 1.3f, -0.82f)),
+        ("09-mid-ballast", new Vector3(3.55f, 1.45f, 0.8f), new Vector3(2.76f, 1.3f, 0.82f)), // 밸러스트 조절반 (WP18)
     };
 
     public override void _Ready()

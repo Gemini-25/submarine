@@ -63,17 +63,26 @@ public partial class Submarine
             it.CommandFor = (_, m) => m == Motion.Click ? $"tool.pickup.{tool}" : null;
             uint layer = it.CollisionLayer;
             it.CollisionLayer = 0;
-            OnUpdate((s, _) =>
+            int lastZone = -1;
+            OnUpdate((s, dt) =>
             {
                 int zone = GameData.ZoneIndex(s.Crew.ToolPlaces.GetValueOrDefault(tool, ""));
                 bool onFloor = zone >= 0;
                 root.Visible = onFloor;
                 it.CollisionLayer = onFloor ? layer : 0;
-                if (onFloor)
+                if (!onFloor) { lastZone = -1; return; }
+                // 같은 바닥에서 이웃 구역으로 옮겨 갔으면(기울기로 구름, WP18) 굴러가듯 미끄러져 간다. 처음 놓일 때는 바로 그 자리.
+                var to = spots[zone];
+                if (lastZone < 0) root.Position = to;
+                else if (root.Position.DistanceTo(to) > 0.01f)
                 {
-                    root.Position = spots[zone];
-                    it.Position = spots[zone];
+                    var step = root.Position.MoveToward(to, 2.5f * dt);
+                    mesh.RotateObjectLocal(Vector3.Up, (root.Position - step).X * 12f);
+                    root.Position = step;
                 }
+                else root.Position = to;
+                lastZone = zone;
+                it.Position = to;
             });
         }
     }
