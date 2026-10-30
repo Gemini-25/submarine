@@ -108,7 +108,7 @@ public partial class Submarine
         Stations["winch"] = (new Vector3(1.45f, 1.2f, 0.1f), new Vector3(1.42f, 0.45f, 0.95f));
         Stations["pump"] = (new Vector3(1.3f, 0.95f, 0.25f), new Vector3(0.93f, 0.9f, -0.9f));
         Stations["locker.aft"] = (new Vector3(1.5f, 1.6f, -0.3f), new Vector3(1.5f, 1.7f, -1.05f));
-        Stations["toolboard"] = (new Vector3(3.5f, 1.35f, -0.6f), new Vector3(2.76f, 1.3f, -0.82f));
+        Stations["toolboard"] = (new Vector3(3.6f, 1.45f, -0.7f), new Vector3(2.76f, 1.38f, -0.82f));
         Stations["ballast"] = (new Vector3(3.65f, 1.35f, 0.75f), new Vector3(2.76f, 1.3f, 0.82f));
         Stations["scrubber"] = (new Vector3(3.0f, 1.1f, -0.2f), new Vector3(3.0f, 0.45f, -1.0f));
         Stations["fan"] = (new Vector3(FanPos.X, 1.45f, 0.45f), FanPos);
@@ -442,27 +442,39 @@ public partial class Submarine
         ("stethoscope", "청진기"), ("hydrometer", "비중계"), ("soldering_iron", "납땜인두"),
     };
 
-    /// <summary>공구판: 해치 격벽 중앙 쪽 면의 좌현 부분. 도구마다 칠한 윤곽과 이름.</summary>
+    /// <summary>
+    /// 공구판: 해치 격벽 중앙 쪽 면의 좌현 부분 (WP25). 옛 공구판처럼 짙게 칠한 판에 도구마다 그 실루엣을 희게 칠하고 이름을 적는다.
+    /// 칸 배치는 BoardRows(Submarine.Tools.cs), 윤곽은 도구 모형의 바닥 투영(ToolModels.Outline)이다. 손으로 그리지 않는다.
+    /// </summary>
     void BuildToolBoard(Node3D root)
     {
-        var m = Mount(root, "ToolBoard", new Vector3(HatchX + 0.045f, 1.325f, -0.825f), Vector3.Right);
+        var m = Mount(root, "ToolBoard", new Vector3(HatchX + 0.045f, BoardCenterY, -0.825f), Vector3.Right);
         var mb = new MeshBuilder();
-        mb.Box(ArtMat.Wood, new Vector3(0, 0, 0.01f), new Vector3(0.65f, 0.95f, 0.02f), 0.004f);
-        var outline = ArtMat.ClothWire(new Color(0.78f, 0.74f, 0.6f));
-        for (int k = 0; k < BoardTools.Length; k++)
-        {
-            float x = -0.24f + (k % 4) * 0.16f, y = 0.37f - (k / 4) * 0.185f;
-            mb.Box(outline, new Vector3(x, y + 0.01f, 0.021f), new Vector3(0.12f, 0.13f, 0.002f), 0);
-            mb.Cylinder(ArtMat.BareSteel, Kit.AlongAxis(Vector3.Back, new Vector3(x, y + 0.06f, 0.035f)), 0.005f, 0.03f, 6);
-            Kit.Text(m, UI.Texts.Tool(BoardTools[k].Id), new Vector3(x, y - 0.065f, 0.023f), 0.014f, PlateInk);
-        }
+        mb.Box(ArtMat.PaintedSteel(new Color(0.07f, 0.085f, 0.075f), 0.35f, 0.35f, rust: 0.05f, tag: "toolboard"), new Vector3(0, 0, BoardFace / 2), new Vector3(BoardW, BoardH, BoardFace), 0.004f);
+        mb.Box(ArtMat.Wood, new Vector3(0, BoardH / 2 - 0.004f, BoardFace / 2 + 0.002f), new Vector3(BoardW + 0.01f, 0.012f, BoardFace + 0.006f), 0.003f);
+        mb.Box(ArtMat.Wood, new Vector3(0, -BoardH / 2 + 0.004f, BoardFace / 2 + 0.002f), new Vector3(BoardW + 0.01f, 0.012f, BoardFace + 0.006f), 0.003f);
         mb.Instance(m, "Board");
-        NamePlate(m, "공구판", new Vector3(0, 0.51f, 0.001f), Vector3.Back, 0.022f);
-        for (int k = 0; k < BoardTools.Length; k++)
+        var paint = new Color(0.86f, 0.84f, 0.76f);
+        foreach (var (id, slot) in BoardSlots)
         {
-            float x = -0.24f + (k % 4) * 0.16f, y = 0.37f - (k / 4) * 0.185f;
-            Marker(m, $"toolboard.{BoardTools[k].Id}", $"공구판: {UI.Texts.Tool(BoardTools[k].Id)}", new Vector3(x, y, 0.035f), new Vector3(0.13f, 0.16f, 0.02f), "toolboard");
+            var sil = Art.ToolModels.Outline(id);
+            var mat = new StandardMaterial3D
+            {
+                AlbedoTexture = ImageTexture.CreateFromImage(sil.ToImage()), AlbedoColor = paint, Roughness = 0.95f,
+                Transparency = BaseMaterial3D.TransparencyEnum.AlphaScissor, AlphaScissorThreshold = 0.5f,
+                TextureFilter = BaseMaterial3D.TextureFilterEnum.Linear,
+            };
+            m.AddChild(new MeshInstance3D
+            {
+                Name = $"Outline_{id}", Mesh = new QuadMesh { Size = slot.Outline.Size }, MaterialOverride = mat,
+                Position = new Vector3(slot.Outline.GetCenter().X, slot.Outline.GetCenter().Y, BoardFace + 0.0012f),
+                CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
+            });
+            Kit.Text(m, UI.Texts.Tool(id), new Vector3(slot.Cell.GetCenter().X, slot.Cell.Position.Y + 0.012f, BoardFace + 0.001f), 0.012f, paint);
+            Marker(m, $"toolboard.{id}", $"공구판: {UI.Texts.Tool(id)}", new Vector3(slot.Cell.GetCenter().X, slot.Cell.GetCenter().Y, 0.05f),
+                new Vector3(slot.Cell.Size.X - 0.004f, slot.Cell.Size.Y - 0.004f, 0.06f), "toolboard");
         }
+        NamePlate(m, "공구판", new Vector3(0, BoardH / 2 - 0.03f, BoardFace + 0.001f), Vector3.Back, 0.022f);
     }
 
     /// <summary>밸러스트 조절반(WTR-04): 해치 격벽 중앙 쪽 면의 우현 부분. 침수 밸브 둘, 패킹 너트, 몸통 돌기, 탱크 유리관, 흡입 선택 레버, 경사계.</summary>

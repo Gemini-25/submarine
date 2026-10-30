@@ -64,7 +64,7 @@ public partial class Submarine
             Shelf(aft, AftShelves[s], aftShelfY[s], 0.6f, 0.15f, "후방 예비품", "locker.aft");
     }
 
-    /// <summary>선반 하나를 칸으로 나눈다. 칸마다 조준 상자, 이름과 재고, 재고만큼의 작은 상자.</summary>
+    /// <summary>선반 하나를 칸으로 나눈다. 칸마다 조준 상자, 이름과 재고, 재고만큼의 물건 모형.</summary>
     void Shelf(Node3D parent, string[] items, float shelfY, float width, float depth, string cabinet, string station)
     {
         float cell = width / items.Length;
@@ -78,12 +78,8 @@ public partial class Submarine
             }
             float x = -width / 2 + cell * (k + 0.5f);
             var label = Geo.Text(parent, "", new Vector3(x, shelfY + 0.15f, depth + 0.005f), 0.016f);
-            var pieces = new List<MeshInstance3D>();
             int stock = _data.Tuning.Inventory.Locker[item];
-            var color = Geo.Mat(SpareColor(item), 0.7f, 0.2f);
-            for (int n = 0; n < Math.Min(stock, 6); n++)
-                pieces.Add(Geo.Box(parent, new Vector3(cell / 7.5f, 0.05f, depth * 0.5f),
-                    new Vector3(x - cell * 0.36f + n * cell * 0.145f, shelfY + 0.035f, depth * 0.45f), color));
+            var pieces = Stack(parent, item, Math.Min(stock, 6), new Vector3(x, shelfY + 0.01f, depth * 0.5f), new Vector2(cell - 0.02f, depth * 0.85f));
             var bin = Add(Interactable.Create(parent, $"locker.{item}", $"{cabinet}: {Texts.Item(item)}",
                 new Vector3(cell - 0.01f, 0.17f, 0.03f), new Vector3(x, shelfY + 0.09f, depth + 0.02f), station));
             bin.CommandFor = (_, m) => m == Motion.Click ? $"locker.take.{item}" : null;
@@ -96,19 +92,26 @@ public partial class Submarine
         }
     }
 
-    /// <summary>예비품마다 다른 색 (회색 상자 단계; 모양은 M5).</summary>
-    static Color SpareColor(string item) => item switch
+    /// <summary>
+    /// 칸에 물건 모형(ItemModels)을 count개 늘어놓는다 (WP25). 칸 폭과 깊이에 들어가는 만큼 한 겹에 놓고, 남으면 위로 쌓는다.
+    /// at은 칸 바닥 가운데. 재고가 줄면 뒤에서부터 감춘다.
+    /// </summary>
+    static List<Node3D> Stack(Node3D parent, string item, int count, Vector3 at, Vector2 room)
     {
-        "fuse_wire" => new Color(0.75f, 0.72f, 0.6f),
-        "insulating_tape" => new Color(0.1f, 0.1f, 0.1f),
-        "panel_bulb" => new Color(0.9f, 0.88f, 0.75f),
-        "ink_bottle" => new Color(0.15f, 0.15f, 0.35f),
-        "vacuum_tube" => new Color(0.8f, 0.82f, 0.8f),
-        "carbon_rods" => new Color(0.2f, 0.2f, 0.2f),
-        "gasket" or "viewport_seal" or "chamber_seal" => new Color(0.35f, 0.25f, 0.18f),
-        "packing_tape" or "packing_cord" => new Color(0.6f, 0.55f, 0.4f),
-        "penetrating_oil" => new Color(0.55f, 0.4f, 0.15f),
-        "brake_lining" => new Color(0.45f, 0.35f, 0.3f),
-        _ => new Color(0.55f, 0.57f, 0.6f),
-    };
+        var box = Art.ItemModels.Bounds(item);
+        float px = box.Size.X + 0.006f, pz = box.Size.Z + 0.006f, py = box.Size.Y + 0.002f;
+        int cols = Math.Max(1, Math.Min(count, (int)(room.X / px)));
+        int rows = Math.Max(1, Math.Min((count + cols - 1) / cols, (int)(room.Y / pz)));
+        var center = box.GetCenter();
+        var list = new List<Node3D>();
+        for (int n = 0; n < count; n++)
+        {
+            int layer = n / (cols * rows), k = n % (cols * rows);
+            int c = k % cols, r = k / cols;
+            var model = Art.ItemModels.Build(parent, item);
+            model.Position = at + new Vector3((c - (cols - 1) / 2f) * px - center.X, layer * py - box.Position.Y, (r - (rows - 1) / 2f) * pz - center.Z);
+            list.Add(model);
+        }
+        return list;
+    }
 }

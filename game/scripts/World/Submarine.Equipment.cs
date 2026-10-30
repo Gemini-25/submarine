@@ -265,20 +265,23 @@ public partial class Submarine
         {
             Geo.Solid(root, new Vector3(w - 0.06f, 0.03f, d), new Vector3(0, y - 0.17f, d / 2), Geo.Paint);
             var label = Geo.Text(root, "", new Vector3(0, y + 0.2f, d + 0.005f), 0.032f);
-            var pieces = new List<MeshInstance3D>();
+            // 물건 모형(WP25)을 M1 때의 자리에 그대로 늘어놓는다: 퓨즈는 앞뒤로 눕히고, 쐐기는 한 줄, 버팀목은 쌓는다.
+            var pieces = new List<Node3D>();
             int stock = _data.Tuning.Inventory.Locker[item];
             for (int k = 0; k < stock; k++)
             {
-                MeshInstance3D m;
+                var m = Art.ItemModels.Build(root, item);
                 if (item == "fuse")
                 {
-                    m = Geo.Cyl(root, 0.016f, 0.1f, new Vector3(-0.4f + (k % 12) * 0.07f, y - 0.14f, 0.2f), Geo.Mat(new Color(0.85f, 0.85f, 0.75f)));
-                    m.RotationDegrees = new Vector3(90, 0, 0);
+                    m.Position = new Vector3(-0.4f + (k % 12) * 0.07f, y - 0.155f, 0.2f);
+                    m.RotationDegrees = new Vector3(0, 90, 0);
                 }
                 else if (item == "wood_wedge")
-                    m = Geo.Box(root, new Vector3(0.05f, 0.06f, 0.14f), new Vector3(-0.38f + (k % 8) * 0.1f, y - 0.125f, 0.2f), Geo.Wood);
-                else
-                    m = Geo.Box(root, new Vector3(0.85f, 0.07f, 0.07f), new Vector3(0, y - 0.12f + (k / 3) * 0.075f, 0.08f + (k % 3) * 0.09f), Geo.Wood);
+                {
+                    m.Position = new Vector3(-0.38f + (k % 8) * 0.1f, y - 0.155f, 0.2f);
+                    m.RotationDegrees = new Vector3(0, 90, 0);
+                }
+                else m.Position = new Vector3(0, y - 0.155f + (k / 3) * 0.075f, 0.08f + (k % 3) * 0.09f);
                 pieces.Add(m);
             }
             var bin = Add(Interactable.Create(root, $"locker.{item}", $"사물함: {ItemName(item)}", new Vector3(w - 0.08f, 0.32f, 0.06f), new Vector3(0, y, d + 0.03f), "locker"));

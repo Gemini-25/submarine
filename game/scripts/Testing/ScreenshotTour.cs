@@ -51,6 +51,9 @@ public partial class ScreenshotTour : Node
         _main.OpenManual("퓨즈 교체");
         for (int i = 0; i < 10; i++) await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
         await Capture("07-manual");
+        _main.Manual.Close();
+        _main.Resume();
+        await ToolShots();
         GetTree().Quit(0);
     }
 

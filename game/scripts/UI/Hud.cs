@@ -1,3 +1,4 @@
+using DeepLine.Game.Art;
 using DeepLine.Game.Interaction;
 using DeepLine.Game.Player;
 using DeepLine.Game.Sim;
@@ -33,7 +34,10 @@ public partial class Hud : CanvasLayer
     InteractionController _hands = null!;
     PlayerController _player = null!;
     Control _cross = null!;
-    Label _target = null!, _gesture = null!, _held = null!, _felt = null!, _belt = null!;
+    Label _target = null!, _gesture = null!, _felt = null!;
+    HBoxContainer _belt = null!, _held = null!;
+    ModelIcons _icons = null!;
+    string _beltKey = "", _heldKey = "";
     Control _briefing = null!, _result = null!;
     Label _resultTitle = null!, _resultBody = null!;
     double _feltFor;
@@ -61,26 +65,30 @@ public partial class Hud : CanvasLayer
         _gesture = Centered(UiKit.Text("", 15, new Color(1, 0.95f, 0.85f, 0.6f)), 60);
         _felt = Centered(UiKit.Text("", 19, new Color(1, 0.86f, 0.7f)), 150);
 
-        _held = UiKit.Text("", 17, new Color(1, 0.95f, 0.85f, 0.75f));
-        _held.SetAnchorsPreset(Control.LayoutPreset.BottomRight);
+        foreach (var l in new[] { _target, _gesture, _felt }) Shadowed(l);
+
+        // 모형 그림 (WP25): 공구띠의 도구와 손에 쥔 것 옆에 작은 그림을 둔다.
+        _icons = new ModelIcons { Name = "ModelIcons" };
+        AddChild(_icons);
+
+        // 손에 쥔 것: 오른쪽 아래. '[그림] 렌치  ·  쥔 것: [그림] 퓨즈'.
+        _held = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+        _held.AddThemeConstantOverride("separation", 6);
+        _held.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.BottomRight);
         _held.GrowHorizontal = Control.GrowDirection.Begin;
         _held.GrowVertical = Control.GrowDirection.Begin;
-        _held.HorizontalAlignment = HorizontalAlignment.Right;
-        _held.Position += new Vector2(-24, -20);
-
-        // 공구띠: 왼쪽 아래 흐린 한 줄. '1 빈손 · 2 렌치 · …'. 쥔 칸은 조금 밝게.
-        _belt = UiKit.Text("", 15, new Color(1, 0.95f, 0.85f, 0.5f));
-        _belt.SetAnchorsPreset(Control.LayoutPreset.BottomLeft);
-        _belt.GrowVertical = Control.GrowDirection.Begin;
-        _belt.Position += new Vector2(24, -20);
-        AddChild(_belt);
-        foreach (var l in new[] { _target, _gesture, _felt, _held, _belt })
-        {
-            l.AddThemeColorOverride("font_shadow_color", new Color(0, 0, 0, 0.9f));
-            l.AddThemeConstantOverride("shadow_offset_x", 1);
-            l.AddThemeConstantOverride("shadow_offset_y", 1);
-        }
+        _held.OffsetRight = -24;
+        _held.OffsetBottom = -14;
         AddChild(_held);
+
+        // 공구띠: 왼쪽 아래 흐린 한 줄. '1 빈손 · 2 [그림] 렌치 · …'. 쥔 칸은 조금 밝게.
+        _belt = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
+        _belt.AddThemeConstantOverride("separation", 6);
+        _belt.SetAnchorsAndOffsetsPreset(Control.LayoutPreset.BottomLeft);
+        _belt.GrowVertical = Control.GrowDirection.Begin;
+        _belt.OffsetLeft = 24;
+        _belt.OffsetBottom = -14;
+        AddChild(_belt);
 
         BuildBriefing();
         BuildResult();
@@ -202,17 +210,82 @@ public partial class Hud : CanvasLayer
         _ => "",
     };
 
-    /// <summary>'1 빈손 · 2 렌치 · …'. 빈 칸은 '·'만. 공구판 모듈이 없으면 M1처럼 도구 순서.</summary>
-    static string BeltLine(SimSnapshot s)
+    static void Shadowed(Label l)
     {
-        var slots = s.Crew.Belt.Count > 0 ? s.Crew.Belt : Array.Empty<string>();
-        var parts = new List<string> { Mark(1, "hand", s.Crew.Tool) };
-        for (int n = 0; n < slots.Count; n++)
-            parts.Add(slots[n].Length == 0 ? $"{n + 2} ─" : Mark(n + 2, slots[n], s.Crew.Tool));
-        return string.Join("  ·  ", parts);
+        l.AddThemeColorOverride("font_shadow_color", new Color(0, 0, 0, 0.9f));
+        l.AddThemeConstantOverride("shadow_offset_x", 1);
+        l.AddThemeConstantOverride("shadow_offset_y", 1);
     }
 
-    static string Mark(int key, string tool, string held) => tool == held ? $"[{key} {Texts.Tool(tool)}]" : $"{key} {Texts.Tool(tool)}";
+    void AddLabel(HBoxContainer row, string text, int size, float alpha)
+    {
+        var l = UiKit.Text(text, size, new Color(1, 0.95f, 0.85f, alpha));
+        l.VerticalAlignment = VerticalAlignment.Center;
+        l.MouseFilter = Control.MouseFilterEnum.Ignore;
+        Shadowed(l);
+        row.AddChild(l);
+    }
+
+    void AddIcon(HBoxContainer row, Texture2D tex, float alpha)
+    {
+        row.AddChild(new TextureRect
+        {
+            Texture = tex, CustomMinimumSize = new Vector2(30, 30), ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+            StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered, Modulate = new Color(1, 1, 1, alpha), MouseFilter = Control.MouseFilterEnum.Ignore,
+        });
+    }
+
+    static void Clear(Container row)
+    {
+        foreach (var ch in row.GetChildren())
+        {
+            row.RemoveChild(ch);
+            ch.QueueFree();
+        }
+    }
+
+    /// <summary>공구띠 줄: '1 빈손 · 2 [그림] 렌치 · …'. 빈 칸은 '─', 쥔 칸은 괄호로 묶고 밝게. 공구판 모듈이 없으면 빈손만.</summary>
+    void UpdateBelt(SimSnapshot s)
+    {
+        string key = string.Join(",", s.Crew.Belt) + "|" + s.Crew.Tool;
+        if (key == _beltKey) return;
+        _beltKey = key;
+        Clear(_belt);
+        AddSlot(1, "hand");
+        for (int n = 0; n < s.Crew.Belt.Count; n++)
+        {
+            AddLabel(_belt, "·", 15, 0.5f);
+            if (s.Crew.Belt[n].Length == 0) AddLabel(_belt, $"{n + 2} ─", 15, 0.5f);
+            else AddSlot(n + 2, s.Crew.Belt[n]);
+        }
+
+        void AddSlot(int k, string tool)
+        {
+            bool held = tool == s.Crew.Tool;
+            float alpha = held ? 0.95f : 0.5f;
+            if (ToolModels.Has(tool)) AddIcon(_belt, _icons.Tool(tool), held ? 1f : 0.6f);
+            AddLabel(_belt, held ? $"[{k} {Texts.Tool(tool)}]" : $"{k} {Texts.Tool(tool)}", 15, alpha);
+        }
+    }
+
+    void UpdateHeld(SimSnapshot s)
+    {
+        string key = s.Crew.Tool + "|" + s.Crew.Hand;
+        if (key == _heldKey) return;
+        _heldKey = key;
+        Clear(_held);
+        if (ToolModels.Has(s.Crew.Tool)) AddIcon(_held, _icons.Tool(s.Crew.Tool), 0.9f);
+        AddLabel(_held, ToolName(s.Crew.Tool), 17, 0.75f);
+        if (s.Crew.Hand.Length == 0) return;
+        AddLabel(_held, "·  쥔 것:", 17, 0.75f);
+        if (ItemModels.Has(s.Crew.Hand)) AddIcon(_held, _icons.Item(s.Crew.Hand), 0.9f);
+        AddLabel(_held, Submarine.ItemName(s.Crew.Hand), 17, 0.75f);
+    }
+
+    /// <summary>공구띠와 손에 쥔 것 옆에 그린 그림 수 (확인 묶음이 본다).</summary>
+    public int IconCount => _icons.Count;
+    /// <summary>지금 보이는 공구띠 줄과 쥔 것 줄의 그림 수.</summary>
+    public int ShownIcons => _belt.GetChildren().Concat(_held.GetChildren()).Count(c => c is TextureRect);
 
     public override void _Process(double delta)
     {
@@ -234,12 +307,10 @@ public partial class Hud : CanvasLayer
         var mp = _player.InWorkView ? _player.GetViewport().GetMousePosition() - _player.GetViewport().GetVisibleRect().Size / 2 : Vector2.Zero;
         Place(_target, mp, 34);
         Place(_gesture, mp, 60);
-        string held = ToolName(s.Crew.Tool);
-        if (s.Crew.Hand.Length > 0) held += $"  ·  쥔 것: {Submarine.ItemName(s.Crew.Hand)}";
-        _held.Text = held;
+        UpdateHeld(s);
         _held.Visible = !overlay;
-        _belt.Text = BeltLine(s);
-        _belt.Visible = !overlay && _belt.Text.Length > 0;
+        UpdateBelt(s);
+        _belt.Visible = !overlay;
         _feltFor -= delta;
         _felt.Visible = _feltFor > 0 && !overlay;
     }
