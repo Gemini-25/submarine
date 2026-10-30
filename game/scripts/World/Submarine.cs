@@ -73,6 +73,7 @@ public partial class Submarine : Node3D
         BuildPower(); // 축전지 갑판, 셀 상자, 전동기 브러시, 기관 전령기 (M2 WP11)
         BuildShaftGlandFixtures(); // 선체: 축 패킹 상자 (Submarine.Hull)
         BuildSwitchboardTierA(query); // 분기함, 전류계, 납땜인두 전원, 브리지 대기 (WP8)
+        BuildSwitchboardB(); // 칼날 스위치 접점: 집게 나사, 칼날, 위 집게, 받침 (WP17)
         BuildBallast(); // 밸러스트 조절반: 흡입 선택기, 침수 밸브, 탱크 유리관, 경사계 (WP18)
     }
 

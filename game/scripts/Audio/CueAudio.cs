@@ -188,6 +188,14 @@ public static class CueAudio
             v.Corrosion = 0.35f * c.V;
             v.Current = c.V > 0 ? 0.3f : 0;
         }, db: -14, range: 2),
+        // 칼날 스위치 접점 부식 (ELC-02, WP17): 강하가 클수록 지지직거리고, 회로 전류(정격에 대한 비율)가 클수록 세다.
+        R("knife.{c}.crackle", s => new KnifeSwitchCrackleVoice(s), (v, c) =>
+        {
+            v.Corrosion = c.V;
+            string id = c.Cue.Id.Split('.')[1];
+            var cv = c.S.Circuits.FirstOrDefault(x => x.Id == id);
+            v.Current = c.V > 0 && cv.FuseRating > 0 ? Math.Clamp((float)(cv.Current / cv.FuseRating), 0.2f, 1f) : 0;
+        }, db: -6, range: 4),
     };
 
     /// <summary>청음기 진공관 건강 (SNS-03): 두 관 가운데 약한 쪽의 필라멘트. 빠진 관은 0. 보이는 부품 값에서 읽는다.</summary>
