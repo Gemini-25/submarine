@@ -201,9 +201,15 @@ public class Diagnosability
         Splits("PWR-03", "ELC-03", "cue.steam.hiss");
         Splits("PWR-03", "ELC-03", "cue.steam.plume");
         Splits("PWR-03", "ELC-03", "reading.steam.pressure");
-        // 현창과 리벳 이음: 유리 테의 물방울과 졸졸 소리, 이음새의 쉿 소리 (교범 35쪽 '가르기').
-        Splits("HUL-02", "HUL-01", "cue.viewport.1.beads");
-        Splits("HUL-02", "HUL-01", "cue.leak.rivet.09.hiss");
+        // 현창과 전방 리벳 이음(1~4번): 같은 전방 경고등과 선체 표시등. 유리 테의 물방울과 졸졸 소리, 이음새의 쉿 소리로 가른다 (교범 35쪽 '가르기').
+        var fore = Run("HUL-01", "leak.rivet.01");
+        Assert.False(v["HUL-02"]["zone.fore.alarm"].Differs(fore["zone.fore.alarm"]));
+        Assert.False(v["HUL-02"]["panel.lamp.hull"].Differs(fore["panel.lamp.hull"]));
+        foreach (var path in new[] { "cue.viewport.1.beads", "cue.viewport.1.trickle", "cue.leak.rivet.01.hiss" })
+        {
+            Assert.True(v["HUL-02"][path].Differs(fore[path]), $"HUL-02와 리벳 01이 {path}로 갈리지 않는다");
+            Assert.True(DiagnosisHarness.Documented(path, TestData.Data), $"'{path}'에 문구가 없다");
+        }
         // 챔버 바깥 문: 표시등 없이 챔버 수위 유리와 바닥 아래의 꾸르륵 소리로만 (교범 37쪽).
         Splits("HUL-04", "HUL-01", "reading.chamber.glass");
         Splits("HUL-04", "HUL-01", "cue.chamber.gurgle");

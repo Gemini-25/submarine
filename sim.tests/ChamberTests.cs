@@ -202,6 +202,23 @@ public class ChamberTests
     }
 
     [Fact]
+    public void The_loudest_hand_motion_matches_page_37()
+    {
+        var sim = Faulted(chamberL: 10);
+        double peak = 0;
+        foreach (var c in ProcedureRunner.ExpandWithBelt(sim, TestData.Data.Procedure("proc.chamber.reseal")))
+        {
+            sim.Apply(c);
+            for (int i = 0; i < TestData.Ticks(Human); i++)
+            {
+                sim.Step();
+                foreach (var a in sim.World.Noise.Actions) peak = Math.Max(peak, a.Level);
+            }
+        }
+        Assert.Equal(TestData.T.Noise.Actions["hatch"].Level, peak); // 가장 큰 소리는 해치
+    }
+
+    [Fact]
     public void The_hand_rules_reject_with_their_reasons()
     {
         var sim = Exposure();

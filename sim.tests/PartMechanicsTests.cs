@@ -457,7 +457,10 @@ public class PartMechanicsTests
         var vp = data.Parts.Single(p => p.Id == "leak.viewport.1");
         Assert.Equal("viewport", vp.Kind);
         Assert.Equal(1, vp.Props["deadlight"]);
-        Assert.Equal(1, vp.Props["integrity"]);    // 공통 템플릿에서
+        Assert.Equal(1, vp.Props["integrity"]);    // 공통 템플릿에서 (실제 현창 틀에는 integrity가 없다)
+        // 두 틀에 같은 키가 있으면 종류 쪽이 이긴다: 실제 현창 틀에 integrity 0.9 하나만 더한다.
+        var over = Load(new Mut { NoMech = true, Hull = h => h["kindTemplates"]!["viewport"]!["props"]!["integrity"] = 0.9 });
+        Assert.Equal(0.9, over.Parts.Single(p => p.Id == "leak.viewport.1").Props["integrity"]); // 종류 쪽이 이긴다
         Assert.Equal(1, vp.Props["patchFactor"]); // 공통 템플릿에서
         Assert.Equal(2, vp.SeaPaths.Count);
         var rivet = data.Parts.Single(p => p.Id == "leak.rivet.01");

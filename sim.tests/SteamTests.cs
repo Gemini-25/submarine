@@ -97,7 +97,8 @@ public class SteamTests
         Assert.InRange(sim.Q("cue.steam.plume"), 0.7, 0.9);
         sim.Run(300);
         Assert.InRange(sim.Q("reading.steam.pressure"), 11.5, 13.5); // 5분에 약 2kg/cm²
-        Assert.True(sim.Q("cue.steam.fog") > 0.05, "현창이 흐려지지 않는다");
+        sim.Run(300);
+        Assert.True(sim.Q("cue.steam.fog") >= 0.3, "10분에 현창이 흐려지지 않는다"); // 진단 하네스의 지각 여유
 
         // 이음과 플랜지를 만지면 덴다 (증기 온도).
         Do(sim, "tool.hand");
@@ -194,7 +195,8 @@ public class SteamTests
             sim.Run(5);
             if (sim.DrainEvents().Any(e => e.Kind == SimEventKind.TempRepairFailed && e.Subject == "steam.joint")) blew = s;
         }
-        Assert.InRange(blew, S.WrapLifeSeconds, S.WrapLifeSeconds * 1.4);
+        double life = TestData.Data.Fixtures.Instances.First(f => f.Id == "steam.joint").Params["wrapLifeS"]; // 수명의 출처는 장치 params 하나
+        Assert.InRange(blew, life, life * 1.4);
         Assert.Equal(0, sim.Q(Joint + "wrap"));
         Assert.True(sim.Q("cue.steam.hiss") > 0.6);
 
@@ -298,6 +300,18 @@ public class SteamTests
         RunCmds(rough, cmds.Where(c => c != "steam.flange.face.scrape").ToList(), 0.3);
         Assert.Equal(0.85, rough.Q(Joint + "integrity"), 9);
         Assert.Equal("", rough.QS("part.steam.joint.fault"));
+        rough.Run(120);
+        Assert.InRange(rough.Q("steam.leak"), 0.01, 0.03); // 22쪽 '새 개스킷도 조금씩 샌다'
+        Assert.True(rough.Q("cue.steam.plume") < 0.3);
+
+        // 다시 하기: 새 개스킷과 긁기로 처음부터 하면 둘 다 고쳐진다.
+        foreach (var sim in new[] { old, rough })
+        {
+            NoHarm(RunCmds(sim, ProcedureRunner.ExpandWithBelt(sim, TestData.Data.Procedure("proc.steam.gasket")).Select(c => c.Cmd).ToList(), 0.3));
+            Assert.Equal(1, sim.Q(Joint + "integrity"), 9);
+            sim.Run(120);
+            Assert.Equal(0, sim.Q("cue.steam.hiss"));
+        }
     }
 
     [Fact]
@@ -345,16 +359,21 @@ public class SteamTests
     }
 
     [Fact]
-    public void Wrapping_a_sound_joint_does_not_change_the_leak_of_an_elc03_box()
+    public void Wrapping_is_refused_on_a_sound_joint_and_does_not_touch_an_elc03_box()
     {
-        // 누전(ELC-03)에 축압기 이음을 감아도 분기함의 습기는 그대로다.
+        // 누전(ELC-03)을 축압기로 잘못 보고 감으려 해도, 새지 않는 이음은 감기지 않는다(joint_sound).
+        // 멀쩡한 이음에 응급 품질과 수명 타이머가 걸려 고장 없는 부품에 TempRepairFailed가 나는 일을 막는다.
         var sim = Exposure();
         sim.Inject("ELC-03", "junction.C3");
         sim.Step();
-        double m = sim.Q("circuit.C3.moisture");
-        NoHarm(Follow(sim, "proc.steam.wrap", 1.5));
-        Assert.Equal(m, sim.Q("circuit.C3.moisture"), 6);
+        var events = Follow(sim, "proc.steam.wrap", 1.5);
+        Assert.Contains(events, e => e.Kind == SimEventKind.CommandRejected && e.Detail == "joint_sound");
+        Assert.Equal(0, sim.Q(Joint + "wrap"));
+        Assert.Equal("proper", sim.QS("part.steam.joint.quality"));
         Assert.Equal("ELC-03", sim.QS("part.junction.C3.fault"));
+        // 증상이 남는다: 분기함 누전과 낮은 절연.
+        Do(sim, "tool.hand", "switch.C3.on");
+        Assert.True(sim.Q("circuit.C3.leak") > 0 || sim.QS("circuit.C3.fuse") == "blown", "누전 증상이 사라졌다");
     }
 
     // ── 재고 ────────────────────────────────────────────
@@ -389,6 +408,15 @@ public class SteamTests
         Assert.Equal("fully_open", Reason("steam.stop.open"));
         Assert.Equal("fully_closed", Reason("steam.bleed.close"));
         Assert.Equal("need_scraper", Reason("tool.wrench", "steam.flange.face.scrape"));
+        Assert.Equal("joint_sound", Reason("tool.hand", "locker.take.packing_tape", "steam.joint.wrap"));
+        Do(sim, "locker.return.packing_tape");
+        // 개스킷을 뽑은 뒤 볼트를 다시 조이면 끼우기와 긁기가 거부된다.
+        Do(sim, "steam.stop.close", "steam.stop.close", "steam.stop.close", "steam.stop.close", "steam.bleed.open", "steam.bleed.open");
+        sim.Run(30);
+        Do(sim, "tool.wrench", "steam.flange.bolt.1.loosen", "steam.flange.bolt.2.loosen", "steam.flange.bolt.3.loosen", "steam.flange.bolt.4.loosen", "tool.hand", "steam.gasket.pull", "hand.drop",
+            "tool.wrench", "steam.flange.bolt.1.tighten");
+        Assert.Equal("flange_closed", Reason("tool.scraper", "steam.flange.face.scrape"));
+        Assert.Equal("flange_closed", Reason("tool.hand", "locker.take.gasket", "steam.gasket.insert"));
     }
 
     // ── 윈치 보조 ───────────────────────────────────────
@@ -412,6 +440,93 @@ public class SteamTests
         shut.Run(20);
         double slow = 30 - shut.Q("reading.winch.line");
         Assert.Equal(0.5, slow / fast, 1);
+    }
+
+    // ── 연쇄: 상황판 배선(SNS-02)과 윈치 ─────────────────
+
+    [Fact]
+    public void Left_alone_the_steam_wets_the_c4_box_beside_the_panel_wiring_within_twenty_minutes()
+    {
+        // WP20의 상황판 배선함(panel.wiring)은 junction.C4를 따라 젖는다. 그 대리로 C4 상자가 늦어도 20분 안에 0.5를 넘는다.
+        var sim = Faulted();
+        double at = -1;
+        for (int s = 0; s < 20 * 60 && at < 0; s += 10)
+        {
+            sim.Run(10);
+            if (sim.Q("circuit.C4.moisture") > 0.5) at = s;
+        }
+        Assert.InRange(at, 8 * 60, 15 * 60);
+        Assert.Equal(TestData.T.Steam!.DewBoxes["junction.C4"], 0.25);
+    }
+
+    [Fact]
+    public void Left_alone_the_leak_slows_the_winch_hoist()
+    {
+        double Haul(Simulation s)
+        {
+            s.Cmd("device.hook_winch.on");
+            s.Cmd("winch.control.haul");
+            double before = s.Q("reading.winch.line");
+            s.Run(20);
+            return before - s.Q("reading.winch.line");
+        }
+        var sim = Faulted();
+        sim.Run(20 * 60);
+        Assert.True(sim.Q("reading.steam.pressure") < 9, $"통 압력 {sim.Q("reading.steam.pressure"):F1}kg/cm²");
+        double slow = Haul(sim), fast = Haul(TestData.NewSim());
+        Assert.True(slow / fast < 0.92, $"감기 비율 {slow / fast:F2}");
+    }
+
+    // ── 소음 ────────────────────────────────────────────
+
+    /// <summary>사람 속도로 따르며 손동작 소음의 최대. 마지막 빼기 밸브 뒤에는 관 압력이 빠지기를 기다린다(교범).</summary>
+    static double PeakActionNoise(Simulation sim, IEnumerable<Command> cmds)
+    {
+        double peak = 0;
+        var list = cmds.ToList();
+        int lastBleed = list.FindLastIndex(c => c.Cmd == "steam.bleed.open");
+        for (int k = 0; k < list.Count; k++)
+        {
+            var c = list[k];
+            if (k == lastBleed + 1)
+                for (int w = 0; w < 120 && sim.Q("reading.steam.line") >= 0.3; w++) sim.Run(0.5);
+            sim.Apply(c);
+            for (int i = 0; i < TestData.Ticks(Human); i++)
+            {
+                sim.Step();
+                foreach (var a in sim.World.Noise.Actions) peak = Math.Max(peak, a.Level);
+            }
+        }
+        return peak;
+    }
+
+    [Fact]
+    public void The_loudest_hand_motion_matches_page_22()
+    {
+        var a = Faulted();
+        Assert.Equal(TestData.T.Noise.Actions["scrape"].Level, PeakActionNoise(a, ProcedureRunner.ExpandWithBelt(a, TestData.Data.Procedure("proc.steam.gasket"))));
+        // 감기의 가장 큰 손동작은 밸브(3)다. 명세의 'Noise 2'는 감기 자체의 소리다.
+        var b = Faulted();
+        Assert.Equal(TestData.T.Noise.Actions["valve"].Level, PeakActionNoise(b, ProcedureRunner.ExpandWithBelt(b, TestData.Data.Procedure("proc.steam.wrap"))));
+    }
+
+    [Fact]
+    public void Each_wrap_uses_one_tape_and_the_locker_runs_out()
+    {
+        var sim = Faulted();
+        int stock = TestData.T.Inventory.Locker["packing_tape"];
+        for (int i = 0; i < stock; i++)
+        {
+            NoHarm(Follow(sim, "proc.steam.wrap", 1.5));
+            // 감은 테이프를 끊는다: 관을 빼고 플랜지 볼트 하나를 풀었다 조인다.
+            RunCmds(sim, new[] { "steam.stop.close", "steam.stop.close", "steam.stop.close", "steam.stop.close", "steam.bleed.open", "steam.bleed.open" }, 0.3);
+            RunCmds(sim, new[] { "tool.wrench", "steam.flange.bolt.1.loosen", "steam.flange.bolt.1.tighten", "tool.hand", "steam.bleed.close", "steam.bleed.close",
+                "steam.stop.open", "steam.stop.open", "steam.stop.open", "steam.stop.open" }, 0);
+            Assert.Equal(0, sim.Q(Joint + "wrap"));
+        }
+        Assert.Equal(0, sim.Q("inventory.packing_tape"));
+        var ev = Do(sim, "tool.hand", "locker.take.packing_tape");
+        Assert.Contains(ev, e => e.Kind == SimEventKind.CommandRejected && e.Detail == "out_of_stock");
     }
 
     // ── 교범 ────────────────────────────────────────────

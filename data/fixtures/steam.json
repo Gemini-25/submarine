@@ -57,6 +57,10 @@
           "noise": "wrap",
           "rejectIf": [
             {
+              "if": "self.integrity >= 0.95",
+              "reason": "joint_sound"
+            },
+            {
               "if": "self.present < 0.5 || self.bolt1 < 0.5 || self.bolt2 < 0.5 || self.bolt3 < 0.5 || self.bolt4 < 0.5",
               "reason": "flange_open"
             }
@@ -197,6 +201,12 @@
               "by": "$roughLoss",
               "min": 0
             }
+          ],
+          "rejectIf": [
+            {
+              "if": "self.bolt1 >= 0.5 || self.bolt2 >= 0.5 || self.bolt3 >= 0.5 || self.bolt4 >= 0.5",
+              "reason": "flange_closed"
+            }
           ]
         }
       }
@@ -217,6 +227,10 @@
             {
               "if": "self.present >= 0.5",
               "reason": "gasket_in"
+            },
+            {
+              "if": "self.bolt1 >= 0.5 || self.bolt2 >= 0.5 || self.bolt3 >= 0.5 || self.bolt4 >= 0.5",
+              "reason": "flange_closed"
             }
           ],
           "onComplete": [

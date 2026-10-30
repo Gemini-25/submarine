@@ -23,8 +23,6 @@ public sealed class SteamTuning
     public double OpenFlangePerSecond { get; set; }
     /// <summary>윈치가 증기 보조로 감는 동안 1초에 쓰는 증기량 (관 압력 1에서).</summary>
     public double WinchUsePerSecond { get; set; }
-    /// <summary>감개 테이프의 수명 (관 압력 1에서 초). 압력이 낮으면 그만큼 오래 간다.</summary>
-    public double WrapLifeSeconds { get; set; }
     /// <summary>통 압력이 이 아래면 상황판 동력 표시등이 주의 (압력 스위치).</summary>
     public double LampWarnBelow { get; set; }
     /// <summary>관 증기의 온도: ambient + 관 압력 × riseC (°C). 플랜지와 이음을 만졌을 때.</summary>
@@ -35,6 +33,11 @@ public sealed class SteamTuning
     public double DewPerLeak { get; set; }
     /// <summary>이슬이 맺는 동안 그 구역 분기함의 습기가 목표로 다가가는 빠르기 (분당 몫). 습도 모듈의 creepPerMin보다 작으면 그것을 쓴다.</summary>
     public double DewCreepPerMin { get; set; }
+    /// <summary>
+    /// 축압기 구역 밖에서 이슬을 받는 상자와 그 몫 (0~1). 김이 실내에 퍼져 차가운 상자에 맺힌다.
+    /// 상황판 배선(C4 상자 옆, WP20의 panel.wiring)이 SNS-02로 이어지게 C4를 둔다.
+    /// </summary>
+    [Optional] public SortedDictionary<string, double> DewBoxes { get; set; } = new(StringComparer.Ordinal);
     /// <summary>축압기가 있는 구역 (이슬이 맺는 곳).</summary>
     public string Zone { get; set; } = "";
     /// <summary>빼기 밸브로 증기를 뺄 때의 계속 나는 소음 (끝까지 열고 관 압력 1에서).</summary>

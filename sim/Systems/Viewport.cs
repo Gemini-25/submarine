@@ -26,10 +26,19 @@ static class Viewport
         if (!crack.Exists) return 1;
         bool secured = Secured(part);
         double integrity = part.Get("integrity");
-        if (!secured && crack.Get() < 0.5 && integrity < t.DecayBelow)
+        var seatQ = PropRef.Resolve(part, "seatQ");
+        if (crack.Get() >= 0.5)
+        {
+            // 금 간 유리는 밀봉을 갈아도 그대로다: 밀봉이 아무리 좋아도 금 간 자리로 샌다.
+            if (integrity > t.CrackAt) part.Set("integrity", t.CrackAt);
+            if (seatQ.Get() > t.CrackAt) seatQ.Set(t.CrackAt);
+        }
+        else if (!secured && integrity < t.DecayBelow)
         {
             integrity = Math.Max(0, integrity - t.DecayPerSecond * w.Dt);
             part.Set("integrity", integrity);
+            // 열화는 앉은 밀봉 자체가 상한 것이라, 볼트를 다시 조여도(seat 갈고리) 되돌아오지 않는다.
+            if (seatQ.Get(1) > integrity) seatQ.Set(integrity);
             if (integrity <= t.CrackAt)
             {
                 crack.Set(1);

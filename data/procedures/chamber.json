@@ -42,7 +42,7 @@
       },
       {
         "type": "Open",
-        "text": "안쪽 해치를 들어 연다. 남은 물이 전방 빌지로 넘친다.",
+        "text": "안쪽 해치를 들어 연다. 남은 물이 전중 빌지로 넘친다.",
         "cmd": "chamber.hatch.open",
         "tool": "hand",
         "requires": "챔버 수위가 20L 아래일 것"

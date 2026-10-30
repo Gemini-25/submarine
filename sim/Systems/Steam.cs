@@ -13,7 +13,7 @@ namespace DeepLine.Sim.Systems;
 ///   증기량은 통 하나를 1로 센다. 관의 부피는 tuning.steam.lineVolume(r)이다. 정지 밸브가 열려 있으면 P와 L이 같아지려 하고,
 ///   관에서 빠지는 증기(이음 누설, 빼기 밸브, 윈치 보조)는 L을 깎는다. 정지 밸브가 열려 있으면 그만큼 통에서도 채워져 P가 준다.
 ///   임무 중에는 다시 채워지지 않는다(DECISIONS 'M2 설계' 증기 축압기).
-/// steam.joint {integrity, wrap, wrapLife, wrapArmed, wrapTurns, present(개스킷), bolt1..4, rough, oldGasket, seated, scraped}:
+/// steam.joint {integrity, wrap, wrapLife, wrapArmed, wrapTurns, present(개스킷), bolt1..4, rough, scraped, seatQ}:
 ///   새는 플랜지 이음. 누설 = K·(1 − integrity)²·L·(1 − wrapCut·wrap). 개스킷이 빠졌거나 볼트가 풀렸으면 openFlangePerSecond·L.
 ///   감개 테이프(응급)의 수명은 관 압력에 비례해 준다. 다하면 테이프가 터진다(wrap 0, TempRepairFailed).
 /// 누설은 실내 습도(Humidity)에 원천을 더하고, 축압기 구역의 분기함에 이슬을 맺게 한다. 통 압력이 낮으면 동력 표시등이 주의.
@@ -81,8 +81,8 @@ static class Steam
         if (d.Tuning.Steam is not { } t) errors.Add("증기 축압기(steam.accumulator)가 있으면 tuning.steam이 있어야 한다");
         else
         {
-            if (!(t.LineVolume > 0 && t.StopFlowPerSecond > 0 && t.BleedPerSecond > 0 && t.LeakK > 0 && t.WrapLifeSeconds > 0))
-                errors.Add("tuning.steam: lineVolume, stopFlowPerSecond, bleedPerSecond, leakK, wrapLifeSeconds > 0");
+            if (!(t.LineVolume > 0 && t.StopFlowPerSecond > 0 && t.BleedPerSecond > 0 && t.LeakK > 0))
+                errors.Add("tuning.steam: lineVolume, stopFlowPerSecond, bleedPerSecond, leakK > 0");
             if (!(t.WrapCut >= 0 && t.WrapCut <= 1)) errors.Add("tuning.steam: 0 <= wrapCut <= 1");
             if (!GameData.Zones.Contains(t.Zone)) errors.Add($"tuning.steam.zone '{t.Zone}'는 fore, mid, aft 중 하나여야 한다");
         }
@@ -170,11 +170,12 @@ static class Steam
     /// <summary>실내 습도 목표에 더하는 몫 (Humidity). 모듈이 없거나 새지 않으면 정확히 0.</summary>
     public static double RhSource(SimWorld w) => w.T.Steam is { } t ? t.RhPerLeak * LeakIndex(w) : 0;
 
-    /// <summary>그 구역 분기함의 습기 목표에 더하는 이슬 (축압기 구역만). 모듈이 없거나 새지 않으면 정확히 0.</summary>
-    public static double Dew(SimWorld w, int zone)
+    /// <summary>그 분기함의 습기 목표에 더하는 이슬: 축압기 구역은 그대로, tuning.steam.dewBoxes의 상자는 그 몫만큼. 모듈이 없거나 새지 않으면 정확히 0.</summary>
+    public static double Dew(SimWorld w, string box, int zone)
     {
-        if (w.T.Steam is not { } t || !w.Mechanics.Steam || GameData.ZoneIndex(t.Zone) != zone) return 0;
-        return Math.Min(1, t.DewPerLeak * LeakIndex(w));
+        if (w.T.Steam is not { } t || !w.Mechanics.Steam) return 0;
+        double weight = GameData.ZoneIndex(t.Zone) == zone ? 1 : t.DewBoxes.GetValueOrDefault(box, 0);
+        return weight > 0 ? Math.Min(1, weight * t.DewPerLeak * LeakIndex(w)) : 0;
     }
 
     /// <summary>상황판 동력 표시등: 통 압력 스위치. 모듈이 없으면 꺼짐.</summary>

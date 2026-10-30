@@ -6,7 +6,7 @@
     "defaultPart": "leak.viewport.1",
     "state": "Fault",
     "set": { "integrity": 0.5, "seatQ": 0.5 },
-    "clearedWhen": "self.integrity >= 0.6 && self.present >= 0.5 && self.ringOff < 0.5 && self.ringBolt1 >= 0.5 && self.ringBolt2 >= 0.5 && self.ringBolt3 >= 0.5 && self.ringBolt4 >= 0.5 && self.ringBolt5 >= 0.5 && self.ringBolt6 >= 0.5",
+    "clearedWhen": "self.crack < 0.5 && self.integrity >= 0.6 && self.present >= 0.5 && self.ringOff < 0.5 && self.ringBolt1 >= 0.5 && self.ringBolt2 >= 0.5 && self.ringBolt3 >= 0.5 && self.ringBolt4 >= 0.5 && self.ringBolt5 >= 0.5 && self.ringBolt6 >= 0.5",
     "baseRatePerHour": 0
   }
 }

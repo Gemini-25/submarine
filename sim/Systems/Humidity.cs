@@ -7,7 +7,7 @@ namespace DeepLine.Sim.Systems;
 /// <summary>
 /// 실내 습도와 분기함 습기 (M2 WP8, 설계 7절 Humidity). 상태 부품 air.humidity {rh}가 있을 때만 돈다(불변 조건 I3).
 /// - rh는 목표 rh = 기준 + 바닥 물 × 계수 + 증기 누설(WP19, Steam.RhSource)(최대 maxRh)를 향해 시정수 rhTauSeconds로 다가간다.
-///   축압기 구역의 상자는 누설의 이슬(Steam.Dew)도 목표에 더한다.
+///   축압기 구역의 상자와 tuning.steam.dewBoxes의 상자는 누설의 이슬(Steam.Dew)도 목표에 더한다.
 /// - 상자(tuning.humidity.boxes)의 습기는 목표 = 곡선(rh) + 그 구역 바닥 물 튐을 향해 **위로만** 기어오른다.
 ///   케이블에 테이프를 감은 상자(taped)는 ×tapedFactor, 나사가 풀렸거나 덮개가 열린 상자는 ×looseFactor.
 /// - 젖은 채 테이프를 감아 물기가 갇힌 상자(trapped)는 테이프와 상관없이 trappedMoisture를 향해 오른다(숨은 결함).
@@ -70,7 +70,7 @@ sealed class HumidityRuntime
     }
 
     double Target(SimWorld w, Box b) =>
-        Math.Min(1, Curve.Eval(_t.MoistureFromRh, _rh.Get()) + Curve.Eval(_t.SplashFromFloorL, w.Water.Floor[b.Zone]) + Steam.Dew(w, b.Zone));
+        Math.Min(1, Curve.Eval(_t.MoistureFromRh, _rh.Get()) + Curve.Eval(_t.SplashFromFloorL, w.Water.Floor[b.Zone]) + Steam.Dew(w, b.Part.Id, b.Zone));
 
     public void Update(SimWorld w)
     {
@@ -86,7 +86,7 @@ sealed class HumidityRuntime
             double m = b.Moisture.Get();
             double target = Target(w, b);
             double rate = _t.CreepPerMin;
-            if (Steam.Dew(w, b.Zone) > 0) rate = Math.Max(rate, w.T.Steam!.DewCreepPerMin); // 증기 이슬은 더 빨리 맺는다 (WP19)
+            if (Steam.Dew(w, b.Part.Id, b.Zone) > 0) rate = Math.Max(rate, w.T.Steam!.DewCreepPerMin); // 증기 이슬은 더 빨리 맺는다 (WP19)
             if (b.Taped.Get() >= 0.5) rate *= _t.TapedFactor;
             if (b.CoverOpen.Get() >= 0.5 || b.Screw1.Get(1) < 0.5 || b.Screw2.Get(1) < 0.5) rate *= _t.LooseFactor;
             double next = m + Math.Max(0, target - m) * Math.Min(1, rate * perTick);

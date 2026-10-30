@@ -89,11 +89,70 @@ public class ViewportTests
         Assert.InRange(cracked, expected - 20, expected + 20); // 약 29분
         Assert.Equal(1, sim.Q(P + "crack"));
         Assert.True(sim.Q("cue.viewport.1.crack") > 0.9);
-        Assert.True(Inflow(sim) > 3, $"금 간 유리가 크게 새지 않는다: {Inflow(sim)}");
+        Assert.True(Inflow(sim) > 200.0 / 60, $"금 간 유리가 분당 200L 넘게 새지 않는다: {Inflow(sim)}"); // 35쪽, 12쪽
 
         // 덮개를 닫고 걸쇠를 조이면 금 간 유리를 덮개가 잡는다.
         NoHarm(Do(sim, new[] { "tool.hand", "viewport.1.deadlight.close", "viewport.1.dog.1.tighten", "viewport.1.dog.2.tighten" }));
         Assert.True(Inflow(sim) < 0.6, $"덮개가 금 간 유리를 잡지 못한다: {Inflow(sim)}");
+        Assert.InRange(Inflow(sim) * 60, 25, 35); // 35쪽 '분당 약 30L'
+    }
+
+    [Fact]
+    public void Resealing_a_cracked_glass_does_not_clear_the_crisis()
+    {
+        var sim = Faulted();
+        sim.World.Part(Vp).Set("integrity", V.CrackAt + 0.001);
+        sim.World.Part(Vp).Set("seatQ", V.CrackAt + 0.001);
+        sim.Run(10);
+        Assert.Equal(1, sim.Q(P + "crack"));
+        // 교범대로 덮개를 닫은 채 밀봉을 갈아도 금 간 유리는 그대로다.
+        Do(sim, Plan(sim));
+        Assert.Equal("HUL-02", sim.QS($"part.{Vp}.fault"));
+        Assert.True(sim.Q(P + "integrity") <= V.CrackAt + 1e-9);
+        sim.Run(5);
+        Assert.True(Inflow(sim) > 200.0 / 60, $"덮개를 연 금 간 유리: {Inflow(sim)}");
+        Do(sim, new[] { "tool.hand", "viewport.1.deadlight.close", "viewport.1.dog.1.tighten", "viewport.1.dog.2.tighten" });
+        Assert.True(Inflow(sim) < 0.6);
+    }
+
+    [Fact]
+    public void Decay_wears_the_seat_so_retightening_one_bolt_gives_nothing_back()
+    {
+        var sim = Faulted();
+        sim.Run(20 * 60);
+        Do(sim, new[] { "tool.hand", "viewport.1.deadlight.close", "viewport.1.dog.1.tighten", "viewport.1.dog.2.tighten" });
+        double i = sim.Q(P + "integrity"), q = Inflow(sim);
+        Assert.True(i < 0.4, $"20분 열화 뒤 {i}");
+        Do(sim, new[] { "tool.wrench", "viewport.1.ring.bolt.1.loosen", "viewport.1.ring.bolt.1.tighten" });
+        Assert.Equal(i, sim.Q(P + "integrity"), 9);
+        Assert.Equal(q, Inflow(sim), 6);
+    }
+
+    [Fact]
+    public void Tightening_the_ring_without_a_seal_leaks_more_and_keeps_the_fault()
+    {
+        var sim = Faulted();
+        var cmds = Plan(sim).Where(c => c is not "locker.take.viewport_seal" and not "viewport.1.seal.insert").ToList();
+        Do(sim, cmds);
+        sim.Run(5);
+        Assert.Equal("HUL-02", sim.QS($"part.{Vp}.fault"));
+        Assert.True(Inflow(sim) > 0.19, $"밀봉 없이 {Inflow(sim)}L/s");
+    }
+
+    [Fact]
+    public void A_fore_rivet_and_the_viewport_share_the_fore_alarm_but_split_on_beads_and_hiss()
+    {
+        var vp = Faulted();
+        var rivet = Exposure();
+        rivet.Inject("HUL-01", "leak.rivet.01");
+        rivet.Step();
+        vp.Run(30);
+        rivet.Run(30);
+        Assert.Equal(1, vp.Q("zone.fore.alarm"));
+        Assert.Equal(1, rivet.Q("zone.fore.alarm"));
+        Assert.Equal(vp.QS("panel.lamp.hull"), rivet.QS("panel.lamp.hull"));
+        Assert.True(vp.Q("cue.viewport.1.beads") > 0.3 && rivet.Q("cue.viewport.1.beads") == 0);
+        Assert.True(rivet.Q("cue.leak.rivet.01.hiss") > 0.3 && vp.Q("cue.leak.rivet.01.hiss") == 0);
     }
 
     [Fact]
@@ -141,7 +200,7 @@ public class ViewportTests
         var hurt = first.Single(e => e.Kind == SimEventKind.Hurt);
         Assert.Equal("spray", hurt.Detail);
         Assert.Equal("viewport.1.ring.bolt.1.loosen", hurt.Subject);
-        Assert.True(Inflow(sim) > inflow + 0.1, "풀린 테 볼트로 바다가 들지 않는다");
+        Assert.InRange(Inflow(sim) - inflow, 0.12, 0.16); // 35쪽: 볼트 하나마다 분당 약 8L
     }
 
     [Fact]
@@ -166,6 +225,23 @@ public class ViewportTests
         redo.AddRange(new[] { 1, 4, 2, 5, 3, 6 }.Select(n => $"viewport.1.ring.bolt.{n}.tighten"));
         NoHarm(Do(sim, redo));
         Assert.Equal(0.95, sim.Q(P + "integrity"), 9);
+    }
+
+    [Fact]
+    public void The_loudest_hand_motion_matches_page_35()
+    {
+        var sim = Faulted();
+        double peak = 0;
+        foreach (var c in Plan(sim))
+        {
+            sim.Apply(new Command(c));
+            for (int i = 0; i < TestData.Ticks(Human); i++)
+            {
+                sim.Step();
+                foreach (var a in sim.World.Noise.Actions) peak = Math.Max(peak, a.Level);
+            }
+        }
+        Assert.Equal(TestData.T.Noise.Actions["scrape"].Level, peak); // 가장 큰 소리는 밀봉 도려내기
     }
 
     [Fact]
