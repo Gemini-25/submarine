@@ -41,6 +41,29 @@ public partial class Submarine
         }
     }
 
+    /// <summary>정지 밸브 바퀴 (확인 묶음이 돌았는지 본다).</summary>
+    public Node3D? SteamStopWheel { get; private set; }
+
+    /// <summary>
+    /// 밸브 바퀴: 열린 바퀴 수 × 360°로 줄기 축(+Y)을 따라 돌고, 한 바퀴에 rise만큼 올라간다(네 살 바퀴는 90°마다 같아 보여서).
+    /// 원 그리기 중에는 손을 따라 돈다.
+    /// </summary>
+    void ValveWheelVisual(Interactable it, Node3D wheel, float rise)
+    {
+        var f = Binder.Instance(it.Id);
+        var rest = wheel.Position;
+        float turning = float.NaN, angle = 0;
+        it.Preview = t => turning = t;
+        OnUpdate((s, dt) =>
+        {
+            float open = (float)PartProp(s, f.PartId, f.Prop!, 0);
+            float target = open * 360 + (float.IsNaN(turning) ? 0 : turning * 360);
+            angle = Approach(angle, target, 720, dt);
+            wheel.Basis = new Basis(Vector3.Up, Mathf.DegToRad(-angle));
+            wheel.Position = rest + new Vector3(0, rise * angle / 360, 0);
+        });
+    }
+
     static CpuParticles3D Puff(Node3D parent, Vector3 pos, Vector3 dir, Color color, float speed, float size)
     {
         var mat = new StandardMaterial3D
@@ -79,14 +102,18 @@ public partial class Submarine
         float vx = 2.0f, vz = 1.0f, r = 0.2f, ly = 0.95f, lz = 0.98f;
         var fz = vz - r; // 플랜지 앞면
 
-        // 밸브: 배치가 지은 글로브 밸브 두 개(정지, 빼기 순)의 바퀴
-        var wheels = Descendants<Node3D>(n).Where(x => x.Name == "Wheel" && x.GetParent().Name.ToString().StartsWith("GlobeValve", StringComparison.Ordinal)).ToList();
+        // 밸브: 배치가 이름을 준 두 글로브 밸브의 바퀴. 명령 하나가 손으로 한 바퀴이고, 연 만큼 줄기가 올라 바퀴가 든다.
         var stop = RebindMarker("steam.stop");
         var bleed = RebindMarker("steam.bleed");
-        if (wheels.Count >= 2)
+        foreach (var (it, valve) in new[] { (stop, "StopValve"), (bleed, "BleedValve") })
         {
-            WheelVisual(stop, wheels[0], Vector3.Up, -90);
-            WheelVisual(bleed, wheels[1], Vector3.Up, -90);
+            if (n.GetNodeOrNull<Node3D>($"{valve}/Wheel") is not { } wheel)
+            {
+                GD.PushError($"증기 축압기: 배치에 '{valve}/Wheel'이 없다");
+                continue;
+            }
+            ValveWheelVisual(it, wheel, 0.006f);
+            if (valve == "StopValve") SteamStopWheel = wheel;
         }
 
         // 계기: 축압기 압력계(0~20kg/cm²)와 관 압력계 (배치 순서)
@@ -97,26 +124,19 @@ public partial class Submarine
             if (gauges.Count >= 2) gauges[1].SetFraction((float)(ReadingOf(s, "steam.line") / 20));
         });
 
-        // 플랜지 볼트 넷: 배치 메시에 머리가 구워져 있어, 풀리면 그 앞에 빠져나온 볼트를 따로 보인다.
+        // 플랜지 볼트 넷: 배치 메시에 구운 머리 위에 조금 큰 머리를 덮어 공통 BoltVisual로 움직인다(풀면 나오고, 돌리는 동안 손을 따라 돈다).
         var offsets = new[] { (0.05f, 0.05f), (-0.05f, 0.05f), (-0.05f, -0.05f), (0.05f, -0.05f) };
         for (int i = 0; i < 4; i++)
         {
-            string id = $"steam.flange.bolt.{i + 1}";
-            RebindMarker(id);
-            var bolt = new Node3D { Name = $"LooseBolt{i + 1}", Position = new Vector3(vx + offsets[i].Item1, 0.6f + offsets[i].Item2, fz - 0.045f), Visible = false };
-            n.AddChild(bolt);
-            var bb = new MeshBuilder();
-            Kit.AddBolt(bb, ArtMat.BareSteel, Kit.AlongAxis(Vector3.Forward, Vector3.Zero), 0.018f);
-            bb.Cylinder(ArtMat.BareSteel, Kit.AlongAxis(Vector3.Forward, new Vector3(0, 0, 0.012f)), 0.006f, 0.03f, 8);
-            bb.Instance(bolt, "Bolt");
-            string prop = $"bolt{i + 1}";
-            OnUpdate((s, _) => bolt.Visible = PartProp(s, Joint, prop, 1) < 0.5);
+            var it = RebindMarker($"steam.flange.bolt.{i + 1}");
+            var head = BoltHead(n, new Vector3(vx + offsets[i].Item1, 0.6f + offsets[i].Item2, fz - 0.02f), Vector3.Forward, 0.021f);
+            BoltVisual(it, head, 0.012f);
         }
 
-        // 개스킷(플랜지 사이)과 플랜지 면 (배치에 표지가 없다)
+        // 개스킷(플랜지 사이)과 플랜지 면 (배치에 표지가 없다). 개스킷은 플랜지 뒤 가장자리와 그릇 사이에 띠로 드러난다.
         var gasket = Add(Binder.Bind(n, "steam.gasket", new Vector3(0.04f, 0.04f, 0.02f), new Vector3(vx, 0.6f, fz - 0.035f), "accumulator"));
         var gb = new MeshBuilder();
-        gb.Torus(ArtMat.Rubber, Kit.AlongAxis(Vector3.Forward, new Vector3(vx, 0.6f, fz - 0.012f)), 0.075f, 0.006f, 20, 6);
+        gb.Torus(ArtMat.Rubber, Kit.AlongAxis(Vector3.Forward, new Vector3(vx, 0.6f, fz + 0.003f)), 0.088f, 0.007f, 24, 6);
         var gasketMesh = gb.Instance(n, "Gasket", NoShadow);
         SocketVisual(gasket, gasketMesh);
         Add(Binder.Bind(n, "steam.flange.face", new Vector3(0.08f, 0.02f, 0.02f), new Vector3(vx, 0.515f, fz - 0.02f), "accumulator"));

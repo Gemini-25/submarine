@@ -30,7 +30,27 @@ public partial class AutoPlayer
         _main.Runner.Start(Data, mission);
         _main.Restart();
         _tierStation = null;
-        int shocks = _main.Shocks, pinches = _main.Pinches;
+        // 이 훈련의 위험은 증기 화상과 물 분출(Hurt)이라 감전·끼임 셈만으로는 모자란다. 사건을 직접 센다.
+        int hurts = 0;
+        void OnEvent(SimEvent e)
+        {
+            if (e.Kind is SimEventKind.Shock or SimEventKind.Pinch or SimEventKind.Hurt) hurts++;
+        }
+        _main.Runner.EventRaised += OnEvent;
+        try
+        {
+            await DrillTierBBody(mission, () => hurts);
+        }
+        finally
+        {
+            _main.Runner.EventRaised -= OnEvent;
+            _main.Runner.Start(Data, first);
+            _main.Restart();
+        }
+    }
+
+    async Task DrillTierBBody(string mission, Func<int> hurts)
+    {
         var q = new ObservableQuery(_main.Runner.Sim);
         var drill = new TierBDrill();
         var done = new List<string>();
@@ -64,9 +84,21 @@ public partial class AutoPlayer
                     await ToSignal(GetTree().CreateTimer(1.2), SceneTreeTimer.SignalName.Timeout);
                     closedHatch = true;
                 }
+                var wheelBefore = _main.Sub.SteamStopWheel?.Position;
                 await TierPerform(c.Cmd);
                 Step(HandSeconds);
                 await Frame();
+                if (c.Cmd == "steam.stop.close" && wheelBefore is { } wb)
+                {
+                    await ToSignal(GetTree().CreateTimer(0.4), SceneTreeTimer.SignalName.Timeout);
+                    Check(_main.Sub.SteamStopWheel!.Position.Y < wb.Y - 0.003f, "정지 밸브를 닫았는데 바퀴가 내려오지 않았다"); // 한 바퀴에 6mm
+                }
+                if (c.Cmd == "chamber.hatch.open")
+                {
+                    await TierLeaveStation();
+                    await ToSignal(GetTree().CreateTimer(0.6), SceneTreeTimer.SignalName.Timeout);
+                    Check(await WalkOverOpenChamber(), "안쪽 해치를 연 챔버 우물 위를 지나가다 빠졌다");
+                }
             }
             await TierLeaveStation();
             if (closedHatch && _failures.Count == 0)
@@ -79,13 +111,29 @@ public partial class AutoPlayer
         await TierLeaveStation();
 
         var s = Snap;
-        GD.Print($"AUTOTEST: {mission} {s.TimeSeconds / 60:F1}분에 {s.Status} {s.FailReason}, 한 일 {string.Join(", ", done)}, 감전 {_main.Shocks - shocks}, 끼임 {_main.Pinches - pinches}");
+        GD.Print($"AUTOTEST: {mission} {s.TimeSeconds / 60:F1}분에 {s.Status} {s.FailReason}, 한 일 {string.Join(", ", done)}, 다침(감전·끼임·화상·물 분출) {hurts()}");
         Check(s.Status == MissionStatus.Succeeded, $"{mission}이 성공하지 않았다: {s.Status} {s.FailReason}");
-        Check(_main.Shocks == shocks && _main.Pinches == pinches, $"{mission}: 절차대로 했는데 다쳤다");
+        Check(hurts() == 0, $"{mission}: 절차대로 했는데 {hurts()}번 다쳤다");
         Check(s.Water.SubmergedCells == 0, $"{mission}: 축전지가 잠겼다");
+    }
 
-        _main.Runner.Start(Data, first);
-        _main.Restart();
+    /// <summary>안쪽 해치가 열린 챔버 우물을 가로질러 걷는다. 사람만 밟는 판 덕에 발이 바닥 높이 아래로 내려가지 않아야 한다.</summary>
+    async Task<bool> WalkOverOpenChamber()
+    {
+        var player = _main.Player;
+        player.PlaceAt(new Vector3(3.3f, 0.05f, 0), new Vector3(6, 1.6f, 0));
+        await Frame(2);
+        player.AutoMove = new Vector2(0, -1); // 앞으로(전방 쪽, 우물을 지나)
+        float lowest = player.GlobalPosition.Y;
+        ulong start = Time.GetTicksMsec();
+        while (Time.GetTicksMsec() - start < 3000 && player.GlobalPosition.X < 4.7f)
+        {
+            await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
+            lowest = Math.Min(lowest, player.GlobalPosition.Y);
+        }
+        player.AutoMove = null;
+        GD.Print($"AUTOTEST: 열린 챔버 위를 지나감: x {player.GlobalPosition.X:F2}, 가장 낮은 발 {lowest:F2}");
+        return player.GlobalPosition.X >= 4.7f && lowest > -0.05f;
     }
 
     /// <summary>그 명령의 작업 자리 (StandPoints 이름). 없으면 공용 Approach.</summary>

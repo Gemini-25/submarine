@@ -56,14 +56,7 @@ public partial class Submarine
             var bb = new MeshBuilder();
             Kit.AddBolt(bb, ArtMat.BareSteel, Kit.AlongAxis(Vector3.Back, Vector3.Zero), 0.024f);
             bb.Instance(bolt, "Head", NoShadow);
-            string prop = $"ringBolt{k + 1}";
-            RebindMarker($"viewport.{v}.ring.bolt.{k + 1}");
-            OnUpdate((s, _) =>
-            {
-                bool tight = PartProp(s, part, prop, 1) >= 0.5;
-                bolt.Position = at + new Vector3(0, 0, tight ? 0 : 0.012f);
-                bolt.RotationDegrees = new Vector3(0, 0, tight ? 0 : 180);
-            });
+            BoltVisual(RebindMarker($"viewport.{v}.ring.bolt.{k + 1}"), bolt, 0.012f);
         }
         OnUpdate((s, dt) =>
         {
@@ -92,16 +85,7 @@ public partial class Submarine
             gb.Box(ArtMat.BareSteel, new Vector3(0, 0.04f, 0), new Vector3(0.02f, 0.09f, 0.012f), 0.003f);
             gb.Cylinder(ArtMat.BareSteel, Kit.AlongAxis(Vector3.Back, new Vector3(0, 0.085f, 0.008f)), 0.014f, 0.012f, 8);
             gb.Instance(dog, "Lever", NoShadow);
-            RebindMarker($"viewport.{v}.dog.{d}");
-            string prop = $"dog{d}";
-            float sign = d == 1 ? -1 : 1;
-            float angle = 0;
-            OnUpdate((s, dt) =>
-            {
-                float target = PartProp(s, part, prop, 0) >= 0.5 ? sign * 90 : 0;
-                angle = Approach(angle, target, 360, dt);
-                dog.RotationDegrees = new Vector3(0, 0, angle);
-            });
+            DogVisual(RebindMarker($"viewport.{v}.dog.{d}"), dog, Vector3.Back, 0, d == 1 ? -90 : 90);
         }
 
         // 물방울 (단서 viewport.N.beads)과 유리의 금
@@ -111,8 +95,21 @@ public partial class Submarine
         cb.Box(ArtMat.Ink, new Transform3D(Basis.FromEuler(new Vector3(0, 0, 0.6f)), new Vector3(0.02f, 0.01f, 0.03f)), new Vector3(0.24f, 0.003f, 0.002f), 0.0005f);
         cb.Box(ArtMat.Ink, new Transform3D(Basis.FromEuler(new Vector3(0, 0, -0.9f)), new Vector3(-0.03f, -0.02f, 0.03f)), new Vector3(0.2f, 0.003f, 0.002f), 0.0005f);
         var crack = cb.Instance(m, "Crack", NoShadow);
+        // M1의 누수 지점 물줄기(BuildLeaks)는 이음새처럼 유리 한가운데서 뿜는다. 현창에서는 덮개가 열린 채 테 볼트가 풀렸거나
+        // 테를 뗐을 때(물 분출)만 켜고, 평소의 새는 물은 테 아래 물방울로만 보인다. BuildLeaks의 갱신이 먼저 돌므로 여기서 덮어쓴다.
+        CpuParticles3D? spray = null;
+        if (GetNodeOrNull<Node3D>("Leaks") is { } leaks && LeakSpots.TryGetValue(part, out var spot))
+            foreach (var child in leaks.GetChildren().OfType<Node3D>())
+                if (child.Position.DistanceTo(spot.Pos) < 1e-4f && child.GetChildren().OfType<CpuParticles3D>().FirstOrDefault() is { } p) spray = p;
+        var dripOpen = drip.Position;
         OnUpdate((s, _) =>
         {
+            bool open = PartProp(s, part, "deadlight", 1) >= 0.5;
+            bool loose = PartProp(s, part, "ringOff", 0) >= 0.5;
+            for (int k = 1; k <= 6 && !loose; k++) loose = PartProp(s, part, $"ringBolt{k}", 1) < 0.5;
+            if (spray != null) spray.Emitting = open && loose;
+            // 덮개가 닫혀 있으면 물방울은 덮개 아래 가장자리에서 맺힌다(철판을 뚫고 나오지 않게).
+            drip.Position = open ? dripOpen : new Vector3(0, -0.175f, 0.1f);
             double beads = CueOf(s, $"viewport.{v}.beads");
             drip.Emitting = beads > 0.05;
             drip.SpeedScale = 0.4f + (float)beads;
