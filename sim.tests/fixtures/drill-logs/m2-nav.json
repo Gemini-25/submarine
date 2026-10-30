@@ -1,5 +1,5 @@
 {
-  "mission": "m2-nav", "seed": 1414, "dataStamp": "6e9b5fd4c1ccf4cb", "handTicks": 12,
+  "mission": "m2-nav", "seed": 1414, "dataStamp": "b5879dd3ba3117e6", "handTicks": 12,
   "finalTick": 8364, "finalHash": 15964814113179741400, "status": "succeeded",
   "findings": [
     {"tick":1124,"pair":"heading.off","verdict":"unsettled","bind":"","outcome":"noted"},

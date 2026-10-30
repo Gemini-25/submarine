@@ -1,5 +1,5 @@
 {
-  "mission": "m2-cable", "seed": 1515, "dataStamp": "4cc78100e0337feb", "handTicks": 12,
+  "mission": "m2-cable", "seed": 1515, "dataStamp": "7ac7ea98aee43608", "handTicks": 12,
   "finalTick": 2620, "finalHash": 1535170790360156654, "status": "succeeded",
   "findings": [
     {"tick":1460,"pair":"siphon.trace","verdict":"CBL-02","bind":"","outcome":"fixed"},

@@ -52,7 +52,7 @@ public class DiagnosisDataTests
     public void The_real_data_and_the_frozen_golden_data_load()
     {
         Assert.NotNull(TestData.Data.Diagnosis);
-        Assert.Equal(15, TestData.Data.Diagnosis!.Pairs.Count);
+        Assert.Equal(17, TestData.Data.Diagnosis!.Pairs.Count); // Tier A 15 + WP17의 switch.drop, o2.low
         var golden = GameData.LoadFromDirectory(Path.Combine(TestData.FixtureDir, "golden-data"));
         Assert.Null(golden.Diagnosis);
     }

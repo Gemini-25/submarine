@@ -19,6 +19,10 @@
         {
           "all": [ { "q": "cue.shaft.stream", "unit": "cue", "above": 0.3, "says": "축 고리 둘레로 물이 줄줄 흐르고" } ],
           "verdict": "HUL-03"
+        },
+        {
+          "all": [ { "q": "cue.checkvalve.drip", "unit": "cue", "above": 0.3, "says": "역류 방지 밸브 보닛 가장자리에서 물방울이 떨어진다", "section": "선체" } ],
+          "verdict": "bonnet.weep"
         }
       ],
       "verdicts": {
@@ -39,6 +43,20 @@
                                                       { "q": "part.leak.shaft_packing.prop.nutB", "unit": "none", "below": 2.5 } ] }
           ],
           "verify": { "all": [ { "q": "cue.shaft.stream", "unit": "cue", "below": 0.3 } ], "within": 120 }
+        },
+        "bonnet.weep": {
+          "says": "보닛 볼트를 순서대로 조이지 않았다",
+          "section": "선체",
+          "do": [
+            { "cmds": [ { "tool": "hand", "cmd": "switch.C3.off" },
+                        { "tool": "hand", "cmd": "pump.discharge.close", "repeat": 3 },
+                        { "tool": "wrench", "cmd": "checkvalve.bolt.{n}.loosen", "repeat": 4 },
+                        { "tool": "wrench", "cmd": "checkvalve.bolt.1.tighten" }, { "tool": "wrench", "cmd": "checkvalve.bolt.3.tighten" },
+                        { "tool": "wrench", "cmd": "checkvalve.bolt.2.tighten" }, { "tool": "wrench", "cmd": "checkvalve.bolt.4.tighten" },
+                        { "tool": "hand", "cmd": "pump.discharge.open", "repeat": 3 } ] },
+            { "restore": "switches" }
+          ],
+          "verify": { "all": [ { "q": "cue.checkvalve.drip", "unit": "cue", "below": 0.05 } ], "within": 30 }
         }
       },
       "exposure": { "setup": { "depthM": 300, "switches": { "C3": true }, "throttle": 0.75 }, "seconds": 60 },
@@ -46,6 +64,7 @@
         { "expect": "HUL-01", "bind": { "point": "leak.rivet.11" }, "inject": [ { "fault": "HUL-01", "part": "leak.rivet.11" } ] },
         { "expect": "HUL-03", "inject": [ { "fault": "HUL-03" } ] },
         { "expect": "HUL-01", "bind": { "point": "leak.rivet.11" }, "inject": [ { "fault": "HUL-03" }, { "fault": "HUL-01", "part": "leak.rivet.11" } ] },
+        { "expect": "bonnet.weep", "setup": { "parts": [ { "part": "pump.check_valve", "prop": "weep", "value": 1 } ] } },
         { "expect": "none" }
       ]
     }

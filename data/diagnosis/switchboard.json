@@ -135,6 +135,42 @@
           "setup": { "switches": { "C7": true }, "parts": [ { "part": "fuse.C7", "prop": "wire", "value": 1 }, { "part": "junction.C7", "prop": "burnt", "value": 1 } ] } },
         { "expect": "none" }
       ]
+    },
+    "switch.drop": {
+      "no": 16,
+      "priority": 35,
+      "page": "03-진단-표-전기와-동력.md",
+      "section": "배전반",
+      "sees": [
+        [ { "q": "panel.lamp.switchboard", "is": "warning" },
+          { "q": "panel.gauge.voltage", "unit": "V", "above": 115, "says": "상황판 전압계는 정상" } ],
+        [ { "q": "cue.knife.C1.crackle", "unit": "cue", "above": 0.3 } ]
+      ],
+      "checks": [
+        {
+          "each": { "c": "circuits" },
+          "prep": [ { "cmd": "tool.voltmeter" } ],
+          "undo": [ { "cmd": "tool.hand" } ],
+          "all": [ { "q": "cue.circuit.{c}.lamp", "unit": "cue", "above": 0.5 },
+                   { "measure": "voltmeter", "target": "switch.{c}", "unit": "V", "above": 10, "says": "10V 넘음" } ],
+          "verdict": "ELC-02"
+        }
+      ],
+      "verdicts": {
+        "ELC-02": {
+          "fault": "ELC-02",
+          "says": "칼날 스위치 접점 부식",
+          "do": [ { "procedure": "proc.contact.file", "bind": { "circuit": "{c}" } }, { "restore": "switches" } ],
+          "verify": { "all": [ { "q": "cue.knife.{c}.crackle", "unit": "cue", "below": 0.3 } ], "within": 30, "hold": 5 }
+        }
+      },
+      "exposure": { "setup": { "depthM": 300, "switches": { "C3": true }, "bilges": { "bilge.aft": 150 } }, "seconds": 60 },
+      "cases": [
+        { "expect": "ELC-02", "bind": { "c": "C1" }, "inject": [ { "fault": "ELC-02", "part": "contact.C1" } ] },
+        { "expect": "ELC-02", "bind": { "c": "C3" }, "inject": [ { "fault": "ELC-02", "part": "contact.C3" } ] },
+        { "expect": "ELC-02", "bind": { "c": "C5" }, "inject": [ { "fault": "ELC-02", "part": "contact.C5" } ] },
+        { "expect": "none" }
+      ]
     }
   }
 }

@@ -15,7 +15,10 @@
         { "all": [ { "q": "cue.pump.gravel", "unit": "cue", "above": 0.3, "says": "자갈 구르는 소리" } ], "verdict": "WTR-01" },
         { "all": [ { "q": "cue.pump.backflow", "unit": "cue", "above": 0.3, "says": "배관에서 물이 되돌아오는 소리" },
                    { "q": "panel.gauge.pumpCurrent", "unit": "A", "above": 2.0, "typical": 2.5, "says": "약 2.5A" } ],
-          "verdict": "WTR-03" }
+          "verdict": "WTR-03" },
+        { "all": [ { "q": "part.pump.check_valve.prop.discharge", "unit": "none", "below": 0.5, "says": "배출 밸브 바퀴가 끝까지 잠겨 있다" },
+                   { "q": "panel.gauge.pumpCurrent", "unit": "A", "below": 1.6, "typical": 1.2, "says": "약 1.2A" } ],
+          "verdict": "discharge" }
       ],
       "verdicts": {
         "WTR-01": {
@@ -24,13 +27,25 @@
           "do": [ { "procedure": "proc.strainer.clean" }, { "restore": "switches" } ],
           "verify": { "all": [ { "q": "cue.pump.gravel", "unit": "cue", "below": 0.3 } ], "within": 60, "hold": 5 }
         },
-        "WTR-03": { "fault": "WTR-03", "says": "역류 방지 밸브 고착", "do": [] }
+        "WTR-03": {
+          "fault": "WTR-03",
+          "says": "역류 방지 밸브 고착",
+          "do": [ { "procedure": "proc.checkvalve.clean" }, { "restore": "switches" } ],
+          "verify": { "all": [ { "q": "cue.pump.backflow", "unit": "cue", "below": 0.3 },
+                               { "q": "cue.checkvalve.drip", "unit": "cue", "below": 0.3 } ], "within": 60, "hold": 5 }
+        },
+        "discharge": {
+          "says": "배출 밸브 잠김",
+          "do": [ { "cmds": [ { "tool": "hand", "cmd": "pump.discharge.open", "repeat": 3 } ] } ],
+          "verify": { "all": [ { "q": "panel.gauge.pumpFlow", "unit": "Lpm", "above": 60 } ], "within": 20 }
+        }
       },
       "exposure": { "setup": { "depthM": 300, "switches": { "C3": true }, "bilges": { "bilge.aft": 150 } }, "seconds": 60 },
       "cases": [
         { "expect": "WTR-01", "inject": [ { "fault": "WTR-01" } ] },
         { "expect": "WTR-03", "inject": [ { "fault": "WTR-03" } ] },
         { "expect": "WTR-01", "inject": [ { "fault": "WTR-01" }, { "fault": "WTR-02" } ] },
+        { "expect": "discharge", "setup": { "parts": [ { "part": "pump.check_valve", "prop": "discharge", "value": 0 } ] } },
         { "expect": "none" }
       ]
     },
@@ -83,9 +98,18 @@
           "all": [ { "q": "cue.pump.gravel", "unit": "cue", "below": 0.3 },
                    { "measure": "stethoscope", "target": "pump.body", "unit": "cue", "above": 0.5, "says": "청진기에 거친 소리" } ],
           "verdict": "WTR-02"
+        },
+        {
+          "each": { "c": "C3" },
+          "prep": [ { "cmd": "tool.voltmeter" } ],
+          "undo": [ { "cmd": "tool.hand" } ],
+          "all": [ { "q": "cue.pump.grind", "unit": "cue", "below": 0.3, "says": "갈리는 소리가 없고" },
+                   { "measure": "voltmeter", "target": "switch.{c}", "unit": "V", "above": 10, "says": "10V 넘음" } ],
+          "verdict": "ELC-02"
         }
       ],
       "verdicts": {
+        "ELC-02": { "fault": "ELC-02", "says": "C3 칼날 스위치 접점 부식", "same": "switch.drop" },
         "WTR-02": {
           "fault": "WTR-02",
           "says": "펌프 베어링 마모",
@@ -101,6 +125,7 @@
       "exposure": { "setup": { "depthM": 300, "switches": { "C3": true }, "bilges": { "bilge.aft": 150 } }, "seconds": 60 },
       "cases": [
         { "expect": "WTR-02", "inject": [ { "fault": "WTR-02" } ] },
+        { "expect": "ELC-02", "bind": { "c": "C3" }, "inject": [ { "fault": "ELC-02", "part": "contact.C3" } ] },
         { "expect": "none", "inject": [ { "fault": "WTR-01" }, { "fault": "WTR-02" } ] },
         { "expect": "none" }
       ]
