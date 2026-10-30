@@ -537,6 +537,7 @@ static class SimQuery
         return sum;
     }
 
+    /// <summary>누수 지점 i의 부품에 달린 바다 경로로 지금 드는 물 (L/s).</summary>
     static double LeakSeaInflow(SimWorld w, int leak)
     {
         if (!w.Mechanics.HasSeaPaths) return 0;
