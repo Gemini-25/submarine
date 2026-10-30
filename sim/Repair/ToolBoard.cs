@@ -129,6 +129,9 @@ static class ToolBoard
         w.AddActionNoise("tooldrop");
     }
 
+    /// <summary>바닥의 도구를 다른 구역 바닥으로 옮긴다 (기울기로 구름, M2 WP18).</summary>
+    public static void SetFloor(SimWorld w, int tool, int zone) => Board(w).Set(LocProp(w.T.Tools[tool]), Floor + zone);
+
     static int FirstEmpty(SimWorld w)
     {
         for (int n = 1; n <= w.T.ToolBoard!.BeltSlots; n++)
