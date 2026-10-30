@@ -37,6 +37,8 @@ public enum SimEventKind
     WiringBurnt,
     LoadLost,
     ToolRolled,
+    /// <summary>현창 유리가 금 갔다 (HUL-02, M2 WP19). Subject는 누수 지점 ID.</summary>
+    GlassCracked,
 }
 
 /// <summary>표현 층에 알리는 사건. 경보, 단선, 폭발 등. 시뮬레이션 판정에는 쓰지 않는다.</summary>

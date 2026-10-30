@@ -131,6 +131,13 @@ public sealed class FixtureCatalog
         if (source == "circuits") return data.Circuits.Select(c => c.Id).ToArray();
         if (source == "cells") return Enumerable.Range(1, data.Tuning.Battery.Cells).Select(n => n.ToString(CultureInfo.InvariantCulture)).ToArray();
         if (source == "leaks") return data.LeakPoints.Select(l => l.Id).ToArray();
+        // leaks-<종류>: 그 종류를 뺀 누수 지점 (WP19: 현창은 쉿 소리 대신 졸졸 소리를 낸다)
+        if (source.StartsWith("leaks-", StringComparison.Ordinal))
+        {
+            string kind = source["leaks-".Length..];
+            if (!data.LeakPoints.Any(l => l.Kind == kind)) throw new FormatException($"출처 '{source}': 종류 '{kind}'인 누수 지점이 없다");
+            return data.LeakPoints.Where(l => l.Kind != kind).Select(l => l.Id).ToArray();
+        }
         int dots = source.IndexOf("..", StringComparison.Ordinal);
         if (dots > 0)
         {
@@ -140,7 +147,7 @@ public sealed class FixtureCatalog
             return Enumerable.Range(a, b - a + 1).Select(n => n.ToString(CultureInfo.InvariantCulture)).ToArray();
         }
         var list = source.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        if (list.Length < 2) throw new FormatException($"출처 '{source}'를 모른다 (circuits, cells, leaks, 1..4, a,b,c)");
+        if (list.Length < 2) throw new FormatException($"출처 '{source}'를 모른다 (circuits, cells, leaks, leaks-<종류>, 1..4, a,b,c)");
         return list;
     }
 

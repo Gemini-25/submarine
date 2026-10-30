@@ -1,0 +1,96 @@
+{
+  "proc.viewport.reseal": {
+    "title": "현창 밀봉 교체",
+    "fault": "HUL-02",
+    "grade": "proper",
+    "bind": [ "viewport" ],
+    "steps": [
+      {
+        "type": "Inspect",
+        "text": "현창 유리 테 둘레에서 물이 맺혀 흘러내리는지 본다. 이음새에서 뿜는 물줄기와 다르다. 유리에 금이 갔는지 본다."
+      },
+      {
+        "type": "Isolate",
+        "text": "덮개를 손으로 끌어내려 유리를 덮는다.",
+        "cmd": "viewport.{viewport}.deadlight.close",
+        "tool": "hand",
+        "requires": "없음",
+        "hazard": "덮개를 닫지 않고 테 볼트를 풀면 바닷물이 뿜어 들어와 몸이 젖고 물이 쏟아진다."
+      },
+      {
+        "type": "Isolate",
+        "text": "덮개 걸쇠 둘을 손으로 돌려 조인다. 덮개를 닫고 걸쇠를 조이면 밀봉이 더 상하지 않는다.",
+        "cmd": "viewport.{viewport}.dog.{n}.tighten",
+        "tool": "hand",
+        "repeat": 2
+      },
+      {
+        "type": "Open",
+        "text": "렌치로 테 볼트 여섯 개를 반시계 방향으로 돌려 푼다.",
+        "cmd": "viewport.{viewport}.ring.bolt.{n}.loosen",
+        "tool": "wrench",
+        "repeat": 6,
+        "requires": "덮개를 닫고 걸쇠 둘을 조였을 것",
+        "hazard": "물 분출 (잠시 몸을 못 쓰고 물이 쏟아진다)"
+      },
+      {
+        "type": "Remove",
+        "text": "테를 손으로 잡아 떼어 낸다.",
+        "cmd": "viewport.{viewport}.ring.open",
+        "tool": "hand"
+      },
+      {
+        "type": "Remove",
+        "text": "칼로 헌 밀봉을 도려내어 뽑는다.",
+        "cmd": "viewport.{viewport}.seal.pull",
+        "tool": "knife",
+        "requires": "빈손일 것"
+      },
+      {
+        "type": "Remove",
+        "text": "헌 밀봉을 폐기함에 버린다.",
+        "cmd": "hand.drop"
+      },
+      {
+        "type": "Install",
+        "text": "전기 예비품 벽장에서 현창 밀봉을 꺼낸다.",
+        "cmd": "locker.take.viewport_seal",
+        "tool": "hand"
+      },
+      {
+        "type": "Install",
+        "text": "새 밀봉을 유리 둘레의 홈에 끼운다.",
+        "cmd": "viewport.{viewport}.seal.insert"
+      },
+      {
+        "type": "Close",
+        "text": "테를 제자리에 댄다.",
+        "cmd": "viewport.{viewport}.ring.close",
+        "tool": "hand"
+      },
+      {
+        "type": "Fasten",
+        "text": "렌치로 테 볼트를 1, 4, 2, 5, 3, 6 순서로 조인다. 맞은편 볼트를 번갈아 조여 밀봉을 고르게 누른다.",
+        "cmd": "viewport.{viewport}.ring.bolt.{n}.tighten",
+        "tool": "wrench",
+        "repeat": 6,
+        "order": [1, 4, 2, 5, 3, 6],
+        "requires": "1, 4, 2, 5, 3, 6 순서를 지킬 것",
+        "hazard": "순서를 어기면 밀봉이 한쪽으로 몰려 계속 조금씩 샌다. 경고등은 켜지지 않는다."
+      },
+      {
+        "type": "Close",
+        "text": "덮개 걸쇠 둘을 손으로 돌려 푼다.",
+        "cmd": "viewport.{viewport}.dog.{n}.loosen",
+        "tool": "hand",
+        "repeat": 2
+      },
+      {
+        "type": "Test",
+        "text": "덮개를 밀어 올려 연다. 유리 테 둘레가 마른 채로 있고 전방 경고등이 꺼지면 맞다.",
+        "cmd": "viewport.{viewport}.deadlight.open",
+        "tool": "hand"
+      }
+    ]
+  }
+}

@@ -8,7 +8,7 @@
     "igniter.glow": { "sense": "Sight", "anchor": "o2_igniter", "q": "device.o2_igniter.running", "map": [[0, 0], [1, 1]], "caption": "cue.igniter.glow" },
     "junction.{c}.dew": { "bind": { "c": "circuits" }, "sense": "Sight", "anchor": "junction.{c}", "q": "circuit.{c}.moisture", "map": [[0.4, 0], [0.6, 0.5], [0.9, 1]], "caption": "cue.junction.dew" },
     "{p}.drip": { "bind": { "p": "leaks" }, "sense": "Sight", "anchor": "{p}", "q": "{p}.inflow", "map": [[0, 0], [0.01, 0.2], [0.3, 1]], "caption": "cue.leak.drip" },
-    "{p}.hiss": { "bind": { "p": "leaks" }, "sense": "Sound", "anchor": "{p}", "q": "{p}.inflow", "map": [[0, 0], [0.01, 0.2], [0.3, 1]], "caption": "cue.leak.hiss" },
+    "{p}.hiss": { "bind": { "p": "leaks-viewport" }, "sense": "Sound", "anchor": "{p}", "q": "{p}.inflow", "map": [[0, 0], [0.01, 0.2], [0.3, 1]], "caption": "cue.leak.hiss" },
     "lights.glow": { "sense": "Sight", "anchor": "cabin_lights", "q": "lights.brightness", "map": [[0, 0], [1, 1]], "caption": "cue.lights.glow" },
     "pump.backflow": { "sense": "Sound", "anchor": "pump.check_valve", "q": "pump.backflow", "map": [[0, 0], [2, 1]], "caption": "cue.pump.backflow" },
     "pump.burning": { "sense": "Smell", "anchor": "bilge_pump", "q": "device.bilge_pump.overheated", "map": [[0, 0], [1, 1]], "caption": "cue.pump.burning" },

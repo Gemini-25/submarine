@@ -35,8 +35,6 @@ public sealed class SteamTuning
     public double DewPerLeak { get; set; }
     /// <summary>이슬이 맺는 동안 그 구역 분기함의 습기가 목표로 다가가는 빠르기 (분당 몫). 습도 모듈의 creepPerMin보다 작으면 그것을 쓴다.</summary>
     public double DewCreepPerMin { get; set; }
-    /// <summary>플랜지 볼트를 순서(절차의 order)대로 조이지 않았을 때 이음 integrity의 상한.</summary>
-    public double MisorderCap { get; set; }
     /// <summary>축압기가 있는 구역 (이슬이 맺는 곳).</summary>
     public string Zone { get; set; } = "";
     /// <summary>빼기 밸브로 증기를 뺄 때의 계속 나는 소음 (끝까지 열고 관 압력 1에서).</summary>

@@ -13,7 +13,6 @@
     "rhPerLeak": 2,
     "dewPerLeak": 3,
     "dewCreepPerMin": 0.16,
-    "misorderCap": 0.85,
     "zone": "aft",
     "ventNoise": 20,
     "hissNoise": 6

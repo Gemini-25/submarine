@@ -1,0 +1,100 @@
+{
+  "params": {
+    "resealQ": 0.95,
+    "misorderCap": 0.8
+  },
+  "fixtures": [
+    {
+      "id": "viewport.{v}.deadlight",
+      "bind": { "v": "1..2" },
+      "part": "leak.viewport.{v}",
+      "kind": "cover",
+      "zone": "fore",
+      "prop": "deadlight",
+      "heldBy": "dogs",
+      "gesture": "down",
+      "verbs": {
+        "open": { "tool": "hand", "noise": "cover" },
+        "close": { "tool": "hand", "noise": "cover" }
+      }
+    },
+    {
+      "id": "viewport.{v}.dog.{n}",
+      "bind": { "v": "1..2", "n": "1..2" },
+      "part": "leak.viewport.{v}",
+      "kind": "fastener",
+      "zone": "fore",
+      "prop": "dog{n}",
+      "group": "dogs",
+      "verbs": {
+        "loosen": { "tool": "hand", "noise": "latch" },
+        "tighten": {
+          "tool": "hand",
+          "noise": "latch",
+          "rejectIf": [ { "if": "self.deadlight >= 0.5", "reason": "deadlight_open" } ]
+        }
+      }
+    },
+    {
+      "id": "viewport.{v}.ring.bolt.{n}",
+      "bind": { "v": "1..2", "n": "1..6" },
+      "part": "leak.viewport.{v}",
+      "kind": "fastener",
+      "zone": "fore",
+      "prop": "ringBolt{n}",
+      "group": "ring",
+      "sequenceFrom": "proc.viewport.reseal",
+      "verbs": {
+        "loosen": {
+          "tool": "wrench",
+          "noise": "wrench",
+          "hazards": [
+            { "if": "self.deadlight >= 0.5 || self.dog1 < 0.5 || self.dog2 < 0.5", "hazard": "spray" }
+          ]
+        },
+        "tighten": {
+          "tool": "wrench",
+          "noise": "wrench",
+          "rejectIf": [ { "if": "self.ringOff >= 0.5", "reason": "ring_off" } ],
+          "hook": "seat"
+        }
+      }
+    },
+    {
+      "id": "viewport.{v}.ring",
+      "bind": { "v": "1..2" },
+      "part": "leak.viewport.{v}",
+      "kind": "cover",
+      "zone": "fore",
+      "prop": "ringOff",
+      "heldBy": "ring",
+      "verbs": {
+        "open": { "tool": "hand", "noise": "cover" },
+        "close": { "tool": "hand", "noise": "cover" }
+      }
+    },
+    {
+      "id": "viewport.{v}.seal",
+      "bind": { "v": "1..2" },
+      "part": "leak.viewport.{v}",
+      "kind": "socket",
+      "zone": "fore",
+      "needReason": "need_viewport_seal",
+      "verbs": {
+        "pull": {
+          "tool": "knife",
+          "noise": "scrape",
+          "rejectIf": [ { "if": "self.ringOff < 0.5", "reason": "ring_on" } ],
+          "gives": [ { "item": "seal_old" } ]
+        },
+        "insert": {
+          "noise": "cover",
+          "rejectIf": [ { "if": "self.ringOff < 0.5", "reason": "ring_on" } ],
+          "accepts": {
+            "viewport_seal": { "set": { "seatQ": "$resealQ" } }
+          }
+        }
+      }
+    }
+  ]
+}

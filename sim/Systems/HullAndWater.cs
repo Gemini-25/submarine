@@ -28,6 +28,8 @@ static class HullSystem
 
             // 축 패킹 누름판: 마찰열과 누수 배율 (HUL-03). 다른 지점은 정확히 1.
             double gland = ShaftGland.Update(w, part);
+            // 현창: 밀봉 열화와 금 간 유리 (HUL-02). 다른 지점은 정확히 1.
+            gland *= Viewport.Update(w, part);
             double integrity = part.Get("integrity");
             if (s > 1)
             {

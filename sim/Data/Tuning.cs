@@ -44,6 +44,8 @@ public sealed class Tuning
     [Optional] public PumpBearingTuning? PumpBearing { get; set; }
     /// <summary>축 패킹 누름판 (M2 HUL-03). 없으면 축 패킹 지점도 다른 누수 지점처럼 integrity로만 샌다.</summary>
     [Optional] public ShaftGlandTuning? ShaftGland { get; set; }
+    /// <summary>현창 밀봉의 열화와 유리 금 (M2 WP19 HUL-02, data/tuning/viewport.json). 없으면 현창도 integrity로만 샌다.</summary>
+    [Optional] public ViewportTuning? Viewport { get; set; }
     /// <summary>감각 계통: 진공관 필라멘트와 상황판 전구 (M2 WP13). 없으면 필라멘트가 약해지지 않는다.</summary>
     [Optional] public SensesTuning? Senses { get; set; }
     /// <summary>펌프 흡입 선택기 (M2 WP18, data/tuning/attitude.json). pump.suction 부품이 있으면 필요하다.</summary>

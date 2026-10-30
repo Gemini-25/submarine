@@ -452,30 +452,23 @@ public class PartMechanicsTests
     [Fact]
     public void Kind_template_is_merged_over_the_part_template()
     {
-        var data = Load(new Mut
-        {
-            NoMech = true,
-            // 실제 데이터의 다른 종류 틀(축 패킹 등)은 그대로 두고 현창 틀만 더한다.
-            Hull = h => (h["kindTemplates"] ??= new JsonObject())["viewport"] = JsonNode.Parse("""
-                { "props": { "deadlight": 1, "integrity": 0.9 },
-                  "seaPaths": [ { "areaCm2": 0.4, "when": "self.deadlight < 0.5" } ] }
-                """),
-        });
+        // 실제 데이터의 현창 틀 (WP19 HUL-02): 종류 쪽 상태 값과 바다 경로가 공통 템플릿 위에 붙는다.
+        var data = TestData.Data;
         var vp = data.Parts.Single(p => p.Id == "leak.viewport.1");
         Assert.Equal("viewport", vp.Kind);
         Assert.Equal(1, vp.Props["deadlight"]);
-        Assert.Equal(0.9, vp.Props["integrity"]); // 종류 쪽이 이긴다
+        Assert.Equal(1, vp.Props["integrity"]);    // 공통 템플릿에서
         Assert.Equal(1, vp.Props["patchFactor"]); // 공통 템플릿에서
-        Assert.Single(vp.SeaPaths);
+        Assert.Equal(2, vp.SeaPaths.Count);
         var rivet = data.Parts.Single(p => p.Id == "leak.rivet.01");
         Assert.False(rivet.Props.ContainsKey("deadlight"));
         Assert.Empty(rivet.SeaPaths);
 
-        // 누수 지점의 바다 경로는 zone을 비우면 그 지점의 구역으로 들어간다.
+        // 누수 지점의 바다 경로는 zone을 비우면 그 지점의 구역으로 들어간다 (덮개가 열린 채 테 볼트 하나를 풀었다).
         var sim = new Simulation(data, 1, TestData.Setup(s =>
         {
             s.DepthM = 100;
-            s.Parts = new List<PartSetup> { new() { Part = "leak.viewport.1", Prop = "deadlight", Value = 0 } };
+            s.Parts = new List<PartSetup> { new() { Part = "leak.viewport.1", Prop = "ringBolt1", Value = 0 } };
         }));
         string zone = data.LeakPoints.Single(l => l.Id == "leak.viewport.1").Zone;
         var closed = new Simulation(data, 1, TestData.Setup(s => s.DepthM = 100));

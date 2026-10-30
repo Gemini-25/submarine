@@ -2,6 +2,7 @@
   "params": {
     "wrapLifeS": 900,
     "oldGasketIntegrity": 0.8,
+    "misorderCap": 0.85,
     "roughLoss": -0.15
   },
   "fixtures": [
@@ -138,7 +139,7 @@
         "tighten": {
           "tool": "wrench",
           "noise": "wrench",
-          "hook": "flangeSeat"
+          "hook": "seat"
         }
       }
     },
@@ -180,19 +181,19 @@
           "accepts": {
             "gasket": {
               "set": {
-                "gasketQ": 1
+                "seatQ": 1
               }
             },
             "gasket_old": {
               "set": {
-                "gasketQ": "$oldGasketIntegrity"
+                "seatQ": "$oldGasketIntegrity"
               }
             }
           },
           "effects": [
             {
               "if": "self.rough >= 0.5",
-              "add": "gasketQ",
+              "add": "seatQ",
               "by": "$roughLoss",
               "min": 0
             }

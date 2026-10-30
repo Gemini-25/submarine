@@ -1,0 +1,14 @@
+{
+  "cue.viewport.beads": "현창 유리 테 둘레에 물방울이 맺혀 흘러내린다",
+  "cue.viewport.crack": "현창 유리에 금이 갔다",
+  "cue.viewport.trickle": "현창 쪽에서 물이 졸졸 흐르고 유리가 이따금 똑 하고 운다",
+  "fixture.viewport.{v}.deadlight": "{v}번 현창 덮개",
+  "fixture.viewport.{v}.dog.{n}": "{v}번 현창 덮개 걸쇠 {n}",
+  "fixture.viewport.{v}.ring": "{v}번 현창 테",
+  "fixture.viewport.{v}.ring.bolt.{n}": "{v}번 현창 테 볼트 {n}",
+  "fixture.viewport.{v}.seal": "{v}번 현창 밀봉",
+  "reason.deadlight_open": "덮개가 열려 있어 걸쇠가 걸리지 않는다.",
+  "reason.need_viewport_seal": "끼울 현창 밀봉을 쥐고 있지 않다.",
+  "reason.ring_off": "테가 떨어져 있어 볼트가 걸리지 않는다.",
+  "reason.ring_on": "테가 밀봉을 덮고 있다."
+}

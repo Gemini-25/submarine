@@ -265,21 +265,21 @@ public class SteamTests
         Assert.Equal(0, sim.Q("cue.steam.hiss"));
     }
 
-    /// <summary>갈고리 flangeSeat: 넷이 다 조여질 때만, 개스킷 품질을 순서 상한으로 자른 값이 integrity가 된다.</summary>
+    /// <summary>갈고리 seat: 넷이 다 조여질 때만, 개스킷 품질을 순서 상한으로 자른 값이 integrity가 된다.</summary>
     [Fact]
     public void The_flange_seat_hook_sets_integrity_only_when_all_four_bolts_are_tight()
     {
         var sim = Exposure();
         RunCmds(sim, new[] { "tool.hand", "steam.stop.close", "steam.stop.close", "steam.stop.close", "steam.stop.close", "steam.bleed.open", "steam.bleed.open" }, 0.3);
         RunCmds(sim, new[] { "tool.wrench", "steam.flange.bolt.1.loosen", "steam.flange.bolt.3.loosen" }, 0);
-        sim.World.Part("steam.joint").Set("gasketQ", 0.9);
+        sim.World.Part("steam.joint").Set("seatQ", 0.9);
         RunCmds(sim, new[] { "steam.flange.bolt.1.tighten" }, 0);
         Assert.Equal(1, sim.Q(Joint + "integrity"));               // 셋만 조였다: 그대로
         RunCmds(sim, new[] { "steam.flange.bolt.3.tighten" }, 0);
         Assert.Equal(0.9, sim.Q(Joint + "integrity"), 9);          // 넷: 개스킷 품질
         RunCmds(sim, new[] { "steam.flange.bolt.1.loosen", "steam.flange.bolt.2.loosen", "steam.flange.bolt.3.loosen", "steam.flange.bolt.4.loosen" }, 0);
         RunCmds(sim, new[] { "steam.flange.bolt.1.tighten", "steam.flange.bolt.2.tighten", "steam.flange.bolt.3.tighten", "steam.flange.bolt.4.tighten" }, 0);
-        Assert.Equal(S.MisorderCap, sim.Q(Joint + "integrity"), 9); // 순서를 어김: 상한
+        Assert.Equal(0.85, sim.Q(Joint + "integrity"), 9); // 순서를 어김: 상한
     }
 
     [Fact]
