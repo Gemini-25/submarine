@@ -46,5 +46,7 @@ static class ContactsTuningValidator
         if (t.HeatCapacityJPerC <= 0 || t.CoolingWPerC <= 0) errors.Add("tuning.contacts: heatCapacityJPerC > 0, coolingWPerC > 0");
         if (t.ArcSpanV <= 0) errors.Add("tuning.contacts.arcSpanV > 0");
         if (t.GrowFrom is < 0 or > 1) errors.Add("tuning.contacts.growFrom 0~1");
+        // 줄질을 두 번만 한 접점(교범 24쪽 '순서를 어기면'): 배전반 노랑보다 아크가 먼저 나면 안 된다.
+        if (t.ArcFromV < t.PanelWarnDropV) errors.Add("tuning.contacts: arcFromV ≥ panelWarnDropV (배전반 주의 없이 아크가 먼저 튀지 않게)");
     }
 }

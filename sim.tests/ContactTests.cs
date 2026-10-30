@@ -423,7 +423,7 @@ public class ContactTests
         sim.Inject("ELC-03", "junction.C3");
         sim.Run(60);
         var run = Follow(sim, "proc.contact.file", "C3");
-        Assert.DoesNotContain(run.Events, Hurt);
+        NoRejectsNoHarm(run);
         Assert.True(sim.Q("cue.junction.C3.dew") > 0.5);
         Assert.Equal("ELC-03", sim.QS("part.junction.C3.fault"));
     }
