@@ -119,6 +119,10 @@ static class SimQuery
                     "weep" => x => QueryValue.Of(PumpBearing.Weep(x)),
                     // 흡입 선택기 자리: 'bilge', 'fore', 'aft', 'chamber' (M2 WP18). 선택기가 없는 데이터에서는 늘 'bilge'.
                     "suction" => x => QueryValue.Of(Suction.Positions[Suction.Position(x)]),
+                    // 역류 방지 밸브 보닛으로 드는 바닷물 L/s (열린 보닛, 순서를 어겨 조인 보닛; WP17 WTR-03)
+                    "bonnetInflow" => x => QueryValue.Of(PartSeaInflow(x, CheckValve.PartId)),
+                    // 배출 밸브의 열림 0~1 (WP17)
+                    "discharge" => x => QueryValue.Of(CheckValve.DischargeOpen(x)),
                     _ => throw Unknown(),
                 };
 
@@ -483,6 +487,16 @@ static class SimQuery
     }
 
     /// <summary>누수 지점 i의 부품에 달린 바다 경로로 지금 드는 물 (L/s).</summary>
+    /// <summary>한 부품의 바다 경로로 드는 물 L/s (부품이 없거나 바다 경로가 없으면 0).</summary>
+    static double PartSeaInflow(SimWorld w, string partId)
+    {
+        if (!w.Mechanics.HasSeaPaths || !w.TryPart(partId, out var part)) return 0;
+        double sum = 0;
+        foreach (var p in w.Mechanics.SeaPaths)
+            if (ReferenceEquals(p.Part, part)) sum += SeaPaths.Lps(w, p);
+        return sum;
+    }
+
     static double LeakSeaInflow(SimWorld w, int leak)
     {
         if (!w.Mechanics.HasSeaPaths) return 0;
