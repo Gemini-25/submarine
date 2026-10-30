@@ -1,0 +1,14 @@
+{
+  "ELC-02": {
+    "name": "접점 부식",
+    "system": "switchboard",
+    "partKind": "contact",
+    "defaultPart": "contact.C1",
+    "state": "Fault",
+    "set": {
+      "corrosion": 0.7
+    },
+    "clearedWhen": "self.corrosion < 0.25 && self.burnt < 0.5",
+    "baseRatePerHour": 0
+  }
+}

@@ -139,14 +139,13 @@ public partial class Submarine
         glass.Instance(n, "OilCupGlass", NoShadow);
     }
 
-    /// <summary>배치의 역류 밸브(몸통, 보닛, 보닛 볼트)와 배출 밸브 몸통. 배치와 같은 모습이다. WP17이 보닛 볼트를 움직이게 할 때 이 메서드를 고친다.</summary>
+    /// <summary>배치의 역류 밸브 몸통과 배출 밸브 몸통. 보닛과 보닛 볼트는 움직이므로 WP17(Submarine.WaterB.cs)이 따로 짓는다.</summary>
     static void BuildCheckValveFittings(Node3D n)
     {
         var mb = new MeshBuilder();
         mb.Cylinder(ArtMat.Bronze, new Transform3D(Basis.Identity, new Vector3(0.98f, 0.85f, -1.1f)), 0.065f, 0.16f, 16, 0.01f);
-        mb.Cylinder(ArtMat.Bronze, Kit.AlongAxis(Vector3.Back, new Vector3(0.98f, 0.85f, -1.02f)), 0.055f, 0.03f, 16, 0.004f);
-        foreach (var b in new[] { new Vector2(-0.04f, 0.04f), new Vector2(0.04f, 0.04f), new Vector2(0.04f, -0.04f), new Vector2(-0.04f, -0.04f) })
-            Bolt(mb, new Vector3(0.98f + b.X, 0.85f + b.Y, -1.003f), Vector3.Back, 0.014f);
+        // 보닛이 앉는 자리 (몸통에서 통로 쪽으로 나온 짧은 목)
+        mb.Cylinder(ArtMat.Bronze, Kit.AlongAxis(Vector3.Back, new Vector3(0.98f, 0.85f, -1.05f)), 0.05f, 0.03f, 16, 0.004f);
         mb.Cylinder(ArtMat.Bronze, new Transform3D(Basis.Identity, new Vector3(0.98f, 1.5f, -1.1f)), 0.06f, 0.14f, 16, 0.01f);
         mb.Cylinder(ArtMat.BareSteel, Kit.AlongAxis(Vector3.Back, new Vector3(0.98f, 1.5f, -1.02f)), 0.008f, 0.06f, 8);
         mb.Instance(n, "ValveFittings");

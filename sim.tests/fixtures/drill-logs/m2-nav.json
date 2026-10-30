@@ -1,6 +1,6 @@
 {
-  "mission": "m2-nav", "seed": 1414, "dataStamp": "fa26fc8eaf9262fc", "handTicks": 12,
-  "finalTick": 8364, "finalHash": 16034827864104408427, "status": "succeeded",
+  "mission": "m2-nav", "seed": 1414, "dataStamp": "cd1f4128f9eb7074", "handTicks": 12,
+  "finalTick": 8364, "finalHash": 239064546291807981, "status": "succeeded",
   "findings": [
     {"tick":1124,"pair":"heading.off","verdict":"unsettled","bind":"","outcome":"noted"},
     {"tick":2032,"pair":"distance.wrong","verdict":"NAV-02","bind":"","outcome":"fixed"},
@@ -11,12 +11,12 @@
     {"tick":7804,"pair":"heading.off","verdict":"NAV-01","bind":"","outcome":"fixed"}
   ],
   "hashes": [
-    {"tick":1200,"hash":4318415752356775664},
-    {"tick":2400,"hash":14247790634227365068},
-    {"tick":3600,"hash":12703465156605629971},
-    {"tick":4800,"hash":17408652378199053842},
-    {"tick":6000,"hash":8258234327438281440},
-    {"tick":7200,"hash":13769103279428463029}
+    {"tick":1200,"hash":292860985859460350},
+    {"tick":2400,"hash":13837563657208202434},
+    {"tick":3600,"hash":11151969082997718081},
+    {"tick":4800,"hash":982557679341515972},
+    {"tick":6000,"hash":3311327525643171922},
+    {"tick":7200,"hash":8111120171528166731}
   ],
   "lines": [
     {"tick":0,"step":{"seq":1,"kind":"Wait","ticks":20,"value":0,"value2":0,"jobStep":-1,"note":"look"}},

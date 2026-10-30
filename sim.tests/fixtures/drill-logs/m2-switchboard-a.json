@@ -1,12 +1,12 @@
 {
-  "mission": "m2-switchboard-a", "seed": 808, "dataStamp": "fa26fc8eaf9262fc", "handTicks": 12,
-  "finalTick": 1472, "finalHash": 13830712035354477228, "status": "succeeded",
+  "mission": "m2-switchboard-a", "seed": 808, "dataStamp": "cd1f4128f9eb7074", "handTicks": 12,
+  "finalTick": 1472, "finalHash": 5257346125085191226, "status": "succeeded",
   "findings": [
     {"tick":584,"pair":"junction.burnt","verdict":"burnt_wiring","bind":"c=C6","outcome":"fixed"},
     {"tick":992,"pair":"fuse.blown","verdict":"ELC-03","bind":"c=C1","outcome":"fixed"}
   ],
   "hashes": [
-    {"tick":1200,"hash":12370172795782809094}
+    {"tick":1200,"hash":7026022369687416536}
   ],
   "lines": [
     {"tick":0,"step":{"seq":1,"kind":"Wait","ticks":20,"value":0,"value2":0,"jobStep":-1,"note":"look"}},

@@ -157,12 +157,14 @@ public class DataValidationTests
     {
         // JSON 읽기는 문화권 비교자로 사전을 만든다. GameData는 서수 순서로 다시 담아야 한다.
         var data = GameData.LoadFromDirectory(TestData.DataDir);
-        var valve = data.Parts.First(p => p.Id == "pump.check_valve");
+        var valve = data.Parts.First(p => p.Id == "pump.seal");
         var reversed = Comparer<string>.Create((a, b) => string.CompareOrdinal(b, a));
         var props = new SortedDictionary<string, double>(reversed) { ["stuck"] = 0, ["stuckOpen"] = 0.25, ["Stuckness"] = 0.75 };
         valve.Props = props;
+        // 장치 파일 없이 다시 만들므로 볼트 묶음을 세는 바다 경로(looseCount, 역류 방지 밸브 보닛)는 셀 묶음이 없다. 이 시험과 상관없으니 뺀다.
+        foreach (var p in data.Parts) p.SeaPaths.RemoveAll(sp => sp.Times.StartsWith("looseCount(", StringComparison.Ordinal));
         var rebuilt = new GameData(data.Tuning, data.Circuits, data.Devices, data.Parts, data.Faults, data.LeakPoints);
-        var part = new Parts.Part(rebuilt.Parts.First(p => p.Id == "pump.check_valve"));
+        var part = new Parts.Part(rebuilt.Parts.First(p => p.Id == "pump.seal"));
         Assert.Equal(new[] { "Stuckness", "stuck", "stuckOpen" }, part.PropNames);
     }
 

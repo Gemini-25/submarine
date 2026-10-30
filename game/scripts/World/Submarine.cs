@@ -64,6 +64,7 @@ public partial class Submarine : Node3D
         M1Ids.UnionWith(Interactables.Keys);
         BuildLayout();
         BuildAir(); // 배치의 환풍기와 흡수통 표지에 동작을 붙인다 (WP9)
+        BuildFurnaceFixtures(); // 산소 화로 (WP17, AIR-03)
         BindToolBoard(); // 배치가 놓은 공구판 윤곽에 동작을 붙인다
         BuildSpareCompartments(); // 예비품 칸 (중앙 벽장, 후방 사물함)
         BuildPumpBearing(); // WP10: 배치의 펌프 표지 자리에 베어링 뚜껑, 볼트, 기름 컵, 몸통
@@ -73,8 +74,10 @@ public partial class Submarine : Node3D
         BuildPower(); // 축전지 갑판, 셀 상자, 전동기 브러시, 기관 전령기 (M2 WP11)
         BuildShaftGlandFixtures(); // 선체: 축 패킹 상자 (Submarine.Hull)
         BuildSwitchboardTierA(query); // 분기함, 전류계, 납땜인두 전원 (WP8)
+        BuildSwitchboardB(); // 칼날 스위치 접점: 집게 나사, 칼날, 위 집게, 받침 (WP17 ELC-02)
         BuildBallast(); // 밸러스트 조절반: 흡입 선택기, 침수 밸브, 탱크 유리관, 경사계 (WP18)
         BuildTierB(); // WP19: 증기 축압기, 현창 둘, 케이블 챔버 (Submarine.Steam/Viewport/Chamber)
+        BuildCheckValve(); // 역류 방지 밸브 보닛, 판, 배출 밸브 바퀴, 세척통의 판 솔질 (WP17 WTR-03)
         BuildSensesB(); // 감각 2차 (WP20): 상황판 배선함, 탐조등과 레버와 현창 불빛, 계기 유리와 영점 나사
         BuildGadgets(); // 계산 도구: 탁상 계산기, 계산자, 계산 도표, 저항 측정 브리지 (WP22)
     }

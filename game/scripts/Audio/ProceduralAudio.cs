@@ -284,7 +284,11 @@ public partial class ProceduralAudio : Node3D
         _breath.Co2Stage = s.Co2Level;
         _breath.O2Stage = s.O2Level;
         _breath.Exertion = s.Water.HandPumpBusy ? 1 : (float)Math.Clamp(1 - s.Crew.Vitality, 0, 1);
-        _cough.Cl2Stage = s.Cl2Level;
+        // 화로 문틈 연기(AIR-03)도 1단계 기침을 부른다 (가까이 있을 때만; 화로 자리 1.5m 안).
+        bool smoke = false;
+        foreach (var c in s.Cues)
+            if (c.Id == "furnace.smoke" && c.Value > 0.3) smoke = _sub.SoundSpots.TryGetValue("furnace", out var at) && at.DistanceTo(cam) < 1.5f;
+        _cough.Cl2Stage = Math.Max(s.Cl2Level, smoke ? 1 : 0);
 
         foreach (var src in _sources) Fill(src);
         foreach (var src in _shots) Fill(src);

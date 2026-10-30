@@ -1,0 +1,18 @@
+{
+  "o2.furnace": {
+    "kind": "furnace",
+    "visible": [
+      "ash",
+      "doorOpen",
+      "latchOpen",
+      "vent"
+    ],
+    "props": {
+      "ash": 0,
+      "doorOpen": 0,
+      "latchOpen": 0,
+      "tempC": 12,
+      "vent": 0
+    }
+  }
+}

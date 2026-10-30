@@ -56,6 +56,12 @@ public sealed class Tuning
     [Optional] public AttitudeTuning? Attitude { get; set; }
     /// <summary>증기 축압기와 배관 (M2 WP19 PWR-03, data/tuning/steam.json). 상태 부품 steam.accumulator가 있으면 필요하다.</summary>
     [Optional] public SteamTuning? Steam { get; set; }
+    /// <summary>칼날 스위치 접점 (M2 WP17 ELC-02, data/tuning/switchboard.json). 접점 부품이 있으면 필요하다.</summary>
+    [Optional] public ContactsTuning? Contacts { get; set; }
+    /// <summary>산소 화로의 재와 배기구 (M2 WP17 AIR-03, data/tuning/air.json). 없으면 양초는 M0처럼 늘 같은 양의 산소를 낸다.</summary>
+    [Optional] public FurnaceTuning? Furnace { get; set; }
+    /// <summary>역류 방지 밸브와 배출 밸브 (M2 WP17 WTR-03, data/tuning/water.json). 없으면 배출 밸브를 잠가도 전류가 그대로다.</summary>
+    [Optional] public CheckValveTuning? CheckValve { get; set; }
 }
 
 /// <summary>펌프 베어링 (WTR-02). 기름 잔의 기름은 저항(drag)을 줄이고, 뚜껑 볼트가 풀린 채 돌면 기름이 새고 빨리 닳는다.</summary>

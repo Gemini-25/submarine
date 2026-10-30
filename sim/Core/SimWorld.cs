@@ -79,6 +79,8 @@ sealed class SimWorld
     public readonly Systems.HumidityRuntime? Humidity;
     /// <summary>회로마다 퓨즈의 철사(wire), 분기함의 탐(burnt)과 피복(insulated). 없는 데이터(M0·M1)에서는 −1 참조 (상태 아님).</summary>
     public readonly PropRef[] FuseWire, JunctionBurnt, JunctionInsulated;
+    /// <summary>칼날 스위치 접점 (M2 WP17). contact.Cx가 없으면 null (상태 아님).</summary>
+    public readonly Systems.ContactRefs? Contacts;
 
     public SimWorld(GameData data, int seed, MissionSetup? setup = null)
     {
@@ -125,6 +127,7 @@ sealed class SimWorld
         FuseWire = Fuses.Select(f => PropRef.Resolve(f, "wire")).ToArray();
         JunctionBurnt = Junctions.Select(j => PropRef.Resolve(j, "burnt")).ToArray();
         JunctionInsulated = Junctions.Select(j => PropRef.Resolve(j, "insulated")).ToArray();
+        Contacts = Systems.ContactRefs.Build(this);
         _deviceIndex = new Dictionary<string, int>(StringComparer.Ordinal);
         Devices = new DeviceState[data.Devices.Count];
         DeviceCircuit = new int[Devices.Length];
@@ -209,6 +212,8 @@ sealed class SimWorld
                 case "o2": Air.O2 = v; break;
                 case "cl2": Air.Cl2 = v; break;
                 case "h2": Air.H2 = v; break;
+                // 이미 타고 있는 양초의 남은 초 (진단 자료의 사례가 '켠 양초'를 노출로 쓴다, WP17). 적재 수는 줄지 않는다.
+                case "candle": Air.CandleRemaining = v; break;
                 default: throw new ArgumentException($"setup.air: 알 수 없는 기체 '{gas}'");
             }
         }
