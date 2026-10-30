@@ -17,6 +17,14 @@ public static partial class Kit
     const GeometryInstance3D.ShadowCastingSetting NoShadow = GeometryInstance3D.ShadowCastingSetting.Off;
     static readonly Dictionary<Material, ArrayMesh> BoltMeshes = new();
 
+    /// <summary>끝낼 때 정적 캐시가 붙잡은 Godot 자원을 놓는다. C# 정리는 엔진의 누수 검사보다 늦게 돌기 때문이다 (Main._ExitTree).</summary>
+    internal static void ReleaseStatics()
+    {
+        foreach (var m in RivetMeshes.Values) m.Dispose();
+        foreach (var m in BoltMeshes.Values) m.Dispose();
+        RivetMeshes.Clear(); BoltMeshes.Clear();
+    }
+
     /// <summary>둥근 리벳 머리(반지름 1, +Y로 솟음). 크기는 인스턴스 틀로 준다.</summary>
     public static ArrayMesh RivetMesh(Material mat)
     {

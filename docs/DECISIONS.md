@@ -632,3 +632,23 @@ SPEC 0절 규칙 6에 따라, 명세에 없거나 명세와 다르게 정한 것
   - DiagnosisDataTests의 쌍 수를 15 + 1 + 3 + 2로 고쳤다.
   - 드릴 기록 여덟의 도장과 해시를 다시 만들었다(걸음과 판정은 같다).
   - godot-check.sh의 묶음 목록은 양쪽을 합쳤다.
+
+
+## 2026-10-30 · M2 (WP19 2차: 증기 축압기, 현창, 케이블 챔버, 병렬 세션)
+
+- **증기 축압기 (PWR-03)**: 상태 부품 `steam.accumulator`{pressure, linePressure, stop 0~4, bleed 0~2}와 `steam.joint`{integrity, wrap, wrapLife, wrapArmed, wrapTurns, present(개스킷), bolt1..4, rough, scraped, seatQ}. 증기량은 통 하나를 1로, 관 부피 0.1. 정지 밸브가 열려 있으면 통과 관이 같은 압력이 되려 하고(증기량 보존), 관에서는 이음 누설 K(1 − i)²·L·(1 − 0.8·wrap)(K 0.002/초), 빼기 밸브 0.04·L/초, 윈치 감기 0.0015·L/초가 빠진다. 개스킷이 빠졌거나 볼트가 풀렸으면 0.05·L/초. 임무 중 다시 채워지지 않는다.
+- **증기 연쇄**: 실내 습도 목표에 2 × 누설 지수(누설 ÷ K)를 더하고, 축압기 구역(후방)의 분기함 목표 습기에 이슬 3 × 누설 지수를, `tuning.steam.dewBoxes`의 상자(junction.C4, panel.wiring)에는 그 0.25배를 더하며 이슬이 맺는 동안 기어오름은 분당 0.16. 배수 펌프가 돌면 약 6분에 C3 누전, 약 12분에 퓨즈, 약 11.5분에 상황판 배선함 엇갈림(SNS-02 증상), 약 11.7분에 C4 습기 0.5, 약 19분에 0.6. 그 밖의 분기함은 30분에도 0.6 아래. 통 압력 6kg/cm²(0.4) 아래면 동력 표시등 주의(압력 스위치).
+- **윈치 증기 보조는 관 압력을 읽는다** (`Steam.AssistPressure`; 정지 밸브를 닫으면 보조가 끊긴다).
+- **갈고리 `seat`**: 밀봉 볼트 묶음이 다 조여지는 순간 integrity = seatQ, 순서를 어겼으면 params.misorderCap까지. 고장과 현창의 열화는 seatQ도 낮춘다. 밀봉을 뽑으면 seatQ 0.3(params.noSealQ). 축압기 플랜지(1-3-2-4, 0.85), 현창 테(1-4-2-5-3-6, 0.8), 챔버 누름쇠(1-3-2-4, 0.8).
+- **감개 테이프**: 세 번 감으면 wrap 1, 품질 응급, 수명 900초(장치 params.wrapLifeS 하나) × (1 ÷ 관 압력). 새지 않는 이음(integrity ≥ 0.95)은 `joint_sound`로 감기지 않는다(멀쩡한 부품에 응급 수명이 걸리지 않게). 다하면 wrap 0과 TempRepairFailed. 플랜지 볼트를 풀면 끊어진다. 감을 때 관 압력 ≥ 0.1이면 증기에 덴다. 볼트를 풀거나 개스킷을 뽑을 때 > 0.05면 덴다.
+- **현창 (HUL-02)**: `kindTemplates.viewport`{deadlight 1 = 열림, dog1/2, ringBolt1..6, ringOff, present, crack, seatQ}. 덮개를 닫고 걸쇠 둘을 조이면 막힘: 열화가 멈추고 바다 경로와 물 분출이 없다. 막히지 않은 현창은 integrity < 0.6이면 초당 0.0002씩 상하고 0.15에서 금(면적 ×8, 사건 GlassCracked). 열화는 seatQ도 깎는다. 금 간 유리는 막으면 배율 1, 밀봉을 갈아도 integrity가 0.15로 묶여 HUL-02가 남는다. 정식 수리 뒤 0.95. 튜닝 `tuning.viewport`.
+- **공통 쉿 소리 단서는 현창과 챔버 바깥 문에 없다**: 출처 문법 `leaks-<종류>[+<종류>]`, 공통 `{p}.hiss`는 `leaks-viewport+chamber_door`, `{p}.drip`는 `leaks-chamber_door`.
+- **케이블 챔버 (HUL-04)**: `chamber.state`{squeeze 0~3, innerOpen, dog1..4}, `kindTemplates.chamber_door`{present, retainer1..4, seatQ}. 바깥 문 배율 = (1 − 0.7 × squeeze ÷ 3) × (밀봉이 빠졌으면 2). 챔버 물은 흡입 선택기 챔버 줄로만 빠진다. 안쪽 해치는 챔버 물 20L 넘으면 `hatch_pressed`, 열어 두면 초당 5L까지 전중 빌지로 넘친다(유입 누계 아님). 열린 우물 위는 사람만 밟는 판. 표시등도 구역 경고등도 없다. 튜닝 `tuning.chamber`.
+- **훈련**: m2-power-b(PWR-03, 습도 0.7·C3 습기 0.62로 시작, 성공은 이음 integrity ≥ 0.95, 밸브 제자리, C3 마름과 퓨즈 성함, 펌프 60초), m2-hull-b(HUL-02 현창 1과 HUL-04, 성공은 두 곳이 새지 않고 챔버 20L 아래, 해치 닫힘, 바퀴 풀림, 선택기 빌지 60초), m2-shakedown(PWR-03, SNS-01 선체 전구, 90초에 HUL-03, 반속; 성공은 셋 다 고치고 추진과 펌프가 돌며 후방 경고등 꺼짐 60초). 공용 규칙 `sim/Autoplay/TierBDrill.cs`.
+- **Godot 묶음** `drill-power-b`, `drill-hull-b`, `drill-shakedown`: 증기 일 동안 해치를 닫고 끝나면 연다(축압기는 해치를 닫아야 닿는다). 흡입 선택기는 한 칸씩 돌린다.
+- 합칠 때 본선이 고친 것:
+  - 25쪽 '습기는 어디서 오나'에 증기 원천을 넣었다(WP19의 넘김).
+  - 44쪽 가르기에는 '증기 보조가 약함' 줄이 이미 있어 그대로 두었다.
+  - 02·03·04·12쪽의 공유 편집은 문체를 보고 그대로 받았다.
+- **2차 고장 넷(WP17~20)이 모두 본선에 들어왔다.** 남은 M2 일은 WP25(도구 모양), WP26(교범 그림), WP23(마감: 26개 고장 전부의 진단과 솔버, golden, README, 보고서)이다. 선택 사항인 WP24(M1 거름망·리벳 처리기 옮기기)는 M3로 넘긴다.
+- **끝낼 때 정적 캐시를 놓는다**: UiKit와 Geo의 글꼴, ArtMat의 질감·셰이더·재질, Kit의 리벳·볼트 메시를 Main._ExitTree에서 놓는다(`ReleaseStatics`). C# 쪽 정리가 엔진의 누수 검사보다 늦게 돌아서, 글리프 캐시 같은 Image와 텍스처가 가끔 누수로 적혔다. 이 기록이 헤드리스 smoke를 이따금 깨뜨렸다(세 번에 한 번꼴, WP19를 합칠 때 드러남).
