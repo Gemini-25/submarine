@@ -48,6 +48,10 @@ public sealed class Tuning
     [Optional] public SensesTuning? Senses { get; set; }
     /// <summary>칼날 스위치 접점 (M2 WP17 ELC-02, data/tuning/switchboard.json). 접점 부품이 있으면 필요하다.</summary>
     [Optional] public ContactsTuning? Contacts { get; set; }
+    /// <summary>펌프 흡입 선택기 (M2 WP18, data/tuning/attitude.json). pump.suction 부품이 있으면 필요하다.</summary>
+    [Optional] public SuctionTuning? Suction { get; set; }
+    /// <summary>트림과 밸러스트 탱크 (M2 WP18, data/tuning/attitude.json). 기울기 모듈의 상태 부품이 있으면 필요하다.</summary>
+    [Optional] public AttitudeTuning? Attitude { get; set; }
 }
 
 /// <summary>펌프 베어링 (WTR-02). 기름 잔의 기름은 저항(drag)을 줄이고, 뚜껑 볼트가 풀린 채 돌면 기름이 새고 빨리 닳는다.</summary>
