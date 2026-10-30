@@ -65,7 +65,6 @@
   "fixture.gauge.pumpCurrent": "펌프 전류계",
   "fixture.gauge.pumpCurrent.glass": "펌프 전류계 유리 테",
   "fixture.gauge.pumpCurrent.zero": "펌프 전류계 영점 나사",
-  "reason.terminals_seated": "단자가 이미 제자리에 눌려 있다.",
   "reason.latch_open": "걸쇠가 이미 젖혀져 있다.",
   "reason.latch_shut": "걸쇠가 이미 걸려 있다.",
   "reason.rods_missing": "집게에 탄소봉이 없다.",

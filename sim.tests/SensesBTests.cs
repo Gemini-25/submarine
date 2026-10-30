@@ -135,7 +135,8 @@ public class SensesBTests
     [Fact]
     public void Panel_wiring_repair_at_human_pace_clears_the_fault_without_harm()
     {
-        var sim = NewSim();
+        // C4 분기함이 조금 젖어 있다(0.45): 말린 배선함은 다시 0.2~0.5까지 오르지만 단자가 제자리라 엇갈리지 않는다
+        var sim = NewSim(s => SetPart(s, "junction.C4", "moisture", 0.45));
         sim.Inject("SNS-02");
         sim.Run(2);
         var events = Follow(sim, "proc.panelwiring.dry", None);
@@ -146,8 +147,22 @@ public class SensesBTests
         Assert.Equal("warning", sim.QS("panel.lamp.water"));
         Assert.Equal("off", sim.QS("panel.lamp.hull"));
         Assert.True(sim.Measure("bridge", "panel.wiring") > 10);
-        // 습도가 올라도 단자가 제자리면 0.5까지는 엇갈리지 않는다
         sim.Run(600);
+        Assert.True(sim.Q("part.panel.wiring.prop.moisture") is > 0.2 and < 0.5, $"{sim.Q("part.panel.wiring.prop.moisture")}");
+        Assert.False(PanelWiringCrossed(sim));
+    }
+
+    [Fact]
+    public void A_cascade_cross_with_seated_terminals_is_fixed_by_the_procedure_without_rejections()
+    {
+        // 고장 주입 없이 젖은 C4 분기함을 따라 엇갈린 경우: 단자는 제자리라 단자 고정은 아무 일도 하지 않는다
+        var sim = NewSim(s => { s.Devices["searchlight"] = false; SetPart(s, "junction.C4", "moisture", 0.95); });
+        sim.Run(15 * 60);
+        Assert.True(PanelWiringCrossed(sim));
+        // C4 분기함도 같이 말린다 (교범 38쪽 흔한 실수). 여기서는 상자 습기만 되돌려 본다.
+        var events = Follow(sim, "proc.panelwiring.dry", None);
+        Assert.DoesNotContain(events, e => Harm.Contains(e.Kind));
+        sim.Run(2);
         Assert.False(PanelWiringCrossed(sim));
     }
 
@@ -163,6 +178,36 @@ public class SensesBTests
     }
 
     [Fact]
+    public void Drying_a_damp_box_with_C4_live_shocks_at_the_strip()
+    {
+        // 습기 0.5 아래면 덮개는 안전하고, 살아 있는 단자판을 닦을 때 감전된다
+        var sim = NewSim(s => { SetPart(s, "panel.wiring", "moisture", 0.3); SetPart(s, "panel.wiring", "seated", 0); });
+        sim.Run(2);
+        var events = Follow(sim, "proc.panelwiring.dry", None, skip: c => c == "switch.C4.off");
+        Assert.Equal("panel.wiring.strip.dry", events.First(e => e.Kind == SimEventKind.Shock).Subject);
+    }
+
+    [Fact]
+    public void Loose_box_screws_let_the_wiring_damp_faster()
+    {
+        // 말린 배선함(습기 0.1)이 습한 선실(rh 0.8)에서 기어오르는 양을, 나사를 모두 조인 것과 3·4번을 풀어 둔 것으로 견준다
+        double Rise(bool tightenAll)
+        {
+            var sim = NewSim(s =>
+            {
+                SetPart(s, "air.humidity", "rh", 0.8);
+                if (!tightenAll) { SetPart(s, "panel.wiring", "screw3", 0); SetPart(s, "panel.wiring", "screw4", 0); }
+            });
+            double m0 = sim.Q("part.panel.wiring.prop.moisture");
+            sim.Run(120);
+            return sim.Q("part.panel.wiring.prop.moisture") - m0;
+        }
+        double tight = Rise(true), loose = Rise(false);
+        Assert.True(tight > 0, $"{tight}");
+        Assert.True(loose / tight >= 1.5, $"풀린 나사 {loose}, 조인 나사 {tight}");
+    }
+
+    [Fact]
     public void Drying_without_reseating_reads_fixed_until_the_box_gets_damp_again()
     {
         // C4 분기함이 조금 젖어 있다(누전 문턱 0.6 아래). 배선함은 말려도 그 습기를 따라 다시 오른다.
@@ -171,17 +216,19 @@ public class SensesBTests
         sim.Run(2);
         var events = Follow(sim, "proc.panelwiring.dry", None, skip: c => c == "panel.wiring.terminals.reseat");
         Assert.DoesNotContain(events, e => Harm.Contains(e.Kind));
+        Assert.Contains(events, e => e.Kind == SimEventKind.PartRepaired && e.Subject == "panel.wiring"); // 고친 것으로 읽힌다
         sim.Run(2);
-        Assert.False(PanelWiringCrossed(sim));                     // 지금은 바르게 보인다
-        Assert.Equal("SNS-02", sim.QS("part.panel.wiring.fault")); // 고장은 남았다
+        Assert.Equal("normal", sim.QS("part.panel.wiring.state"));
+        Assert.False(PanelWiringCrossed(sim));
         sim.Run(15 * 60);
         Assert.True(sim.Q("part.panel.wiring.prop.moisture") is > 0.2 and < 0.5, $"{sim.Q("part.panel.wiring.prop.moisture")}");
-        Assert.True(PanelWiringCrossed(sim));                      // 들뜬 단자는 습기 0.2만 넘어도 엇갈린다
-        // 다시 하면(이번에는 단자를 고정) 지워지고, 같은 습기에서 엇갈리지 않는다
+        Assert.True(PanelWiringCrossed(sim));                      // 들뜬 단자는 습기 0.2만 넘어도 엇갈린다 (늦은 증상)
+        Assert.Equal(0, sim.Q("cue.panel.wiring.dew"), 9);          // 이슬은 없다
+        // 다시 하면(이번에는 단자를 고정) 같은 습기에서 엇갈리지 않는다
         var again = Follow(sim, "proc.panelwiring.dry", None);
         Assert.DoesNotContain(again, e => Harm.Contains(e.Kind));
         sim.Run(15 * 60);
-        Assert.Equal("normal", sim.QS("part.panel.wiring.state"));
+        Assert.Equal(1, sim.Q("part.panel.wiring.prop.seated"));
         Assert.False(PanelWiringCrossed(sim));
     }
 
@@ -237,25 +284,40 @@ public class SensesBTests
         Assert.True(sim.Q("panel.gauge.voltage") * 120 > 102); // 전압은 정상
     }
 
-    [Fact]
-    public void Feeding_the_rods_is_temporary_then_the_rods_can_be_replaced()
+    /// <summary>보내기를 마친 때부터 처음 흔들리는 때와 꺼지는 때 (초). 흔들리기 전에는 sputter가 0이다.</summary>
+    static (int Sputter, int Out) AfterFeeding(Simulation sim)
+    {
+        int sputter = -1;
+        for (int t = 1; t < 1200; t++)
+        {
+            sim.Run(1);
+            double sp = sim.Q("cue.searchlight.sputter");
+            if (sputter < 0 && sp > 0.2) sputter = t;
+            if (t < 150) Assert.True(sp == 0, $"{t}초에 sputter {sp}"); // 처음 2분 반은 하얗고 고르다
+            if (sim.Q("device.searchlight.running") < 0.5) return (sputter, t);
+        }
+        return (sputter, -1);
+    }
+
+    [Theory]
+    [InlineData(2, 300, 420, 420, 540)]   // 아직 흔들리는 동안 돌린 경우
+    [InlineData(150, 180, 300, 300, 420)] // 아크가 꺼진 뒤 돌린 경우
+    public void Feeding_the_rods_is_temporary_then_the_rods_can_be_replaced(double before, int sputterMin, int sputterMax, int outMin, int outMax)
     {
         var sim = NewSim();
         sim.Inject("SNS-04");
-        sim.Run(2);
+        sim.Run(before);
         var events = Follow(sim, "proc.arc.feed", None);
         Assert.DoesNotContain(events, e => Harm.Contains(e.Kind));
         Assert.Contains(events, e => e.Kind == SimEventKind.PartPatched && e.Subject == "searchlight.rods");
-        sim.Run(1);
         Assert.Equal("temporary", sim.QS("part.searchlight.rods.quality"));
         Assert.Equal("SNS-04", sim.QS("part.searchlight.rods.fault"));
-        Assert.Equal(0, sim.Q("cue.searchlight.sputter"), 9);  // 하얗고 고르다
-        Assert.Equal(0, sim.Q("cue.searchlight.yellow"), 9);
-        sim.Run(120);
         Assert.Equal(1, sim.Q("device.searchlight.running"));
-        Assert.Equal(0, sim.Q("cue.searchlight.sputter"), 9);
-        sim.Run(400);                                          // 봉이 다하면 다시 꺼진다
-        Assert.Equal(0, sim.Q("device.searchlight.running"));
+        Assert.Equal(0, sim.Q("cue.searchlight.yellow"), 9);
+        // 교범 40쪽: 돌린 때에 따라 3~6분쯤 하얗게 타다가 다시 흔들리고, 5~8분 뒤에 꺼진다
+        var (sputterT, outT) = AfterFeeding(sim);
+        Assert.InRange(sputterT, sputterMin, sputterMax);
+        Assert.InRange(outT, outMin, outMax);
         var proper = Follow(sim, "proc.arc.rods", None);
         Assert.DoesNotContain(proper, e => Harm.Contains(e.Kind));
         sim.Run(2);
@@ -298,7 +360,13 @@ public class SensesBTests
     [Fact]
     public void Leaving_the_gap_wide_flickers_and_burns_the_rods_twice_as_fast()
     {
-        double Burnt(int feeds)
+        double Burnt(Simulation sim)
+        {
+            double before = sim.Q("part.searchlight.rods.prop.length");
+            sim.Run(300);
+            return before - sim.Q("part.searchlight.rods.prop.length");
+        }
+        Simulation Replaced(int feeds)
         {
             var sim = NewSim();
             sim.Inject("SNS-04");
@@ -307,18 +375,34 @@ public class SensesBTests
             Follow(sim, "proc.arc.rods", None, skip: c => c == "searchlight.feed.turn" && ++n > feeds);
             sim.Run(5);
             Assert.Equal("normal", sim.QS("part.searchlight.rods.state")); // 고친 것으로 읽힌다
-            double before = sim.Q("part.searchlight.rods.prop.length");
-            sim.Run(300);
-            return before - sim.Q("part.searchlight.rods.prop.length");
+            return sim;
         }
-        var wide = NewSim();
-        wide.Inject("SNS-04");
-        wide.Run(2);
-        int k = 0;
-        Follow(wide, "proc.arc.rods", None, skip: c => c == "searchlight.feed.turn" && ++k > 2);
-        wide.Run(5);
+        double proper = Burnt(Replaced(5));
+        var wide = Replaced(2);
         Assert.True(wide.Q("cue.searchlight.sputter") > 0.2, "간격이 넓으면 흔들린다");
-        Assert.Equal(2 * Burnt(5), Burnt(2), 6);
+        Assert.Equal(2 * proper, Burnt(Replaced(2)), 6);
+        // 다시 하면(남은 세 번을 돌려 표시 눈금까지) 흔들림이 멎고 타는 속도가 돌아온다
+        wide.Cmd("tool.hand");
+        wide.Run(Pace);
+        for (int i = 0; i < 3; i++) { wide.Cmd("searchlight.feed.turn"); wide.Run(Pace); }
+        Assert.DoesNotContain(wide.DrainEvents(), e => Harm.Contains(e.Kind));
+        Assert.Equal(TestData.T.Senses!.Searchlight!.GapMark, wide.Q("part.searchlight.rods.prop.gap"), 9);
+        Assert.Equal(0, wide.Q("cue.searchlight.sputter"), 9);
+        Assert.Equal("proper", wide.QS("part.searchlight.rods.quality"));
+        Assert.Equal(proper, Burnt(wide), 6);
+    }
+
+    [Fact]
+    public void Replacing_the_C4_fuse_does_not_steady_worn_rods()
+    {
+        var sim = NewSim();
+        sim.Inject("SNS-04");
+        sim.Run(2);
+        var events = Follow(sim, "proc.fuse.replace", new Dictionary<string, string> { ["circuit"] = "C4" });
+        Assert.DoesNotContain(events, e => e.Kind is SimEventKind.Shock or SimEventKind.Pinch or SimEventKind.Hurt);
+        sim.Run(2);
+        Assert.True(sim.Q("cue.searchlight.sputter") > 0.2);
+        Assert.Equal("SNS-04", sim.QS("part.searchlight.rods.fault"));
     }
 
     [Fact]
@@ -370,23 +454,56 @@ public class SensesBTests
     }
 
     [Fact]
+    public void A_drifted_gauge_never_lights_a_lamp_or_rings_the_bell()
+    {
+        var baseline = NewSim(s => s.Devices["searchlight"] = false);
+        var drift = NewSim(s => s.Devices["searchlight"] = false);
+        drift.Inject("SNS-05");
+        for (int t = 0; t < 300; t++)
+        {
+            baseline.Run(1);
+            drift.Run(1);
+            foreach (var l in PanelSystems.Names) Assert.Equal(baseline.QS($"panel.lamp.{l}"), drift.QS($"panel.lamp.{l}"));
+        }
+        var bells = (Simulation s) => s.DrainEvents().Where(e => e.Kind == SimEventKind.AlarmBell).Select(e => e.Subject).ToHashSet();
+        Assert.Equal(bells(baseline), bells(drift));
+    }
+
+    [Fact]
     public void A_sticking_needle_ignores_small_changes_until_the_glass_is_tapped()
     {
-        var sim = NewSim(s => s.Devices["searchlight"] = false);
+        var sim = NewSim(s => s.Switches["C7"] = true);
         sim.Inject("SNS-05", "gauge.current");
         sim.Run(2);
-        double needle = sim.Q("panel.gauge.current"), offset = -0.12 * TestData.T.Senses!.Gauges!.FullScale["current"];
-        Assert.Equal(Math.Max(0, sim.Q("measure.voltmeter.bus") >= 0 ? needle : 0), needle);
+        double Truth()
+        {
+            double t = 0;
+            for (int c = 1; c <= 8; c++) t += sim.Q($"circuit.C{c}.current");
+            return t;
+        }
+        double fs = TestData.T.Senses!.Gauges!.FullScale["current"], offset = -0.12 * fs, band = 0.03 * fs;
+        double needle = sim.Q("panel.gauge.current"), before = Truth();
+        Assert.True(needle > 1, $"바늘 {needle}");
         sim.Cmd("device.soldering_iron.on"); // 작은 부하: 걸림 폭(눈금 끝의 3%)보다 작다
         sim.Run(2);
-        double truth = 0;
-        for (int c = 1; c <= 8; c++) truth += sim.Q($"circuit.C{c}.current");
-        Assert.True(Math.Abs(truth + offset - needle) > 1, "실제 값은 바뀌었다");
+        double after = Truth();
+        Assert.True(after - before > 60 && after - before < band, $"{before} → {after}");
         Assert.Equal(needle, sim.Q("panel.gauge.current"), 9); // 바늘은 그대로
         sim.Cmd("tool.hand");
         sim.Cmd("gauge.current.tap");
         sim.Run(Pace);
-        Assert.Equal(Math.Max(0, truth + offset), sim.Q("panel.gauge.current"), 0);
+        Assert.Equal(Truth() + offset, sim.Q("panel.gauge.current"), 0); // gaugeTap: 걸린 바늘이 제자리로 간다
+        // 대조: 바늘 축을 닦아 걸림을 없애면 두드리지 않아도 따라간다
+        var p = new ProcedureDef { Id = "wipe", Title = "닦기", Steps =
+        {
+            new ProcedureStep { Type = "Open", Text = "열기", Cmd = "gauge.current.glass.open", Tool = "hand" },
+            new ProcedureStep { Type = "Work", Text = "닦기", Cmd = "gauge.current.wipe", Tool = "rag" },
+        } };
+        foreach (var c in ProcedureRunner.ExpandWithBelt(sim, p, None)) { sim.Apply(c); sim.Run(Pace); }
+        Assert.Equal(0, sim.Q("part.gauge.current.prop.stick"));
+        sim.Cmd("device.soldering_iron.off");
+        sim.Run(2);
+        Assert.Equal(Truth() + offset, sim.Q("panel.gauge.current"), 0);
     }
 
     [Fact]
@@ -413,14 +530,38 @@ public class SensesBTests
         sim.Inject("SNS-05");
         sim.Run(2);
         double bus = sim.Measure("voltmeter", "bus");
+        // 바늘이 걸린 자리(최대 걸림 폭만큼 아래)에서 맞춘 셈이 되게, 맞추기 전에 바늘을 걸림 폭 아래에 두고 맞춘다
         Follow(sim, "proc.gauge.zero", new() { ["gauge"] = "voltage" }, skip: c => c == "gauge.voltage.wipe",
-            after: c => c == "gauge.voltage.glass.open" ? Zero(sim, "voltage", bus) : Array.Empty<Command>());
+            after: c => c == "gauge.voltage.glass.open" ? Zero(sim, "voltage", bus - 0.03 * TestData.T.Senses!.Gauges!.FullScale["voltage"] * 0.9) : Array.Empty<Command>());
         sim.Run(1);
         Assert.Equal("SNS-05", sim.QS("part.gauge.voltage.fault"));
-        // 다시 하면(축을 닦고) 지워진다
-        Follow(sim, "proc.gauge.zero", new() { ["gauge"] = "voltage" });
+        Assert.True(sim.Q("part.gauge.voltage.prop.stick") > 0);
+        double needle = sim.Q("panel.gauge.voltage");
+        Assert.True(Math.Abs(bus - needle) * 120 > 0.75, $"버스 {bus * 120}, 바늘 {needle * 120}");
+        // 다시 한다 (축을 닦고 맞춘다)
+        var again = Follow(sim, "proc.gauge.zero", new() { ["gauge"] = "voltage" },
+            after: c => c == "gauge.voltage.wipe" ? Zero(sim, "voltage", sim.Measure("voltmeter", "bus")) : Array.Empty<Command>());
+        Assert.DoesNotContain(again, e => Harm.Contains(e.Kind));
         sim.Run(1);
         Assert.Equal("normal", sim.QS("part.gauge.voltage.state"));
+        Assert.True(Math.Abs(sim.Measure("voltmeter", "bus") - sim.Q("panel.gauge.voltage")) * 120 <= 0.75);
+    }
+
+    [Fact]
+    public void A_gauge_can_be_zeroed_again_after_a_second_drift()
+    {
+        var sim = NewSim();
+        for (int round = 0; round < 2; round++)
+        {
+            sim.Inject("SNS-05", "gauge.voltage");
+            sim.Run(2);
+            var events = Follow(sim, "proc.gauge.zero", new() { ["gauge"] = "voltage" },
+                after: c => c == "gauge.voltage.wipe" ? Zero(sim, "voltage", sim.Measure("voltmeter", "bus")) : Array.Empty<Command>());
+            Assert.DoesNotContain(events, e => Harm.Contains(e.Kind));
+            sim.Run(1);
+            Assert.Equal("normal", sim.QS("part.gauge.voltage.state"));
+        }
+        Assert.Equal(48, sim.Q("part.gauge.voltage.prop.zero"));
     }
 
     [Fact]
@@ -434,6 +575,34 @@ public class SensesBTests
         sim.Run(1);
         Assert.Equal(102, sim.Q("panel.gauge.voltage") * 120, 0);
         Assert.Equal("SNS-05", sim.QS("part.gauge.voltage.fault"));
+    }
+
+    [Fact]
+    public void Jumpering_a_cell_leaves_the_drifted_needle()
+    {
+        var sim = NewSim(s => s.Devices["searchlight"] = false);
+        sim.Inject("SNS-05");
+        sim.Run(2);
+        var events = Follow(sim, "proc.cell.jumper", new() { ["cell"] = "3" });
+        Assert.DoesNotContain(events, e => e.Kind is SimEventKind.Shock or SimEventKind.Pinch or SimEventKind.Hurt);
+        sim.Run(2);
+        Assert.Equal("SNS-05", sim.QS("part.gauge.voltage.fault"));
+        Assert.True(Math.Abs(sim.Measure("voltmeter", "bus") - sim.Q("panel.gauge.voltage")) * 120 > 5);
+    }
+
+    [Fact]
+    public void Zeroing_a_gauge_or_drying_the_wiring_does_not_fix_a_dead_bulb()
+    {
+        var sim = NewSim();
+        sim.Inject("SNS-01");
+        sim.Run(2);
+        var events = Follow(sim, "proc.gauge.zero", new() { ["gauge"] = "bilge" });
+        events.AddRange(Follow(sim, "proc.panelwiring.dry", None));
+        Assert.DoesNotContain(events, e => e.Kind is SimEventKind.Shock or SimEventKind.Pinch or SimEventKind.Hurt);
+        sim.Run(2);
+        Assert.Equal("off", sim.QS("panel.lamp.water"));
+        Assert.Equal("warning", sim.QS("panel.signal.water"));
+        Assert.Equal("SNS-01", sim.QS("part.panel.bulb.water.fault"));
     }
 
     [Fact]
@@ -457,6 +626,39 @@ public class SensesBTests
         var sim = new Simulation(data, 1);
         sim.Run(2);
         Assert.Equal(sim.Q("battery.voltage"), sim.Q("panel.gauge.voltage"), 12);
+    }
+
+    // ---------- 소음 (교범 11쪽)
+
+    [Theory]
+    [InlineData("proc.arc.feed", "SNS-04", 0, 0)]
+    [InlineData("proc.arc.rods", "SNS-04", 1, 5)]
+    [InlineData("proc.gauge.zero", "SNS-05", 1, 5)]
+    [InlineData("proc.panelwiring.dry", "SNS-02", 6, 20)]
+    public void Senses_B_work_noise_matches_page_11(string proc, string fault, double lo, double hi)
+    {
+        var sim = NewSim();
+        sim.Inject(fault);
+        sim.Run(2);
+        var bind = proc == "proc.gauge.zero" ? new Dictionary<string, string> { ["gauge"] = "voltage" } : None;
+        double peak = 0;
+        void Do(Command c)
+        {
+            if (c.Cmd == "searchlight.housing.touch") sim.Run(CoolSeconds);
+            sim.Apply(c);
+            for (int i = 0; i < 12; i++)
+            {
+                sim.Run(Pace / 12);
+                peak = Math.Max(peak, sim.World.Noise.Actions.Sum(a => a.Level));
+            }
+        }
+        foreach (var c in ProcedureRunner.ExpandWithBelt(sim, TestData.Data.Procedure(proc), bind))
+        {
+            Do(c);
+            if (c.Cmd == "gauge.voltage.wipe")
+                foreach (var z in Zero(sim, "voltage", sim.Measure("voltmeter", "bus"))) Do(z);
+        }
+        Assert.InRange(peak, lo, hi);
     }
 
     // ---------- 갈고리와 저장

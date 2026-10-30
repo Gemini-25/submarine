@@ -188,6 +188,7 @@
       "doorOpen",
       "latch1",
       "latch2",
+      "length",
       "present"
     ],
     "props": {

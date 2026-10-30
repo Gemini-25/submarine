@@ -463,7 +463,7 @@ public class CableDiagnosability
 /// </summary>
 public class SensesBDiagnosability
 {
-    static readonly (string Fault, string? Part)[] Faults = { ("SNS-02", null), ("SNS-04", null), ("SNS-05", null), ("SNS-01", null) };
+    static readonly (string Fault, string? Part)[] Faults = { ("SNS-02", null), ("SNS-04", null), ("SNS-05", null), ("SNS-01", null), ("SNS-03", null) };
 
     static SortedDictionary<string, DiagnosisHarness.Element> Run(string? fault, string? part, double t = 30)
     {
@@ -510,5 +510,24 @@ public class SensesBDiagnosability
         Assert.False(v["SNS-05"]["measure.voltmeter.bus"].Differs(b["measure.voltmeter.bus"]));
         // PWR-01(셀 하나 열화)은 버스 바 전압도 함께 낮다
         Assert.True(v["SNS-05"]["measure.voltmeter.bus"].Differs(v["PWR-01"]["measure.voltmeter.bus"]));
+    }
+
+    /// <summary>
+    /// 아크가 꺼진 뒤(150초)의 SNS-04는 감각 노랑을 SNS-03의 소리 끊김(320초), C4 퓨즈와 같이 쓴다.
+    /// 탐조등 소리와 청음기 소리, 상황판 전원으로 갈린다 (교범 05, 40 '가르기').
+    /// </summary>
+    [Fact]
+    public void Dark_searchlight_splits_from_SNS03_and_the_C4_fuse()
+    {
+        var dark = Run("SNS-04", null, 150);
+        var baseDark = Run(null, null, 150);
+        var silent = Run("SNS-03", null, 320);
+        var c4 = Run("ELC-01", "fuse.C4", 150);
+        Assert.True(dark["panel.lamp.senses"].Differs(baseDark["panel.lamp.senses"]));
+        Assert.True(dark["cue.searchlight.arc"].Differs(silent["cue.searchlight.arc"]));
+        Assert.True(dark["cue.hydrophone.listen"].Differs(silent["cue.hydrophone.listen"]));
+        Assert.True(dark["panel.on"].Differs(c4["panel.on"]));
+        foreach (var k in DiagnosisHarness.Separating(dark, baseDark))
+            Assert.True(DiagnosisHarness.Documented(k, TestData.Data), $"꺼진 탐조등(SNS-04)을 드러내는 '{k}'에 문구가 없다");
     }
 }

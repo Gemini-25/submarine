@@ -60,12 +60,12 @@
     "fault": "SNS-02",
     "grade": "proper",
     "steps": [
-      { "type": "Inspect", "text": "선체 표시등과 배수 표시등을 구역 경고등과 빌지 유리관에 견주어 본다. 구역 경고등이 모두 꺼져 있는데 선체 표시등이 켜져 있거나, 유리관의 물이 느는데 배수 표시등이 꺼져 있으면 두 표시등의 선이 엇갈린 것이다." },
+      { "type": "Inspect", "text": "선체 표시등과 배수 표시등을 구역 경고등과 빌지 유리관에 견주어 본다. 구역 경고등이 모두 꺼져 있는데 선체 표시등이 켜져 있으면 두 표시등의 선이 엇갈린 것이다. 유리관의 물이 느는데 배수 표시등만 꺼져 있으면 먼저 램프 시험을 한다. 여덟 전구가 모두 켜지면 선이 엇갈린 것이다." },
       { "type": "Isolate", "text": "배전반의 C4 스위치를 내린다. 상황판이 꺼진다.", "cmd": "switch.C4.off", "tool": "hand", "hazard": "C4가 살아 있는 채 젖은 배선함을 열거나 단자판을 만지면 감전된다." },
       { "type": "Open", "text": "드라이버로 배선함 덮개 나사 네 개를 푼다.", "cmd": "panel.wiring.screw.{n}.loosen", "tool": "screwdriver", "repeat": 4 },
       { "type": "Open", "text": "덮개를 연다.", "cmd": "panel.wiring.cover.open", "tool": "hand", "requires": "C4 스위치가 내려가 있을 것", "hazard": "감전" },
       { "type": "Work", "text": "걸레로 단자판을 네 번 닦아 말린다. 선내 공기가 축축하면 네 번 닦아도 다 마르지 않는다.", "cmd": "panel.wiring.strip.dry", "tool": "rag", "repeat": 4, "requires": "C4 스위치가 내려가 있을 것", "hazard": "감전" },
-      { "type": "Work", "text": "드라이버로 단자 나사를 두 번 돌려 단자를 제자리에 눌러 고정한다.", "cmd": "panel.wiring.terminals.reseat", "tool": "screwdriver", "repeat": 2, "requires": "C4 스위치가 내려가 있을 것", "hazard": "단자를 고정하지 않으면 말려도 선내 습도가 오를 때 다시 엇갈린다." },
+      { "type": "Work", "text": "드라이버로 단자 나사를 두 번 돌려 단자를 제자리에 눌러 고정한다.", "cmd": "panel.wiring.terminals.reseat", "tool": "screwdriver", "repeat": 2, "requires": "C4 스위치가 내려가 있을 것", "hazard": "C4가 살아 있으면 감전된다. 단자를 고정하지 않으면 말려도 선내 습도가 오를 때 다시 엇갈린다." },
       { "type": "Close", "text": "덮개를 닫는다.", "cmd": "panel.wiring.cover.close", "tool": "hand" },
       { "type": "Fasten", "text": "드라이버로 덮개 나사 네 개를 조인다.", "cmd": "panel.wiring.screw.{n}.tighten", "tool": "screwdriver", "repeat": 4, "hazard": "나사가 풀려 있으면 습기가 두 배로 빨리 찬다." },
       { "type": "Test", "text": "C4 스위치를 올린다. 램프 시험으로 여덟 전구가 켜지는지 보고, 선체·배수 표시등을 구역 경고등과 빌지 유리관에 다시 견주어 본다.", "cmd": "switch.C4.on", "tool": "hand" }
@@ -77,7 +77,7 @@
     "grade": "temporary",
     "steps": [
       { "type": "Inspect", "text": "현창 너머의 불빛이 누렇게 흔들리는지, 탐조등 몸통에서 지직거리는 소리가 나는지 본다. 전압이 정상인데 그렇다면 탄소봉 간격이 벌어진 것이다." },
-      { "type": "Work", "text": "탄소봉 보내기 손잡이를 손으로 네 번 돌린다. 한 번에 간격이 한 눈금 좁아진다.", "cmd": "searchlight.feed.turn", "tool": "hand", "repeat": 4, "hazard": "봉이 다 타면 다시 꺼진다. 응급 수리이므로 탄소봉을 갈 것." },
+      { "type": "Work", "text": "탄소봉 보내기 손잡이를 손으로 네 번 돌린다. 한 번에 간격이 한 눈금 좁아진다. 응급 수리이므로 그 뒤 탄소봉을 간다.", "cmd": "searchlight.feed.turn", "tool": "hand", "repeat": 4, "hazard": "봉이 다 타면 다시 꺼진다." },
       { "type": "Test", "text": "불빛이 하얗고 고르게 되었는지 본다." }
     ]
   },
@@ -107,9 +107,9 @@
     "bind": [ "gauge" ],
     "steps": [
       { "type": "Inspect", "text": "계기 바늘을 기준 계기에 견주어 본다. 표의 기준 계기로 잰 값과 다르면 계기가 틀어진 것이다. 유리를 손가락으로 가볍게 두드려 바늘이 뛰는지 본다." },
-      { "type": "Open", "text": "계기 유리 테를 연다.", "cmd": "gauge.{gauge}.glass.open", "tool": "hand" },
-      { "type": "Work", "text": "걸레로 바늘 축을 닦는다.", "cmd": "gauge.{gauge}.wipe", "tool": "rag", "requires": "유리 테를 열었을 것", "hazard": "축을 닦지 않으면 바늘이 걸려 영점을 맞출 수 없다." },
-      { "type": "Work", "text": "드라이버로 계기 아래의 영점 나사를 돌려 바늘을 기준 계기의 값에 맞춘다. 한 눈금에 눈금 끝의 0.5%씩 움직인다. 시계 방향이면 바늘이 올라간다." },
+      { "type": "Open", "text": "계기 유리 테를 앞으로 젖혀 내린다.", "cmd": "gauge.{gauge}.glass.open", "tool": "hand" },
+      { "type": "Work", "text": "걸레로 바늘 축을 닦는다.", "cmd": "gauge.{gauge}.wipe", "tool": "rag", "requires": "유리 테를 열었을 것", "hazard": "유리 테가 닫혀 있으면 축에 손이 닿지 않는다. 축을 닦지 않으면 바늘이 걸린 채 남는다." },
+      { "type": "Work", "text": "드라이버로 계기 오른쪽 아래의 영점 나사를 돌려 바늘을 기준 계기의 값에 맞춘다. 한 칸 돌릴 때마다 바늘이 최대 눈금의 0.5%씩 움직인다. 시계 방향으로 돌리면 바늘이 올라간다.", "tool": "screwdriver" },
       { "type": "Close", "text": "계기 유리 테를 닫는다.", "cmd": "gauge.{gauge}.glass.close", "tool": "hand" },
       { "type": "Test", "text": "유리를 두드려도 바늘이 뛰지 않는지, 기준 계기와 맞는지 다시 본다." }
     ]

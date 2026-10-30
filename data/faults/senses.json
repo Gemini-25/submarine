@@ -31,7 +31,7 @@
       "moisture": 0.75,
       "seated": 0
     },
-    "clearedWhen": "self.moisture < 0.5 && self.seated >= 1 && self.coverOpen == 0",
+    "clearedWhen": "self.moisture < 0.5 && self.coverOpen == 0",
     "baseRatePerHour": 0
   },
   "SNS-04": {

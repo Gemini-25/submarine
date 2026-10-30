@@ -73,11 +73,15 @@ public partial class Submarine
         foreach (var p in new[] { new Vector3(0.05f, 0.05f, 0.005f), new Vector3(0.12f, -0.02f, 0.005f), new Vector3(0.2f, 0.04f, 0.005f), new Vector3(0.17f, -0.07f, 0.005f), new Vector3(0.08f, -0.05f, 0.005f) })
             Geo.Sphere(dew, 0.004f, p, dewMat);
 
-        CoverVisual(Rebind("panel.wiring.cover"), hinge, Vector3.Down, 110);
+        // 덮개는 경첩 반대쪽 끝의 손잡이만 잡힌다 (경첩과 함께 돌아 열면 비켜난다).
+        Geo.Box(hinge, new Vector3(0.012f, 0.06f, 0.01f), new Vector3(0.255f, 0, 0.008f), Geo.Brass);
+        RemoveMarker("panel.wiring.cover");
+        var coverIt = Add(Binder.Bind(hinge, "panel.wiring.cover", new Vector3(0.03f, 0.1f, 0.012f), new Vector3(0.255f, 0, 0.008f), "panelbox"));
+        CoverVisual(coverIt, hinge, Vector3.Down, 110);
         for (int n = 0; n < 4; n++) BoltVisual(Rebind($"panel.wiring.screw.{n + 1}"), heads[n], 0.006f);
-        // 단자판과 단자 나사: 덮개 조준 상자의 위아래 띠 (나사 머리와 겹치지 않게).
-        Add(Binder.Bind(m, "panel.wiring.strip", new Vector3(0.16f, 0.025f, 0.015f), new Vector3(0, 0.068f, 0.09f), "panelbox"));
-        Add(Binder.Bind(m, "panel.wiring.terminals", new Vector3(0.16f, 0.025f, 0.015f), new Vector3(0, -0.068f, 0.09f), "panelbox"));
+        // 단자판(위 절반)과 단자 나사 줄(아래 절반): 덮개 안의 메시 위. 닫힌 덮개 너머로도 겨냥되고 막힘은 시뮬레이션이 판정한다.
+        Add(Binder.Bind(m, "panel.wiring.strip", new Vector3(0.2f, 0.03f, 0.012f), new Vector3(0, 0.02f, 0.088f), "panelbox"));
+        Add(Binder.Bind(m, "panel.wiring.terminals", new Vector3(0.2f, 0.03f, 0.012f), new Vector3(0, -0.02f, 0.088f), "panelbox"));
 
         OnUpdate((s, _) =>
         {
@@ -100,7 +104,6 @@ public partial class Submarine
         var mb = new MeshBuilder();
         mb.Box(ArtMat.BlackEnamel, c, new Vector3(0.4f, 0.2f, 0.24f), 0.02f);
         mb.Box(ArtMat.BareSteel, new Vector3(c.X, Height - 0.025f, 0), new Vector3(0.1f, 0.05f, 0.1f), 0.006f);
-        mb.Cylinder(ArtMat.Bakelite, Kit.AlongAxis(Vector3.Left, new Vector3(7.39f, 2.05f, 0)), 0.022f, 0.02f, 14, 0.004f);
         mb.Cylinder(ArtMat.Brass, Kit.AlongAxis(Vector3.Right, new Vector3(7.805f, 2.05f, 0)), 0.09f, 0.012f, 20);
         mb.Box(ArtMat.Machinery, new Vector3(7.465f, 1.945f, 0), new Vector3(0.12f, 0.01f, 0.16f), 0.003f); // 문 앞의 바닥판
         mb.Instance(n, "Housing", NoShadow);
@@ -145,7 +148,21 @@ public partial class Submarine
         var rodsIt = Add(Binder.Bind(n, part, new Vector3(0.1f, 0.012f, 0.05f), new Vector3(7.62f, 1.935f, -0.02f), "searchlight"));
         SocketVisual(rodsIt, rods, p => p("doorOpen") >= 0.5);
 
-        Rebind("searchlight.feed");
+        // 보내기 손잡이: 돌리는 동안 손을 따라 돈다 (돈 것이 보이게 돌기 하나).
+        var knob = new Node3D { Name = "Spin" };
+        Mount(n, "FeedKnob", new Vector3(7.39f, 2.05f, 0), Vector3.Left).AddChild(knob);
+        var kb = new MeshBuilder();
+        kb.Cylinder(ArtMat.Bakelite, Kit.AlongAxis(Vector3.Back, new Vector3(0, 0, 0.01f)), 0.022f, 0.02f, 14, 0.004f);
+        kb.Box(ArtMat.Brass, new Vector3(0, 0.016f, 0.021f), new Vector3(0.006f, 0.01f, 0.004f), 0.001f);
+        kb.Instance(knob, "Knob", NoShadow);
+        var feed = Rebind("searchlight.feed");
+        float feedTurn = float.NaN, feedAngle = 0;
+        feed.Preview = v => feedTurn = v;
+        OnUpdate((_, _) =>
+        {
+            if (!float.IsNaN(feedTurn)) feedAngle = feedTurn * 360;
+            knob.Basis = new Basis(Vector3.Back, Mathf.DegToRad(feedAngle));
+        });
         Rebind("searchlight.housing");
 
         // 현창 너머의 불빛: 현창 바깥 두 곳의 빛. 그림자는 없다(배 안에도 번진다).
@@ -160,6 +177,11 @@ public partial class Submarine
         var yellow = new Color(1f, 0.75f, 0.35f);
         OnUpdate((s, _) =>
         {
+            // 봉은 길이를 따라 짧아진다. 두 봉 끝은 가운데 간격 쪽에 남는다 (원기둥 축은 지역 Y).
+            float len = (float)Math.Clamp(PartProp(s, part, "length", 1), 0.1, 1);
+            rodA.Scale = rodB.Scale = new Vector3(1, len, 1);
+            rodA.Position = new Vector3(-(0.01f + 0.06f * len), 0, 0);
+            rodB.Position = new Vector3(0.01f + 0.06f * len, 0, 0);
             float glow = (float)Cue(s, "searchlight.glow"), warm = (float)Cue(s, "searchlight.yellow");
             var col = white.Lerp(yellow, warm);
             lensMat.Emission = col;
@@ -172,6 +194,7 @@ public partial class Submarine
     void BuildSearchlightLever()
     {
         var m = GetNode<Node3D>("M2Layout/PanelAdditions");
+        m.GetNode("SearchlightLeverStatic").Free(); // 배치의 고정 레버 (움직이는 레버를 대신 짓는다)
         const float lx = -1.07f;
         RemoveMarker("searchlight.switch");
         var sw = Add(Interactable.Create(m, "searchlight.switch", "탐조등 레버", new Vector3(0.05f, 0.12f, 0.04f), new Vector3(lx, 1.41f, 0.07f), "panel"));
@@ -201,6 +224,7 @@ public partial class Submarine
     {
         var m = GetNode<Node3D>("M2Layout/PanelAdditions");
         m.GetNode("GaugeGlass").Free();
+        m.GetNode("ZeroSlots").Free(); // 배치의 고정 홈 (도는 홈을 대신 짓는다)
         foreach (var (gi, id) in SensesGauges)
         {
             float x = -0.77f + gi * 0.22f;
@@ -223,8 +247,10 @@ public partial class Submarine
             var slot = Mount(m, $"Zero_{id}", new Vector3(x + 0.085f, 1.25f, 0.068f), Vector3.Back);
             var head = new Node3D { Name = "Slot" };
             slot.AddChild(head);
+            Geo.Cyl(head, 0.0115f, 0.002f, new Vector3(0, 0, -0.001f), Geo.Brass, 12).RotationDegrees = new Vector3(90, 0, 0);
             Geo.Box(head, new Vector3(0.018f, 0.003f, 0.002f), Vector3.Zero, Geo.Bakelite);
-            WheelVisual(zero, head, Vector3.Back, 30);
+            // 시계 방향(up, 바늘이 올라감)이 보는 사람에게도 시계 방향으로 돈다.
+            WheelVisual(zero, head, Vector3.Back, -30);
         }
     }
 }

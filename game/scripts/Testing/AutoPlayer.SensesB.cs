@@ -38,6 +38,9 @@ public partial class AutoPlayer
             await FollowSensesB("proc.panelwiring.dry", new Dictionary<string, string>());
             Check(!SensesDrill.LampsContradictSite(q, Data.Tuning.Panel.BilgeWarnL), "배선함을 고쳤는데 표시등이 여전히 엇갈린다");
             Check(_main.Sub.LampLit(PanelSystems.Water) && !_main.Sub.LampLit(PanelSystems.Hull), "배선함을 고쳤는데 상황판의 배수·선체 표시등이 바르지 않다");
+            // 절차의 시험 단계: 램프 시험 단추를 눌러 여덟 전구가 모두 켜지는지 본다.
+            int lit = await HoldLampTest();
+            Check(lit == (1 << PanelSystems.Names.Count) - 1, $"배선함을 고친 뒤 램프 시험이 {lit}");
 
             await Perform("switch.C3.on");
             Step(HandSeconds);
@@ -45,15 +48,23 @@ public partial class AutoPlayer
             // 전압 바늘이 낮은데 동력 표시등은 꺼져 있다: 버스 바를 재어 견주고, 유리를 두드려 바늘이 뛰는지 본다.
             double needle = q.Number("panel.gauge.voltage");
             Check(needle < Data.Tuning.Panel.PowerWarnV && q.Read("panel.lamp.power").Text == "off", $"전압 바늘 {needle * 120:F0}V");
+            // 손에 든 전압계로 배전반 버스 바를 잰다 (공구판에서 전압계를 가져온다).
+            double bus = await ProbeBus();
+            Check(Math.Abs(bus - needle) * 120 > 5, $"버스 바 {bus * 120:F0}V와 전압 바늘 {needle * 120:F0}V가 다르지 않다");
             await Perform("tool.hand");
             Step(HandSeconds);
+            double beforeTap = q.Number("panel.gauge.voltage");
             await Perform("gauge.voltage.tap");
             Step(HandSeconds);
+            double afterTap = q.Number("panel.gauge.voltage");
+            GD.Print($"AUTOTEST: 전압계 유리를 두드리니 바늘 {beforeTap * 120:F2}V → {afterTap * 120:F2}V");
+            Check(afterTap != beforeTap, "유리를 두드렸는데 걸린 바늘이 뛰지 않았다");
             var fs = Data.Tuning.Senses!.Gauges!.FullScale["voltage"];
             double step = Data.Fixtures.Instances.First(f => f.Id == "gauge.voltage.zero").Params["zeroStep"];
             await FollowSensesB("proc.gauge.zero", new Dictionary<string, string> { ["gauge"] = "voltage" }, after: c =>
-                c == "gauge.voltage.wipe" ? SensesDrill.ZeroCommands("voltage", q.Number("panel.gauge.voltage"), q.Measure("voltmeter", "bus"), fs, step) : Array.Empty<string>());
-            Check(Math.Abs(q.Number("panel.gauge.voltage") - q.Measure("voltmeter", "bus")) * 120 < 1, $"영점을 맞췄는데 바늘 {q.Number("panel.gauge.voltage") * 120:F1}V");
+                c == "gauge.voltage.wipe" ? SensesDrill.ZeroCommands("voltage", q.Number("panel.gauge.voltage"), bus, fs, step) : Array.Empty<string>());
+            bus = await ProbeBus();
+            Check(Math.Abs(q.Number("panel.gauge.voltage") - bus) * 120 < 1, $"영점을 맞췄는데 바늘 {q.Number("panel.gauge.voltage") * 120:F1}V, 버스 바 {bus * 120:F1}V");
 
             // 탐조등: 흔들리거나 꺼져 있다(감각 노랑, 전압 정상) → 탄소봉 교체
             Check(SensesDrill.ArcSputters(q) || q.Read("panel.lamp.senses").Text != "off", "탐조등 증상이 없다");
@@ -112,6 +123,21 @@ public partial class AutoPlayer
                 await Frame();
             }
         }
+    }
+
+    /// <summary>전압계를 쥐고(공구판 왕복 포함) 버스 바를 잰다. 정규화 값(× 120 = V).</summary>
+    async Task<double> ProbeBus()
+    {
+        var p = new ProcedureDef { Id = "probe", Title = "전압계", Steps = { new ProcedureStep { Type = "Inspect", Text = "전압계", Cmd = "tool.voltmeter", Tool = "voltmeter" } } };
+        foreach (var c in ProcedureRunner.ExpandWithBelt(_main.Runner.Sim, p, new Dictionary<string, string>()))
+        {
+            await Perform(c.Cmd);
+            Step(HandSeconds);
+            await Frame();
+        }
+        double v = await ProbeVolts("bus");
+        GD.Print($"AUTOTEST: 전압계 버스 바 {v:F1}V");
+        return v / 120;
     }
 
     /// <summary>탐조등 레버: 위로 밀면 켜고 아래로 내리면 끈다.</summary>
