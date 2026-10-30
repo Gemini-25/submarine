@@ -119,22 +119,26 @@ public partial class AutoPlayer
     }
 
     /// <summary>
-    /// 걸쇠는 원을 그리는 동안 손을 따라 돈다: 풀린 걸쇠에 조이는 쪽(시계 방향, Turns 음수) 반 바퀴를 미리 보이면 모양이 바뀐다.
-    /// 현창 걸쇠와 챔버 해치 걸쇠가 같은 도우미(DogVisual)를 쓴다.
+    /// 걸쇠는 원을 그리는 동안 손을 따라 돈다: 풀린 걸쇠에 조이는 쪽(시계 방향, Turns 음수) 반 바퀴를 미리 보이면 시계 방향으로,
+    /// 조인 걸쇠에 푸는 쪽을 보이면 반시계 방향으로 돈다. 걸쇠 축(현창은 작업자 쪽 +Z, 챔버 해치는 위 +Y)으로 잰 회전각의 부호를 본다.
+    /// 현창 걸쇠 둘과 챔버 해치 걸쇠가 같은 도우미(DogVisual)를 쓴다.
     /// </summary>
     async Task CheckDogPreview()
     {
-        foreach (var id in new[] { "viewport.1.dog.1", "chamber.hatch.dog.1" })
+        foreach (var (id, node, axis) in new[] { ("viewport.1.dog.1", "Dog1", Vector3.Back), ("viewport.1.dog.2", "Dog2", Vector3.Back), ("chamber.hatch.dog.1", "Dog1", Vector3.Up) })
         {
             var it = _main.Sub.Interactables[id];
-            var dog = it.GetParent<Node3D>().GetNode<Node3D>("Dog1"); // 걸쇠 모양은 표지와 같은 부모 아래에 있다
+            var dog = it.GetParent<Node3D>().GetNode<Node3D>(node); // 걸쇠 모양은 표지와 같은 부모 아래에 있다
             await Frame(3);
             var before = dog.Basis;
             var f = Data.Fixtures.Instances.First(x => x.Id == id);
             bool tight = _main.Sub.PartProp(Snap, f.PartId, f.Prop!, 0) >= 0.5;
             it.Preview?.Invoke(tight ? 0.75f : -0.75f); // 조인 걸쇠는 푸는 쪽(반시계), 풀린 걸쇠는 조이는 쪽(시계)
             await ToSignal(GetTree().CreateTimer(0.4), SceneTreeTimer.SignalName.Timeout);
-            Check(!dog.Basis.IsEqualApprox(before), $"'{id}'를 반 바퀴 돌리는 동안 걸쇠가 손을 따라 돌지 않는다");
+            var turn = (dog.Basis * before.Inverse()).GetRotationQuaternion();
+            float signed = turn.GetAngle() * Math.Sign(turn.GetAxis().Dot(axis));
+            Check(Math.Abs(signed) > 0.2f, $"'{id}'를 반 바퀴 돌리는 동안 걸쇠가 손을 따라 돌지 않는다");
+            Check(tight ? signed > 0 : signed < 0, $"'{id}'가 손과 반대로 돈다 (축으로 잰 회전 {Mathf.RadToDeg(signed):F0}°, {(tight ? "풀기" : "조이기")})");
             it.Preview?.Invoke(float.NaN);
             await ToSignal(GetTree().CreateTimer(0.4), SceneTreeTimer.SignalName.Timeout);
         }

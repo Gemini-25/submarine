@@ -24,7 +24,7 @@
             { "procedure": "proc.steam.gasket", "if": [ { "q": "inventory.gasket", "unit": "none", "above": 0.5 } ] },
             { "procedure": "proc.steam.wrap", "if": [ { "q": "inventory.gasket", "unit": "none", "below": 0.5 } ] }
           ],
-          "verify": { "all": [ { "q": "cue.steam.hiss", "unit": "cue", "below": 0.1 } ], "within": 120, "hold": 10 }
+          "verify": { "all": [ { "q": "cue.steam.hiss", "unit": "cue", "below": 0.25 } ], "within": 120, "hold": 10 }
         }
       },
       "exposure": { "setup": { "depthM": 300, "switches": { "C3": true } }, "seconds": 120 },

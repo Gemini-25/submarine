@@ -129,6 +129,26 @@ public class ViewportTests
     }
 
     [Fact]
+    public void Decay_while_a_ring_bolt_is_loose_is_not_given_back_by_retightening()
+    {
+        // 헌 밀봉은 볼트를 풀어 둔 동안에도 상한다. 다시 조여도(seat 갈고리) 금까지 가는 시계가 처음으로 돌아가면 안 된다.
+        var sim = Faulted();
+        sim.Run(60);
+        double before = sim.Q(P + "integrity");
+        if (Do(sim, new[] { "tool.wrench", "viewport.1.ring.bolt.1.loosen" }).Any(e => e.Kind == SimEventKind.Hurt))
+        {
+            sim.Run(2.5); // 덮개가 열려 있어 물을 맞는다. 몸을 추스르고 렌치를 주워 다시 쥔다.
+            if (sim.QS("crew.tool") != "wrench") Do(sim, new[] { "tool.pickup.wrench", "tool.wrench" });
+        }
+        sim.Run(10 * 60);
+        double decayed = sim.Q(P + "integrity");
+        Assert.True(decayed < before - 0.1, $"볼트를 푼 10분 동안 {before:F2} → {decayed:F2}");
+        Do(sim, new[] { "viewport.1.ring.bolt.1.tighten" });
+        Assert.Equal(1, sim.Q(P + "ringBolt1"));
+        Assert.Equal(decayed, sim.Q(P + "integrity"), 2);
+    }
+
+    [Fact]
     public void Resealing_with_the_deadlight_open_sprays_but_still_seats_the_new_seal()
     {
         // 위험 건너뛰기의 결과는 다치는 것이다. 열화가 끼우는 중인 새 밀봉을 깎아 수리가 소리 없이 실패하면 안 된다.

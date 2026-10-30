@@ -12,7 +12,7 @@
     "rhPerLeak": 2,
     "dewPerLeak": 3,
     "dewCreepPerMin": 0.16,
-    "dewBoxes": { "junction.C4": 0.25 },
+    "dewBoxes": { "junction.C4": 0.25, "panel.wiring": 0.25 },
     "zone": "aft",
     "ventNoise": 20,
     "hissNoise": 6

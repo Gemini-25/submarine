@@ -206,6 +206,27 @@ public class SteamTests
         Assert.Equal(0, sim.Q("cue.steam.hiss"));
     }
 
+    [Fact]
+    public void The_steam_leak_pair_accepts_the_wrap_when_there_is_no_gasket()
+    {
+        // 개스킷이 없으면 진단 자료는 감기(응급)를 고른다. 감은 뒤에도 누설이 2할 남지만, 그 쉿 소리는 검증 문턱 아래여야
+        // 정당한 응급 수리가 '검증 실패'로 테이프만 축내지 않는다. 문턱은 sees(알아채기)의 0.3보다 낮다.
+        var verdict = TestData.Data.Diagnosis!.Pair("steam.leak").Verdicts["PWR-03"];
+        var cond = verdict.Verify!.All.Single(c => c.Q == "cue.steam.hiss");
+        double below = cond.Below!.Value;
+        Assert.True(below < 0.3);
+        var sim = Faulted();
+        NoHarm(Follow(sim, "proc.steam.wrap", 1.5));
+        double worst = 0;
+        for (int s = 0; s < (int)verdict.Verify.Within; s++)
+        {
+            sim.Run(1);
+            if (s >= 5) worst = Math.Max(worst, sim.Q("cue.steam.hiss"));
+        }
+        Assert.True(worst < below, $"감은 뒤 쉿 소리 {worst:F2}, 검증 문턱 {below}");
+        Assert.True(worst > 0.05, "감기는 응급이라 쉿 소리가 조금 남는다");
+    }
+
     // ── 위험 건너뛰기 ───────────────────────────────────
 
     [Fact]
@@ -460,6 +481,35 @@ public class SteamTests
         }
         Assert.InRange(at, 8 * 60, 15 * 60);
         Assert.Equal(0.25, TestData.T.Steam!.DewBoxes["junction.C4"]);
+    }
+
+    [Fact]
+    public void Left_alone_the_steam_wets_the_panel_wiring_and_crosses_the_hull_and_water_lamps()
+    {
+        // SNS-02 연쇄 (WP20의 실제 배선함). 배선함은 dewBoxes로 이슬을 직접 받아 10~15분에 엇갈린다.
+        // 빌지에 물이 있어 배수 표시등은 주의, 선체 표시등은 꺼져 있다가, 엇갈리면 둘이 바뀐다.
+        var sim = TestData.NewSim(setup: TestData.Setup(s =>
+        {
+            s.DepthM = 300;
+            s.Switches["C3"] = false; // 배수 펌프를 세워 빌지 물(배수 표시등 주의)을 그대로 둔다
+            s.Bilges["bilge.aft"] = 150;
+        }));
+        sim.Run(2);
+        Assert.Equal("warning", sim.QS("panel.lamp.water"));
+        Assert.Equal("off", sim.QS("panel.lamp.hull"));
+        sim.Inject("PWR-03");
+        double at = -1;
+        for (int s = 0; s < 20 * 60 && at < 0; s += 10)
+        {
+            sim.Run(10);
+            if (Systems.PanelWiring.Crossed(sim.World, out _, out _)) at = s;
+        }
+        Assert.InRange(at, 10 * 60, 15 * 60);
+        Assert.True(sim.Q("part.panel.wiring.prop.moisture") > TestData.T.Senses!.PanelWiring!.CrossMoisture);
+        Assert.Equal("warning", sim.QS("panel.signal.water")); // 계전기는 그대로인데
+        Assert.Equal("off", sim.QS("panel.lamp.water"));       // 배수 표시등은 꺼지고
+        Assert.Equal("warning", sim.QS("panel.lamp.hull"));    // 선체 표시등이 주의다
+        Assert.Equal(0.25, TestData.T.Steam!.DewBoxes["panel.wiring"]);
     }
 
     [Fact]

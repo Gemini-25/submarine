@@ -35,7 +35,7 @@ public sealed class SteamTuning
     public double DewCreepPerMin { get; set; }
     /// <summary>
     /// 축압기 구역 밖에서 이슬을 받는 상자와 그 몫 (0~1). 김이 실내에 퍼져 차가운 상자에 맺힌다.
-    /// 상황판 배선(C4 상자 옆, WP20의 panel.wiring)이 SNS-02로 이어지게 C4를 둔다.
+    /// 상황판 배선함(WP20의 panel.wiring, SNS-02)과 그 옆 C4 상자를 둔다. 분기함은 습도 모듈이, 배선함은 PanelWiring.Creep이 읽는다.
     /// </summary>
     [Optional] public SortedDictionary<string, double> DewBoxes { get; set; } = new(StringComparer.Ordinal);
     /// <summary>축압기가 있는 구역 (이슬이 맺는 곳).</summary>

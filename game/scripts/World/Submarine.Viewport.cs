@@ -75,7 +75,8 @@ public partial class Submarine
         var dl = Add(Binder.Bind(hinge, $"viewport.{v}.deadlight", new Vector3(0.2f, 0.2f, 0.02f), new Vector3(0, -0.235f, 0.015f), $"viewport.{v}"));
         CoverVisual(dl, hinge, Vector3.Right, -175);
 
-        // 걸쇠 둘: 조이면 덮개 가장자리로 돌아 눕는다.
+        // 걸쇠 둘: 조이면 덮개 가장자리로 돌아 눕는다. 조이기는 시계 방향(작업자가 볼 때)이라 둘 다 −90°:
+        // 왼쪽 걸쇠는 위를 보다가 오른쪽(가운데)으로, 오른쪽 걸쇠는 아래를 보다가 왼쪽(가운데)으로 눕는다.
         for (int d = 1; d <= 2; d++)
         {
             float dx = d == 1 ? -0.29f : 0.29f;
@@ -85,7 +86,7 @@ public partial class Submarine
             gb.Box(ArtMat.BareSteel, new Vector3(0, 0.04f, 0), new Vector3(0.02f, 0.09f, 0.012f), 0.003f);
             gb.Cylinder(ArtMat.BareSteel, Kit.AlongAxis(Vector3.Back, new Vector3(0, 0.085f, 0.008f)), 0.014f, 0.012f, 8);
             gb.Instance(dog, "Lever", NoShadow);
-            DogVisual(RebindMarker($"viewport.{v}.dog.{d}"), dog, Vector3.Back, 0, d == 1 ? -90 : 90);
+            DogVisual(RebindMarker($"viewport.{v}.dog.{d}"), dog, Vector3.Back, d == 1 ? 0 : Mathf.Pi, -90);
         }
 
         // 물방울 (단서 viewport.N.beads)과 유리의 금

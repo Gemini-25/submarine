@@ -74,7 +74,7 @@ public partial class ScreenshotTour : Node
                 await Capture(name);
             }
             await Shot("12-accumulator-gasket-in");
-            // 교범대로 관을 빼고 볼트를 풀어 개스킷을 뽑는다.
+            // 교범대로 관의 증기를 빼고 볼트를 풀어 개스킷을 뽑는다.
             foreach (var c in new[] { "steam.stop.close", "steam.stop.close", "steam.stop.close", "steam.stop.close", "steam.bleed.open", "steam.bleed.open" })
             {
                 _main.Runner.Send(c);

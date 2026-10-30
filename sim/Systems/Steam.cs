@@ -85,6 +85,12 @@ static class Steam
                 errors.Add("tuning.steam: lineVolume, stopFlowPerSecond, bleedPerSecond, leakK > 0");
             if (!(t.WrapCut >= 0 && t.WrapCut <= 1)) errors.Add("tuning.steam: 0 <= wrapCut <= 1");
             if (!GameData.Zones.Contains(t.Zone)) errors.Add($"tuning.steam.zone '{t.Zone}'는 fore, mid, aft 중 하나여야 한다");
+            foreach (var (box, weight) in t.DewBoxes)
+            {
+                if (!parts.TryGetValue(box, out var bp) || !bp.Props.ContainsKey("moisture"))
+                    errors.Add($"tuning.steam.dewBoxes '{box}'는 습기(moisture)가 있는 부품이어야 한다");
+                if (!(weight > 0 && weight <= 1)) errors.Add($"tuning.steam.dewBoxes '{box}': 0 < 몫 <= 1");
+            }
         }
         foreach (var (id, props) in Required)
         {

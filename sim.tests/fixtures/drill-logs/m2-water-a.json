@@ -1,5 +1,5 @@
 {
-  "mission": "m2-water-a", "seed": 5150, "dataStamp": "cd1f4128f9eb7074", "handTicks": 12,
+  "mission": "m2-water-a", "seed": 5150, "dataStamp": "9ecc7a64c89731d6", "handTicks": 12,
   "finalTick": 6384, "finalHash": 12517795112679538043, "status": "succeeded",
   "findings": [
     {"tick":536,"pair":"pump.noflow","verdict":"WTR-01","bind":"","outcome":"fixed"},
