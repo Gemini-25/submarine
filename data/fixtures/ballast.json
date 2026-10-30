@@ -193,6 +193,11 @@
             },
             {
               "if": "self.wrap >= 3",
+              "set": "stuck",
+              "to": 0
+            },
+            {
+              "if": "self.wrap >= 3",
               "set": "freeArmed",
               "to": 0
             },

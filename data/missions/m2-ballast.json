@@ -26,7 +26,7 @@
     }
   ],
   "success": {
-    "assert": "ballast.fore.water >= 140 && ballast.fore.water <= 160 && ballast.aft.water >= 140 && ballast.aft.water <= 160 && ballast.fore.open == 0 && ballast.aft.open == 0 && pump.suction == 'bilge' && part.ballast.fore.valve.prop.corroded < 0.5 && part.ballast.fore.valve.prop.gland == 3",
+    "assert": "ballast.fore.water >= 140 && ballast.fore.water <= 160 && ballast.aft.water >= 140 && ballast.aft.water <= 160 && ballast.fore.open == 0 && ballast.aft.open == 0 && pump.suction == 'bilge' && part.ballast.fore.valve.prop.corroded < 0.5 && part.ballast.fore.valve.prop.gland == 3 && part.ballast.fore.valve.prop.stuck < 0.5",
     "holdSeconds": 60,
     "objectives": [
       "기우는 까닭을 찾아 침수 밸브를 정식으로 고친다",

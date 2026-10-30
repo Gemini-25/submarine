@@ -48,11 +48,39 @@ public partial class ScreenshotTour : Node
             }
             await Capture(name);
         }
+        // 기울기 (WP18): 이물이 숙은 배와 고물이 숙은 배. 경사계 바늘, 화면 기울기, 구른 도구가 같은 쪽을 가리키는지 본다.
+        await Tilted("10-tilt-bow-down", new[] { "pump.suction.aft" });
+        await Tilted("11-tilt-stern-down", new[] { "ballast.aft.flood.open", "ballast.aft.flood.open", "ballast.aft.flood.open", "ballast.aft.flood.open", "pump.suction.fore" });
+        _main.Runner.Start(_main.Runner.Data, "m1-crisis");
+        _main.Restart();
+        _main.Runner.Paused = true;
+
         // 교범을 편 화면
         _main.OpenManual("퓨즈 교체");
         for (int i = 0; i < 10; i++) await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
         await Capture("07-manual");
         GetTree().Quit(0);
+    }
+
+    /// <summary>m2-ballast에서 명령으로 배를 기울이고, 중앙 바닥에 솔을 내려놓아 구르게 한 뒤 조절반을 비스듬히 찍는다.</summary>
+    async Task Tilted(string name, string[] commands)
+    {
+        _main.Runner.Start(_main.Runner.Data, "m2-ballast");
+        _main.Restart();
+        _main.Runner.Paused = true;
+        _main.Runner.Send("tool.scrub_brush");
+        _main.Runner.Send("tool.drop.mid");
+        foreach (var c in commands) _main.Runner.Send(c);
+        _main.Runner.StepMany(240 * _main.Runner.Data.Tuning.TicksPerSecond);
+        var eye = new Vector3(3.45f, 0.05f, -0.75f);
+        var target = new Vector3(2.76f, 1.45f, 0.82f);
+        _main.Player.PlaceAt(eye, target);
+        for (int i = 0; i < 300; i++)
+        {
+            _main.Player.LookAt3D(target);
+            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+        }
+        await Capture(name);
     }
 
     async Task Capture(string name)

@@ -25,12 +25,17 @@ public partial class Submarine
         {
             // 배치의 한 덩어리 메시(Valves, Glass)와 바퀴는 감추고 다시 짓는다. 판, 글씨, 명판, 경사계는 둔다.
             if (c is MeshInstance3D mi && (mi.Name == "Valves" || mi.Name == "Glass")) mi.Visible = false;
-            if (c is Node3D n && n.Name.ToString().StartsWith("Wheel", StringComparison.Ordinal)) n.Visible = false;
+            // 배치의 바퀴 둘은 같은 이름으로 붙어 둘째가 임시 이름을 받으므로 자리로 찾는다.
+            if (c is Node3D n && BallastTanks.Any(b => n.Position.IsEqualApprox(new Vector3(b.X, 1.55f, 0.1f)))) n.Visible = false;
+            // 유리관 이름표('전방 탱크', '후방 탱크')는 물기둥에 가리지 않게 유리관 밑으로 내린다.
+            if (c is Label3D l && l.Text.EndsWith("탱크", StringComparison.Ordinal)) l.Position = new Vector3(l.Position.X, 0.455f, l.Position.Z);
         }
         var root = new Node3D { Name = "Ballast" };
         AddChild(root);
         const string station = "ballast";
-        SoundSpots["ballast"] = ToSub(m, new Vector3(0, 1.3f, 0.05f));
+        // 탱크로 물이 드는 소리(단서 anchor가 침수 밸브 바퀴)는 그 탱크가 있는 바닥 밑에서 난다.
+        SoundSpots["ballast.fore.flood"] = new Vector3(ZoneMidX(0), -0.3f, 0);
+        SoundSpots["ballast.aft.flood"] = new Vector3(ZoneMidX(2), -0.3f, 0);
 
         var still = new MeshBuilder();
         foreach (var (tank, x, glassX, side) in BallastTanks)
@@ -73,7 +78,7 @@ public partial class Submarine
             Kit.AddBolt(nb, ArtMat.BareSteel, Kit.AlongAxis(Vector3.Back, new Vector3(0, 0, 0.015f)), 0.03f);
             nb.Instance(nut, "Nut");
             var gland = BindAtMarker(root, $"ballast.{tank}.gland");
-            WheelVisual(gland, nut, Vector3.Back, 60);
+            WheelVisual(gland, nut, Vector3.Back, -90); // 한 칸 = 4분의 1바퀴, 시계 방향이 조임
             var fg = Binder.Instance(gland.Id);
             OnUpdate((s, _) => nut.Position = new Vector3(0, 0, 0.012f * (3 - (float)PartProp(s, fg.PartId, "gland", 3))));
 
@@ -96,13 +101,27 @@ public partial class Submarine
             var fresh = new MeshBuilder();
             fresh.Torus(ArtMat.ClothWire(new Color(0.85f, 0.82f, 0.72f)), Kit.AlongAxis(Vector3.Back, packPos), 0.012f, 0.004f, 12, 4);
             var freshMesh = fresh.Instance(m, $"PackingNew_{tank}", NoShadow);
+            // 헌 패킹을 다 뺀 뒤로는 너트를 조일 때까지 새 끈만 보인다 (다 감으면 packingOut과 wrap이 0으로 돌아가므로 기억해 둔다).
+            bool renewed = false;
             OnUpdate((s, _) =>
             {
                 bool open = PartProp(s, fp.PartId, "gland", 3) <= 0.5;
                 double outCount = PartProp(s, fp.PartId, "packingOut", 0), wrap = PartProp(s, fp.PartId, "wrap", 0);
-                oldMesh.Visible = open && outCount < 2;
-                freshMesh.Visible = open && outCount >= 2 && wrap > 0;
+                if (!open) renewed = false;
+                else if (outCount >= 2) renewed = true;
+                oldMesh.Visible = open && !renewed && outCount < 2;
+                freshMesh.Visible = open && renewed && (wrap > 0 || outCount < 2);
             });
+
+            // 축 둘레의 물 (단서 ballast.<t>.weep): 축 목과 패킹 상자가 젖어 번들거리고, 상자 밑으로 물 자국이 흐른다.
+            var wet = new MeshBuilder();
+            wet.Cylinder(ArtMat.Glass, new Transform3D(Basis.Identity, new Vector3(x, 1.43f, 0.031f)), 0.0105f, 0.035f, 10);
+            wet.Cylinder(ArtMat.Glass, Kit.AlongAxis(Vector3.Back, new Vector3(x, 1.4f, 0.0135f)), 0.032f, 0.004f, 14);
+            wet.Box(ArtMat.ClothWire(new Color(0.12f, 0.1f, 0.08f)), new Vector3(x, 1.32f, 0.0125f), new Vector3(0.012f, 0.12f, 0.002f), 0);
+            var wetMesh = wet.Instance(m, $"StemWet_{tank}", NoShadow);
+            wetMesh.Visible = false;
+            string weepCue = $"ballast.{tank}.weep";
+            OnUpdate((s, _) => wetMesh.Visible = CueOf(s, weepCue) > 0.05);
 
             // 유리관의 물: 탱크 물 ÷ 용량만큼 차오른다 (유리관 0.8m).
             var waterNode = new Node3D { Position = new Vector3(glassX, 0.5f, 0.03f) };

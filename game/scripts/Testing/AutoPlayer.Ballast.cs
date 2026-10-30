@@ -128,6 +128,12 @@ public partial class AutoPlayer
             if (seen.Count == 0 || seen[^1] != place) seen.Add(place);
         }
         Check(tiltAt >= 0, "흡입 선택 레버로 뒤 탱크를 뺐는데 10도 넘게 기울지 않았다");
+        // 화면 기울기의 방향: 이물이 숙으면 사람은 고물(−x) 쪽으로 젖혀진다. 머리 피치가 섞이지 않게 옆벽 쪽 수평으로 본 뒤 잰다.
+        for (int i = 0; i < 240; i++) await Frame(); // 카메라 기울기가 따라오도록
+        _main.Player.LookAt3D(_main.Player.Camera.GlobalPosition + Vector3.Forward);
+        await Frame();
+        var up = _main.Player.Camera.GlobalBasis.Y;
+        Check(up.X < -0.05f, $"이물이 숙었는데 카메라가 고물 쪽으로 젖혀지지 않았다 (위쪽 {up})");
         Check(seen.SequenceEqual(new[] { "aft", "mid", "fore" }), $"나무망치가 구른 길: {string.Join(" → ", seen)}");
         // 화면의 도구는 굴러가듯 미끄러져 닿는다 (표현만; 프레임 시간에 따른다).
         var node = _main.Sub.GetNode<Node3D>("Floor_mallet");

@@ -72,6 +72,7 @@ public partial class PlayerController : CharacterBody3D
         Rotation = new Vector3(0, Mathf.Atan2(-dir.X, -dir.Z), 0);
         _pitch = Mathf.Clamp(Mathf.Atan2(dir.Y, new Vector2(dir.X, dir.Z).Length()), -1.5f, 1.5f);
         _head.Rotation = new Vector3(_pitch, 0, 0);
+        ApplyTilt();
     }
 
     public void EnterWorkView(string station, Vector3 eye, Vector3 target)
@@ -90,6 +91,7 @@ public partial class PlayerController : CharacterBody3D
         Camera.TopLevel = false;
         Camera.Transform = Transform3D.Identity;
         _workBlend = 0;
+        ApplyTilt(); // 한 프레임이라도 수평 화면이 나오지 않게
     }
 
     public override void _UnhandledInput(InputEvent e)
@@ -99,6 +101,7 @@ public partial class PlayerController : CharacterBody3D
             RotateY(-mm.Relative.X * MouseSensitivity * (Camera.Fov / NormalFov));
             _pitch = Mathf.Clamp(_pitch - mm.Relative.Y * MouseSensitivity * (Camera.Fov / NormalFov), -1.45f, 1.45f);
             _head.Rotation = new Vector3(_pitch, 0, 0);
+            ApplyTilt();
         }
     }
 
@@ -141,24 +144,36 @@ public partial class PlayerController : CharacterBody3D
         bool zoom = !Locked && Input.IsMouseButtonPressed(MouseButton.Right);
         Camera.Fov = Mathf.Lerp(Camera.Fov, zoom ? ZoomFov : NormalFov, Math.Min(1, dt * 12));
 
-        // 사람은 중력에 맞춰 곧게 서므로 배 안에서 보면 기울기만큼 몸이 젖혀진다: 카메라를 배의 가로축(z) 둘레로 돌린다.
+        // 사람은 중력에 맞춰 곧게 서므로 배 안에서 보면 몸이 기울기만큼 젖혀진다 (이물이 숙으면 고물 쪽으로).
         _tilt = Mathf.Lerp(_tilt, Mathf.DegToRad(TrimDeg), Math.Min(1, dt * 1.5f));
-        if (!InWorkView)
-        {
-            var axis = (_head.GlobalTransform.Basis.Inverse() * Vector3.Back).Normalized();
-            Camera.Basis = Mathf.Abs(_tilt) > 1e-5f ? new Basis(axis, -_tilt) : Basis.Identity;
-        }
+        ApplyTilt();
 
         if (InWorkView)
         {
             _workBlend = Math.Min(1, _workBlend + dt * 3.5f);
             float t = _workBlend * _workBlend * (3 - 2 * _workBlend);
-            Camera.GlobalTransform = _workFrom.InterpolateWith(_workTo, t);
+            // 작업 시점에서도 기울기는 남는다.
+            var tilted = new Transform3D(new Basis(Vector3.Back, _tilt) * _workTo.Basis, _workTo.Origin);
+            Camera.GlobalTransform = _workFrom.InterpolateWith(tilted, t);
         }
     }
 
-    /// <summary>카메라는 머리 방향을 배의 가로축 둘레로 −기울기만큼 돌린 쪽을 본다. 한 점을 보려면 머리는 그 반대로 돌린 쪽을 봐야 한다.</summary>
-    Vector3 Untilt(Vector3 dir) => Mathf.Abs(_tilt) > 1e-5f ? new Basis(Vector3.Back, _tilt) * dir : dir;
+    /// <summary>화면 갱신마다 기울기 기저를 다시 맞춘다 (마우스로 머리를 돌린 뒤 물리 틱을 기다리지 않게).</summary>
+    public override void _Process(double delta) => ApplyTilt();
+
+    /// <summary>
+    /// 카메라 = 배의 가로축(+z) 둘레로 +기울기만큼 돌린 머리. 이물이 숙으면(양수) 카메라 위쪽이 고물(−x) 쪽으로 젖혀진다.
+    /// 머리의 로컬 축으로 바꿔 카메라 로컬 기저에 넣는다. 작업 시점에서는 _PhysicsProcess가 따로 맞춘다.
+    /// </summary>
+    void ApplyTilt()
+    {
+        if (InWorkView || !IsInsideTree()) return;
+        var axis = (_head.GlobalTransform.Basis.Inverse() * Vector3.Back).Normalized();
+        Camera.Basis = Mathf.Abs(_tilt) > 1e-5f ? new Basis(axis, _tilt) : Basis.Identity;
+    }
+
+    /// <summary>카메라는 머리 방향을 배의 가로축 둘레로 +기울기만큼 돌린 쪽을 본다. 한 점을 보려면 머리는 그 반대(−기울기)로 돌린 쪽을 봐야 한다.</summary>
+    Vector3 Untilt(Vector3 dir) => Mathf.Abs(_tilt) > 1e-5f ? new Basis(Vector3.Back, -_tilt) * dir : dir;
 
     /// <summary>비탈 걸음: 기울기가 10도를 넘으면 높은 쪽으로 걸을 때 느려지고, 25도를 넘으면 30%. 내리막과 옆걸음은 그대로.</summary>
     float UphillFactor(Vector3 dir)

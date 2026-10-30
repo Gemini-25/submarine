@@ -76,7 +76,15 @@ public partial class Submarine
                 if (lastZone < 0) root.Position = to;
                 else if (root.Position.DistanceTo(to) > 0.01f)
                 {
-                    var step = root.Position.MoveToward(to, 2.5f * dt);
+                    // 해치 격벽을 건너면 열린 문(|z| ≤ 0.35)으로 문턱(높이 0.06)을 넘어 간다.
+                    var aim = to;
+                    if ((root.Position.X - HatchX) * (to.X - HatchX) < 0)
+                    {
+                        var door = new Vector3(HatchX, 0.08f, Math.Clamp(root.Position.Z, -0.35f, 0.35f));
+                        aim = root.Position.DistanceTo(door) > 0.01f ? door : to;
+                        if (aim == to) root.Position = door + new Vector3(Math.Sign(to.X - HatchX) * 0.02f, 0, 0);
+                    }
+                    var step = root.Position.MoveToward(aim, 2.5f * dt);
                     mesh.RotateObjectLocal(Vector3.Up, (root.Position - step).X * 12f);
                     root.Position = step;
                 }

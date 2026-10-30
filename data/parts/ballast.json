@@ -75,11 +75,7 @@
             "to": 0
           },
           {
-            "set": "freePatch",
-            "to": 0
-          },
-          {
-            "if": "self.corroded >= 0.5",
+            "if": "self.corroded >= 0.5 && self.freePatch < 0.5",
             "arm": "freeLife",
             "to": 600
           }
@@ -158,11 +154,7 @@
             "to": 0
           },
           {
-            "set": "freePatch",
-            "to": 0
-          },
-          {
-            "if": "self.corroded >= 0.5",
+            "if": "self.corroded >= 0.5 && self.freePatch < 0.5",
             "arm": "freeLife",
             "to": 600
           }
