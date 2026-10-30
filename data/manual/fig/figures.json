@@ -1428,6 +1428,101 @@
       ]
     }
   },
+  "13-where": {
+    "kind": "plan",
+    "size": [
+      960,
+      330
+    ],
+    "scene": {
+      "camera": {
+        "planX": [
+          -0.1,
+          8.1
+        ]
+      },
+      "highlight": [
+        "pump.suction"
+      ],
+      "names": [
+        "pump.suction=",
+        "battery.deck=",
+        "strainer.cover="
+      ]
+    }
+  },
+  "13-panel": {
+    "kind": "view",
+    "size": [
+      960,
+      540
+    ],
+    "scene": {
+      "camera": {
+        "station": "ballast",
+        "fov": 60,
+        "dolly": -0.2
+      },
+      "callouts": [
+        "pump.suction",
+        "ballast.fore.flood",
+        "ballast.aft.flood"
+      ]
+    }
+  },
+  "13-tilt": {
+    "kind": "compare",
+    "size": [
+      960,
+      320
+    ],
+    "scenes": [
+      {
+        "camera": {
+          "station": "ballast",
+          "fov": 60,
+          "dolly": -0.2
+        },
+        "mission": "m2-ballast",
+        "prep": [
+          {
+            "advance": 3
+          }
+        ]
+      },
+      {
+        "camera": {
+          "station": "ballast",
+          "fov": 60,
+          "dolly": -0.2
+        },
+        "mission": "m2-ballast",
+        "prep": [
+          {
+            "advance": 600
+          }
+        ]
+      }
+    ]
+  },
+  "13-suction": {
+    "kind": "piping",
+    "system": "water",
+    "size": [
+      960,
+      400
+    ],
+    "highlight": [
+      "selector",
+      "tank.fore",
+      "tank.aft",
+      "flood.fore",
+      "flood.aft",
+      "sea.fore",
+      "sea.aft",
+      "pump"
+    ]
+  },
   "20-where": {
     "kind": "plan",
     "size": [
@@ -2236,6 +2331,175 @@
       }
     ]
   },
+  "24-where": {
+    "kind": "plan",
+    "size": [
+      960,
+      330
+    ],
+    "scene": {
+      "camera": {
+        "planX": [
+          -0.1,
+          8.1
+        ]
+      },
+      "highlight": [
+        "switch.C1"
+      ],
+      "names": [
+        "switch.C1=",
+        "switch.C5=",
+        "toolboard.file="
+      ]
+    }
+  },
+  "24-parts": {
+    "kind": "view",
+    "size": [
+      960,
+      540
+    ],
+    "scene": {
+      "camera": {
+        "at": "knife.C1.blade",
+        "offset": [
+          -0.1,
+          0.12,
+          -0.5
+        ],
+        "shift": [
+          0,
+          0.08,
+          0
+        ],
+        "fov": 50
+      },
+      "callouts": [
+        "knife.C1.blade",
+        "knife.C1.jaw",
+        "knife.C1.clamp",
+        "knife.C1.base"
+      ],
+      "mission": "m2-switchboard-b"
+    }
+  },
+  "24-compare": {
+    "kind": "compare",
+    "size": [
+      960,
+      320
+    ],
+    "scenes": [
+      {
+        "camera": {
+          "at": "knife.C1.blade",
+          "offset": [
+            -0.1,
+            0.12,
+            -0.5
+          ],
+          "shift": [
+            0,
+            0.08,
+            0
+          ],
+          "fov": 50
+        },
+        "callouts": [
+          "knife.C1.blade"
+        ]
+      },
+      {
+        "camera": {
+          "at": "knife.C1.blade",
+          "offset": [
+            -0.1,
+            0.12,
+            -0.5
+          ],
+          "shift": [
+            0,
+            0.08,
+            0
+          ],
+          "fov": 50
+        },
+        "callouts": [
+          "knife.C1.blade"
+        ],
+        "highlight": [
+          "knife.C1.blade"
+        ],
+        "mission": "m2-switchboard-b",
+        "prep": [
+          {
+            "advance": 20
+          }
+        ]
+      }
+    ]
+  },
+  "24-clamp": {
+    "kind": "strip",
+    "strip": {
+      "procedure": "proc.contact.clamp",
+      "steps": [
+        2,
+        3,
+        4
+      ],
+      "camera": {
+        "at": "knife.C1.blade",
+        "offset": [
+          -0.1,
+          0.12,
+          -0.5
+        ],
+        "shift": [
+          0,
+          0.08,
+          0
+        ],
+        "fov": 50
+      },
+      "columns": 3,
+      "mission": "m2-switchboard-b",
+      "bind": {
+        "circuit": "C1"
+      }
+    }
+  },
+  "24-file": {
+    "kind": "strip",
+    "strip": {
+      "procedure": "proc.contact.file",
+      "steps": [
+        2,
+        3,
+        4
+      ],
+      "camera": {
+        "at": "knife.C1.blade",
+        "offset": [
+          -0.1,
+          0.12,
+          -0.5
+        ],
+        "shift": [
+          0,
+          0.08,
+          0
+        ],
+        "fov": 50
+      },
+      "columns": 3,
+      "mission": "m2-switchboard-b",
+      "bind": {
+        "circuit": "C1"
+      }
+    }
+  },
   "25-where": {
     "kind": "plan",
     "size": [
@@ -2767,6 +3031,202 @@
       }
     ]
   },
+  "28-where": {
+    "kind": "plan",
+    "size": [
+      960,
+      330
+    ],
+    "scene": {
+      "camera": {
+        "planX": [
+          -0.1,
+          8.1
+        ]
+      },
+      "highlight": [
+        "o2.furnace"
+      ],
+      "names": [
+        "o2.furnace=",
+        "switch.C2=",
+        "toolboard.scraper="
+      ]
+    }
+  },
+  "28-stand": {
+    "kind": "view",
+    "size": [
+      960,
+      540
+    ],
+    "scene": {
+      "camera": {
+        "at": "o2.furnace.door",
+        "offset": [
+          -0.25,
+          1.0,
+          -0.9
+        ],
+        "shift": [
+          0,
+          0.15,
+          0
+        ],
+        "fov": 60
+      }
+    }
+  },
+  "28-parts": {
+    "kind": "view",
+    "size": [
+      960,
+      540
+    ],
+    "scene": {
+      "camera": {
+        "at": "o2.furnace.door",
+        "offset": [
+          -0.1,
+          0.4,
+          -0.6
+        ],
+        "shift": [
+          0.05,
+          0.12,
+          0
+        ],
+        "fov": 55
+      },
+      "callouts": [
+        "o2.furnace.door",
+        "o2.furnace.latch",
+        "o2.furnace.grate",
+        "o2.furnace.vent",
+        "candle",
+        "o2.furnace"
+      ],
+      "prep": [
+        {
+          "advance": 200
+        },
+        {
+          "from": 3,
+          "procedure": "proc.furnace.clean",
+          "through": 4
+        }
+      ]
+    }
+  },
+  "28-compare": {
+    "kind": "compare",
+    "size": [
+      960,
+      320
+    ],
+    "scenes": [
+      {
+        "camera": {
+          "at": "o2.furnace.door",
+          "offset": [
+            -0.1,
+            0.4,
+            -0.6
+          ],
+          "shift": [
+            0.05,
+            0.12,
+            0
+          ],
+          "fov": 55
+        },
+        "callouts": [
+          "o2.furnace.grate",
+          "o2.furnace.vent"
+        ],
+        "prep": [
+          {
+            "advance": 200
+          },
+          {
+            "from": 3,
+            "procedure": "proc.furnace.clean",
+            "through": 4
+          }
+        ]
+      },
+      {
+        "camera": {
+          "at": "o2.furnace.door",
+          "offset": [
+            -0.1,
+            0.4,
+            -0.6
+          ],
+          "shift": [
+            0.05,
+            0.12,
+            0
+          ],
+          "fov": 55
+        },
+        "callouts": [
+          "o2.furnace.grate",
+          "o2.furnace.vent"
+        ],
+        "highlight": [
+          "o2.furnace.grate",
+          "o2.furnace.vent"
+        ],
+        "mission": "m2-air-b",
+        "prep": [
+          {
+            "advance": 200
+          },
+          {
+            "from": 3,
+            "procedure": "proc.furnace.clean",
+            "through": 4
+          }
+        ]
+      }
+    ]
+  },
+  "28-clean": {
+    "kind": "strip",
+    "strip": {
+      "procedure": "proc.furnace.clean",
+      "steps": [
+        3,
+        4,
+        5,
+        6,
+        7,
+        9
+      ],
+      "camera": {
+        "at": "o2.furnace.door",
+        "offset": [
+          -0.1,
+          0.4,
+          -0.6
+        ],
+        "shift": [
+          0.05,
+          0.12,
+          0
+        ],
+        "fov": 55
+      },
+      "columns": 3,
+      "mission": "m2-air-b",
+      "prep": [
+        {
+          "advance": 200
+        }
+      ]
+    }
+  },
   "29-where": {
     "kind": "plan",
     "size": [
@@ -3216,6 +3676,448 @@
     },
     "procedure": "proc.bearing.replace",
     "fastenStep": 11
+  },
+  "31-where": {
+    "kind": "plan",
+    "size": [
+      960,
+      330
+    ],
+    "scene": {
+      "camera": {
+        "planX": [
+          -0.1,
+          8.1
+        ]
+      },
+      "highlight": [
+        "checkvalve.bonnet"
+      ],
+      "names": [
+        "checkvalve.bonnet=",
+        "pump.discharge=",
+        "wash_bucket="
+      ]
+    }
+  },
+  "31-stand": {
+    "kind": "view",
+    "size": [
+      960,
+      540
+    ],
+    "scene": {
+      "camera": {
+        "at": "checkvalve.bonnet",
+        "offset": [
+          0.55,
+          0.45,
+          0.95
+        ],
+        "shift": [
+          0,
+          0.32,
+          0
+        ],
+        "fov": 60
+      }
+    }
+  },
+  "31-parts": {
+    "kind": "view",
+    "size": [
+      960,
+      540
+    ],
+    "scene": {
+      "camera": {
+        "at": "checkvalve.bonnet",
+        "offset": [
+          0.55,
+          0.45,
+          0.95
+        ],
+        "shift": [
+          0,
+          0.32,
+          0
+        ],
+        "fov": 60
+      },
+      "callouts": [
+        "pump.discharge",
+        "checkvalve.bolt.1|checkvalve.bolt.2|checkvalve.bolt.3|checkvalve.bolt.4",
+        "checkvalve.bonnet"
+      ]
+    }
+  },
+  "31-open": {
+    "kind": "view",
+    "size": [
+      960,
+      420
+    ],
+    "scene": {
+      "camera": {
+        "at": "checkvalve.bonnet",
+        "offset": [
+          0.25,
+          0.1,
+          0.5
+        ],
+        "shift": [
+          0,
+          0.02,
+          0
+        ],
+        "fov": 55
+      },
+      "callouts": [
+        "checkvalve.flap"
+      ],
+      "mission": "m2-water-b",
+      "prep": [
+        {
+          "procedure": "proc.checkvalve.clean",
+          "through": 5
+        }
+      ],
+      "first": 4
+    }
+  },
+  "31-compare": {
+    "kind": "compare",
+    "size": [
+      960,
+      320
+    ],
+    "scenes": [
+      {
+        "camera": {
+          "at": "checkvalve.bonnet",
+          "offset": [
+            0.25,
+            0.1,
+            0.5
+          ],
+          "shift": [
+            0,
+            0.02,
+            0
+          ],
+          "fov": 55
+        },
+        "callouts": [
+          "checkvalve.flap"
+        ],
+        "prep": [
+          {
+            "procedure": "proc.checkvalve.clean",
+            "through": 5
+          }
+        ]
+      },
+      {
+        "camera": {
+          "at": "checkvalve.bonnet",
+          "offset": [
+            0.25,
+            0.1,
+            0.5
+          ],
+          "shift": [
+            0,
+            0.02,
+            0
+          ],
+          "fov": 55
+        },
+        "callouts": [
+          "checkvalve.flap"
+        ],
+        "highlight": [
+          "checkvalve.flap"
+        ],
+        "mission": "m2-water-b",
+        "prep": [
+          {
+            "procedure": "proc.checkvalve.clean",
+            "through": 5
+          }
+        ]
+      }
+    ]
+  },
+  "31-clean": {
+    "kind": "strip",
+    "strip": {
+      "procedure": "proc.checkvalve.clean",
+      "steps": [
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        10,
+        11
+      ],
+      "camera": {
+        "at": "checkvalve.bonnet",
+        "offset": [
+          0.25,
+          0.1,
+          0.5
+        ],
+        "shift": [
+          0,
+          0.02,
+          0
+        ],
+        "fov": 55
+      },
+      "columns": 3,
+      "mission": "m2-water-b",
+      "views": {
+        "3": {
+          "at": "pump.discharge",
+          "offset": [
+            0.4,
+            0.0,
+            0.6
+          ],
+          "fov": 55
+        },
+        "11": {
+          "at": "pump.discharge",
+          "offset": [
+            0.4,
+            0.0,
+            0.6
+          ],
+          "fov": 55
+        },
+        "7": {
+          "at": "wash_bucket",
+          "offset": [
+            0.0,
+            0.8,
+            0.45
+          ],
+          "fov": 55
+        }
+      }
+    }
+  },
+  "32-where": {
+    "kind": "plan",
+    "size": [
+      960,
+      330
+    ],
+    "scene": {
+      "camera": {
+        "planX": [
+          -0.1,
+          8.1
+        ]
+      },
+      "highlight": [
+        "ballast.fore.body"
+      ],
+      "names": [
+        "ballast.fore.flood=",
+        "locker.penetrating_oil=",
+        "locker.packing_cord="
+      ]
+    }
+  },
+  "32-stand": {
+    "kind": "view",
+    "size": [
+      960,
+      540
+    ],
+    "scene": {
+      "camera": {
+        "station": "ballast",
+        "fov": 62,
+        "dolly": -0.35
+      }
+    }
+  },
+  "32-parts": {
+    "kind": "view",
+    "size": [
+      960,
+      540
+    ],
+    "scene": {
+      "camera": {
+        "at": "ballast.fore.gland",
+        "offset": [
+          0.6,
+          0.15,
+          -0.3
+        ],
+        "shift": [
+          0,
+          0.05,
+          -0.1
+        ],
+        "fov": 55
+      },
+      "callouts": [
+        "ballast.fore.flood|ballast.aft.flood",
+        "ballast.fore.stem|ballast.aft.stem",
+        "ballast.fore.gland|ballast.aft.gland",
+        "ballast.fore.packing|ballast.aft.packing",
+        "ballast.fore.body|ballast.aft.body"
+      ]
+    }
+  },
+  "32-compare": {
+    "kind": "compare",
+    "size": [
+      960,
+      320
+    ],
+    "scenes": [
+      {
+        "camera": {
+          "station": "ballast",
+          "fov": 60
+        },
+        "mission": "m2-ballast",
+        "prep": [
+          {
+            "advance": 3
+          }
+        ]
+      },
+      {
+        "camera": {
+          "station": "ballast",
+          "fov": 60
+        },
+        "mission": "m2-ballast",
+        "prep": [
+          {
+            "advance": 600
+          }
+        ]
+      }
+    ]
+  },
+  "32-hammer": {
+    "kind": "strip",
+    "strip": {
+      "procedure": "proc.ballast.hammer",
+      "steps": [
+        2,
+        3,
+        5,
+        7
+      ],
+      "camera": {
+        "at": "ballast.fore.gland",
+        "offset": [
+          0.6,
+          0.15,
+          -0.3
+        ],
+        "shift": [
+          0,
+          0.05,
+          -0.1
+        ],
+        "fov": 55
+      },
+      "columns": 2,
+      "mission": "m2-ballast",
+      "prep": [
+        {
+          "advance": 60
+        }
+      ],
+      "bind": {
+        "t": "fore"
+      },
+      "views": {
+        "4": {
+          "station": "switchboard"
+        },
+        "5": {
+          "station": "ballast",
+          "fov": 60,
+          "dolly": -0.2
+        },
+        "7": {
+          "station": "ballast",
+          "fov": 60,
+          "dolly": -0.2
+        }
+      }
+    }
+  },
+  "32-repack": {
+    "kind": "strip",
+    "strip": {
+      "procedure": "proc.ballast.repack",
+      "steps": [
+        3,
+        6,
+        7,
+        10,
+        11,
+        13
+      ],
+      "camera": {
+        "at": "ballast.fore.gland",
+        "offset": [
+          0.6,
+          0.15,
+          -0.3
+        ],
+        "shift": [
+          0,
+          0.05,
+          -0.1
+        ],
+        "fov": 55
+      },
+      "columns": 3,
+      "mission": "m2-ballast",
+      "prep": [
+        {
+          "advance": 60
+        }
+      ],
+      "bind": {
+        "t": "fore"
+      },
+      "views": {
+        "2": {
+          "station": "locker.aft"
+        },
+        "9": {
+          "station": "locker.aft"
+        },
+        "12": {
+          "station": "switchboard"
+        },
+        "13": {
+          "station": "ballast",
+          "fov": 60,
+          "dolly": -0.2
+        },
+        "15": {
+          "station": "ballast",
+          "fov": 60,
+          "dolly": -0.2
+        }
+      }
+    }
   },
   "33-where": {
     "kind": "plan",

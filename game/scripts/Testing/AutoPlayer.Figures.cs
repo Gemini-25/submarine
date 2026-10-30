@@ -633,9 +633,15 @@ public partial class AutoPlayer
             foreach (var c in ProcedureRunner.ExpandWithBelt(_main.Runner.Sim, OneStep(proc, i), s.Bind))
             {
                 if (LeverAlreadyThere(c.Cmd)) continue;
+                // 밸러스트 절차: 침투유가 스며들기, 탱크가 붉은 금까지 빠지기를 훈련 묶음처럼 기다린다
+                var q = new DeepLine.Sim.Autoplay.ObservableQuery(_main.Runner.Sim);
+                var settle = Data.Tuning.Attitude is { } at
+                    ? DeepLine.Sim.Autoplay.BallastDrill.WaitAfter(c.Cmd, q, at.TankNominalL, Data.Fixtures.Instances.First(f => f.Id == "ballast.fore.stem").Params["soakS"])
+                    : null;
                 await FigurePerform(c);
                 Step(c.Cmd == "winch.control.haul" ? 5 / Data.Tuning.Cable!.Winch.HaulMps + 1 : HandSeconds);
                 await Frame();
+                for (int t = 0; settle != null && !settle(q) && t < 1800; t++) Step(1);
                 if (!c.Cmd.StartsWith("tool.", StringComparison.Ordinal) && !c.Cmd.StartsWith("toolboard.", StringComparison.Ordinal)) last = c.Cmd;
             }
             if (!s.Steps.Contains(number)) continue;
@@ -686,6 +692,7 @@ public partial class AutoPlayer
         var q = new DeepLine.Sim.Autoplay.ObservableQuery(_main.Runner.Sim);
         for (int i = 0; i < 600 && !DeepLine.Sim.Autoplay.NavDrill.Ready(q, cmd); i++) Step(0.5);
         if (cmd == "propulsion.set") await Telegraph(c.Value);
+        else if (cmd.StartsWith("pump.suction.", StringComparison.Ordinal)) await PerformLever(cmd); // 이웃하지 않은 칸은 한 칸씩 (AutoPlayer.Ballast)
         else if (cmd == "hand.drop" && Snap.Crew.Hand == "cell_dead") await CrateDrop();
         else if (cmd.StartsWith("device.", StringComparison.Ordinal) && cmd.Split('.') is { Length: 3 } dp
                  && Snap.Devices.FirstOrDefault(d => d.Id == dp[1]) is { Id: not null } dv && dv.Enabled == (dp[2] == "on"))

@@ -170,7 +170,7 @@ public class ManualTests
     static string FigDir => Path.Combine(ManualDir, "fig");
 
     /// <summary>2차 고장 쪽: 다른 세션이 고치는 중이라 그림을 아직 넣지 않았다. 본선이 그림을 넣으면 여기서 지운다.</summary>
-    static readonly HashSet<int> FiguresPending = new() { 13, 22, 24, 28, 31, 32, 35, 37 };
+    static readonly HashSet<int> FiguresPending = new() { 22, 35, 37 };
 
     /// <summary>그림을 두지 않는 쪽: 00 차례.</summary>
     static readonly HashSet<int> NoFigures = new() { 0 };
