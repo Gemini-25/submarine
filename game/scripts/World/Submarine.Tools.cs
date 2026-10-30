@@ -91,7 +91,7 @@ public partial class Submarine
             string id = $"toolboard.{tool}";
             if (!Interactables.TryGetValue(id, out var it) || !BoardSlots.TryGetValue(tool, out var slot))
             {
-                GD.PushError($"공구판에 '{tool}'의 칸이 없다 (Submarine.Tools.cs의 BoardRows)");
+                GD.PushError($"공구판 '{tool}': 칸이 없다 (Submarine.Tools.cs의 BoardRows)");
                 continue;
             }
             Markers.Remove(id); // 이제 빈 표지가 아니다
@@ -170,6 +170,9 @@ public partial class Submarine
         return result;
     }
 
+    /// <summary>미끄러지던 바닥 도구가 해치 문틀을 긁은 프레임 수(확인 묶음이 0인지 본다).</summary>
+    public int FloorDoorScrapes { get; private set; }
+
     /// <summary>바닥에 놓인 도구. 구역마다 정해진 자리(FloorSlots)에 길게 눕혀 놓이고, 누르면 줍는다.</summary>
     void BuildFloorTools(string[] tools)
     {
@@ -192,6 +195,7 @@ public partial class Submarine
             uint layer = it.CollisionLayer;
             it.CollisionLayer = 0;
             int lastZone = -1;
+            float halfWidth = sil.Bounds.Size.X / 2, halfLength = sil.Bounds.Size.Y / 2;
             OnUpdate((s, dt) =>
             {
                 int zone = GameData.ZoneIndex(s.Crew.ToolPlaces.GetValueOrDefault(tool, ""));
@@ -200,22 +204,27 @@ public partial class Submarine
                 it.CollisionLayer = onFloor ? layer : 0;
                 if (!onFloor) { lastZone = -1; return; }
                 // 같은 바닥에서 이웃 구역으로 옮겨 갔으면(기울기로 구름, WP18) 미끄러져 간다. 처음 놓일 때는 바로 그 자리.
-                // 앞뒤로 길게 누운 도구는 기울기에서 구르지 않고 미끄러진다(WP25 검토 9번). 도착하면 그 자리의 방향으로 똑바로 눕는다.
+                // 미끄러지는 동안은 앞뒤로 눕힌다(긴 축이 트림 기울기 방향이라 구르지 않고 미끄러진다, WP25 검토 9번 (가)안).
+                // 도착하면 그 자리의 방향(가로로 눕는 자리면 가로)으로 똑바로 눕는다.
                 var slot = FloorSlots[zone][tool];
                 var to = slot.Center;
                 var rest = new Transform3D(slot.AlongX ? Basis.Identity : across, to);
                 if (lastZone < 0) root.Transform = rest;
                 else if (root.Position.DistanceTo(to) > 0.01f)
                 {
-                    // 해치 격벽을 건너면 열린 문(|z| ≤ 0.35)으로 문턱(높이 0.06)을 넘어 간다.
+                    root.Basis = Basis.Identity;
+                    // 해치 격벽을 건너면 열린 문(|z| ≤ 0.35)으로 문턱(높이 0.06)을 넘어 간다. 모형 반폭만큼 안으로 조인다.
                     var aim = to;
                     if ((root.Position.X - HatchX) * (to.X - HatchX) < 0)
                     {
-                        var door = new Vector3(HatchX, 0.08f, Math.Clamp(root.Position.Z, -0.35f, 0.35f));
+                        float half = 0.35f - halfWidth;
+                        var door = new Vector3(HatchX, 0.08f, Math.Clamp(root.Position.Z, -half, half));
                         aim = root.Position.DistanceTo(door) > 0.01f ? door : to;
                         if (aim == to) root.Position = door + new Vector3(Math.Sign(to.X - HatchX) * 0.02f, 0, 0);
                     }
                     root.Position = root.Position.MoveToward(aim, 2.5f * dt);
+                    // 문틀 안(격벽 두께 ± 모형 반길이)에 있는 동안 모형의 Z 범위가 문 열린 곳(|z| ≤ 0.45) 밖으로 나가면 센다(확인 묶음).
+                    if (Math.Abs(root.Position.X - HatchX) < halfLength + 0.04f && Math.Abs(root.Position.Z) + halfWidth > 0.45f) FloorDoorScrapes++;
                 }
                 else root.Transform = rest;
                 lastZone = zone;

@@ -170,6 +170,7 @@ public partial class AutoPlayer
         float lowest = node.FindChildren("*", nameof(MeshInstance3D), true, false).Cast<MeshInstance3D>()
             .SelectMany(mi => Enumerable.Range(0, 8).Select(k => (mi.GlobalTransform * mi.GetAabb().GetEndpoint(k)).Y)).Min();
         Check(lowest >= -0.005f, $"구른 나무망치가 갑판을 뚫었다 (가장 낮은 곳 y {lowest:F3})");
+        Check(_main.Sub.FloorDoorScrapes == 0, $"구른 나무망치가 해치 문틀을 긁고 지나갔다 ({_main.Sub.FloorDoorScrapes}프레임)");
         await Perform("tool.pickup.mallet");
         Step(0.1);
         Check(Snap.Crew.ToolPlaces["mallet"] == "belt", "구른 나무망치를 줍지 못했다");

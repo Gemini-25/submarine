@@ -79,7 +79,7 @@ public partial class Submarine
             float x = -width / 2 + cell * (k + 0.5f);
             var label = Geo.Text(parent, "", new Vector3(x, shelfY + 0.15f, depth + 0.005f), 0.016f);
             int stock = _data.Tuning.Inventory.Locker[item];
-            var pieces = Stack(parent, item, Math.Min(stock, 6), x, cell, shelfY, clear, depth);
+            var pieces = Stack(parent, item, Math.Min(stock, 6), x, cell, shelfY, clear, depth, k);
             var bin = Add(Interactable.Create(parent, $"locker.{item}", $"{cabinet}: {Texts.Item(item)}",
                 new Vector3(cell - 0.01f, 0.17f, 0.03f), new Vector3(x, shelfY + 0.09f, depth + 0.02f), station));
             bin.CommandFor = (_, m) => m == Motion.Click ? $"locker.take.{item}" : null;
@@ -94,7 +94,7 @@ public partial class Submarine
 
     /// <summary>
     /// 예비품 칸에 놓은 물건 모형마다 차지한 범위와 그 칸의 빈 공간(벽장 좌표). tools 확인 묶음이 넘치지 않는지 본다.
-    /// 걸이못에 건 것은 칸 앞(앞 턱 밖)을 쓰므로 빈 공간도 칸 앞으로 잡는다.
+    /// 걸이못에 건 것은 칸 앞(앞 턱 밖)을 쓰므로 빈 공간도 칸 앞으로 잡고, 위끝은 재고 이름표 아래로 한다(이름표를 가리지 않게).
     /// </summary>
     public readonly List<(string Item, Aabb Placed, Aabb Room)> ShelfFits = new();
 
@@ -108,7 +108,7 @@ public partial class Submarine
     /// 빈 공간은 뒤판 안쪽(z 0.012)부터 앞 턱 안쪽(depth − 0.034)까지다. 칸 폭과 깊이에 들어가는 만큼 한 겹에 놓고, 남으면 위로 쌓는다.
     /// 재고가 줄면 뒤에서부터 감춘다.
     /// </summary>
-    List<Node3D> Stack(Node3D parent, string item, int count, float x, float cell, float shelfY, float clear, float depth)
+    List<Node3D> Stack(Node3D parent, string item, int count, float x, float cell, float shelfY, float clear, float depth, int column)
     {
         const float back = 0.012f, lip = 0.034f;
         var box = Art.ItemModels.Bounds(item);
@@ -122,25 +122,30 @@ public partial class Submarine
         }
         if (HungOnPeg.Contains(item))
         {
-            // 걸이못: 칸 위쪽 앞 테. 고리는 세로로 서서 칸 앞에 늘어진다(모형의 Y, 곧 고리 축이 앞을 본다). 긴 변은 세로로 둔다.
-            // 현창 밀봉(지름 0.236m)은 칸 폭(0.23m)보다 조금 넓어 양옆으로 3mm쯤 이웃 칸 앞에 걸친다.
-            var upright = box.Size.X > box.Size.Z * 1.2f ? new Basis(Vector3.Down, Vector3.Back, Vector3.Left) : new Basis(Vector3.Right, Vector3.Back, Vector3.Down);
+            // 걸이못: 칸 앞 테. 고리는 세로로 서서(모형의 Y, 곧 고리 축이 앞을 본다) 못에 꿰여 늘어진다. 너른 변이 가로다.
+            // 고리 위끝은 그 칸의 재고 이름표(선반 위 0.15m) 아래에서 시작해 이름표를 가리지 않는다.
+            // 이웃한 두 밀봉 칸은 못 길이를 달리해 고리가 앞뒤로 엇갈린다(현창 밀봉은 칸 폭보다 6mm 넓어 양옆으로 3mm쯤 걸친다).
+            const float tube = 0.008f; // 밀봉 고리의 굵기(반지름, ItemModels.Seal)
+            var upright = new Basis(Vector3.Right, Vector3.Back, Vector3.Down);
             var hb = new Transform3D(upright, Vector3.Zero) * box;
-            float topY = shelfY + clear - 0.016f;
+            float topY = shelfY + 0.15f - 0.012f;
+            float zBase = depth + 0.016f + (column % 2) * 0.032f;
+            float pegY = topY - 2 * tube - 0.004f; // 못 윗면이 고리 안쪽 위끝에 닿는다
+            float pegLen = zBase - depth + 0.006f * count + 0.012f;
             var peg = new Art.MeshBuilder();
-            peg.Cylinder(Art.ArtMat.Brass, Art.Kit.AlongAxis(Vector3.Back, new Vector3(x, topY + 0.004f, depth + 0.012f)), 0.004f, 0.03f, 8);
+            peg.Cylinder(Art.ArtMat.Brass, Art.Kit.AlongAxis(Vector3.Back, new Vector3(x, pegY, depth + pegLen / 2)), 0.004f, pegLen, 8);
             peg.Instance(parent, $"Peg_{item}");
-            var hang = new Aabb(new Vector3(x - cell / 2 - 0.005f, 0, depth), new Vector3(cell + 0.01f, shelfY + clear, 0.04f));
+            var hang = new Aabb(new Vector3(x - cell / 2 - 0.01f, 0, depth), new Vector3(cell + 0.02f, topY + 0.001f, 0.08f));
             for (int n = 0; n < count; n++)
             {
-                var pos = new Vector3(x - hb.GetCenter().X, topY - hb.End.Y, depth + 0.016f + n * 0.006f - hb.Position.Z);
+                var pos = new Vector3(x - hb.GetCenter().X, topY - hb.End.Y, zBase + n * 0.006f - hb.Position.Z);
                 Place(Art.ItemModels.Build(parent, item), new Transform3D(upright, pos), hang);
             }
             return list;
         }
         if (LeanedBack.Contains(item))
         {
-            // 세워서 뒤판에 기댄다: 앞으로 10도 숙인 판을 뒤에서부터 겹쳐 세운다.
+            // 세워서 뒤판에 기댄다: 뒤로 10도 젖혀 뒤판에 기댄 판을 뒤에서부터 겹쳐 세운다.
             var lean = Basis.FromEuler(new Vector3(Mathf.DegToRad(80), 0, 0));
             var leaned = new Transform3D(lean, Vector3.Zero) * box;
             for (int n = 0; n < count; n++)

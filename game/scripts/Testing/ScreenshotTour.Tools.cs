@@ -25,6 +25,8 @@ public partial class ScreenshotTour
         // 작업 시점과 같은 자리에서(이름 띠가 가려지지 않는지)
         var st = _main.Sub.Stations["toolboard"];
         await FromCamera("22-toolboard-workview", st.Eye, st.Target, 72);
+        // 전기 예비품 벽장: 걸이못에 건 밀봉 둘과 그 칸의 재고 이름표
+        await FromCamera("48-spare-cabinet", new Vector3(3.75f, 1.9f, -0.3f), new Vector3(3.75f, 1.85f, -1.1f), 60);
 
         // 손에 든 도구: 배전반 앞에 서서 하나씩 쥔다. 공구띠에 없는 도구는 마지막 칸과 바꾼다.
         var runner = _main.Runner;
@@ -45,7 +47,7 @@ public partial class ScreenshotTour
                 Do($"toolboard.take.{tool}");
             }
             Do($"tool.{tool}");
-            if (runner.Snapshot.Crew.Tool != tool) Fail($"찍기 둘러보기에서 '{tool}'을 쥐지 못했다 (쥔 것: {runner.Snapshot.Crew.Tool})");
+            if (runner.Snapshot.Crew.Tool != tool) Fail($"찍기 둘러보기: 도구 '{tool}': 쥐지 못했다 (쥔 것: {runner.Snapshot.Crew.Tool})");
             _main.Player.PlaceAt(eye, target);
             for (int i = 0; i < 12; i++)
             {
@@ -64,6 +66,9 @@ public partial class ScreenshotTour
     /// <summary>
     /// 공구띠 그림 17장을 실제 화면 크기(칸 44px) 그대로 한 줄로 늘어놓고 찍는다. 그림마다 불투명한 눈의 비율이 너무 작으면(도구가 가는 획 하나로 줄면) 오류.
     /// </summary>
+    /// <summary>공구띠 그림의 불투명한 눈 비율 하한. 128px 칸을 대각선으로 지나는 6px 획 하나가 7% 남짓이라 그보다 높게 둔다.</summary>
+    const double MinIconOpacity = 0.1;
+
     async Task BeltIcons()
     {
         var layer = new CanvasLayer { Layer = 20 };
@@ -93,14 +98,14 @@ public partial class ScreenshotTour
         foreach (var (id, tex) in texes)
         {
             var img = tex.GetImage();
-            if (img == null || img.IsEmpty()) { Fail($"공구띠 그림 '{id}'이 비었다"); continue; }
+            if (img == null || img.IsEmpty()) { Fail($"공구띠 그림 '{id}': 비었다"); continue; }
             int opaque = 0;
             for (int x = 0; x < img.GetWidth(); x++)
                 for (int y = 0; y < img.GetHeight(); y++)
                     if (img.GetPixel(x, y).A > 0.5f) opaque++;
             double ratio = opaque / (double)(img.GetWidth() * img.GetHeight());
             GD.Print($"ICON {id} 불투명 {ratio:P0}");
-            if (ratio < 0.06) Fail($"공구띠 그림 '{id}'의 불투명한 눈이 {ratio:P0}뿐이다(가는 획 하나로 보인다)");
+            if (ratio < MinIconOpacity) Fail($"공구띠 그림 '{id}': 불투명한 눈이 {ratio:P0}뿐이다(가는 획 하나로 보인다)");
         }
         layer.QueueFree();
     }
@@ -125,7 +130,7 @@ public partial class ScreenshotTour
         if (!groups.SelectMany(g => g).ToHashSet().SetEquals(ItemModels.Ids)) Fail("줄 세우기 목록이 ItemModels와 다르다");
 
         // 깔판: x 2.9~5.35, z −0.44~0.74. 흡수제 통 받침(z −0.46까지)과 배전반 아래 상자(z 0.75~, x 4.4~4.9)는 비켜 간다.
-        const float x0 = 2.92f, xMax = 5.33f, zFront = 0.72f, labelSize = 0.016f;
+        const float x0 = 2.92f, xMax = 5.33f, zFront = 0.72f, labelSize = 0.014f;
         var lineup = new Node3D { Name = "ItemLineup" };
         _main.Sub.AddChild(lineup);
         var mat = new MeshBuilder();
@@ -136,11 +141,11 @@ public partial class ScreenshotTour
         float x = x0, z = zFront, rowDepth = 0;
         foreach (var g in groups)
         {
-            float groupW = g.Sum(i => Math.Max(ItemModels.Bounds(i).Size.X, LabelWidth(i)) + 0.025f);
+            float groupW = g.Sum(i => Math.Max(ItemModels.Bounds(i).Size.X, LabelWidth(i)) + 0.02f);
             if (x + groupW > xMax)
             {
                 x = x0;
-                z -= rowDepth + 0.045f;
+                z -= rowDepth + 0.035f;
                 rowDepth = 0;
             }
             foreach (var id in g)
@@ -153,16 +158,17 @@ public partial class ScreenshotTour
                 label.RotationDegrees = new Vector3(-90, 0, 0);
                 label.Shaded = false;
                 rowDepth = Math.Max(rowDepth, b.Size.Z + 0.035f);
-                x += slot + 0.025f;
+                x += slot + 0.02f;
             }
-            x += 0.03f;
+            x += 0.02f;
         }
         if (z - rowDepth < -0.46f) Fail($"줄 세우기가 깔판 뒤로 넘친다 (끝 z {z - rowDepth:0.00})");
-        await FromCamera("40-items-all", new Vector3(4.12f, 2.2f, 1.05f), new Vector3(4.12f, 0.0f, 0.2f), 70);
-        await FromCamera("41-items-small", new Vector3(3.45f, 0.62f, 0.72f), new Vector3(3.45f, 0.0f, 0.3f), 55);
-        await FromCamera("42-items-small-2", new Vector3(4.15f, 0.62f, 0.72f), new Vector3(4.15f, 0.0f, 0.3f), 55);
-        await FromCamera("43-items-small-3", new Vector3(4.85f, 0.62f, 0.72f), new Vector3(4.85f, 0.0f, 0.3f), 55);
-        await FromCamera("44-items-large", new Vector3(4.12f, 1.5f, 1.0f), new Vector3(4.12f, 0.0f, -0.1f), 70);
+        // 넓은 사진은 깔판 앞 끝보다 안쪽 위에서 내려다본다. 깔판 앞의 배전반 아래 상자(z 0.75~)가 앞줄을 가리지 않게.
+        await FromCamera("40-items-all", new Vector3(4.12f, 2.25f, 0.55f), new Vector3(4.12f, 0.0f, 0.1f), 75);
+        // 근접: 깔판 앞쪽 위(z 0.5)에서 내려다보아 앞줄부터 셋째 줄까지 담는다. 깔판 앞의 장면 물체(z 0.75~)는 시야에 들지 않는다.
+        foreach (var (name, cx) in new[] { ("41-items-small", 3.3f), ("42-items-small-2", 3.9f), ("43-items-small-3", 4.5f), ("47-items-small-4", 5.1f) })
+            await FromCamera(name, new Vector3(cx, 0.75f, 0.5f), new Vector3(cx, 0.0f, 0.4f), 62);
+        await FromCamera("44-items-large", new Vector3(4.12f, 1.6f, 0.5f), new Vector3(4.12f, 0.0f, -0.15f), 72);
         // 셀 넷의 비스듬한 앞모습: 부푼 옆구리, 금, 흘러내린 자국
         var cells = lineup.GetChildren().OfType<Node3D>().Where(c => c.Name.ToString().StartsWith("Item_cell") || c.Name == "Item_spare_cell").ToArray();
         if (cells.Length == 4)

@@ -89,8 +89,8 @@ public partial class AutoPlayer
         for (int a = 0; a < ids.Length; a++)
             for (int b = a + 1; b < ids.Length; b++)
             {
-                Check(!slots[ids[a]].Cell.Grow(-eps).Intersects(slots[ids[b]].Cell.Grow(-eps)), $"공구판: '{ids[a]}'와 '{ids[b]}'의 칸이 겹친다");
-                Check(!slots[ids[a]].Outline.Intersects(slots[ids[b]].Outline), $"공구판: '{ids[a]}'와 '{ids[b]}'의 윤곽이 겹친다");
+                Check(!slots[ids[a]].Cell.Grow(-eps).Intersects(slots[ids[b]].Cell.Grow(-eps)), $"공구판: '{ids[a]}', '{ids[b]}': 칸이 겹친다");
+                Check(!slots[ids[a]].Outline.Intersects(slots[ids[b]].Outline), $"공구판: '{ids[a]}', '{ids[b]}': 윤곽이 겹친다");
                 var sa = ToolModels.Outline(ids[a]);
                 var sb = ToolModels.Outline(ids[b]);
                 pairs.Add((Likeness(sa.Mask, sb.Mask, 20), $"{ids[a]}·{ids[b]}"));
@@ -99,7 +99,7 @@ public partial class AutoPlayer
         var top = pairs.OrderByDescending(p => p.Iou).Take(5).ToArray();
         GD.Print($"AUTOTEST 공구판 윤곽에서 가장 닮은 짝(실크기, ±2cm 밀어 본 최대): {string.Join(", ", top.Select(p => $"{p.Pair} {p.Iou:0.000}"))}");
         GD.Print($"AUTOTEST 길이를 맞춘 모양만 견준 짝(사람 검토용, 문턱 없음): {string.Join(", ", shapes.OrderByDescending(p => p.Iou).Take(5).Select(p => $"{p.Pair} {p.Iou:0.000}"))}");
-        Check(top[0].Iou < MaxLikeness, $"공구판 윤곽 '{top[0].Pair}'이 너무 닮았다 ({top[0].Iou:0.000})");
+        Check(top[0].Iou < MaxLikeness, $"공구판 윤곽 '{top[0].Pair}': 너무 닮았다 ({top[0].Iou:0.000})");
     }
 
     /// <summary>
@@ -151,6 +151,11 @@ public partial class AutoPlayer
         Check(Sub.ShelfFits.Count > 0, "예비품 칸에 놓인 물건 모형이 없다");
         foreach (var (item, placed, room) in Sub.ShelfFits)
             Check(room.Grow(0.002f).Encloses(placed), $"예비품 칸 '{item}': 모형 {placed}이 칸 {room}을 넘친다");
+        // 걸이못에 건 이웃 밀봉끼리는 앞뒤로 엇갈려 부딪히지 않는다(같은 벽장).
+        var hung = Sub.ShelfFits.Where(f => f.Item is "viewport_seal" or "chamber_seal").ToArray();
+        foreach (var a in hung.Where(f => f.Item == "viewport_seal"))
+            foreach (var b in hung.Where(f => f.Item == "chamber_seal"))
+                Check(!a.Placed.Grow(-0.001f).Intersects(b.Placed), "예비품 칸: 걸이못에 건 현창 밀봉과 챔버 문 밀봉이 부딪힌다");
     }
 
     /// <summary>
@@ -172,7 +177,7 @@ public partial class AutoPlayer
                 var fp = list[a].Value.Footprint;
                 Check(World.Submarine.FloorAreas[zone].Any(f => f.Area.Grow(1e-4f).Encloses(fp)), $"바닥 {name} '{list[a].Key}': 빈 바닥 밖에 놓인다 {Fmt(fp)}");
                 for (int b = a + 1; b < list.Length; b++)
-                    Check(!fp.Grow(-1e-4f).Intersects(list[b].Value.Footprint), $"바닥 {name}: '{list[a].Key}'와 '{list[b].Key}'의 자리가 겹친다");
+                    Check(!fp.Grow(-1e-4f).Intersects(list[b].Value.Footprint), $"바닥 {name}: '{list[a].Key}', '{list[b].Key}': 자리가 겹친다");
                 shape.Size = new Vector3(fp.Size.X, 0.06f, fp.Size.Y);
                 var q = new PhysicsShapeQueryParameters3D
                 {

@@ -376,7 +376,8 @@ public static class ItemModels
             ModelCtx.Lump(mb, Scorch, new Vector3(0.1f, 0.409f, 0.11f), new Vector3(0.035f, 0.0015f, 0.05f), 25, 0.4f, 6, 12);
             mb.Torus(Soot, new Transform3D(Basis.Identity, new Vector3(0, 0.409f, -0.1f)), 0.03f, 0.004f, 16, 4);
             // 뚜껑 끝에서 앞면으로 흘러내린 자국
-            mb.Box(Scorch, new Vector3(0.06f, 0.36f, 0.2015f), new Vector3(0.03f, 0.09f, 0.001f), 0);
+            mb.Box(Scorch, new Vector3(0.06f, 0.343f, 0.2015f), new Vector3(0.03f, 0.086f, 0.001f), 0);
+            ModelCtx.Lump(mb, Scorch, new Vector3(0.06f, 0.4005f, 0.19f), new Vector3(0.016f, 0.0012f, 0.01f), 27, 0.3f, 6, 10); // 뚜껑 가장자리의 시작
             mb.Box(Scorch, new Vector3(0.068f, 0.3f, 0.2015f), new Vector3(0.012f, 0.06f, 0.001f), 0);
         }
         if (state == 1)
@@ -425,9 +426,9 @@ public static class ItemModels
         }
         if (!round)
         {
-            var rect = MeshBuilder.RoundedRect(0.24f, 0.16f, 0.035f, 5);
+            var rect = MeshBuilder.RoundedRect(0.222f, 0.15f, 0.035f, 5);
             mb.Tube(ArtMat.Rubber, Transform3D.Identity, rect.Select(p => new Vector3(p.X, rr, p.Y)).ToArray(), rr, 8, closedLoop: true);
-            mb.Box(ArtMat.Rubber, new Vector3(0, rr * 1.6f, -0.08f), new Vector3(0.24f - 0.07f, rr * 0.6f, 0.01f), 0.001f); // 문에 끼우는 혀
+            mb.Box(ArtMat.Rubber, new Vector3(0, rr * 1.6f, -0.075f), new Vector3(0.222f - 0.07f, rr * 0.6f, 0.01f), 0.001f); // 문에 끼우는 혀
             return;
         }
         // 헌 밀봉: 끊긴 둥근 고리. 끝이 벌어지고 잔금이 갔다.
