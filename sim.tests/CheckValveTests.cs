@@ -97,7 +97,7 @@ public class CheckValveTests
     public void Stuck_flapper_is_hidden_but_the_handles_are_visible()
     {
         var sim = Exposed();
-        var p = sim.Snapshot().Parts.Single(x => x.Id == Valve);
+        var p = sim.Snapshot.Parts.Single(x => x.Id == Valve);
         Assert.False(p.Props.ContainsKey("stuck"), "고착은 판을 꺼내 봐야 안다");
         Assert.False(p.Props.ContainsKey("weep"));
         Assert.Equal(3, p.Props["discharge"]);
@@ -282,6 +282,39 @@ public class CheckValveTests
         sim.Run(5);
         Assert.Equal(TestData.T.Water.PumpRatedLps, sim.Q("pump.grossFlow"), 12);
         Assert.Equal(0, sim.Q("pump.bonnetInflow"));
+    }
+
+    /// <summary>
+    /// 역류 밸브와 배출 밸브는 배출 쪽에 있어 흡입 선택기(WP18)의 자리와 상관없다:
+    /// 탱크에서 빨아도 고착된 판은 물을 되돌리고, 잠긴 배출 밸브는 흐름을 막는다.
+    /// </summary>
+    [Fact]
+    public void Check_and_discharge_valves_act_whatever_the_suction_position()
+    {
+        Simulation Tank(string? fault, double discharge)
+        {
+            var sim = TestData.NewSim(setup: TestData.Setup(s =>
+            {
+                s.Switches["C3"] = true;
+                s.Parts = new()
+                {
+                    new() { Part = Systems.Suction.PartId, Prop = Systems.Suction.Prop, Value = Systems.Suction.Fore },
+                    new() { Part = "ballast.tank.fore", Prop = "water", Value = 200 },
+                    new() { Part = Valve, Prop = "discharge", Value = discharge },
+                };
+            }));
+            if (fault != null) sim.Inject(fault);
+            sim.Run(5);
+            return sim;
+        }
+        var ok = Tank(null, 3);
+        Assert.True(ok.Q("pump.netFlow") > 1);
+        var stuck = Tank("WTR-03", 3);
+        Assert.True(stuck.Q("pump.grossFlow") > 1);
+        Assert.Equal(0, stuck.Q("pump.netFlow"));
+        var closed = Tank(null, 0);
+        Assert.Equal(0, closed.Q("pump.grossFlow"));
+        Assert.Equal(0, closed.Q("pump.netFlow"));
     }
 
     // ── 훈련 m2-water-b ───────────────────────────────

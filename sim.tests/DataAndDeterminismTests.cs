@@ -154,12 +154,12 @@ public class DataValidationTests
     {
         // JSON 읽기는 문화권 비교자로 사전을 만든다. GameData는 서수 순서로 다시 담아야 한다.
         var data = GameData.LoadFromDirectory(TestData.DataDir);
-        var valve = data.Parts.First(p => p.Id == "pump.check_valve");
+        var valve = data.Parts.First(p => p.Id == "pump.seal");
         var reversed = Comparer<string>.Create((a, b) => string.CompareOrdinal(b, a));
         var props = new SortedDictionary<string, double>(reversed) { ["stuck"] = 0, ["stuckOpen"] = 0.25, ["Stuckness"] = 0.75 };
         valve.Props = props;
         var rebuilt = new GameData(data.Tuning, data.Circuits, data.Devices, data.Parts, data.Faults, data.LeakPoints);
-        var part = new Parts.Part(rebuilt.Parts.First(p => p.Id == "pump.check_valve"));
+        var part = new Parts.Part(rebuilt.Parts.First(p => p.Id == "pump.seal"));
         Assert.Equal(new[] { "Stuckness", "stuck", "stuckOpen" }, part.PropNames);
     }
 

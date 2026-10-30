@@ -121,6 +121,8 @@ static class SimQuery
                     "bonnetInflow" => x => QueryValue.Of(PartSeaInflow(x, CheckValve.PartId)),
                     // 배출 밸브의 열림 0~1 (WP17)
                     "discharge" => x => QueryValue.Of(CheckValve.DischargeOpen(x)),
+                    // 흡입 선택기 자리: 'bilge', 'fore', 'aft', 'chamber' (M2 WP18). 선택기가 없는 데이터에서는 늘 'bilge'.
+                    "suction" => x => QueryValue.Of(Suction.Positions[Suction.Position(x)]),
                     _ => throw Unknown(),
                 };
 

@@ -46,6 +46,10 @@ public sealed class Tuning
     [Optional] public ShaftGlandTuning? ShaftGland { get; set; }
     /// <summary>감각 계통: 진공관 필라멘트와 상황판 전구 (M2 WP13). 없으면 필라멘트가 약해지지 않는다.</summary>
     [Optional] public SensesTuning? Senses { get; set; }
+    /// <summary>펌프 흡입 선택기 (M2 WP18, data/tuning/attitude.json). pump.suction 부품이 있으면 필요하다.</summary>
+    [Optional] public SuctionTuning? Suction { get; set; }
+    /// <summary>트림과 밸러스트 탱크 (M2 WP18, data/tuning/attitude.json). 기울기 모듈의 상태 부품이 있으면 필요하다.</summary>
+    [Optional] public AttitudeTuning? Attitude { get; set; }
     /// <summary>역류 방지 밸브와 배출 밸브 (M2 WP17 WTR-03, data/tuning/water.json). 없으면 배출 밸브를 잠가도 전류가 그대로다.</summary>
     [Optional] public CheckValveTuning? CheckValve { get; set; }
 }
