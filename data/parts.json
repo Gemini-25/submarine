@@ -631,8 +631,45 @@
   },
   "pump.check_valve": {
     "kind": "check_valve",
+    "visible": [
+      "bonnetBolt1",
+      "bonnetBolt2",
+      "bonnetBolt3",
+      "bonnetBolt4",
+      "bonnetOpen",
+      "discharge",
+      "present"
+    ],
     "props": {
-      "stuck": 0
-    }
+      "bonnetBolt1": 1,
+      "bonnetBolt2": 1,
+      "bonnetBolt3": 1,
+      "bonnetBolt4": 1,
+      "bonnetOpen": 0,
+      "discharge": 3,
+      "present": 1,
+      "stuck": 0,
+      "weep": 0
+    },
+    "seaPaths": [
+      {
+        "zone": "aft",
+        "areaCm2": 1,
+        "times": "self.discharge",
+        "when": "self.bonnetOpen >= 0.5"
+      },
+      {
+        "zone": "aft",
+        "areaCm2": 0.0666667,
+        "times": "self.discharge",
+        "when": "self.weep >= 0.5 && self.bonnetOpen < 0.5"
+      },
+      {
+        "zone": "aft",
+        "areaCm2": 0.1,
+        "times": "looseCount(bonnet)",
+        "when": "self.bonnetOpen < 0.5 && self.discharge > 0"
+      }
+    ]
   }
 }

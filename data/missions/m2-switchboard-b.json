@@ -1,0 +1,33 @@
+{
+  "name": "계통 훈련: 칼날 스위치 접점",
+  "briefing": [
+    "모선 아르고스호 → 모스호 기관사. 수심 200m 정박 훈련.",
+    "실내등이 어둡고 자이로컴퍼스가 섰다는 보고다. 상황판 전압계는 정상이다. 배전반에서 재고 만져 보아 원인을 찾고, 교범(Tab)대로 고칠 것.",
+    "상한 접점을 모두 정식으로 다듬고, 회로를 다시 올려 배전반 표시등이 꺼진 채 1분 동안 유지하면 훈련을 마친다."
+  ],
+  "seed": 1702,
+  "setup": {
+    "depthM": 200
+  },
+  "events": [
+    {
+      "atSeconds": 0,
+      "fault": "ELC-02",
+      "part": "contact.C1"
+    },
+    {
+      "atSeconds": 0,
+      "fault": "ELC-02",
+      "part": "contact.C5"
+    }
+  ],
+  "success": {
+    "assert": "part.contact.C1.prop.corrosion < 0.05 && part.contact.C5.prop.corrosion < 0.05 && part.contact.C1.prop.burnt == 0 && part.contact.C5.prop.burnt == 0 && circuit.C1.energized == 1 && circuit.C5.energized == 1 && device.gyrocompass.running == 1 && panel.lamp.switchboard == 'off'",
+    "holdSeconds": 60,
+    "objectives": [
+      "상한 칼날 스위치 접점을 찾아 정식으로 다듬는다",
+      "배전반 표시등이 꺼진 채 1분 동안 유지한다"
+    ]
+  },
+  "timeLimitSeconds": 1200
+}

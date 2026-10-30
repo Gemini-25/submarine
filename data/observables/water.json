@@ -1,6 +1,8 @@
 {
   "cues": {
     "pump.oilweep": { "sense": "Sight", "anchor": "pump.cap", "q": "pump.weep", "while": "device.bilge_pump.running", "map": [[0, 0], [1, 0.6], [4, 1]], "caption": "cue.pump.oilweep" },
+    "checkvalve.drip": { "sense": "Sight", "anchor": "checkvalve.bonnet", "q": "pump.bonnetInflow", "map": [[0, 0], [0.01, 0.3], [0.07, 0.7], [0.3, 1]], "caption": "cue.checkvalve.drip" },
+    "checkvalve.spill": { "sense": "Sound", "anchor": "checkvalve.bonnet", "q": "pump.bonnetInflow", "map": [[0.1, 0], [1, 1]], "caption": "cue.checkvalve.spill" },
     "pump.oilcup": { "sense": "Sight", "anchor": "pump.cap", "q": "part.pump.bearing.prop.lube", "map": [[0, 0], [1, 1]], "caption": "cue.pump.oilcup" }
   }
 }

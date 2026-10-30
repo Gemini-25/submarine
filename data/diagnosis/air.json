@@ -61,6 +61,53 @@
         { "expect": "AIR-02", "inject": [ { "fault": "AIR-02" } ] },
         { "expect": "none" }
       ]
+    },
+    "o2.low": {
+      "no": 21,
+      "priority": 35,
+      "page": "05-진단-표-공기-감각-항법-케이블.md",
+      "section": "산소 화로",
+      "sees": [
+        [ { "q": "cue.furnace.smoke", "unit": "cue", "above": 0.5 } ],
+        [ { "q": "panel.gauge.o2", "unit": "pct", "for": 30, "below": 17.8 },
+          { "q": "cue.furnace.burn", "unit": "cue", "below": 0.5 } ]
+      ],
+      "checks": [
+        { "all": [ { "q": "cue.furnace.smoke", "unit": "cue", "above": 0.5 },
+                   { "q": "cue.igniter.glow", "unit": "cue", "above": 0.5 } ],
+          "verdict": "AIR-03" },
+        { "each": { "c": "C2" },
+          "all": [ { "q": "cue.igniter.glow", "unit": "cue", "below": 0.5 } ],
+          "verdict": "ELC-01" },
+        { "all": [ { "q": "panel.gauge.o2", "unit": "pct", "below": 17.8 },
+                   { "q": "cue.furnace.burn", "unit": "cue", "below": 0.5 },
+                   { "q": "cue.igniter.glow", "unit": "cue", "above": 0.5 } ],
+          "verdict": "light" }
+      ],
+      "verdicts": {
+        "AIR-03": {
+          "fault": "AIR-03",
+          "says": "화로 막힘",
+          "do": [ { "wait": 1, "until": [ { "q": "cue.furnace.burn", "unit": "cue", "below": 0.01 } ], "every": 5, "max": 660, "release": true },
+                  { "wait": 120 },
+                  { "procedure": "proc.furnace.clean" } ],
+          "verify": { "all": [ { "q": "cue.furnace.smoke", "unit": "cue", "below": 0.1 },
+                               { "q": "cue.furnace.burn", "unit": "cue", "above": 0.5 } ], "within": 30, "hold": 10 }
+        },
+        "ELC-01": { "fault": "ELC-01", "says": "점화기 꺼짐 (C2)", "same": "fuse.blown" },
+        "light": {
+          "says": "양초를 켰는데 산소가 오르지 않으면",
+          "do": [ { "cmds": [ { "tool": "hand", "cmd": "candle.light" } ] } ],
+          "verify": { "all": [ { "q": "cue.furnace.burn", "unit": "cue", "above": 0.5 } ], "within": 5 }
+        }
+      },
+      "exposure": { "setup": { "depthM": 300, "air": { "o2": 17.6 } }, "seconds": 90 },
+      "cases": [
+        { "expect": "AIR-03", "setup": { "air": { "candle": 600 } }, "inject": [ { "fault": "AIR-03" } ] },
+        { "expect": "ELC-01", "bind": { "c": "C2" }, "inject": [ { "fault": "ELC-01", "part": "fuse.C2" } ] },
+        { "expect": "light" },
+        { "expect": "none", "setup": { "air": { "o2": 20.9 } } }
+      ]
     }
   }
 }

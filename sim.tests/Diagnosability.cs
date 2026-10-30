@@ -465,6 +465,174 @@ public class CableDiagnosability
 }
 
 /// <summary>
+/// 배수 펌프 가르기의 나머지 원인 (WP17 WTR-03): 잠근 채 둔 배출 밸브와 순서를 어겨 조인 보닛.
+/// 잠긴 배출 밸브는 막힘(WTR-01)과 자갈 소리로, 역류 밸브 고착(WTR-03)과 전류와 꾸르륵 소리로 갈린다(교범 04).
+/// 새는 보닛은 후방 리벳 이음(HUL-01)과 같은 후방 경고를 내지만 보닛의 물방울과 이음새 쉿 소리로 갈린다.
+/// </summary>
+public class CheckValveDiagnosability
+{
+    static SortedDictionary<string, DiagnosisHarness.Element> Run(string? fault, Action<MissionSetup>? more = null)
+    {
+        var sim = TestData.NewSim(setup: TestData.Setup(s =>
+        {
+            s.Switches["C3"] = true;
+            s.Bilges["bilge.aft"] = 150;
+            more?.Invoke(s);
+        }));
+        if (fault != null) sim.Inject(fault, fault == "HUL-01" ? "leak.rivet.09" : null);
+        sim.Run(60);
+        return DiagnosisHarness.Observe(new ObservableQuery(sim), TestData.Data);
+    }
+
+    [Fact]
+    public void Closed_discharge_and_a_weeping_bonnet_split_from_their_look_alikes()
+    {
+        var b = Run(null);
+        var closed = Run(null, s => s.Parts = new() { new() { Part = "pump.check_valve", Prop = "discharge", Value = 0 } });
+        var clog = Run("WTR-01");
+        var stuck = Run("WTR-03");
+        var weep = Run(null, s => s.Parts = new() { new() { Part = "pump.check_valve", Prop = "weep", Value = 1 } });
+        var rivet = Run("HUL-01");
+        var shaft = Run("HUL-03");
+
+        foreach (var (v, name) in new[] { (closed, "배출 밸브 잠김"), (weep, "새는 보닛") })
+        {
+            var sep = DiagnosisHarness.Separating(v, b);
+            Assert.True(sep.Count > 0, $"{name}이 고장 없는 상태와 구별되지 않는다");
+            foreach (var k in sep) Assert.True(DiagnosisHarness.Documented(k, TestData.Data), $"{name}을 드러내는 '{k}'에 문구가 없다");
+        }
+        Assert.True(closed["cue.pump.gravel"].Differs(clog["cue.pump.gravel"]));
+        Assert.True(closed["panel.gauge.pumpCurrent"].Differs(stuck["panel.gauge.pumpCurrent"]));
+        Assert.True(closed["cue.pump.backflow"].Differs(stuck["cue.pump.backflow"]));
+        Assert.True(weep["cue.checkvalve.drip"].Differs(rivet["cue.checkvalve.drip"]));
+        Assert.True(weep["cue.leak.rivet.09.hiss"].Differs(rivet["cue.leak.rivet.09.hiss"]));
+        // 같은 후방 경고를 내는 축 패킹(HUL-03)과는 보닛 물방울과 축 둘레 물줄기로 갈린다.
+        Assert.Equal(shaft["zone.aft.alarm"].Num, weep["zone.aft.alarm"].Num);
+        Assert.True(weep["cue.checkvalve.drip"].Differs(shaft["cue.checkvalve.drip"]));
+        Assert.True(weep["cue.shaft.stream"].Differs(shaft["cue.shaft.stream"]));
+    }
+}
+
+/// <summary>
+/// 공기 Tier B (WP17): AIR-03 산소 화로 막힘. 노출 설정: 산소 18%에서 양초 하나를 켜고 60초 (설계 시험 계획 5절 '켠 양초').
+/// 기준과 구별되고, M0 고장 9종과도 구별되며, 'O2가 오르지 않음' 가르기(점화기 C2)를 교범이 말하는 확인으로 한다.
+/// </summary>
+public class FurnaceDiagnosability
+{
+    static SortedDictionary<string, DiagnosisHarness.Element> Run(string? fault, string? part)
+    {
+        var sim = TestData.NewSim(setup: TestData.Setup(s => s.Air["o2"] = 18));
+        if (fault != null) sim.Inject(fault, part);
+        sim.Run(1); // 주입한 고장이 한 틱 돈 뒤에 양초를 켠다 (끊긴 C2의 점화기가 꺼진 뒤)
+        sim.Cmd("candle.light");
+        sim.Run(60);
+        return DiagnosisHarness.Observe(new ObservableQuery(sim), TestData.Data);
+    }
+
+    static readonly Lazy<SortedDictionary<string, DiagnosisHarness.Element>> _baseline = new(() => Run(null, null));
+    static readonly Lazy<Dictionary<string, SortedDictionary<string, DiagnosisHarness.Element>>> _vectors =
+        new(() => Diagnosability.M0Faults.Append(("AIR-03", null)).ToDictionary(f => f.Fault, f => Run(f.Fault, f.Part)));
+
+    [Fact]
+    public void Air03_is_noticeable_documented_and_distinct_from_every_M0_fault()
+    {
+        var v = _vectors.Value["AIR-03"];
+        var sep = DiagnosisHarness.Separating(v, _baseline.Value);
+        Assert.True(sep.Count > 0, "AIR-03은 고장 없는 상태와 구별되지 않는다");
+        foreach (var k in sep) Assert.True(DiagnosisHarness.Documented(k, TestData.Data), $"AIR-03을 드러내는 '{k}'에 문구가 없다");
+        foreach (var other in _vectors.Value.Keys.Where(k => k != "AIR-03"))
+            Assert.True(DiagnosisHarness.Separating(v, _vectors.Value[other]).Count > 0, $"AIR-03과 {other}가 같다");
+    }
+
+    [Fact]
+    public void Oxygen_not_recovering_splits_on_the_furnace_smoke_and_the_igniter_window()
+    {
+        var b = _baseline.Value;
+        var furnace = _vectors.Value["AIR-03"];
+        var c2 = _vectors.Value["ELC-01"]; // M0 목록의 ELC-01은 C2 퓨즈다
+        Assert.True(furnace["cue.furnace.smoke"].Differs(b["cue.furnace.smoke"]));
+        Assert.True(furnace["cue.furnace.acrid"].Differs(b["cue.furnace.acrid"]));
+        Assert.True(furnace["cue.furnace.choke"].Differs(b["cue.furnace.choke"]));
+        Assert.False(furnace["cue.igniter.glow"].Differs(b["cue.igniter.glow"]));
+        Assert.True(c2["cue.igniter.glow"].Differs(furnace["cue.igniter.glow"]));
+        Assert.True(c2["cue.furnace.burn"].Differs(furnace["cue.furnace.burn"])); // 점화기가 없으면 양초가 타지 않는다
+        Assert.False(c2["cue.furnace.smoke"].Differs(b["cue.furnace.smoke"]));
+    }
+}
+
+/// <summary>
+/// 칼날 스위치 접점 부식 (ELC-02, WP17). 노출 설정은 Diagnosability와 같다(배수 펌프를 돌림). 조명 회로(C1)와 배수 회로(C3)의 부식이
+/// 기준, 셀 열화(PWR-01), 같은 회로의 퓨즈 단선과 누전(ELC-01, ELC-03), 펌프 베어링(WTR-02)과 구별되고, 교범 03과 24가 이름 대는 확인
+/// (상황판 전압계는 그대로, 부하 단자와 칼날 위아래 전압계, 칼날 소리, 펌프 갈림 소리)으로 갈리는지 본다.
+/// </summary>
+public class ContactDiagnosability
+{
+    static readonly (string Key, string Fault, string? Part)[] Cases =
+    {
+        ("ELC-02.C1", "ELC-02", "contact.C1"), ("ELC-02.C3", "ELC-02", "contact.C3"), ("PWR-01", "PWR-01", "cell.3"),
+        ("ELC-01.C1", "ELC-01", "fuse.C1"), ("ELC-03.C1", "ELC-03", "junction.C1"), ("WTR-02", "WTR-02", null),
+        ("ELC-02.C5", "ELC-02", "contact.C5"), ("ELC-01.C5", "ELC-01", "fuse.C5"), ("ELC-03.C3", "ELC-03", "junction.C3"),
+    };
+
+    static SortedDictionary<string, DiagnosisHarness.Element> Run(string? fault, string? part)
+    {
+        var sim = TestData.NewSim(setup: TestData.Setup(s =>
+        {
+            s.Switches["C3"] = true;
+            s.Bilges["bilge.aft"] = 150;
+        }));
+        if (fault != null) sim.Inject(fault, part);
+        sim.Run(60);
+        return DiagnosisHarness.Observe(new ObservableQuery(sim), TestData.Data);
+    }
+
+    static readonly Lazy<SortedDictionary<string, DiagnosisHarness.Element>> _baseline = new(() => Run(null, null));
+    static readonly Lazy<Dictionary<string, SortedDictionary<string, DiagnosisHarness.Element>>> _vectors =
+        new(() => Cases.ToDictionary(c => c.Key, c => Run(c.Fault, c.Part)));
+    static readonly Lazy<Dictionary<string, SortedDictionary<string, DiagnosisHarness.Element>>> _m0 =
+        new(() => Diagnosability.M0Faults.ToDictionary(f => f.Fault, f => Run(f.Fault, f.Part)));
+
+    [Fact]
+    public void Elc02_is_noticeable_documented_and_distinct()
+    {
+        foreach (var key in new[] { "ELC-02.C1", "ELC-02.C3", "ELC-02.C5" })
+        {
+            foreach (var (fault, vector) in _m0.Value)
+                Assert.True(DiagnosisHarness.Separating(_vectors.Value[key], vector).Count > 0, $"{key}와 {fault}의 관찰 벡터가 같다");
+            var sep = DiagnosisHarness.Separating(_vectors.Value[key], _baseline.Value);
+            Assert.NotEmpty(sep);
+            foreach (var k in sep) Assert.True(DiagnosisHarness.Documented(k, TestData.Data), $"{key}를 드러내는 '{k}'에 문구가 없다");
+            foreach (var (other, _, _) in Cases.Where(c => !c.Key.StartsWith("ELC-02", StringComparison.Ordinal)))
+                Assert.NotEmpty(DiagnosisHarness.Separating(_vectors.Value[key], _vectors.Value[other]));
+        }
+    }
+
+    [Fact]
+    public void Elc02_pairs_split_on_the_check_the_manual_names()
+    {
+        var v = _vectors.Value;
+        var b = _baseline.Value;
+        // 조명이 어둡고 전압이 낮은 쌍: 상황판 전압계는 그대로(셀 열화는 낮다), 칼날 위아래와 부하 단자가 다르다.
+        Assert.False(v["ELC-02.C1"]["panel.gauge.voltage"].Differs(b["panel.gauge.voltage"]));
+        Assert.True(v["PWR-01"]["panel.gauge.voltage"].Differs(b["panel.gauge.voltage"]));
+        Assert.True(v["ELC-02.C1"]["measure.voltmeter.switch.C1"].Differs(b["measure.voltmeter.switch.C1"]));
+        Assert.True(v["ELC-02.C1"]["measure.voltmeter.circuit.C1"].Differs(b["measure.voltmeter.circuit.C1"]));
+        Assert.False(v["PWR-01"]["measure.voltmeter.switch.C1"].Differs(b["measure.voltmeter.switch.C1"]));
+        Assert.True(v["ELC-02.C1"]["panel.lamp.switchboard"].Differs(b["panel.lamp.switchboard"]));
+        // 펌프가 뜨겁고 전류가 높은 쌍: 둘 다 펌프 전류가 높지만, 갈리는 소리(WTR-02)와 칼날 위아래 강하(ELC-02)로 갈린다.
+        Assert.True(v["ELC-02.C3"]["panel.gauge.pumpCurrent"].Differs(b["panel.gauge.pumpCurrent"]));
+        Assert.True(v["ELC-02.C3"]["measure.voltmeter.switch.C3"].Differs(v["WTR-02"]["measure.voltmeter.switch.C3"]));
+        Assert.True(v["ELC-02.C3"]["cue.pump.grind"].Differs(v["WTR-02"]["cue.pump.grind"]));
+        // 같은 회로의 퓨즈 단선, 누전과는 회로가 살아 있는지와 칼날 소리로 갈린다.
+        Assert.True(v["ELC-02.C1"]["measure.voltmeter.circuit.C1"].Differs(v["ELC-01.C1"]["measure.voltmeter.circuit.C1"]));
+        Assert.True(v["ELC-02.C1"]["cue.knife.C1.crackle"].Differs(v["ELC-03.C1"]["cue.knife.C1.crackle"]));
+        // 항법 회로: 퓨즈가 끊기면 부하 단자가 0, 접점이 상하면 낮지만 살아 있다. 배수 회로의 누전과는 칼날 소리로 갈린다.
+        Assert.True(v["ELC-02.C5"]["measure.voltmeter.circuit.C5"].Differs(v["ELC-01.C5"]["measure.voltmeter.circuit.C5"]));
+        Assert.True(v["ELC-02.C3"]["cue.knife.C3.crackle"].Differs(v["ELC-03.C3"]["cue.knife.C3.crackle"]));
+    }
+}
+
+/// <summary>
 /// 감각 2차 고장 (WP20): SNS-02, SNS-04, SNS-05가 기준, 서로, M0 고장, SNS-01과 구별되는가.
 /// 노출 설정은 후방 빌지 150L에 탐조등을 켠 것 (SNS-02는 빌지가 있어야, SNS-04는 탐조등이 켜져 있어야 드러난다).
 /// </summary>

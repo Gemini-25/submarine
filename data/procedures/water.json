@@ -118,5 +118,98 @@
         "tool": "hand"
       }
     ]
+  },
+  "proc.checkvalve.clean": {
+    "title": "역류 방지 밸브 분해 청소",
+    "fault": "WTR-03",
+    "grade": "proper",
+    "steps": [
+      {
+        "type": "Inspect",
+        "text": "펌프가 돌고 전류가 약 2.5A로 정상인데 빌지 수위가 줄지 않는지 본다. 배관에서 물이 되돌아오는 꾸르륵 소리가 나고 흡입구에서 자갈 구르는 소리는 나지 않는다."
+      },
+      {
+        "type": "Isolate",
+        "text": "배수 회로(C3) 칼날 스위치를 내려 펌프를 멈춘다. 펌프 소리가 멎었는지 듣는다.",
+        "cmd": "switch.C3.off",
+        "tool": "hand",
+        "requires": "없음",
+        "hazard": "펌프가 도는 채로 보닛을 열면 펌프가 밀어 올린 물이 보닛에서 뿜어 나온다."
+      },
+      {
+        "type": "Isolate",
+        "text": "빈손으로 펌프 배출 밸브 바퀴를 시계 방향으로 세 바퀴 돌려 끝까지 잠근다.",
+        "cmd": "pump.discharge.close",
+        "tool": "hand",
+        "repeat": 3,
+        "requires": "없음",
+        "hazard": "배출 밸브를 열어 둔 채 보닛을 열면 배출관의 바닷물이 뿜어 나오고, 보닛을 닫을 때까지 계속 들어온다."
+      },
+      {
+        "type": "Open",
+        "text": "렌치로 보닛 볼트 네 개를 푼다.",
+        "cmd": "checkvalve.bolt.{n}.loosen",
+        "tool": "wrench",
+        "repeat": 4
+      },
+      {
+        "type": "Open",
+        "text": "빈손으로 보닛을 연다.",
+        "cmd": "checkvalve.bonnet.open",
+        "tool": "hand",
+        "requires": "C3 스위치가 내려가 있고 배출 밸브가 잠겨 있을 것",
+        "hazard": "물 분출"
+      },
+      {
+        "type": "Remove",
+        "text": "역지 밸브 판을 빼낸다.",
+        "cmd": "checkvalve.flap.pull",
+        "tool": "hand"
+      },
+      {
+        "type": "Work",
+        "text": "판을 든 채 세척통에서 솔로 세 번 문질러 경첩과 자리면의 녹과 앙금을 벗긴다.",
+        "cmd": "wash_bucket.scrub",
+        "tool": "scrub_brush",
+        "repeat": 3
+      },
+      {
+        "type": "Install",
+        "text": "판을 제자리에 끼운다. 판이 경첩에서 손으로 가볍게 열리고 닫히는지 본다.",
+        "cmd": "checkvalve.flap.insert"
+      },
+      {
+        "type": "Close",
+        "text": "빈손으로 보닛을 닫는다.",
+        "cmd": "checkvalve.bonnet.close",
+        "tool": "hand"
+      },
+      {
+        "type": "Fasten",
+        "text": "렌치로 보닛 볼트를 1-3-2-4 순서로 조인다. 순서를 어기면 보닛이 비뚤게 앉아 가장자리로 물이 샌다.",
+        "cmd": "checkvalve.bolt.{n}.tighten",
+        "tool": "wrench",
+        "repeat": 4,
+        "order": [
+          1,
+          3,
+          2,
+          4
+        ]
+      },
+      {
+        "type": "Install",
+        "text": "빈손으로 배출 밸브 바퀴를 반시계 방향으로 세 바퀴 돌려 끝까지 연다. 잠근 채 두면 펌프가 물을 내보내지 못한다.",
+        "cmd": "pump.discharge.open",
+        "tool": "hand",
+        "repeat": 3
+      },
+      {
+        "type": "Test",
+        "text": "C3 스위치를 올린다. 펌프 전류가 약 2.5A이고 빌지 수위가 줄며 꾸르륵 소리가 멎는지 본다. 보닛 가장자리가 말라 있는지 본다.",
+        "cmd": "switch.C3.on",
+        "tool": "hand"
+      }
+    ]
   }
 }

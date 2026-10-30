@@ -1,14 +1,14 @@
 {
-  "mission": "m2-senses-a", "seed": 1313, "dataStamp": "829ceebb9dab2209", "handTicks": 12,
-  "finalTick": 2636, "finalHash": 8455736636474055624, "status": "succeeded",
+  "mission": "m2-senses-a", "seed": 1313, "dataStamp": "d2f4b53d2536225b", "handTicks": 12,
+  "finalTick": 2636, "finalHash": 14042385157188305376, "status": "succeeded",
   "findings": [
     {"tick":140,"pair":"bell.nolamp","verdict":"SNS-01","bind":"lamp=water","outcome":"fixed"},
     {"tick":1052,"pair":"hydrophone.noisy","verdict":"SNS-03","bind":"tube=1","outcome":"fixed"},
     {"tick":1096,"pair":"pump.stopped","verdict":"switch_off","bind":"","outcome":"fixed"}
   ],
   "hashes": [
-    {"tick":1200,"hash":4079354029865084392},
-    {"tick":2400,"hash":752684809973032702}
+    {"tick":1200,"hash":16732608449544889312},
+    {"tick":2400,"hash":4502335163264246818}
   ],
   "lines": [
     {"tick":0,"step":{"seq":1,"kind":"Wait","ticks":20,"value":0,"value2":0,"jobStep":-1,"note":"look"}},
