@@ -29,7 +29,7 @@ public class ManualTests
             n["noise"]!["actions"]!["wrench"]!["level"] = 4;
         });
         var pages = ManualText.LoadPages(ManualDir, data);
-        Assert.Contains("| 퓨즈 | 11 | 퓨즈 교체 |", pages.Single(p => p.File.StartsWith("01-", StringComparison.Ordinal)).Markdown);
+        Assert.Contains("| 퓨즈 | 11 | |", pages.Single(p => p.File.StartsWith("07-", StringComparison.Ordinal)).Markdown);
         Assert.Contains("| 볼트 하나 (렌치) | 4 |", pages.Single(p => p.File.StartsWith("29-", StringComparison.Ordinal)).Markdown); // 펌프 흡입 거름망 청소
         Assert.Contains("| 렌치 (볼트 하나) | 4 | 2초 |", pages.Single(p => p.File.StartsWith("11-", StringComparison.Ordinal)).Markdown); // 소음 표
     }
@@ -170,7 +170,10 @@ public class ManualTests
     static string FigDir => Path.Combine(ManualDir, "fig");
 
     /// <summary>2차 고장 쪽: 다른 세션이 고치는 중이라 그림을 아직 넣지 않았다. 본선이 그림을 넣으면 여기서 지운다.</summary>
-    static readonly HashSet<int> FiguresPending = new() { 13, 22, 24, 28, 31, 32, 35, 37, 40, 41 };
+    static readonly HashSet<int> FiguresPending = new() { 13, 22, 24, 28, 31, 32, 35, 37 };
+
+    /// <summary>그림을 두지 않는 쪽: 00 차례.</summary>
+    static readonly HashSet<int> NoFigures = new() { 0 };
 
     static int PageNumber(string file) => int.Parse(file[..2], System.Globalization.CultureInfo.InvariantCulture);
 
@@ -237,7 +240,7 @@ public class ManualTests
     {
         foreach (var p in Pages)
         {
-            if (FiguresPending.Contains(PageNumber(p.File))) continue;
+            if (FiguresPending.Contains(PageNumber(p.File)) || NoFigures.Contains(PageNumber(p.File))) continue;
             int n = FigureLines().Count(f => f.File == p.File);
             Assert.True(n >= 3, $"{p.File}에 그림이 {n}장뿐이다 (적어도 셋)");
         }
@@ -265,5 +268,34 @@ public class ManualTests
         }
         Assert.True(total / files.Length <= 80 * 1024, $"그림 평균 {total / files.Length / 1024}KB");
         Assert.True(total <= 8 * 1024 * 1024, $"그림 합계 {total / 1024 / 1024}MB");
+    }
+
+    /// <summary>
+    /// 차례(00쪽, WP16): 모든 쪽이 그 번호와 제목으로 실려 있고, 계통 탭이 쪽 번호를 빈틈없이 덮으며, 모든 쪽이 어느 탭에 든다.
+    /// 쪽을 더하면 차례의 '쪽' 표에도 한 줄 더한다.
+    /// </summary>
+    [Fact]
+    public void The_contents_page_lists_every_page_and_its_tabs_cover_them()
+    {
+        var pages = ManualText.LoadPages(ManualDir, TestData.Data);
+        string toc = pages.Single(p => p.File.StartsWith("00-", StringComparison.Ordinal)).Markdown;
+        var tabs = ManualText.Tabs(toc);
+        Assert.True(tabs.Count >= 9);
+        for (int i = 1; i < tabs.Count; i++) Assert.Equal(tabs[i - 1].To + 1, tabs[i].From);
+        Assert.Equal(0, tabs[0].From);
+        foreach (var p in pages.Where(p => !p.File.StartsWith("00-", StringComparison.Ordinal)))
+        {
+            int n = int.Parse(p.File[..2], System.Globalization.CultureInfo.InvariantCulture);
+            var tab = tabs.Single(t => t.From <= n && n <= t.To);
+            Assert.Contains($"| {p.File[..2]} | {p.Title} | {tab.Name} |", toc);
+        }
+    }
+
+    /// <summary>진단 표 03~05쪽에 '(작성 중' 자리가 남지 않는다 (Tier A 계통이 모두 채웠다).</summary>
+    [Fact]
+    public void Diagnosis_pages_have_no_placeholders_left()
+    {
+        foreach (var p in ManualText.LoadPages(ManualDir, TestData.Data).Where(p => p.File[..2] is "03" or "04" or "05"))
+            Assert.DoesNotContain("(작성 중", p.Markdown);
     }
 }

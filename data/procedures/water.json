@@ -44,7 +44,19 @@
         "cmd": "pump.body.touch",
         "tool": "hand",
         "requires": "C3 스위치를 내리고 3분 기다렸을 것",
-        "hazard": "아주 뜨거운 몸체를 만지면 손을 덴다."
+        "hazard": "아주 뜨거운 몸체를 만지면 손을 덴다.",
+        "wait": {
+          "before": 180,
+          "retry": [
+            {
+              "touched": "pump.body",
+              "unit": "band",
+              "above": 3.5
+            }
+          ],
+          "every": 60,
+          "max": 900
+        }
       },
       {
         "type": "Open",

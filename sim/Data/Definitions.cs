@@ -214,6 +214,27 @@ public sealed class ProcedureStep
     /// 교범은 둘을 함께 보인다. 시뮬레이션은 연필 쪽(text)과 맞는다.
     /// </summary>
     [Optional] public string? Revision { get; set; }
+    /// <summary>
+    /// 이 단계의 기다림 (WP16). 교범 글의 '기다린다', '~까지'를 자동 플레이어가 따를 수 있게 적은 것이다.
+    /// Expand와 ExpandWithBelt는 이것을 무시하고, ExpandSteps가 명령 사이에 끼운다.
+    /// </summary>
+    [Optional] public StepWait? Wait { get; set; }
+}
+
+/// <summary>
+/// 절차 단계의 기다림 (WP16). before는 명령 전에 그만큼 쉬고, until은 명령 전에 조건이 설 때까지, then은 명령을 낸 뒤 조건이 설 때까지 붙든다.
+/// retry는 만지기 명령 뒤 만진 결과(touched)가 서면 every 뒤 같은 명령을 다시 낸다. max를 넘기면 그 일은 멈춘다.
+/// release는 until 동안 손을 놓는다 (절차의 마지막 상태 변경 명령 뒤, 명령 없는 단계에서만).
+/// </summary>
+public sealed class StepWait
+{
+    [Optional] public double? Before { get; set; }
+    [Optional] public List<CondDef> Until { get; set; } = new();
+    [Optional] public List<CondDef> Then { get; set; } = new();
+    [Optional] public List<CondDef> Retry { get; set; } = new();
+    [Optional] public double Every { get; set; } = 1;
+    public double Max { get; set; }
+    [Optional] public bool Release { get; set; }
 }
 
 /// <summary>미리 짠 임무 (data/missions/*.json). M1은 위기 훈련 하나.</summary>
@@ -230,6 +251,10 @@ public sealed class MissionDef
     public MissionGoal Success { get; set; } = new();
     /// <summary>이 시간(게임 초)이 지나면 시간 초과로 실패.</summary>
     public double TimeLimitSeconds { get; set; }
+    /// <summary>
+    /// 지시서가 시킨 정기 점검 (WP16): diagnosis.json에서 round가 있는 쌍의 ID. 지시서(briefing)에 그 쌍의 round.says가 들어 있어야 한다.
+    /// </summary>
+    [Optional] public List<string> Rounds { get; set; } = new();
 }
 
 public sealed class MissionEvent

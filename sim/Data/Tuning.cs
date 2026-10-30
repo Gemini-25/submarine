@@ -85,6 +85,12 @@ public sealed class SensesTuning
     /// <summary>테가 헐거운 전구가 깜박이는 주기(초)와 그 가운데 꺼져 있는 몫.</summary>
     public double BulbFlickerSeconds { get; set; }
     public double BulbFlickerOffFraction { get; set; }
+    /// <summary>상황판 배선함 (SNS-02, WP20). 없으면 배선이 엇갈리지 않는다.</summary>
+    [Optional] public PanelWiringTuning? PanelWiring { get; set; }
+    /// <summary>탐조등 탄소봉 (SNS-04, WP20). 없으면 탄소봉이 닳지 않는다.</summary>
+    [Optional] public SearchlightTuning? Searchlight { get; set; }
+    /// <summary>상황판 계기의 영점과 바늘 걸림 (SNS-05, WP20). 없으면 계기가 센서 값을 그대로 가리킨다.</summary>
+    [Optional] public GaugeTuning? Gauges { get; set; }
 }
 
 /// <summary>손 수리 동작의 수치 (M1). 손동작 하나가 명령 하나다.</summary>

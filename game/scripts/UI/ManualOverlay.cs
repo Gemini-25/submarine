@@ -50,8 +50,13 @@ public partial class ManualOverlay : CanvasLayer
         손에는 물건을 하나만 들 수 있다. 감전되거나 손이 끼이거나 화상을 입거나 물줄기를 맞으면 잠시 손을 쓸 수 없다.
         """;
 
-    /// <summary>계통 탭: 파일 번호 범위 (M2 교범 계획). 지시서와 조작 안내는 어느 탭에서나 보인다.</summary>
-    static readonly (string Name, int From, int To)[] Tabs =
+    /// <summary>
+    /// 계통 탭: 파일 번호 범위. 차례(00쪽)의 '계통 탭' 표에서 읽고(ManualText.Tabs), 그 쪽이 없으면 아래 기본값.
+    /// '전체'는 늘 맨 앞이다. 지시서와 조작 안내는 어느 탭에서나 보인다.
+    /// </summary>
+    (string Name, int From, int To)[] Tabs = DefaultTabs;
+
+    static readonly (string Name, int From, int To)[] DefaultTabs =
     {
         ("전체", 0, 99), ("일반", 0, 19), ("동력", 20, 22), ("배전반", 23, 25), ("공기", 26, 28), ("물", 29, 32),
         ("선체", 33, 37), ("감각", 38, 41), ("항법", 42, 43), ("케이블", 44, 45),
@@ -99,6 +104,9 @@ public partial class ManualOverlay : CanvasLayer
         book.AddChild(v);
         _header = UiKit.Text("대양전신회사 · 모스호 정비 교범", 22, UiKit.Faded, UiKit.Myeongjo);
         v.AddChild(_header);
+        var toc = Directory.Exists(manualDir) ? Directory.GetFiles(manualDir, "00-*.md").FirstOrDefault() : null;
+        if (toc != null && ManualText.Tabs(File.ReadAllText(toc)) is { Count: > 0 } fromToc)
+            Tabs = fromToc.Prepend(("전체", 0, 99)).ToArray();
         _tabs = new HBoxContainer();
         _tabs.AddThemeConstantOverride("separation", 6);
         v.AddChild(_tabs);

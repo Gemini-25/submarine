@@ -1,5 +1,6 @@
 {
   "cue.pump.oilweep": "베어링 뚜껑 둘레로 기름이 배어 나온다",
+  "cue.pump.oilcup": "유리 기름 잔에 기름이 차 있다",
   "fixture.pump.bearing": "펌프 베어링",
   "fixture.pump.body": "펌프 몸체",
   "fixture.pump.cap": "베어링 뚜껑",

@@ -1,0 +1,11 @@
+Godot Engine v4.7.2.stable.mono.official.ed1daf0bf - https://godotengine.org
+WARNING: Could not set V-Sync mode, as changing V-Sync mode is not supported by the graphics driver.
+     at: set_use_vsync (platform/linuxbsd/x11/gl_manager_x11.cpp:372)
+OpenGL API 4.5 (Core Profile) Mesa 25.2.8-0ubuntu0.24.04.4 - Compatibility - Using Device: Mesa - llvmpipe (LLVM 20.1.2, 256 bits)
+
+DEEP LINE 시작: 임무 m1-crisis, 데이터 /home/user/submarine/data, 교범 34장
+AUTOTEST 묶음 make-figures
+FIGURE /tmp/claude-0/t/23-compare.png (6KB)
+AUTOTEST: 교범 그림 1/1장 만듦
+AUTOTEST PASS
+exit 0

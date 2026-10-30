@@ -360,7 +360,7 @@ public partial class AutoPlayer
             var min = pts.Aggregate((a, b) => new Vector2(Math.Min(a.X, b.X), Math.Min(a.Y, b.Y)));
             var max = pts.Aggregate((a, b) => new Vector2(Math.Max(a.X, b.X), Math.Max(a.Y, b.Y)));
             var center = rect.Position + (min + max) / 2;
-            float r = Math.Max(16, (max - min).Length() / 2 + 6);
+            float r = Math.Clamp((max - min).Length() / 2 + 6, 16, rect.Size.Y * 0.3f);
             Check(rect.HasPoint(center), $"진하게 칠할 '{h}'가 그림 틀 밖이다");
             sheet.Ring(center, r, 3f, InkStyle.Red);
         }
@@ -541,8 +541,9 @@ public partial class AutoPlayer
         float limit = half.Length() * 2 + 0.3f;
         return Descendants(_main.Sub).OfType<GeometryInstance3D>().Where(g =>
         {
+            // 가운데가 조준 상자 안에 든 메시만 (상자에 걸치기만 한 이웃 장비의 몸통이나 덮개는 칠하지 않는다)
             var b = g.GlobalTransform * g.GetAabb();
-            return b.Intersects(box) && b.Size.Length() < limit;
+            return box.HasPoint(b.GetCenter()) && b.Size.Length() < limit;
         }).ToList();
     }
 
@@ -690,6 +691,7 @@ public partial class AutoPlayer
                  && Snap.Devices.FirstOrDefault(d => d.Id == dp[1]) is { Id: not null } dv && dv.Enabled == (dp[2] == "on"))
             return; // 이미 그 자리에 있는 전원 스위치는 건드리지 않는다 (누르면 반대로 바뀐다)
         else if (cmd.StartsWith("device.hook_winch.", StringComparison.Ordinal)) await MotorSwitch(cmd);
+        else if (cmd.StartsWith("device.searchlight.", StringComparison.Ordinal)) await SearchlightLever(cmd);
         else if (cmd.StartsWith("device.hydrophone.", StringComparison.Ordinal)) await HydrophoneSwitch(cmd);
         else if (cmd.StartsWith("device.", StringComparison.Ordinal)) await PerformDevice(cmd);
         else if (cmd.StartsWith("shaft.", StringComparison.Ordinal)) await PerformDrill(cmd);

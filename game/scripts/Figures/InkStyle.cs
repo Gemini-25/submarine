@@ -16,6 +16,9 @@ public static class InkStyle
     public static readonly Color Red = new(0.66f, 0.17f, 0.10f);
     public static readonly Color RedLight = new(0.86f, 0.62f, 0.52f);
 
+    /// <summary>그을음, 탄 자국처럼 아주 검은 것은 먹에 가깝게 칠한다 (고장 모습이 종이색 그림에서 드러나게).</summary>
+    public static readonly Color Soot = Mid.Lerp(Ink, 0.5f);
+
     /// <summary>16색. 순수 색 일곱과 그 사이 섞임(선의 가장자리). 그림의 모든 화소는 이 중 하나로 바뀐다.</summary>
     public static readonly Color[] Palette = BuildPalette();
 
@@ -23,7 +26,7 @@ public static class InkStyle
     {
         var p = new List<Color> { Paper, Light, Mid, Ink, Red, RedLight };
         foreach (float t in new[] { 0.25f, 0.5f, 0.75f }) p.Add(Paper.Lerp(Ink, t));
-        p.Add(Mid.Lerp(Ink, 0.5f));
+        p.Add(Soot);
         p.Add(Light.Lerp(Ink, 0.5f));
         p.Add(Paper.Lerp(Red, 0.5f));
         p.Add(Red.Lerp(Ink, 0.5f));
@@ -86,6 +89,7 @@ public static class InkStyle
     /// <summary>세 단계 명암. 아주 어두운 재질(베이클라이트, 검은 칠, 고무)은 한 단계 짙게, 밝은 재질(자기, 눈금판)은 한 단계 옅게.</summary>
     static Color Tone(float albedo, Vector3 n, bool accent)
     {
+        if (albedo < 0.05f && !accent) return Soot;
         float lit = Math.Clamp(n.Dot(LightDir), 0, 1);
         int level = lit > 0.62f ? 0 : lit > 0.25f ? 1 : 2;
         if (albedo < 0.09f) level = Math.Min(2, level + 1);

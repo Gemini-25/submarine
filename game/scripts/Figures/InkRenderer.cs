@@ -55,8 +55,7 @@ public partial class InkRenderer : Node
                 shader_type spatial;
                 render_mode unshaded, cull_disabled, depth_draw_opaque, shadows_disabled, fog_disabled;
                 uniform vec3 id_color;
-                vec3 to_linear(vec3 c) { return mix(c / 12.92, pow((c + 0.055) / 1.055, vec3(2.4)), step(vec3(0.04045), c)); }
-                void fragment() { ALBEDO = to_linear(id_color); }
+                void fragment() { ALBEDO = id_color; }
                 """,
         };
         _normalMat = new ShaderMaterial
@@ -66,11 +65,10 @@ public partial class InkRenderer : Node
                 Code = """
                     shader_type spatial;
                     render_mode unshaded, cull_disabled, depth_draw_opaque, shadows_disabled, fog_disabled;
-                    vec3 to_linear(vec3 c) { return mix(c / 12.92, pow((c + 0.055) / 1.055, vec3(2.4)), step(vec3(0.04045), c)); }
-                    void fragment() {
+                        void fragment() {
                         vec3 n = normalize(NORMAL);
                         if (!FRONT_FACING) n = -n;
-                        ALBEDO = to_linear(n * 0.5 + 0.5);
+                        ALBEDO = n * 0.5 + 0.5;
                     }
                     """,
             },
@@ -149,8 +147,11 @@ public partial class InkRenderer : Node
                 continue;
             }
             int id = next++;
-            // 번호를 색으로: 채널마다 32단계 (sRGB 왕복의 반올림 오차를 견딘다).
-            var c = new Color(((id >> 10) & 31) * 8 / 255f + 4 / 255f, ((id >> 5) & 31) * 8 / 255f + 4 / 255f, (id & 31) * 8 / 255f + 4 / 255f);
+            if (id >= 4096) throw new InvalidOperationException("그릴 물체가 4,096개를 넘는다");
+            // 번호를 색으로: 채널마다 16단계, 밝은 쪽 절반(128~255)에만 담는다. 이 렌더러(opengl3)의 화면 밖 버퍼는 셰이더가 낸 값을
+            // 그대로 8비트로 담으므로 색 공간 변환은 하지 않는다. 배경(검정)과 헷갈리지 않게 밝은 쪽만 쓴다.
+            static float Ch(int k) => (128 + k * 8 + 4) / 255f;
+            var c = new Color(Ch((id >> 8) & 15), Ch((id >> 4) & 15), Ch(id & 15));
             var m = new ShaderMaterial { Shader = _idShader };
             m.SetShaderParameter("id_color", new Vector3(c.R, c.G, c.B));
             swapped.Add((g, g.MaterialOverride));
@@ -195,8 +196,8 @@ public partial class InkRenderer : Node
         cap.Normals = new Vector3[n];
         for (int i = 0; i < n; i++)
         {
-            int r = id[i * 3] >> 3, g = id[i * 3 + 1] >> 3, b = id[i * 3 + 2] >> 3;
-            int v = (r << 10) | (g << 5) | b;
+            int r = id[i * 3], g = id[i * 3 + 1], b = id[i * 3 + 2];
+            int v = r < 128 || g < 128 || b < 128 ? 0 : (((r - 128) >> 3) << 8) | (((g - 128) >> 3) << 4) | ((b - 128) >> 3);
             cap.Ids[i] = cap.Albedo.ContainsKey(v) ? v : 0;
             cap.Normals[i] = new Vector3(nb[i * 3] / 127.5f - 1, nb[i * 3 + 1] / 127.5f - 1, nb[i * 3 + 2] / 127.5f - 1);
         }
