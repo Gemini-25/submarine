@@ -5,61 +5,44 @@ namespace DeepLine.Game.Art;
 /// <summary>
 /// 모형 하나를 짓는 자리 (WP25). 도구와 물건 모형이 함께 쓴다.
 /// 이름 붙은 부분(바늘, 뱃밥 다발, 거름망 찌꺼기)은 따로 노드로 두고, 그 밖의 모든 것은 "Body" 하나로 합친다.
-/// root가 null이면 메시를 만들지 않고 삼각형만 모은다(공구판 윤곽, 크기 재기).
+/// capture면 메시를 만들지 않고 삼각형만 모은다(공구판 윤곽, 크기 재기). 아니면 Template()으로 한 번 지어 두고 되풀이해 쓴다.
 /// </summary>
 public sealed class ModelCtx
 {
-    readonly Node3D? _root;
-    readonly List<(string Name, Transform3D At, MeshBuilder Mb)> _parts = new();
+    readonly bool _capture;
+    readonly List<(string Name, Transform3D At, MeshBuilder Mb, bool Hidden)> _parts = new();
+    readonly List<(string Text, Vector3 Pos, float Size, Color Color)> _texts = new();
 
-    public ModelCtx(Node3D? root)
+    public ModelCtx(bool capture)
     {
-        _root = root;
+        _capture = capture;
         Mb = Part("Body", Transform3D.Identity);
     }
 
     /// <summary>몸통 메시.</summary>
     public MeshBuilder Mb { get; }
 
-    /// <summary>메시를 만드는가(아니면 삼각형만 모은다).</summary>
-    public bool Building => _root != null;
-
-    /// <summary>이름 붙은 부분. at은 그 노드의 자리이고, 메시는 그 노드 기준으로 짓는다.</summary>
-    public MeshBuilder Part(string name, Transform3D at)
+    /// <summary>이름 붙은 부분. at은 그 노드의 자리이고, 메시는 그 노드 기준으로 짓는다. hidden이면 처음에 감춘다(상태에 따라 보이는 것).</summary>
+    public MeshBuilder Part(string name, Transform3D at, bool hidden = false)
     {
-        var mb = new MeshBuilder { Capture = _root == null ? new List<Vector3>() : null };
-        _parts.Add((name, at, mb));
+        var mb = new MeshBuilder { Capture = _capture ? new List<Vector3>() : null };
+        _parts.Add((name, at, mb, hidden));
         return mb;
     }
 
-    /// <summary>글씨(눈금 숫자). 삼각형만 모을 때는 그리지 않는다.</summary>
-    public void Text(string text, Vector3 pos, float size, Color color)
-    {
-        if (_root != null) Kit.Text(_root, text, pos, size, color);
-    }
+    /// <summary>글씨(눈금 숫자). 삼각형만 모을 때는 쓰이지 않는다.</summary>
+    public void Text(string text, Vector3 pos, float size, Color color) => _texts.Add((text, pos, size, color));
 
-    /// <summary>메시를 노드로 붙인다. 이름 붙은 부분은 그 이름의 Node3D 아래 "Mesh"로.</summary>
-    public void Finish()
-    {
-        if (_root == null) return;
-        foreach (var (name, at, mb) in _parts)
-        {
-            if (mb.IsEmpty) continue;
-            if (name == "Body") mb.Instance(_root, "Body");
-            else
-            {
-                var n = new Node3D { Name = name, Transform = at };
-                _root.AddChild(n);
-                mb.Instance(n, "Mesh");
-            }
-        }
-    }
+    /// <summary>지은 메시를 틀로 굳힌다. 같은 모형은 이 틀 하나의 메시를 함께 쓴다.</summary>
+    public ModelTemplate Template() => new(
+        _parts.Where(p => !p.Mb.IsEmpty).Select(p => (p.Name, p.At, p.Mb.Commit(), p.Hidden)).ToArray(),
+        _texts.ToArray());
 
     /// <summary>모은 삼각형의 꼭짓점(모형 원점 기준, 셋씩).</summary>
     public List<Vector3> Triangles()
     {
         var all = new List<Vector3>();
-        foreach (var (_, at, mb) in _parts)
+        foreach (var (_, at, mb, _) in _parts)
             if (mb.Capture != null)
                 foreach (var p in mb.Capture) all.Add(at * p);
         return all;
@@ -177,14 +160,53 @@ public sealed class ModelCtx
     }
 }
 
+/// <summary>한 번 지은 모형의 틀. Instantiate는 같은 메시를 쓰는 노드만 새로 만든다.</summary>
+public sealed class ModelTemplate
+{
+    readonly (string Name, Transform3D At, ArrayMesh Mesh, bool Hidden)[] _parts;
+    readonly (string Text, Vector3 Pos, float Size, Color Color)[] _texts;
+
+    public ModelTemplate((string, Transform3D, ArrayMesh, bool)[] parts, (string, Vector3, float, Color)[] texts)
+    {
+        _parts = parts;
+        _texts = texts;
+    }
+
+    /// <summary>
+    /// 노드로 붙인다. 작은 모형이라 그림자를 던지지 않는다(아트 키트 성능 메모: 작은 조각은 그림자를 던지지 않는다).
+    /// 이름 붙은 부분은 그 이름의 Node3D 아래 "Mesh"로 둔다.
+    /// </summary>
+    public Node3D Instantiate(Node3D? parent, string name)
+    {
+        var root = new Node3D { Name = name };
+        parent?.AddChild(root);
+        foreach (var (part, at, mesh, hidden) in _parts)
+        {
+            var mi = new MeshInstance3D { Mesh = mesh, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off };
+            if (part == "Body")
+            {
+                mi.Name = "Body";
+                root.AddChild(mi);
+                continue;
+            }
+            var n = new Node3D { Name = part, Transform = at, Visible = !hidden };
+            root.AddChild(n);
+            mi.Name = "Mesh";
+            n.AddChild(mi);
+        }
+        foreach (var (text, pos, size, color) in _texts) Kit.Text(root, text, pos, size, color);
+        return root;
+    }
+}
+
 /// <summary>모형의 바닥 투영(XY 평면, Z 방향으로 내려다본 모습). 공구판 윤곽과 크기 재기에 쓴다.</summary>
 public sealed class Silhouette
 {
     /// <summary>모형 원점 기준 윤곽의 범위(여유 포함, m).</summary>
     public Rect2 Bounds;
-    /// <summary>칸 하나의 크기(m).</summary>
+    /// <summary>격자 눈 하나의 크기(m).</summary>
     public float Pixel;
-    /// <summary>칠한 칸(윗줄이 Y가 큰 쪽). true면 칠한다.</summary>
+    /// <summary>칠한 눈(가로 x, 세로 y; y가 클수록 위). true면 칠한다.</summary>
     public bool[,] Mask = new bool[0, 0];
     /// <summary>모형이 Z로 차지하는 범위.</summary>
     public float MinZ, MaxZ;
@@ -204,16 +226,21 @@ public sealed class Silhouette
     /// <summary>흰 칠 질감(칠한 곳은 불투명 흰색, 나머지는 투명).</summary>
     public Image ToImage()
     {
-        var img = Image.CreateEmpty(Width, Height, false, Image.Format.La8);
-        for (int x = 0; x < Width; x++)
-            for (int y = 0; y < Height; y++)
-                img.SetPixel(x, Height - 1 - y, Mask[x, y] ? new Color(1, 1, 1, 1) : new Color(1, 1, 1, 0));
-        return img;
+        // La8: 눈마다 밝기와 불투명도 두 바이트. 이미지의 첫 줄이 윤곽의 맨 위다.
+        var bytes = new byte[Width * Height * 2];
+        for (int y = 0; y < Height; y++)
+            for (int x = 0; x < Width; x++)
+            {
+                int i = ((Height - 1 - y) * Width + x) * 2;
+                bytes[i] = 255;
+                bytes[i + 1] = Mask[x, y] ? (byte)255 : (byte)0;
+            }
+        return Image.CreateFromData(Width, Height, false, Image.Format.La8, bytes);
     }
 
     /// <summary>
-    /// 삼각형들을 XY 평면에 투영해 칸으로 칠한다. pad만큼 둘레를 넓힌다(옛 공구판의 칠이 도구보다 조금 크다).
-    /// 칸보다 가는 바늘 같은 것도 빠지지 않게 모서리를 따라 점을 찍는다.
+    /// 삼각형들을 XY 평면에 투영해 격자 눈(pixel 크기)으로 칠한다. pad만큼 둘레를 넓힌다(옛 공구판의 칠이 도구보다 조금 크다).
+    /// 눈보다 가는 바늘 같은 것도 빠지지 않게 모서리를 따라 점을 찍는다.
     /// </summary>
     public static Silhouette From(List<Vector3> tris, float pixel = 0.001f, float pad = 0.003f)
     {
@@ -272,7 +299,7 @@ public sealed class Silhouette
                         if (u >= 0 && v >= 0 && u < w && v < h) mask[u, v] = true;
                     }
             }
-        // 칠한 칸만 감싸는 범위로 줄인다.
+        // 칠한 눈만 감싸는 범위로 줄인다.
         int bx0 = w, by0 = h, bx1 = -1, by1 = -1;
         for (int x = 0; x < w; x++)
             for (int y = 0; y < h; y++)
@@ -332,7 +359,7 @@ public static class ToolModels
         ["packing_hook"] = (new Vector3(-0.02f, 0, 0), new Vector3(-70, 0, 0)),
         ["pricker"] = (new Vector3(-0.02f, 0, 0), new Vector3(-70, 0, 10)),
         ["stethoscope"] = (new Vector3(-0.03f, 0.02f, 0), new Vector3(-70, 0, 12)),
-        ["hydrometer"] = (new Vector3(-0.03f, 0, 0), new Vector3(-15, 0, 10)),
+        ["hydrometer"] = (new Vector3(-0.04f, 0.05f, -0.02f), new Vector3(-55, 0, 18)),
         ["soldering_iron"] = (new Vector3(-0.02f, 0, 0), new Vector3(-68, 0, 14)),
     };
 
@@ -361,27 +388,29 @@ public static class ToolModels
 
     public static bool Has(string id) => Makers.ContainsKey(id);
 
+    static readonly Dictionary<string, ModelTemplate> Templates = new(StringComparer.Ordinal);
+
     /// <summary>도구 모형을 parent 아래에 짓는다. 이름은 Tool_&lt;도구&gt;. 모르는 도구면 예외(대충 그린 모양으로 넘어가지 않는다).</summary>
     public static Node3D Build(Node3D? parent, string toolId)
     {
-        if (!Makers.TryGetValue(toolId, out var make))
-            throw new ArgumentException($"도구 모형이 없다: '{toolId}' (game/scripts/Art/Kit.Tools.cs의 ToolModels)");
-        var root = new Node3D { Name = $"Tool_{toolId}" };
-        parent?.AddChild(root);
-        var c = new ModelCtx(root);
-        make(c);
-        c.Finish();
-        return root;
+        if (!Templates.TryGetValue(toolId, out var t))
+        {
+            var c = new ModelCtx(false);
+            Maker(toolId)(c);
+            Templates[toolId] = t = c.Template();
+        }
+        return t.Instantiate(parent, $"Tool_{toolId}");
     }
+
+    static Action<ModelCtx> Maker(string toolId) => Makers.TryGetValue(toolId, out var make) ? make
+        : throw new ArgumentException($"도구 모형이 없다: '{toolId}' (game/scripts/Art/Kit.Tools.cs의 ToolModels)");
 
     /// <summary>모형의 바닥 투영. 같은 짓기 함수로 삼각형만 모아 칠한다.</summary>
     public static Silhouette Outline(string toolId)
     {
         if (Outlines.TryGetValue(toolId, out var s)) return s;
-        if (!Makers.TryGetValue(toolId, out var make))
-            throw new ArgumentException($"도구 모형이 없다: '{toolId}'");
-        var c = new ModelCtx(null);
-        make(c);
+        var c = new ModelCtx(true);
+        Maker(toolId)(c);
         return Outlines[toolId] = Silhouette.From(c.Triangles());
     }
 
@@ -397,13 +426,22 @@ public static class ToolModels
     static Material RedLead => ArtMat.ClothWire(new Color(0.55f, 0.1f, 0.07f));
     static Material Bone => ArtMat.Porcelain;
 
+    // 나무 자루: 결은 Y(자루 방향)를 따르고, 도구마다 나무와 칠이 다르다. 공구판 윗줄에 나란히 걸린 줄, 드라이버, 인두는 특히 색이 갈린다.
+    static Material Walnut => ArtMat.WoodGrain("walnut", Vector3.Up, new Color(0.36f, 0.22f, 0.12f), new Color(0.2f, 0.12f, 0.06f), 0.45f);
+    static Material Hickory => ArtMat.WoodGrain("hickory", Vector3.Up, new Color(0.62f, 0.46f, 0.28f), new Color(0.42f, 0.29f, 0.16f), 0.3f);
+    static Material Ash => ArtMat.WoodGrain("ash", Vector3.Up, new Color(0.7f, 0.58f, 0.4f), new Color(0.52f, 0.41f, 0.26f), 0.2f);
+    static Material RedStain => ArtMat.WoodGrain("redstain", Vector3.Up, new Color(0.55f, 0.14f, 0.08f), new Color(0.33f, 0.07f, 0.04f), 0.65f);
+    static Material PaleDeal => ArtMat.WoodGrain("pale", Vector3.Up, new Color(0.8f, 0.68f, 0.48f), new Color(0.64f, 0.52f, 0.34f), 0f);
+    static Material Beech => ArtMat.WoodGrain("beech", Vector3.Up, new Color(0.6f, 0.42f, 0.26f), new Color(0.45f, 0.3f, 0.18f), 0.35f);
+    static Material Oak => ArtMat.WoodGrain("oak", Vector3.Up, new Color(0.52f, 0.38f, 0.22f), new Color(0.34f, 0.24f, 0.13f), 0.25f);
+
     // ── 도구 ─────────────────────────────────────────────
 
     /// <summary>멍키 렌치: 나무 손잡이, 곧은 자루, 놋쇠 조절 고리, 미닫이 턱과 고정 턱(한쪽으로 벌어진 'F' 꼴).</summary>
     static void Wrench(ModelCtx c)
     {
         var mb = c.Mb;
-        ModelCtx.Block(mb, ArtMat.Wood, new Vector3(0, 0, 0), new Vector3(0.032f, 0.11f, 0.024f), 0.009f);
+        ModelCtx.Block(mb, Walnut, new Vector3(0, 0, 0), new Vector3(0.032f, 0.11f, 0.024f), 0.009f);
         ModelCtx.Turn(mb, ArtMat.BareSteel, Vector3.Up, new Vector3(0, -0.06f, 0), new[] { new Vector2(0, -0.006f), new Vector2(0.012f, -0.006f), new Vector2(0.012f, 0.006f), new Vector2(0, 0.006f) }, 6);
         ModelCtx.Block(mb, ArtMat.BareSteel, new Vector3(0, 0.06f, 0), new Vector3(0.034f, 0.012f, 0.026f), 0.002f);
         ModelCtx.Block(mb, ArtMat.BareSteel, new Vector3(0, 0.145f, 0), new Vector3(0.016f, 0.17f, 0.012f), 0.002f);
@@ -427,7 +465,7 @@ public static class ToolModels
     static void Mallet(ModelCtx c)
     {
         var mb = c.Mb;
-        mb.Tube(ArtMat.Wood, Transform3D.Identity, new[] { new Vector3(0, -0.06f, 0), new Vector3(0, 0.1f, 0), new Vector3(0, 0.215f, 0) }, 0.013f, 10, true, true, radii: new[] { 0.014f, 0.0125f, 0.012f });
+        mb.Tube(Ash, Transform3D.Identity, new[] { new Vector3(0, -0.06f, 0), new Vector3(0, 0.1f, 0), new Vector3(0, 0.215f, 0) }, 0.013f, 10, true, true, radii: new[] { 0.014f, 0.0125f, 0.012f });
         var head = new Vector3(0, 0.25f, 0);
         ModelCtx.Turn(mb, ArtMat.RawWood, Vector3.Right, head, new[]
         {
@@ -483,7 +521,7 @@ public static class ToolModels
             c.Text($"{k * 10}", new Vector3(-Mathf.Sin(a) * 0.035f, -0.025f + Mathf.Cos(a) * 0.035f, 0.027f), 0.008f, new Color(0.55f, 0.08f, 0.05f));
         }
         c.Text("V", new Vector3(0, -0.012f, 0.027f), 0.012f, new Color(0.13f, 0.075f, 0.045f));
-        var nb = c.Part("Needle", new Transform3D(Basis.Identity, new Vector3(0, -0.025f, 0.028f)));
+        var nb = c.Part("Needle", new Transform3D(Basis.FromEuler(new Vector3(0, 0, Mathf.DegToRad(50))), new Vector3(0, -0.025f, 0.028f))); // 0V(왼쪽 멈춤)
         nb.Box(ArtMat.Ink, new Vector3(0, 0.029f, 0), new Vector3(0.0015f, 0.058f, 0.001f), 0);
         nb.Cylinder(ArtMat.Brass, Kit.AlongAxis(Vector3.Back, Vector3.Zero), 0.004f, 0.002f, 8);
         // 가죽 손잡이(위)와 단자 둘(아래)
@@ -509,7 +547,7 @@ public static class ToolModels
         }
     }
 
-    /// <summary>갑판 솔: 양 끝이 둥근 나무 등판, 짧고 빽빽한 솔(가장자리가 삐죽하다), 위의 손잡이 고리. 솔은 -Z(아래)를 본다.</summary>
+    /// <summary>갑판 솔: 양 끝이 둥근 참나무 등판, 등판 밖으로 삐죽 나온 솔 다발(윤곽 둘레가 톱니), 위의 손잡이 띠와 끝의 거는 가죽 고리. 솔은 -Z(아래)를 본다.</summary>
     static void ScrubBrush(ModelCtx c)
     {
         var mb = c.Mb;
@@ -519,38 +557,45 @@ public static class ToolModels
             float a = Mathf.Tau * i / 28;
             float cs = Mathf.Cos(a), sn = Mathf.Sin(a);
             // 끝이 둥글고 옆이 곧은 배 모양
-            back.Add(new Vector2(Mathf.Sign(cs) * Mathf.Pow(Mathf.Abs(cs), 0.45f) * 0.032f, Mathf.Sign(sn) * Mathf.Pow(Mathf.Abs(sn), 0.8f) * 0.1f));
+            back.Add(new Vector2(Mathf.Sign(cs) * Mathf.Pow(Mathf.Abs(cs), 0.45f) * 0.032f, Mathf.Sign(sn) * Mathf.Pow(Mathf.Abs(sn), 0.8f) * 0.09f));
         }
-        ModelCtx.Plate(mb, ArtMat.Wood, new Vector3(0, 0, 0.011f), back.ToArray(), 0.02f);
-        // 솔 다발: 줄마다 셋, 바깥 줄은 등판보다 조금 삐져나온다.
+        ModelCtx.Plate(mb, Oak, new Vector3(0, 0, 0.011f), back.ToArray(), 0.02f);
+        // 솔 다발: 줄마다 셋. 바깥 줄은 등판보다 1cm쯤 삐져나오고 다발 사이가 1.2cm 떠서, 3mm 넓힌 빈 윤곽 둘레에도 톱니가 남는다.
         var bristle = ArtMat.ClothWire(new Color(0.72f, 0.6f, 0.36f));
-        for (int r = 0; r < 11; r++)
+        for (int r = 0; r < 7; r++)
         {
-            float y = -0.085f + r * 0.017f;
-            float half = 0.034f * Mathf.Sqrt(Mathf.Max(0, 1 - Mathf.Pow(Mathf.Abs(y) / 0.103f, 4)));
+            float y = -0.075f + r * 0.025f;
+            float half = 0.032f * Mathf.Pow(Mathf.Max(0, 1 - Mathf.Pow(Mathf.Abs(y) / 0.09f, 2.2f)), 0.5f);
             foreach (float f in new[] { -1f, 0f, 1f })
             {
-                float x = f * (half - 0.004f) * (r % 2 == 0 ? 1.05f : 0.95f);
+                float x = f * (half + 0.009f);
                 ModelCtx.Turn(mb, bristle, Vector3.Down, new Vector3(x, y, 0.001f), new[] { new Vector2(0, 0), new Vector2(0.0055f, 0), new Vector2(0.0065f, 0.016f), new Vector2(0, 0.016f) }, 6);
             }
         }
-        // 손잡이 고리(가죽 띠)와 고정 못
+        // 손잡이 고리(가죽 띠): 등판 위에 박고, 한쪽 끝은 등판 끝(-Y) 밖으로 나와 거는 고리가 된다.
         var loop = new List<Vector3>();
         for (int i = 0; i <= 12; i++)
         {
             float a = Mathf.Pi * i / 12;
-            loop.Add(new Vector3(0, -Mathf.Cos(a) * 0.055f, 0.021f + Mathf.Sin(a) * 0.03f));
+            loop.Add(new Vector3(0, 0.05f - a / Mathf.Pi * 0.1f, 0.021f + Mathf.Sin(a) * 0.03f));
         }
         mb.Tube(Leather, Transform3D.Identity, loop, 0.006f, 6, true, true);
-        foreach (float y in new[] { -0.055f, 0.055f })
+        var hang = new List<Vector3>();
+        for (int i = 0; i <= 16; i++)
+        {
+            float a = Mathf.Tau * i / 16;
+            hang.Add(new Vector3(Mathf.Sin(a) * 0.012f, -0.086f - (1 - Mathf.Cos(a)) * 0.016f, 0.012f));
+        }
+        mb.Tube(Leather, Transform3D.Identity, hang, 0.004f, 6, closedLoop: false);
+        foreach (float y in new[] { -0.05f, 0.05f })
             Kit.AddBolt(mb, ArtMat.Brass, Kit.AlongAxis(Vector3.Back, new Vector3(0, y, 0.022f)), 0.009f);
     }
 
-    /// <summary>드라이버: 골 파인 나무 자루, 놋쇠 고리, 둥근 자루쇠와 납작한 긴 날.</summary>
+    /// <summary>드라이버: 붉게 칠한 골 파인 나무 자루, 놋쇠 고리, 둥근 자루쇠와 납작한 긴 날.</summary>
     static void Screwdriver(ModelCtx c)
     {
         var mb = c.Mb;
-        ModelCtx.Turn(mb, ArtMat.Wood, Vector3.Up, Vector3.Zero, new[]
+        ModelCtx.Turn(mb, RedStain, Vector3.Up, Vector3.Zero, new[]
         {
             new Vector2(0, -0.062f), new Vector2(0.009f, -0.061f), new Vector2(0.013f, -0.055f), new Vector2(0.015f, -0.03f), new Vector2(0.015f, 0.02f), new Vector2(0.012f, 0.045f), new Vector2(0.01f, 0.05f), new Vector2(0, 0.05f),
         }, 8, 50);
@@ -566,7 +611,7 @@ public static class ToolModels
     static void EngineerHammer(ModelCtx c)
     {
         var mb = c.Mb;
-        mb.Tube(ArtMat.Wood, Transform3D.Identity, new[] { new Vector3(0, -0.075f, 0), new Vector3(0, -0.05f, 0), new Vector3(0, 0.1f, 0), new Vector3(0, 0.235f, 0) }, 0.012f, 10, true, true,
+        mb.Tube(Hickory, Transform3D.Identity, new[] { new Vector3(0, -0.075f, 0), new Vector3(0, -0.05f, 0), new Vector3(0, 0.1f, 0), new Vector3(0, 0.235f, 0) }, 0.012f, 10, true, true,
             radii: new[] { 0.0165f, 0.014f, 0.0115f, 0.0125f });
         var head = new Vector3(0, 0.24f, 0);
         ModelCtx.Block(mb, Forged, head, new Vector3(0.03f, 0.034f, 0.026f), 0.004f);
@@ -588,11 +633,11 @@ public static class ToolModels
         ModelCtx.Block(mb, ArtMat.BareSteel, head + new Vector3(0, 0.017f, 0), new Vector3(0.022f, 0.002f, 0.004f), 0.0005f);
     }
 
-    /// <summary>줄: 배 모양 나무 자루, 놋쇠 고리, 자루보다 넓게 시작해 끝으로 가늘어지는 거무스름한 줄판(엇갈린 빗금).</summary>
+    /// <summary>줄: 짙은 호두나무 배 모양 자루, 놋쇠 고리, 자루보다 넓게 시작해 끝으로 가늘어지는 거무스름한 줄판(엇갈린 빗금).</summary>
     static void FileTool(ModelCtx c)
     {
         var mb = c.Mb;
-        ModelCtx.Turn(mb, ArtMat.Wood, Vector3.Up, Vector3.Zero, new[]
+        ModelCtx.Turn(mb, Walnut, Vector3.Up, Vector3.Zero, new[]
         {
             new Vector2(0, -0.07f), new Vector2(0.008f, -0.069f), new Vector2(0.013f, -0.06f), new Vector2(0.016f, -0.025f), new Vector2(0.013f, 0.02f), new Vector2(0.011f, 0.03f), new Vector2(0, 0.03f),
         }, 12, 40);
@@ -613,21 +658,29 @@ public static class ToolModels
         }
     }
 
-    /// <summary>긁개: 나무 자루와 놋쇠 고리, 끝이 넓게 퍼진 납작한 날(곧은 날끝).</summary>
+    /// <summary>
+    /// 갈고리 긁개(당겨 긁는 긁개): 너도밤나무 버섯꼴 자루와 놋쇠 고리, 곧은 쇠 자루, 끝에서 직각으로 꺾여 옆으로 7cm 뻗은 날(T자 머리).
+    /// 날은 아래(-Z)로 휘어 당길 때 긁는다. 부채꼴 날의 코킹 정과 윤곽이 갈린다.
+    /// </summary>
     static void Scraper(ModelCtx c)
     {
         var mb = c.Mb;
-        ModelCtx.Turn(mb, ArtMat.RawWood, Vector3.Up, Vector3.Zero, new[]
+        // 굵은 버섯꼴 자루: 손바닥으로 밀고 당긴다.
+        ModelCtx.Turn(mb, Beech, Vector3.Up, Vector3.Zero, new[]
         {
-            new Vector2(0, -0.065f), new Vector2(0.011f, -0.065f), new Vector2(0.014f, -0.058f), new Vector2(0.014f, 0.035f), new Vector2(0.011f, 0.045f), new Vector2(0, 0.045f),
-        }, 10, 40);
-        ModelCtx.Turn(mb, ArtMat.Brass, Vector3.Up, new Vector3(0, 0.043f, 0), new[] { new Vector2(0, 0), new Vector2(0.012f, 0), new Vector2(0.012f, 0.011f), new Vector2(0, 0.011f) }, 14);
-        ModelCtx.Plate(mb, ArtMat.BareSteel, new Vector3(0, 0.054f, 0), new[]
+            new Vector2(0, -0.05f), new Vector2(0.012f, -0.05f), new Vector2(0.019f, -0.043f), new Vector2(0.019f, -0.033f), new Vector2(0.014f, -0.025f),
+            new Vector2(0.014f, 0.03f), new Vector2(0.011f, 0.04f), new Vector2(0, 0.04f),
+        }, 12, 40);
+        ModelCtx.Turn(mb, ArtMat.Brass, Vector3.Up, new Vector3(0, 0.038f, 0), new[] { new Vector2(0, 0), new Vector2(0.012f, 0), new Vector2(0.012f, 0.011f), new Vector2(0, 0.011f) }, 14);
+        ModelCtx.Block(mb, ArtMat.BareSteel, new Vector3(0, 0.094f, 0), new Vector3(0.009f, 0.11f, 0.006f), 0.0015f);
+        // 꺾인 머리: 자루 끝의 짧은 목과 옆으로 넓게 뻗은 날
+        ModelCtx.Plate(mb, ArtMat.BareSteel, new Vector3(0, 0.148f, -0.002f), new[]
         {
-            new Vector2(-0.006f, 0), new Vector2(0.006f, 0), new Vector2(0.008f, 0.045f), new Vector2(0.033f, 0.085f), new Vector2(0.033f, 0.1f),
-            new Vector2(-0.033f, 0.1f), new Vector2(-0.033f, 0.085f), new Vector2(-0.008f, 0.045f),
-        }, 0.0022f);
-        ModelCtx.Block(mb, ArtMat.PolishedBrass, new Vector3(0, 0.152f, 0.0005f), new Vector3(0.064f, 0.004f, 0.0024f), 0.0003f); // 갈아 놓은 날끝
+            new Vector2(-0.005f, 0), new Vector2(0.005f, 0), new Vector2(0.008f, 0.005f), new Vector2(0.036f, 0.007f), new Vector2(0.036f, 0.02f),
+            new Vector2(-0.036f, 0.02f), new Vector2(-0.036f, 0.007f), new Vector2(-0.008f, 0.005f),
+        }, 0.006f);
+        ModelCtx.Block(mb, ArtMat.BareSteel, new Vector3(0, 0.166f, -0.012f), new Vector3(0.072f, 0.004f, 0.02f), 0.001f, new Vector3(-20, 0, 0));
+        ModelCtx.Block(mb, ArtMat.PolishedBrass, new Vector3(0, 0.1625f, -0.0215f), new Vector3(0.072f, 0.0015f, 0.003f), 0.0003f); // 갈아 놓은 날끝
     }
 
     /// <summary>접이식 전기공 칼: 뼈 손잡이와 놋쇠 볼스터, 매는 고리, 펼친 날(등이 곧고 끝이 뾰족하다).</summary>
@@ -650,7 +703,7 @@ public static class ToolModels
         }, 0.0022f);
     }
 
-    /// <summary>걸레: 기름 먹은 무명 천을 구겨 뭉친 덩어리와 늘어진 귀퉁이.</summary>
+    /// <summary>걸레: 기름 먹은 무명 천을 구겨 뭉친 덩어리와 납작하게 처진 귀퉁이(모두 울퉁불퉁한 덩어리라 딱딱한 판이 없다).</summary>
     static void Rag(ModelCtx c)
     {
         var mb = c.Mb;
@@ -659,12 +712,9 @@ public static class ToolModels
         ModelCtx.Lump(mb, cloth, new Vector3(0, 0.02f, 0.02f), new Vector3(0.05f, 0.045f, 0.022f), 3, 0.32f);
         ModelCtx.Lump(mb, dirty, new Vector3(-0.03f, 0.045f, 0.018f), new Vector3(0.032f, 0.026f, 0.018f), 7, 0.35f);
         ModelCtx.Lump(mb, cloth, new Vector3(0.032f, 0.05f, 0.016f), new Vector3(0.026f, 0.03f, 0.016f), 11, 0.35f);
-        // 늘어진 귀퉁이: 물결진 얇은 천
-        ModelCtx.Plate(mb, dirty, new Vector3(0.0f, -0.03f, 0.01f), new[]
-        {
-            new Vector2(-0.03f, 0.02f), new Vector2(0.025f, 0.02f), new Vector2(0.03f, -0.01f), new Vector2(0.018f, -0.04f), new Vector2(0.022f, -0.06f),
-            new Vector2(0.004f, -0.075f), new Vector2(-0.008f, -0.06f), new Vector2(-0.016f, -0.042f), new Vector2(-0.026f, -0.03f), new Vector2(-0.024f, -0.005f),
-        }, 0.004f, 8);
+        // 늘어진 귀퉁이: 납작하게 처진 천 끝 두 덩이
+        ModelCtx.Lump(mb, dirty, new Vector3(0.004f, -0.035f, 0.012f), new Vector3(0.024f, 0.035f, 0.007f), 13, 0.4f);
+        ModelCtx.Lump(mb, cloth, new Vector3(0.012f, -0.068f, 0.009f), new Vector3(0.016f, 0.022f, 0.005f), 17, 0.4f);
     }
 
     /// <summary>기름통: 납작한 놋쇠 몸통, 바닥의 엄지 누름판, 길고 가는 주둥이.</summary>
@@ -694,9 +744,9 @@ public static class ToolModels
         mb.Tube(ArtMat.Wood, Transform3D.Identity, new[] { new Vector3(-0.05f, 0, 0), new Vector3(0, 0, 0), new Vector3(0.05f, 0, 0) }, 0.012f, 10, true, true, radii: new[] { 0.01f, 0.013f, 0.01f });
         ModelCtx.Turn(mb, ArtMat.Brass, Vector3.Up, new Vector3(0, 0.008f, 0), new[] { new Vector2(0, 0), new Vector2(0.008f, 0), new Vector2(0.006f, 0.016f), new Vector2(0, 0.016f) }, 10);
         c.Rod(mb, ArtMat.BareSteel, new Vector3(0, 0.02f, 0), new Vector3(0, 0.16f, 0), 0.0042f, 8);
-        var helix = ModelCtx.Helix(new Vector3(0, 0.16f, 0), 0.07f, 0.008f, 3.5f, 56);
-        helix[^1] = helix[^1] + new Vector3(0, 0.004f, 0);
-        mb.Tube(ArtMat.BareSteel, Transform3D.Identity, helix, 0.0024f, 6, false, true);
+        var helix = ModelCtx.Helix(new Vector3(0, 0.16f, 0), 0.07f, 0.011f, 3, 56);
+        helix[^1] = helix[^1] + new Vector3(0, 0.005f, 0);
+        mb.Tube(ArtMat.BareSteel, Transform3D.Identity, helix, 0.0034f, 6, false, true);
     }
 
     /// <summary>쑤시개 바늘: 고리 손잡이와 길고 가는 바늘.</summary>
@@ -721,11 +771,11 @@ public static class ToolModels
         ModelCtx.Turn(mb, ArtMat.BareSteel, Vector3.Up, new Vector3(0, 0.2f, 0), new[] { new Vector2(0, 0), new Vector2(0.003f, 0), new Vector2(0, 0.015f) }, 8);
         mb.Tube(ArtMat.Rubber, Transform3D.Identity, new[]
         {
-            new Vector3(0, -0.012f, 0), new Vector3(0.004f, -0.03f, 0.002f), new Vector3(0.002f, -0.05f, 0.004f), new Vector3(-0.004f, -0.07f, 0.002f), new Vector3(-0.004f, -0.085f, 0),
+            new Vector3(0, -0.012f, 0), new Vector3(0.004f, -0.026f, 0.002f), new Vector3(0.002f, -0.04f, 0.003f), new Vector3(-0.003f, -0.052f, 0.001f), new Vector3(-0.004f, -0.06f, 0),
         }, 0.0055f, 8, false, false);
-        ModelCtx.Turn(mb, ArtMat.Bakelite, Vector3.Down, new Vector3(-0.004f, -0.083f, 0), new[]
+        ModelCtx.Turn(mb, ArtMat.Bakelite, Vector3.Down, new Vector3(-0.004f, -0.058f, 0), new[]
         {
-            new Vector2(0, 0), new Vector2(0.0065f, 0), new Vector2(0.008f, 0.02f), new Vector2(0.014f, 0.034f), new Vector2(0.027f, 0.044f), new Vector2(0.029f, 0.047f), new Vector2(0.022f, 0.047f), new Vector2(0, 0.04f),
+            new Vector2(0, 0), new Vector2(0.0065f, 0), new Vector2(0.008f, 0.018f), new Vector2(0.012f, 0.03f), new Vector2(0.022f, 0.039f), new Vector2(0.024f, 0.042f), new Vector2(0.018f, 0.042f), new Vector2(0, 0.036f),
         }, 18, 30);
     }
 
@@ -753,11 +803,11 @@ public static class ToolModels
         ModelCtx.Turn(mb, ArtMat.Rubber, Vector3.Down, new Vector3(0, -0.128f, 0), new[] { new Vector2(0, 0), new Vector2(0.0055f, 0), new Vector2(0.0042f, 0.04f), new Vector2(0, 0.04f) }, 8);
     }
 
-    /// <summary>납땜인두: 나무 자루, 쇠 막대와 열통, 굵은 구리 끝, 자루 끝에서 나오는 꼰 전선.</summary>
+    /// <summary>납땜인두: 칠하지 않은 밝은 나무 자루, 쇠 막대와 열통, 굵은 구리 끝, 자루 끝에서 나오는 꼰 전선.</summary>
     static void SolderingIron(ModelCtx c)
     {
         var mb = c.Mb;
-        ModelCtx.Turn(mb, ArtMat.Wood, Vector3.Up, Vector3.Zero, new[]
+        ModelCtx.Turn(mb, PaleDeal, Vector3.Up, Vector3.Zero, new[]
         {
             new Vector2(0, -0.055f), new Vector2(0.011f, -0.055f), new Vector2(0.013f, -0.045f), new Vector2(0.015f, -0.035f), new Vector2(0.013f, -0.03f), new Vector2(0.014f, 0.035f),
             new Vector2(0.016f, 0.04f), new Vector2(0.013f, 0.05f), new Vector2(0.009f, 0.055f), new Vector2(0, 0.055f),

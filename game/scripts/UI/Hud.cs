@@ -226,13 +226,28 @@ public partial class Hud : CanvasLayer
         row.AddChild(l);
     }
 
-    void AddIcon(HBoxContainer row, Texture2D tex, float alpha)
+    void AddIcon(HBoxContainer row, Texture2D tex, float alpha) => row.AddChild(IconPanel(tex, alpha));
+
+    /// <summary>그림 칸 크기(픽셀).</summary>
+    public const float IconSize = 44;
+
+    /// <summary>모형 그림 한 칸: 짙은 둥근 바탕과 옅은 테 위에 그림. 놋쇠와 나무색 모형이 주황빛 장면에 묻히지 않게 한다.</summary>
+    public static Control IconPanel(Texture2D tex, float alpha)
     {
-        row.AddChild(new TextureRect
+        var box = new StyleBoxFlat
         {
-            Texture = tex, CustomMinimumSize = new Vector2(30, 30), ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
-            StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered, Modulate = new Color(1, 1, 1, alpha), MouseFilter = Control.MouseFilterEnum.Ignore,
+            BgColor = new Color(0.06f, 0.055f, 0.05f, 0.78f), BorderColor = new Color(1, 0.92f, 0.78f, 0.35f),
+            CornerRadiusTopLeft = 10, CornerRadiusTopRight = 10, CornerRadiusBottomLeft = 10, CornerRadiusBottomRight = 10,
+        };
+        box.SetBorderWidthAll(1);
+        var panel = new PanelContainer { CustomMinimumSize = new Vector2(IconSize, IconSize), MouseFilter = Control.MouseFilterEnum.Ignore, Modulate = new Color(1, 1, 1, alpha) };
+        panel.AddThemeStyleboxOverride("panel", box);
+        panel.AddChild(new TextureRect
+        {
+            Texture = tex, CustomMinimumSize = new Vector2(IconSize - 4, IconSize - 4), ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+            StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered, MouseFilter = Control.MouseFilterEnum.Ignore,
         });
+        return panel;
     }
 
     static void Clear(Container row)
@@ -262,8 +277,8 @@ public partial class Hud : CanvasLayer
         void AddSlot(int k, string tool)
         {
             bool held = tool == s.Crew.Tool;
-            float alpha = held ? 0.95f : 0.5f;
-            if (ToolModels.Has(tool)) AddIcon(_belt, _icons.Tool(tool), held ? 1f : 0.6f);
+            float alpha = held ? 0.95f : 0.6f;
+            if (ToolModels.Has(tool)) AddIcon(_belt, _icons.Tool(tool), held ? 1f : 0.88f);
             AddLabel(_belt, held ? $"[{k} {Texts.Tool(tool)}]" : $"{k} {Texts.Tool(tool)}", 15, alpha);
         }
     }
@@ -284,8 +299,12 @@ public partial class Hud : CanvasLayer
 
     /// <summary>공구띠와 손에 쥔 것 옆에 그린 그림 수 (확인 묶음이 본다).</summary>
     public int IconCount => _icons.Count;
-    /// <summary>지금 보이는 공구띠 줄과 쥔 것 줄의 그림 수.</summary>
-    public int ShownIcons => _belt.GetChildren().Concat(_held.GetChildren()).Count(c => c is TextureRect);
+    /// <summary>지금 공구띠 줄에 보이는 그림 수.</summary>
+    public int BeltIcons => _belt.GetChildren().Count(c => c is PanelContainer);
+    /// <summary>지금 쥔 것 줄(도구와 물건)에 보이는 그림 수.</summary>
+    public int HeldIcons => _held.GetChildren().Count(c => c is PanelContainer);
+    /// <summary>모형 그림 찍개 (찍기 둘러보기가 공구띠 그림을 한 장으로 모은다).</summary>
+    public ModelIcons Icons => _icons;
 
     public override void _Process(double delta)
     {

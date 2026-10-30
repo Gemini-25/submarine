@@ -5,7 +5,7 @@ namespace DeepLine.Game.Art;
 /// <summary>
 /// 물건 모형 (WP25). items.json의 모든 물건에 손에 든 모양과 칸·바닥에 놓인 모양을 준다.
 /// 새것과 헌 것은 한눈에 갈린다: 그을음, 하얗게 핀 황산염, 녹, 닳아 짧아진 봉과 브러시, 빠진 톱니와 구슬, 끊긴 필라멘트, 찢긴 고리.
-/// 장비 쪽에 이미 그린 부품(유리관 퓨즈, 셀, 흡수제 통, 점퍼 막대, 톱니)과 크기와 재질을 맞춘다.
+/// 장비 쪽에 이미 그린 부품(유리관 퓨즈, 셀, 흡수제 통, 점퍼 막대, 톱니)에 크기와 재질을 맞춘다.
 ///
 /// 좌표 약속: 원점은 놓인 모습의 바닥 가운데, +Y가 위. 길쭉한 것은 X축으로 눕는다.
 /// </summary>
@@ -85,28 +85,31 @@ public static class ItemModels
     public static IEnumerable<string> Ids => Makers.Keys;
     public static bool Has(string id) => Makers.ContainsKey(id);
 
+    static readonly Dictionary<string, ModelTemplate> Templates = new(StringComparer.Ordinal);
+
     /// <summary>물건 모형을 parent 아래에 짓는다. 이름은 Item_&lt;물건&gt;. 모르는 물건이면 예외.</summary>
     public static Node3D Build(Node3D? parent, string itemId)
     {
-        if (!Makers.TryGetValue(itemId, out var make))
-            throw new ArgumentException($"물건 모형이 없다: '{itemId}' (game/scripts/Art/Kit.Items.cs의 ItemModels)");
-        var root = new Node3D { Name = $"Item_{itemId}" };
-        parent?.AddChild(root);
-        var c = new ModelCtx(root);
-        make(c);
-        c.Finish();
-        return root;
+        if (!Templates.TryGetValue(itemId, out var t))
+        {
+            var c = new ModelCtx(false);
+            Maker(itemId)(c);
+            Templates[itemId] = t = c.Template();
+        }
+        return t.Instantiate(parent, $"Item_{itemId}");
     }
 
-    /// <summary>모형이 차지하는 범위(원점 기준). 칸에 늘어놓을 때 쓴다.</summary>
+    static Action<ModelCtx> Maker(string itemId) => Makers.TryGetValue(itemId, out var make) ? make
+        : throw new ArgumentException($"물건 모형이 없다: '{itemId}' (game/scripts/Art/Kit.Items.cs의 ItemModels)");
+
+    /// <summary>모형이 차지하는 범위(원점 기준, 삼각형으로 잰다). 칸에 늘어놓을 때 쓴다.</summary>
     public static Aabb Bounds(string itemId)
     {
         if (BoundsCache.TryGetValue(itemId, out var b)) return b;
-        if (!Makers.TryGetValue(itemId, out var make))
-            throw new ArgumentException($"물건 모형이 없다: '{itemId}'");
-        var c = new ModelCtx(null);
-        make(c);
+        var c = new ModelCtx(true);
+        Maker(itemId)(c);
         var tris = c.Triangles();
+        if (tris.Count == 0) throw new ArgumentException($"물건 모형 '{itemId}'에 삼각형이 없다");
         var box = new Aabb(tris[0], Vector3.Zero);
         foreach (var p in tris) box = box.Expand(p);
         return BoundsCache[itemId] = box;
@@ -331,14 +334,19 @@ public static class ItemModels
         mb.Box(ArtMat.Bakelite, new Vector3(0, 0.013f, 0), new Vector3(0.03f, 0.004f, 0.026f), 0.001f); // 쥐는 곳의 절연 덧판
     }
 
-    /// <summary>축전지 셀(축전지 칸의 셀과 같은 크기). 0 예비(깨끗함), 1 쓰던 것(때), 2 다 쓴 것(단자에 흰 황산염), 3 죽은 것(황산염 덩이, 부푼 옆구리, 금, 산 자국).</summary>
+    /// <summary>
+    /// 축전지 셀(축전지 칸의 셀과 같은 크기). 위에서 보아도 넷이 갈린다.
+    /// 0 예비: 반질한 검은 몸통, 밝은 단자, 놋쇠 통기 마개.
+    /// 1 쓰던 것: 먼지 낀 칙칙한 몸통, 뚜껑 위의 마른 산 얼룩, 통기 마개 둘레의 젖은 고리, 단자 밑동의 얇은 흰 테, 뚜껑 끝에서 흘러내린 자국, 분필 사선 하나.
+    /// 2 다 쓴 것: 단자를 덮은 흰 황산염. 3 완전히 죽은 것: 푸른 황산염 덩이, 부푼 옆구리, 금, 산 자국.
+    /// </summary>
     static void Cell(ModelCtx c, int state)
     {
         var mb = c.Mb;
         var body = state switch
         {
             0 => ArtMat.BlackEnamel,
-            1 => ArtMat.PaintedSteel(new Color(0.08f, 0.08f, 0.08f), 0.6f, 0.7f, rust: 0.1f, tag: "cell_used"),
+            1 => ArtMat.PaintedSteel(new Color(0.15f, 0.15f, 0.145f), 0.7f, 1.0f, rust: 0.15f, tag: "cell_used"),
             _ => ArtMat.PaintedSteel(new Color(0.1f, 0.095f, 0.09f), 0.8f, 1.0f, rust: 0.35f, tag: "cell_old"),
         };
         mb.Box(body, new Vector3(0, 0.2f, 0), new Vector3(0.36f, 0.4f, 0.4f), 0.012f);
@@ -352,13 +360,27 @@ public static class ItemModels
         {
             mb.Cylinder(mark, new Transform3D(Basis.Identity, new Vector3(dx, 0.415f, 0)), 0.03f, 0.008f, 14);
             mb.Cylinder(lead, new Transform3D(Basis.Identity, new Vector3(dx, 0.44f, 0)), 0.022f, 0.045f, 12, 0.003f);
+            if (state == 1)
+                mb.Torus(Sulphate, new Transform3D(Basis.Identity, new Vector3(dx, 0.42f, 0)), 0.024f, 0.003f, 16, 4);
             if (state >= 2)
                 ModelCtx.Lump(mb, state == 3 ? Verdigris : Sulphate, new Vector3(dx, 0.452f, 0), new Vector3(0.03f, state == 3 ? 0.022f : 0.012f, 0.03f), (int)(dx * 100), 0.45f, 7, 10);
             if (state == 3)
                 ModelCtx.Lump(mb, Sulphate, new Vector3(dx + 0.025f, 0.418f, 0.03f), new Vector3(0.04f, 0.01f, 0.03f), 9, 0.5f, 6, 10);
         }
-        mb.Cylinder(state >= 2 ? Scorch : ArtMat.Brass, new Transform3D(Basis.Identity, new Vector3(0, 0.42f, -0.1f)), 0.018f, 0.025f, 10); // 통기 마개
-        if (state >= 1) mb.Box(Scorch, new Vector3(0.06f, 0.36f, 0.2015f), new Vector3(0.05f, 0.06f, 0.001f), 0); // 흘러내린 자국
+        mb.Cylinder(state == 0 ? ArtMat.Brass : Scorch, new Transform3D(Basis.Identity, new Vector3(0, 0.42f, -0.1f)), 0.018f, 0.025f, 10); // 통기 마개
+        if (state >= 1)
+        {
+            // 뚜껑 위의 마른 산 얼룩과 통기 마개 둘레의 젖은 고리
+            ModelCtx.Lump(mb, Scorch, new Vector3(-0.04f, 0.409f, 0.06f), new Vector3(0.06f, 0.0015f, 0.045f), 21, 0.4f, 6, 12);
+            ModelCtx.Lump(mb, Soot, new Vector3(0.06f, 0.409f, -0.07f), new Vector3(0.045f, 0.0015f, 0.035f), 23, 0.4f, 6, 12);
+            ModelCtx.Lump(mb, Scorch, new Vector3(0.1f, 0.409f, 0.11f), new Vector3(0.035f, 0.0015f, 0.05f), 25, 0.4f, 6, 12);
+            mb.Torus(Soot, new Transform3D(Basis.Identity, new Vector3(0, 0.409f, -0.1f)), 0.03f, 0.004f, 16, 4);
+            // 뚜껑 끝에서 앞면으로 흘러내린 자국
+            mb.Box(Scorch, new Vector3(0.06f, 0.36f, 0.2015f), new Vector3(0.03f, 0.09f, 0.001f), 0);
+            mb.Box(Scorch, new Vector3(0.068f, 0.3f, 0.2015f), new Vector3(0.012f, 0.06f, 0.001f), 0);
+        }
+        if (state == 1)
+            ModelCtx.Block(mb, Chalk, new Vector3(-0.05f, 0.4085f, -0.04f), new Vector3(0.012f, 0.0012f, 0.2f), 0, new Vector3(0, 35, 0)); // 분필 사선: 쓰던 것
         if (state == 3)
         {
             mb.Box(Sulphate, new Vector3(-0.08f, 0.3f, 0.2025f), new Vector3(0.012f, 0.2f, 0.001f), 0, 0);
@@ -513,7 +535,7 @@ public static class ItemModels
         if (worn) mb.Box(Soot, new Vector3(0.01f, 0.0052f, 0.012f), new Vector3(0.025f, 0.0005f, 0.02f), 0);
     }
 
-    /// <summary>브레이크 라이닝: 굽은 쇠 신발 위의 갈색 마찰재와 리벳. 닳은 것은 마찰재가 얇고 반들반들 검으며 리벳 머리가 드러났다.</summary>
+    /// <summary>브레이크 라이닝: 굽은 쇠 받침(브레이크 슈) 위의 갈색 마찰재와 리벳. 닳은 것은 마찰재가 얇고 반들반들 검으며 리벳 머리가 드러났다.</summary>
     static void Lining(ModelCtx c, bool worn)
     {
         var mb = c.Mb;
@@ -576,7 +598,7 @@ public static class ItemModels
         }
     }
 
-    /// <summary>거름망 바구니: 구멍 뚫린 쇠 원통, 테, 철사 손잡이. 찌꺼기("Muck")는 막힌 정도만큼 차오른다(HeldItemView가 맞춘다).</summary>
+    /// <summary>거름망 바구니: 구멍 뚫린 쇠 원통, 테, 철사 손잡이. 찌꺼기("Muck")는 처음에 감춰 두고, 손에 들면 막힌 정도만큼 차오른다(HeldItemView가 맞춘다).</summary>
     static void StrainerBasket(ModelCtx c)
     {
         var mb = c.Mb;
@@ -599,7 +621,7 @@ public static class ItemModels
             bail.Add(new Vector3(-Mathf.Cos(a) * (r + 0.006f), h + Mathf.Sin(a) * 0.09f, 0));
         }
         mb.Tube(ArtMat.BareSteel, Transform3D.Identity, bail, 0.0035f, 6, true, true);
-        var muck = c.Part("Muck", new Transform3D(Basis.Identity, new Vector3(0, 0.01f, 0)));
+        var muck = c.Part("Muck", new Transform3D(Basis.Identity, new Vector3(0, 0.01f, 0)), hidden: true);
         muck.Cylinder(ArtMat.ClothWire(new Color(0.22f, 0.18f, 0.1f)), new Transform3D(Basis.Identity, new Vector3(0, (h - 0.03f) / 2, 0)), r - 0.006f, h - 0.03f, 20);
     }
 

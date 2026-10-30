@@ -54,7 +54,7 @@ public partial class ScreenshotTour : Node
         _main.Manual.Close();
         _main.Resume();
         await ToolShots();
-        GetTree().Quit(0);
+        GetTree().Quit(_toolShotErrors.Count > 0 ? 1 : 0); // 도구 그림이 비었거나 도구를 쥐지 못하면 실패
     }
 
     async Task Capture(string name)

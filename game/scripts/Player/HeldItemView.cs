@@ -86,6 +86,10 @@ public partial class HeldItemView : Node3D
     /// <summary>지금 손에 보이는 도구 모형(없으면 null). 확인 묶음이 화면 안에 있는지 본다.</summary>
     public Node3D? HeldToolNode => _runner?.Snapshot == null ? null : _tools.GetValueOrDefault(_runner.Snapshot.Crew.Tool);
     public Node3D? HeldItemNode => _runner?.Snapshot == null ? null : _items.GetValueOrDefault(_runner.Snapshot.Crew.Hand);
+    /// <summary>물건마다 손에 든 거치대(시험용). 손에 쥔 것과 상관없이 모형의 자리를 잴 수 있다.</summary>
+    public Node3D ItemHolder(string id) => _items[id];
+    /// <summary>도구마다 손에 든 거치대(시험용).</summary>
+    public Node3D ToolHolder(string id) => _tools[id];
 
     public override void _Process(double delta)
     {

@@ -470,7 +470,11 @@ public partial class Submarine
                 Position = new Vector3(slot.Outline.GetCenter().X, slot.Outline.GetCenter().Y, BoardFace + 0.0012f),
                 CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
             });
-            Kit.Text(m, UI.Texts.Tool(id), new Vector3(slot.Cell.GetCenter().X, slot.Cell.Position.Y + 0.012f, BoardFace + 0.001f), 0.012f, paint);
+            // 이름: 어두운 판에서도 읽히게 빛을 받지 않는 흰 글씨. 칸보다 긴 이름은 두 줄로 나눈다.
+            var name = Kit.Text(m, UI.Texts.Tool(id), new Vector3(slot.Label.GetCenter().X, slot.Label.GetCenter().Y, BoardFace + 0.001f), 0.016f, paint);
+            name.Shaded = false;
+            name.Width = (slot.Cell.Size.X - 0.004f) / name.PixelSize;
+            name.AutowrapMode = TextServer.AutowrapMode.WordSmart;
             Marker(m, $"toolboard.{id}", $"공구판: {UI.Texts.Tool(id)}", new Vector3(slot.Cell.GetCenter().X, slot.Cell.GetCenter().Y, 0.05f),
                 new Vector3(slot.Cell.Size.X - 0.004f, slot.Cell.Size.Y - 0.004f, 0.06f), "toolboard");
         }

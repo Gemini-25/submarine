@@ -18,8 +18,10 @@ public partial class Submarine
 
     /// <summary>공구판의 크기(m)와 자리. 판 앞면은 z = BoardFace.</summary>
     public const float BoardW = 0.7f, BoardH = 1.14f, BoardFace = 0.02f, BoardCenterY = 1.4f;
-    /// <summary>칸 아래 이름 띠의 높이와 칸 사이 틈.</summary>
-    const float BoardLabel = 0.026f, BoardGap = 0.01f, BoardTop = 0.06f;
+    /// <summary>칸 아래 이름 띠의 높이.</summary>
+    public const float BoardLabel = 0.032f;
+    /// <summary>칸 사이 틈과 판 위쪽 명판 자리.</summary>
+    const float BoardGap = 0.01f, BoardTop = 0.06f;
 
     /// <summary>
     /// 공구판 칸 배치: 줄(위에서부터)마다 높이와 (도구, 칸 폭). 긴 망치와 줄은 맨 위, 짧은 것은 맨 아래.
@@ -28,12 +30,24 @@ public partial class Submarine
     public static readonly (float Height, (string Id, float Width)[] Cells)[] BoardRows =
     {
         (0.40f, new[] { ("engineer_hammer", 0.145f), ("mallet", 0.155f), ("wrench", 0.09f), ("file", 0.07f), ("screwdriver", 0.07f), ("soldering_iron", 0.085f) }),
-        (0.38f, new[] { ("stethoscope", 0.075f), ("hydrometer", 0.075f), ("packing_hook", 0.13f), ("pricker", 0.065f), ("oil_can", 0.135f), ("voltmeter", 0.16f) }),
-        (0.27f, new[] { ("caulking_set", 0.15f), ("scraper", 0.085f), ("scrub_brush", 0.095f), ("knife", 0.06f), ("rag", 0.14f) }),
+        (0.39f, new[] { ("stethoscope", 0.075f), ("hydrometer", 0.075f), ("packing_hook", 0.13f), ("pricker", 0.065f), ("oil_can", 0.135f), ("voltmeter", 0.16f) }),
+        (0.26f, new[] { ("caulking_set", 0.15f), ("scraper", 0.08f), ("scrub_brush", 0.115f), ("knife", 0.06f), ("rag", 0.14f) }),
     };
 
-    /// <summary>공구판의 칸 하나: 칸(이름 띠 포함), 칠한 윤곽, 걸린 도구 모형의 자리(판 좌표).</summary>
-    public readonly record struct BoardSlot(Rect2 Cell, Rect2 Outline, Vector3 ToolPos);
+    /// <summary>공구판의 칸 하나: 칸(이름 띠 포함), 칠한 윤곽, 걸린 도구 모형의 자리(판 좌표), 이름 띠가 칸 위쪽에 있는가.</summary>
+    public readonly record struct BoardSlot(Rect2 Cell, Rect2 Outline, Vector3 ToolPos, bool LabelOnTop)
+    {
+        /// <summary>이름 띠(판 좌표).</summary>
+        public Rect2 Label => LabelOnTop ? new Rect2(Cell.Position.X, Cell.End.Y - BoardLabel, Cell.Size.X, BoardLabel) : new Rect2(Cell.Position, new Vector2(Cell.Size.X, BoardLabel));
+        /// <summary>윤곽을 칠할 수 있는 곳(칸에서 이름 띠를 뺀 곳).</summary>
+        public Rect2 Area => LabelOnTop ? new Rect2(Cell.Position, new Vector2(Cell.Size.X, Cell.Size.Y - BoardLabel)) : new Rect2(Cell.Position + new Vector2(0, BoardLabel), Cell.Size - new Vector2(0, BoardLabel));
+    }
+
+    /// <summary>
+    /// 공구판 작업 시점의 눈높이(세계 y). 이보다 낮은 줄은 이름 띠를 칸 위쪽에 둔다:
+    /// 위에서 내려다보면 판에서 튀어나온 도구가 제 아래쪽을 가리기 때문이다. 높은 줄은 반대로 칸 아래쪽에 둔다.
+    /// </summary>
+    const float BoardEyeY = 1.5f;
 
     static Dictionary<string, BoardSlot>? _boardSlots;
 
@@ -51,11 +65,12 @@ public partial class Submarine
             foreach (var (id, width) in cells)
             {
                 var cell = new Rect2(x, top - height, width, height);
-                var area = new Rect2(x, top - height + BoardLabel, width, height - BoardLabel);
+                bool labelOnTop = BoardCenterY + top - height / 2 < BoardEyeY;
+                var area = new BoardSlot(cell, default, default, labelOnTop).Area;
                 var sil = Art.ToolModels.Outline(id);
                 var outline = new Rect2(area.GetCenter() - sil.Bounds.Size / 2, sil.Bounds.Size);
                 var shift = outline.Position - sil.Bounds.Position;
-                slots[id] = new BoardSlot(cell, outline, new Vector3(shift.X, shift.Y, BoardFace + 0.004f - sil.MinZ));
+                slots[id] = new BoardSlot(cell, outline, new Vector3(shift.X, shift.Y, BoardFace + 0.004f - sil.MinZ), labelOnTop);
                 x += width + BoardGap;
             }
             top -= height + BoardGap;
@@ -91,40 +106,101 @@ public partial class Submarine
         BuildFloorTools(tools);
     }
 
-    /// <summary>바닥에 놓인 도구. 구역마다 정해진 자리(가운데 통로 좌현 쪽)에 길게 눕혀 놓이고, 누르면 줍는다.</summary>
+    /// <summary>
+    /// 구역마다 바닥 도구를 놓는 빈 바닥 (GameData.Zones 순서: fore, mid, aft). 세계 x, z 사각형과 도구를 눕히는 방향(긴 축이 배 앞뒤 X인가).
+    /// 막는 부피를 5cm 격자로 훑은 지도에서 골랐고, 해치 문이 쓸고 가는 곳(경첩 (2.63, 0.45)에서 반지름 0.92m)과
+    /// 바닥 구멍(케이블 챔버 x 3.6~4.4 |z| 0.4, 축전지 우물 x 5.9~ |z| 0.55)을 피했다. tools 묶음이 물리 질의로 다시 본다.
+    ///   전방: 앞 틀(x 5.45) 뒤의 좁은 띠에는 가로(긴 축 Z)로, 우물 좌현 옆 바닥에는 앞뒤로 눕힌다.
+    ///   중앙: 해치 문턱과 챔버 해치 사이, 흡수통 앞. 후방: 빌지 펌프(z −0.7) 앞, 해치 문 자리 뒤(x 1.7까지)에 가로로.
+    /// </summary>
+    public static readonly (Rect2 Area, bool AlongX)[][] FloorAreas =
+    {
+        new[] { (new Rect2(5.5f, -1.1f, 0.38f, 1.7f), false), (new Rect2(5.95f, -1.1f, 0.8f, 0.5f), true) },
+        new[] { (new Rect2(2.82f, -0.78f, 0.75f, 1.52f), true) },
+        new[] { (new Rect2(0.1f, -0.66f, 1.58f, 0.72f), false) },
+    };
+
+    /// <summary>바닥 도구 하나의 자리: 놓이는 가운데(세계), 긴 축이 X인가, 바닥에서 차지하는 사각형(세계 x, z).</summary>
+    public readonly record struct FloorSlot(Vector3 Center, bool AlongX, Rect2 Footprint);
+
+    static Dictionary<string, FloorSlot>[]? _floorSlots;
+
+    /// <summary>
+    /// 구역마다 도구 자리. 17개를 모두 한 구역에 내려놓아도 겹치지 않게, 윤곽 크기로 줄을 짓는다:
+    /// 긴 것부터 줄을 세우고, 줄 너비는 그 줄 첫 도구의 길이 + 2cm, 줄 안에서는 도구 폭 + 2cm씩 늘어놓는다.
+    /// </summary>
+    public static IReadOnlyDictionary<string, FloorSlot>[] FloorSlots => _floorSlots ??= ComputeFloorSlots();
+
+    static Dictionary<string, FloorSlot>[] ComputeFloorSlots()
+    {
+        const float gap = 0.02f;
+        var order = Art.ToolModels.Ids.OrderByDescending(t => Art.ToolModels.Outline(t).Bounds.Size.Y).ToArray();
+        var result = new Dictionary<string, FloorSlot>[FloorAreas.Length];
+        for (int zone = 0; zone < FloorAreas.Length; zone++)
+        {
+            var slots = result[zone] = new Dictionary<string, FloorSlot>(StringComparer.Ordinal);
+            int next = 0;
+            foreach (var (area, alongX) in FloorAreas[zone])
+            {
+                // u: 줄이 쌓이는 방향, v: 줄 안에서 늘어놓는 방향. alongX면 u = x, v = z.
+                float uSpan = alongX ? area.Size.X : area.Size.Y, vSpan = alongX ? area.Size.Y : area.Size.X;
+                float u = 0;
+                while (next < order.Length)
+                {
+                    float rowLen = Art.ToolModels.Outline(order[next]).Bounds.Size.Y + gap;
+                    if (u + rowLen > uSpan + 1e-4f) break;
+                    float v = 0;
+                    while (next < order.Length)
+                    {
+                        var b = Art.ToolModels.Outline(order[next]).Bounds;
+                        float w = b.Size.X + gap;
+                        if (v + w > vSpan + 1e-4f) break;
+                        float cu = u + rowLen / 2, cv = v + w / 2;
+                        var center = alongX ? new Vector2(area.Position.X + cu, area.Position.Y + cv) : new Vector2(area.Position.X + cv, area.Position.Y + cu);
+                        var size = alongX ? new Vector2(b.Size.Y, b.Size.X) : new Vector2(b.Size.X, b.Size.Y);
+                        slots[order[next]] = new FloorSlot(new Vector3(center.X, 0.03f, center.Y), alongX, new Rect2(center - size / 2, size));
+                        v += w;
+                        next++;
+                    }
+                    u += rowLen;
+                }
+            }
+            if (next < order.Length) GD.PushError($"{GameData.Zones[zone]} 구역 바닥에 도구 {order.Length - next}개가 들어가지 않는다 (Submarine.Tools.cs의 FloorAreas)");
+        }
+        return result;
+    }
+
+    /// <summary>바닥에 놓인 도구. 구역마다 정해진 자리(FloorSlots)에 길게 눕혀 놓이고, 누르면 줍는다.</summary>
     void BuildFloorTools(string[] tools)
     {
-        // GameData.Zones 순서 (fore, mid, aft). 해치 문이 쓸고 가는 곳, 바닥 구멍(챔버, 축전지 갑판 판), 장비 표지를 피한 자리.
-        // 전방은 앞 틀(x 5.4)과 축전지 고정 격자(x 5.9) 사이의 좁은 바닥이라 칸을 좁게 둔다.
-        var bases = new[] { new Vector3(5.52f, 0.03f, -0.5f), new Vector3(3.15f, 0.03f, -0.5f), new Vector3(1.85f, 0.03f, -0.5f) };
-        var steps = new[] { new Vector2(0.12f, 0.15f), new Vector2(0.2f, 0.15f), new Vector2(0.2f, 0.15f) };
-        // 모형의 +Z(보여 주는 면)가 위, 일하는 끝(+Y)이 배 앞(+X)을 보게 눕힌다.
+        // 모형의 +Z(보여 주는 면)가 위, 일하는 끝(+Y)이 배 앞(+X)을 보게 눕힌다. 가로로 눕힐 때는 일하는 끝이 우현(+Z)을 본다.
         var lying = new Basis(new Vector3(0, 0, 1), new Vector3(1, 0, 0), new Vector3(0, 1, 0));
-        for (int i = 0; i < tools.Length; i++)
+        var across = Basis.FromEuler(new Vector3(0, -Mathf.Pi / 2, 0)); // 뿌리를 Y축으로 -90도: 로컬 +X가 세계 +Z
+        foreach (var tool in tools)
         {
-            string tool = tools[i];
-            var spots = bases.Select((b, z) => b + new Vector3((i / 6) * steps[z].X, 0, (i % 6) * steps[z].Y)).ToArray();
-            var root = new Node3D { Name = $"Floor_{tool}", Position = spots[0], Visible = false };
+            var root = new Node3D { Name = $"Floor_{tool}", Visible = false };
             AddChild(root);
             var mesh = Art.ToolModels.Build(root, tool);
             var sil = Art.ToolModels.Outline(tool);
             var center = new Vector3(sil.Bounds.GetCenter().X, sil.Bounds.GetCenter().Y, sil.MinZ);
             // 윤곽 가운데를 자리에 두고, 가장 낮은 곳이 바닥(자리보다 2.5cm 아래)에 닿게 한다.
             mesh.Transform = new Transform3D(lying, -(lying * center) + new Vector3(0, -0.025f, 0));
-            var it = Add(Interactable.Create(this, $"floortool.{tool}", $"바닥의 {Texts.Tool(tool)}", new Vector3(0.2f, 0.08f, 0.14f), spots[0]));
+            // 줍기 상자는 눕힌 모형 크기(뿌리 좌표: 긴 축이 X).
+            var it = Add(Interactable.Create(root, $"floortool.{tool}", $"바닥의 {Texts.Tool(tool)}",
+                new Vector3(sil.Bounds.Size.Y, 0.08f, Math.Max(0.05f, sil.Bounds.Size.X)), new Vector3(0, 0.01f, 0)));
             it.CommandFor = (_, m) => m == Motion.Click ? $"tool.pickup.{tool}" : null;
             uint layer = it.CollisionLayer;
             it.CollisionLayer = 0;
             OnUpdate((s, _) =>
             {
                 int zone = GameData.ZoneIndex(s.Crew.ToolPlaces.GetValueOrDefault(tool, ""));
-                bool onFloor = zone >= 0;
+                bool onFloor = zone >= 0 && FloorSlots[zone].ContainsKey(tool);
                 root.Visible = onFloor;
                 it.CollisionLayer = onFloor ? layer : 0;
                 if (onFloor)
                 {
-                    root.Position = spots[zone];
-                    it.Position = spots[zone];
+                    var slot = FloorSlots[zone][tool];
+                    root.Transform = new Transform3D(slot.AlongX ? Basis.Identity : across, slot.Center);
                 }
             });
         }
