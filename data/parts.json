@@ -663,6 +663,12 @@
         "areaCm2": 0.0666667,
         "times": "self.discharge",
         "when": "self.weep >= 0.5 && self.bonnetOpen < 0.5"
+      },
+      {
+        "zone": "aft",
+        "areaCm2": 0.1,
+        "times": "looseCount(bonnet)",
+        "when": "self.bonnetOpen < 0.5 && self.discharge > 0"
       }
     ]
   }

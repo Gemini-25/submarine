@@ -210,6 +210,31 @@ public class CheckValveTests
     }
 
     [Fact]
+    public void Bonnet_closed_without_its_bolts_leaks_more_than_misordered_bolts_while_the_part_reads_repaired()
+    {
+        // 순서를 어긴 경우의 유입 (대조)
+        var misordered = Exposed();
+        Follow(misordered, swap: Misorder);
+        double misorderedQ = misordered.Q("pump.bonnetInflow");
+
+        // 볼트를 하나도 조이지 않고 보닛만 닫은 뒤 배출 밸브를 연다.
+        var sim = Exposed();
+        var run = Follow(sim, skip: c => c.StartsWith("checkvalve.bolt.", StringComparison.Ordinal) && c.EndsWith(".tighten", StringComparison.Ordinal));
+        Assert.DoesNotContain(run.Events, e => e.Kind == SimEventKind.CommandRejected);
+        Assert.Equal("", sim.QS($"part.{Valve}.fault")); // 숨은 결함: 고쳐진 것으로 읽힌다
+        double q = sim.Q("pump.bonnetInflow");
+        Assert.True(q > misorderedQ, $"조이지 않은 보닛 {q:F3} L/s > 순서를 어긴 보닛 {misorderedQ:F3} L/s");
+        sim.Run(5);
+        Assert.Equal(1, sim.Q("zone.aft.alarm"));
+
+        // 다시 하면(배출 밸브를 잠그고 1-3-2-4로 조이면) 그친다.
+        Do(sim, "switch.C3.off", "tool.hand", "pump.discharge.close", "pump.discharge.close", "pump.discharge.close", "tool.wrench");
+        foreach (int n in new[] { 1, 3, 2, 4 }) Do(sim, $"checkvalve.bolt.{n}.tighten");
+        Do(sim, "tool.hand", "pump.discharge.open", "pump.discharge.open", "pump.discharge.open", "switch.C3.on");
+        Assert.Equal(0, sim.Q("pump.bonnetInflow"));
+    }
+
+    [Fact]
     public void Discharge_left_closed_gives_no_flow_and_a_low_current()
     {
         var sim = Exposed();
@@ -222,6 +247,12 @@ public class CheckValveTests
         Assert.True(sim.Q("cue.pump.backflow") < 0.05, "되돌아오는 물이 없다");
         Assert.Equal(0, sim.Q("cue.pump.gravel"));
         Assert.Equal(0, sim.Q("pump.discharge"));
+        // 다시 하면(배출 밸브를 끝까지 열면) 물이 다시 나간다.
+        Do(sim, "tool.hand", "pump.discharge.open", "pump.discharge.open", "pump.discharge.open");
+        sim.Run(10);
+        Assert.Equal(1, sim.Q("pump.discharge"));
+        Assert.InRange(Amps(sim), 2.3, 2.7);
+        Assert.True(sim.Q("pump.netFlow") > 1.9 || sim.Q("bilge.total") < 1);
         // 막힘(약 1.0A)과는 자갈 소리로, 정상(약 2.5A)과는 전류로 갈린다.
         var clog = Exposed("WTR-01");
         Assert.True(clog.Q("cue.pump.gravel") > 0.5);
@@ -266,8 +297,15 @@ public class CheckValveTests
     public void Wrong_cause_repair_cleaning_the_strainer_leaves_the_backflow()
     {
         var sim = Exposed();
+        var events = new List<SimEvent>();
         foreach (var c in ProcedureRunner.ExpandWithBelt(sim, TestData.Data.Procedure("proc.strainer.clean")))
+        {
             Do(sim, c.Cmd);
+            events.AddRange(sim.DrainEvents());
+        }
+        Assert.DoesNotContain(events, e => e.Kind == SimEventKind.CommandRejected || Hurt(e));
+        Assert.Equal(0, sim.Q("part.pump.intake.prop.coverOpen")); // 거름망은 열렸다 닫혔다
+        Assert.Equal(1, Prop(sim, "stuck")); // 판은 그대로
         sim.Run(10);
         Assert.Equal(0, sim.Q("pump.netFlow"));
         Assert.Equal("WTR-03", sim.QS($"part.{Valve}.fault"));

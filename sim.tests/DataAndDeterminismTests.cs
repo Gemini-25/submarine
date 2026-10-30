@@ -158,6 +158,8 @@ public class DataValidationTests
         var reversed = Comparer<string>.Create((a, b) => string.CompareOrdinal(b, a));
         var props = new SortedDictionary<string, double>(reversed) { ["stuck"] = 0, ["stuckOpen"] = 0.25, ["Stuckness"] = 0.75 };
         valve.Props = props;
+        // 장치 파일 없이 다시 만들므로 볼트 묶음을 세는 바다 경로(looseCount, 역류 방지 밸브 보닛)는 셀 묶음이 없다. 이 시험과 상관없으니 뺀다.
+        foreach (var p in data.Parts) p.SeaPaths.RemoveAll(sp => sp.Times.StartsWith("looseCount(", StringComparison.Ordinal));
         var rebuilt = new GameData(data.Tuning, data.Circuits, data.Devices, data.Parts, data.Faults, data.LeakPoints);
         var part = new Parts.Part(rebuilt.Parts.First(p => p.Id == "pump.seal"));
         Assert.Equal(new[] { "Stuckness", "stuck", "stuckOpen" }, part.PropNames);
