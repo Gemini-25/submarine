@@ -1,0 +1,53 @@
+{
+  "mission": "m2-water-b", "seed": 5317, "dataStamp": "a85a949b85464584", "handTicks": 12,
+  "finalTick": 2576, "finalHash": 988835943176904018, "status": "succeeded",
+  "findings": [
+    {"tick":636,"pair":"pump.noflow","verdict":"WTR-03","bind":"","outcome":"fixed"}
+  ],
+  "hashes": [
+    {"tick":1200,"hash":6205177918278017368},
+    {"tick":2400,"hash":11373791954889339359}
+  ],
+  "lines": [
+    {"tick":0,"step":{"seq":1,"kind":"Wait","ticks":20,"value":0,"value2":0,"jobStep":-1,"note":"look"}},
+    {"tick":20,"step":{"seq":2,"kind":"Wait","ticks":100,"value":0,"value2":0,"jobStep":-1,"note":"idle"}},
+    {"tick":120,"step":{"seq":7,"kind":"Decide","ticks":0,"value":0,"value2":0,"pair":"pump.noflow","verdict":"WTR-03","bind":"","jobStep":-1,"note":"WTR-03"}},
+    {"tick":120,"step":{"seq":8,"kind":"Do","ticks":12,"cmd":"tool.hand","value":0,"value2":0,"job":"pump.noflow/WTR-03","jobStep":1,"note":"proc.checkvalve.clean"}},
+    {"tick":132,"step":{"seq":9,"kind":"Do","ticks":12,"cmd":"switch.C3.off","value":0,"value2":0,"job":"pump.noflow/WTR-03","jobStep":1,"note":"proc.checkvalve.clean"}},
+    {"tick":144,"step":{"seq":10,"kind":"Do","ticks":12,"cmd":"tool.hand","value":0,"value2":0,"job":"pump.noflow/WTR-03","jobStep":2,"note":"proc.checkvalve.clean"}},
+    {"tick":156,"step":{"seq":11,"kind":"Do","ticks":12,"cmd":"pump.discharge.close","value":0,"value2":0,"job":"pump.noflow/WTR-03","jobStep":2,"note":"proc.checkvalve.clean"}},
+    {"tick":168,"step":{"seq":12,"kind":"Do","ticks":12,"cmd":"pump.discharge.close","value":0,"value2":0,"job":"pump.noflow/WTR-03","jobStep":2,"note":"proc.checkvalve.clean"}},
+    {"tick":180,"step":{"seq":13,"kind":"Do","ticks":12,"cmd":"pump.discharge.close","value":0,"value2":0,"job":"pump.noflow/WTR-03","jobStep":2,"note":"proc.checkvalve.clean"}},
+    {"tick":192,"step":{"seq":14,"kind":"Do","ticks":12,"cmd":"tool.wrench","value":0,"value2":0,"job":"pump.noflow/WTR-03","jobStep":3,"note":"proc.checkvalve.clean"}},
+    {"tick":204,"step":{"seq":15,"kind":"Do","ticks":12,"cmd":"checkvalve.bolt.1.loosen","value":0,"value2":0,"job":"pump.noflow/WTR-03","jobStep":3,"note":"proc.checkvalve.clean"}},
+    {"tick":216,"step":{"seq":16,"kind":"Do","ticks":12,"cmd":"checkvalve.bolt.2.loosen","value":0,"value2":0,"job":"pump.noflow/WTR-03","jobStep":3,"note":"proc.checkvalve.clean"}},
+    {"tick":228,"step":{"seq":17,"kind":"Do","ticks":12,"cmd":"checkvalve.bolt.3.loosen","value":0,"value2":0,"job":"pump.noflow/WTR-03","jobStep":3,"note":"proc.checkvalve.clean"}},
+    {"tick":240,"step":{"seq":18,"kind":"Do","ticks":12,"cmd":"checkvalve.bolt.4.loosen","value":0,"value2":0,"job":"pump.noflow/WTR-03","jobStep":3,"note":"proc.checkvalve.clean"}},
+    {"tick":252,"step":{"seq":19,"kind":"Do","ticks":12,"cmd":"tool.hand","value":0,"value2":0,"job":"pump.noflow/WTR-03","jobStep":4,"note":"proc.checkvalve.clean"}},
+    {"tick":264,"step":{"seq":20,"kind":"Do","ticks":12,"cmd":"checkvalve.bonnet.open","value":0,"value2":0,"job":"pump.noflow/WTR-03","jobStep":4,"note":"proc.checkvalve.clean"}},
+    {"tick":276,"step":{"seq":21,"kind":"Do","ticks":12,"cmd":"tool.hand","value":0,"value2":0,"job":"pump.noflow/WTR-03","jobStep":5,"note":"proc.checkvalve.clean"}},
+    {"tick":288,"step":{"seq":22,"kind":"Do","ticks":12,"cmd":"checkvalve.flap.pull","value":0,"value2":0,"job":"pump.noflow/WTR-03","jobStep":5,"note":"proc.checkvalve.clean"}},
+    {"tick":300,"step":{"seq":23,"kind":"Do","ticks":12,"cmd":"tool.scrub_brush","value":0,"value2":0,"job":"pump.noflow/WTR-03","jobStep":6,"note":"proc.checkvalve.clean"}},
+    {"tick":312,"step":{"seq":24,"kind":"Do","ticks":12,"cmd":"wash_bucket.scrub","value":0,"value2":0,"job":"pump.noflow/WTR-03","jobStep":6,"note":"proc.checkvalve.clean"}},
+    {"tick":324,"step":{"seq":25,"kind":"Do","ticks":12,"cmd":"wash_bucket.scrub","value":0,"value2":0,"job":"pump.noflow/WTR-03","jobStep":6,"note":"proc.checkvalve.clean"}},
+    {"tick":336,"step":{"seq":26,"kind":"Do","ticks":12,"cmd":"wash_bucket.scrub","value":0,"value2":0,"job":"pump.noflow/WTR-03","jobStep":6,"note":"proc.checkvalve.clean"}},
+    {"tick":348,"step":{"seq":27,"kind":"Do","ticks":12,"cmd":"checkvalve.flap.insert","value":0,"value2":0,"job":"pump.noflow/WTR-03","jobStep":7,"note":"proc.checkvalve.clean"}},
+    {"tick":360,"step":{"seq":28,"kind":"Do","ticks":12,"cmd":"tool.hand","value":0,"value2":0,"job":"pump.noflow/WTR-03","jobStep":8,"note":"proc.checkvalve.clean"}},
+    {"tick":372,"step":{"seq":29,"kind":"Do","ticks":12,"cmd":"checkvalve.bonnet.close","value":0,"value2":0,"job":"pump.noflow/WTR-03","jobStep":8,"note":"proc.checkvalve.clean"}},
+    {"tick":384,"step":{"seq":30,"kind":"Do","ticks":12,"cmd":"tool.wrench","value":0,"value2":0,"job":"pump.noflow/WTR-03","jobStep":9,"note":"proc.checkvalve.clean"}},
+    {"tick":396,"step":{"seq":31,"kind":"Do","ticks":12,"cmd":"checkvalve.bolt.1.tighten","value":0,"value2":0,"job":"pump.noflow/WTR-03","jobStep":9,"note":"proc.checkvalve.clean"}},
+    {"tick":408,"step":{"seq":32,"kind":"Do","ticks":12,"cmd":"checkvalve.bolt.3.tighten","value":0,"value2":0,"job":"pump.noflow/WTR-03","jobStep":9,"note":"proc.checkvalve.clean"}},
+    {"tick":420,"step":{"seq":33,"kind":"Do","ticks":12,"cmd":"checkvalve.bolt.2.tighten","value":0,"value2":0,"job":"pump.noflow/WTR-03","jobStep":9,"note":"proc.checkvalve.clean"}},
+    {"tick":432,"step":{"seq":34,"kind":"Do","ticks":12,"cmd":"checkvalve.bolt.4.tighten","value":0,"value2":0,"job":"pump.noflow/WTR-03","jobStep":9,"note":"proc.checkvalve.clean"}},
+    {"tick":444,"step":{"seq":35,"kind":"Do","ticks":12,"cmd":"tool.hand","value":0,"value2":0,"job":"pump.noflow/WTR-03","jobStep":10,"note":"proc.checkvalve.clean"}},
+    {"tick":456,"step":{"seq":36,"kind":"Do","ticks":12,"cmd":"pump.discharge.open","value":0,"value2":0,"job":"pump.noflow/WTR-03","jobStep":10,"note":"proc.checkvalve.clean"}},
+    {"tick":468,"step":{"seq":37,"kind":"Do","ticks":12,"cmd":"pump.discharge.open","value":0,"value2":0,"job":"pump.noflow/WTR-03","jobStep":10,"note":"proc.checkvalve.clean"}},
+    {"tick":480,"step":{"seq":38,"kind":"Do","ticks":12,"cmd":"pump.discharge.open","value":0,"value2":0,"job":"pump.noflow/WTR-03","jobStep":10,"note":"proc.checkvalve.clean"}},
+    {"tick":492,"step":{"seq":39,"kind":"Do","ticks":12,"cmd":"tool.hand","value":0,"value2":0,"job":"pump.noflow/WTR-03","jobStep":11,"note":"proc.checkvalve.clean"}},
+    {"tick":504,"step":{"seq":40,"kind":"Do","ticks":12,"cmd":"switch.C3.on","value":0,"value2":0,"job":"pump.noflow/WTR-03","jobStep":11,"note":"proc.checkvalve.clean"}},
+    {"tick":516,"step":{"seq":41,"kind":"Wait","ticks":120,"value":0,"value2":0,"jobStep":-1,"note":"idle"}},
+    {"tick":636,"step":{"seq":47,"kind":"Verify","ticks":0,"value":0,"value2":0,"pair":"pump.noflow","verdict":"WTR-03","bind":"","jobStep":-1,"ok":true}},
+    {"tick":636,"step":{"seq":48,"kind":"Wait","ticks":1940,"value":0,"value2":0,"jobStep":-1,"note":"idle"}},
+    {"tick":2576,"step":{"seq":145,"kind":"Done","ticks":0,"value":0,"value2":0,"jobStep":-1,"note":"succeeded"}}
+  ]
+}

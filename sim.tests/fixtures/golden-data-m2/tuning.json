@@ -1,0 +1,398 @@
+{
+  "ticksPerSecond": 20,
+  "defaultDepthM": 300,
+  "battery": {
+    "cells": 6,
+    "capacityWh": 1200,
+    "initialCharge": 1.0,
+    "voltageCurve": [
+      [
+        0,
+        0
+      ],
+      [
+        0.1,
+        0.6
+      ],
+      [
+        0.2,
+        0.92
+      ],
+      [
+        1.0,
+        1.0
+      ]
+    ],
+    "healthVoltageFloor": 0.5,
+    "deadHealth": 0.05,
+    "unjumperedDeadFactor": 0.3,
+    "cellHeatFactor": 0.05,
+    "degradedHeatGain": 10,
+    "cellCoolingWPerC": 1,
+    "cellHeatCapacityJPerC": 1000
+  },
+  "switchboard": {
+    "fuseBlowSeconds": 2,
+    "minFuseMargin": 1.1,
+    "leakageMoistureThreshold": 0.6,
+    "leakageFractionOfRatingAtFull": 0.7
+  },
+  "pump": {
+    "clogLoadDrop": 0.6,
+    "dragLoadGain": 1.0
+  },
+  "water": {
+    "bilges": {
+      "bilge.aft": {
+        "capacityL": 240,
+        "zones": [
+          "aft"
+        ],
+        "initialL": 4
+      },
+      "bilge.fwd": {
+        "capacityL": 360,
+        "zones": [
+          "fore",
+          "mid"
+        ],
+        "initialL": 6
+      }
+    },
+    "hatch": {
+      "zones": [
+        "mid",
+        "aft"
+      ],
+      "bilges": [
+        "bilge.fwd",
+        "bilge.aft"
+      ],
+      "initiallyClosed": false
+    },
+    "zoneFloorAreaM2": 8,
+    "leakK": 0.02,
+    "pumpRatedLps": 2.0,
+    "pumpBilge": "bilge.aft",
+    "handPumpStrokeL": 1.5,
+    "handPumpBilge": "bilge.fwd",
+    "floorDrainLps": 5,
+    "spreadPerSecond": 0.2,
+    "bilgeEqualizePerSecond": 0.5,
+    "batteryBilge": "bilge.fwd",
+    "batterySubmergeStartL": 240,
+    "batterySubmergeFullL": 360,
+    "handPumpStrokeSeconds": 1.2
+  },
+  "hull": {
+    "integrityLossPerSecond": 0.002,
+    "patchWearPerSecond": 0.0005,
+    "wrapLoad": 0,
+    "currentFactor": 1,
+    "zoneAlarmInflowLps": 0.05,
+    "zoneAlarmFloorWaterL": 1
+  },
+  "air": {
+    "initialCo2": 0.04,
+    "initialO2": 20.9,
+    "co2FloorPct": 0.04,
+    "personCo2PerMin": 0.1,
+    "personO2PerMin": 0.08,
+    "scrubCo2PerMin": 0.15,
+    "canisterCapacityPct": 6,
+    "candleO2PerMin": 0.4,
+    "candleMinutes": 10,
+    "o2MaxPct": 21.5,
+    "cl2PpmPerMinPerCell": 3,
+    "fanCl2DecayPerMin": 0.2,
+    "chargingH2PerMin": 0.05,
+    "h2PerMinPerSubmergedCell": 0.1,
+    "fanH2DecayPerMin": 0.2,
+    "explosiveH2Pct": 4
+  },
+  "heat": {
+    "ambientC": 12,
+    "overheatWearMultiplier": 3
+  },
+  "noise": {
+    "accumGain": 1,
+    "accumTauSeconds": 90,
+    "actions": {
+      "switch": {
+        "level": 2,
+        "seconds": 0.5
+      },
+      "hatch": {
+        "level": 6,
+        "seconds": 1.5
+      },
+      "fuse": {
+        "level": 2,
+        "seconds": 1
+      },
+      "wrench": {
+        "level": 3,
+        "seconds": 2
+      },
+      "file": {
+        "level": 10,
+        "seconds": 3
+      },
+      "handpump": {
+        "level": 25,
+        "seconds": 1.2
+      },
+      "backflush": {
+        "level": 35,
+        "seconds": 5
+      },
+      "hammer": {
+        "level": 40,
+        "seconds": 0.5
+      },
+      "caulk": {
+        "level": 45,
+        "seconds": 3
+      },
+      "mallet": {
+        "level": 18,
+        "seconds": 0.4
+      },
+      "shore": {
+        "level": 10,
+        "seconds": 1.0
+      },
+      "scrub": {
+        "level": 10,
+        "seconds": 0.6
+      },
+      "cover": {
+        "level": 4,
+        "seconds": 0.8
+      },
+      "locker": {
+        "level": 2,
+        "seconds": 0.5
+      },
+      "screwdriver": {
+        "level": 2,
+        "seconds": 1
+      },
+      "valve": {
+        "level": 3,
+        "seconds": 1
+      },
+      "scrape": {
+        "level": 8,
+        "seconds": 1
+      },
+      "rag": {
+        "level": 1,
+        "seconds": 0.5
+      },
+      "oil": {
+        "level": 1,
+        "seconds": 0.5
+      },
+      "wrap": {
+        "level": 2,
+        "seconds": 1
+      },
+      "hook": {
+        "level": 4,
+        "seconds": 1
+      },
+      "latch": {
+        "level": 4,
+        "seconds": 0.5
+      },
+      "lever": {
+        "level": 3,
+        "seconds": 0.4
+      },
+      "pawl": {
+        "level": 12,
+        "seconds": 0.3
+      },
+      "tap": {
+        "level": 1,
+        "seconds": 0.2
+      },
+      "cell_lift": {
+        "level": 6,
+        "seconds": 1
+      },
+      "toolboard": {
+        "level": 2,
+        "seconds": 0.5
+      },
+      "prime": {
+        "level": 1,
+        "seconds": 0.5
+      },
+      "tooldrop": {
+        "level": 8,
+        "seconds": 0.3
+      }
+    },
+    "maxEmitSeconds": 60
+  },
+  "wear": {
+    "warningAt": 0.5,
+    "faultAt": 0.8,
+    "brokenAt": 1.0,
+    "properQuality": 1.0,
+    "temporaryQuality": 4.0
+  },
+  "panel": {
+    "powerWarnV": 0.88,
+    "powerFaultV": 0.7,
+    "cellHotC": 28,
+    "circuitWarnFraction": 0.9,
+    "co2Warn": 2,
+    "co2Fault": 4,
+    "o2Warn": 17,
+    "o2Fault": 14,
+    "cl2Warn": 10,
+    "cl2Fault": 30,
+    "h2Warn": 2,
+    "h2Fault": 3.5,
+    "bilgeWarnL": 60,
+    "bilgeFaultL": 300,
+    "pumpHotC": 60,
+    "circuitLamps": {
+      "senses": "C4",
+      "nav": "C5",
+      "cable": "C6"
+    }
+  },
+  "crew": {
+    "shockVitalityLoss": 0.25,
+    "shockStunSeconds": 2.5,
+    "pinchVitalityLoss": 0.15,
+    "pinchStunSeconds": 1.5,
+    "vitalityRecoveryPerMin": 0.02,
+    "co2Levels": [
+      2,
+      4,
+      6,
+      8
+    ],
+    "o2Levels": [
+      17,
+      14,
+      11
+    ],
+    "cl2Levels": [
+      10,
+      30,
+      60
+    ],
+    "hazards": {
+      "burn": {
+        "vitalityLoss": 0.12,
+        "stunSeconds": 1.2
+      },
+      "spray": {
+        "vitalityLoss": 0.1,
+        "stunSeconds": 2,
+        "burstL": 30
+      }
+    },
+    "touch": {
+      "bandsC": [
+        15,
+        30,
+        45,
+        60
+      ],
+      "ambientC": 12,
+      "burnAtC": 70
+    }
+  },
+  "failure": {
+    "swampedFloorWaterL": 6000,
+    "collapseStress": 1.5
+  },
+  "inventory": {
+    "oxygenCandles": 4,
+    "locker": {
+      "brake_lining": 2,
+      "brush_set": 3,
+      "canister": 2,
+      "carbon_rods": 2,
+      "chamber_seal": 2,
+      "fan_bearing": 2,
+      "fuse": 12,
+      "fuse_wire": 6,
+      "gasket": 3,
+      "gyro_bearing": 1,
+      "ink_bottle": 3,
+      "insulating_tape": 6,
+      "jumper_bar": 2,
+      "nav_gear": 2,
+      "packing_cord": 6,
+      "packing_tape": 4,
+      "panel_bulb": 8,
+      "penetrating_oil": 3,
+      "pump_bearing": 2,
+      "spare_cell": 1,
+      "timber_shore": 6,
+      "vacuum_tube": 2,
+      "viewport_seal": 2,
+      "wood_wedge": 8
+    }
+  },
+  "randomFaults": {
+    "rollEveryTicks": 20,
+    "depthGain": 1,
+    "wearGain": 4,
+    "depthReferenceM": 1000
+  },
+  "tools": [
+    "hand",
+    "wrench",
+    "mallet",
+    "caulking_set",
+    "voltmeter",
+    "scrub_brush",
+    "screwdriver",
+    "engineer_hammer",
+    "file",
+    "scraper",
+    "knife",
+    "rag",
+    "oil_can",
+    "packing_hook",
+    "pricker",
+    "stethoscope",
+    "hydrometer",
+    "soldering_iron"
+  ],
+  "repair": {
+    "strainerBolts": 4,
+    "scrubCleanPerStroke": 0.25,
+    "looseBoltAirLeak": 0.25,
+    "basketMissingWearMultiplier": 5,
+    "wedgeStrikes": 3,
+    "wedgePatchFactor": 0.35,
+    "wedgePatchDurability": 0.5,
+    "shorePatchFactor": 0.1,
+    "shorePatchDurability": 1.0,
+    "caulkStrikes": 8,
+    "caulkIntegrity": 1.0
+  },
+  "toolBoard": {
+    "beltSlots": 5,
+    "initialBelt": [
+      "wrench",
+      "mallet",
+      "caulking_set",
+      "voltmeter",
+      "scrub_brush"
+    ],
+    "rollTiltDeg": 10,
+    "rollSeconds": 3,
+    "dropOnShock": true
+  }
+}

@@ -1,0 +1,177 @@
+{
+  "proc.ballast.hammer": {
+    "title": "침수 밸브 망치로 풀기",
+    "fault": "WTR-04",
+    "grade": "temporary",
+    "bind": [
+      "t"
+    ],
+    "steps": [
+      {
+        "type": "Inspect",
+        "text": "경사계의 바늘이 한쪽으로 쏠리고 한 탱크의 유리관이 붉은 금보다 높으면 그 탱크의 침수 밸브가 열린 채 굳었다. 침수 밸브 바퀴를 빈손으로 돌려 꿈쩍하지 않는지 본다."
+      },
+      {
+        "type": "Work",
+        "text": "공구판에서 쇠망치를 가져와 침수 밸브 몸통의 돌기를 세 번 내리친다. 소리가 매우 크다.",
+        "cmd": "ballast.{t}.body.strike",
+        "tool": "engineer_hammer",
+        "repeat": 3,
+        "requires": "시끄러워도 되는 때에 칠 것",
+        "hazard": "한 번 칠 때마다 소음 40. 소리가 선체 밖으로 퍼진다."
+      },
+      {
+        "type": "Close",
+        "text": "빈손으로 침수 밸브 바퀴를 시계 방향으로 돌려 끝까지 닫는다. 굳은 밸브는 대개 4분의 1쯤 열려 있어 한 바퀴면 닫힌다.",
+        "cmd": "ballast.{t}.flood.close",
+        "tool": "hand"
+      },
+      {
+        "type": "Work",
+        "text": "배수 회로(C3) 칼날 스위치를 올려 배수 펌프를 돌린다. 이미 올라가 있으면 그대로 둔다.",
+        "cmd": "switch.C3.on",
+        "tool": "hand"
+      },
+      {
+        "type": "Work",
+        "text": "흡입 선택 레버를 손으로 잡고 한 칸씩 끌어 그 탱크 자리에 맞춘다. 앞 탱크는 둘째 칸, 뒤 탱크는 셋째 칸이다. 이제 펌프는 빌지가 아니라 탱크를 빤다.",
+        "cmd": "pump.suction.{t}",
+        "tool": "hand",
+        "requires": "탱크를 빠는 동안 빌지 수위를 볼 것",
+        "hazard": "흡입 선택 레버를 탱크에 둔 동안에는 빌지의 물이 빠지지 않는다."
+      },
+      {
+        "type": "Inspect",
+        "text": "탱크 유리관의 물이 붉은 금(정상 수위)까지 내려올 때까지 기다린다. 앞 탱크가 가득 차 있으면 1분 30초쯤 걸린다. 경사계의 바늘이 가운데로 돌아오는지 함께 본다.",
+        "wait": { "until": [ { "q": "reading.ballast.{t}.glass", "unit": "L", "below": 151 } ], "every": 1, "max": 600 }
+      },
+      {
+        "type": "Close",
+        "text": "흡입 선택 레버를 첫째 칸(빌지)으로 되돌린다. 되돌리지 않으면 빌지가 차오른다.",
+        "cmd": "pump.suction.bilge",
+        "tool": "hand",
+        "requires": "첫째 칸(빌지)으로 되돌릴 것",
+        "hazard": "레버를 탱크 칸에 그대로 두면 빌지가 차올라 축전지가 잠긴다. 탱크가 비면 펌프가 공기를 빨아 헛돈다."
+      },
+      {
+        "type": "Test",
+        "text": "경사계가 5도 안으로 돌아오고 배수 표시등이 꺼지는지 본다. 망치로 푼 밸브는 10분이 지나면 다시 굳는다. 바퀴를 한 번 돌릴 때마다 수명이 약 3분 20초 준다. 닫는 데 한 번을 썼으므로 남는 것은 약 6분 40초나 바퀴 두 번이다. 그 전에 '침수 밸브 침투유로 풀고 패킹 다시 감기'로 정식 수리를 한다."
+      }
+    ]
+  },
+  "proc.ballast.repack": {
+    "title": "침수 밸브 침투유로 풀고 패킹 다시 감기",
+    "fault": "WTR-04",
+    "grade": "proper",
+    "bind": [
+      "t"
+    ],
+    "steps": [
+      {
+        "type": "Inspect",
+        "text": "경사계의 바늘이 한쪽으로 쏠리고 한 탱크의 유리관이 붉은 금보다 높은지, 그 탱크의 침수 밸브 바퀴가 꿈쩍하지 않는지 본다."
+      },
+      {
+        "type": "Work",
+        "text": "후방 예비품 사물함에서 침투유를 꺼낸다.",
+        "cmd": "locker.take.penetrating_oil"
+      },
+      {
+        "type": "Work",
+        "text": "침투유를 쥔 채 침수 밸브 축이 몸통으로 들어가는 자리에 문질러 바른다.",
+        "cmd": "ballast.{t}.stem.oil",
+        "tool": "hand"
+      },
+      {
+        "type": "Inspect",
+        "text": "침투유가 스며들도록 30초 기다린다. 그동안 바퀴는 꿈쩍하지 않는다.",
+        "wait": { "before": 30, "max": 30 }
+      },
+      {
+        "type": "Isolate",
+        "text": "빈손으로 침수 밸브 바퀴를 시계 방향으로 돌려 끝까지 닫는다. 굳은 밸브는 대개 4분의 1쯤 열려 있어 한 바퀴면 닫힌다. 이미 닫혀 있으면 그대로 둔다.",
+        "cmd": "ballast.{t}.flood.close",
+        "tool": "hand",
+        "requires": "끝까지 닫을 것",
+        "hazard": "덜 닫힌 채로 패킹 너트를 다 풀거나 패킹에 손을 대면 바닷물이 뿜어 나와 몸을 친다."
+      },
+      {
+        "type": "Open",
+        "text": "렌치로 패킹 너트를 반시계 방향으로 돌려 세 칸 푼다. 다 풀면 축 둘레로 물이 조금씩 샌다. 서둘러 한다.",
+        "cmd": "ballast.{t}.gland.down",
+        "tool": "wrench",
+        "repeat": 3,
+        "requires": "밸브가 닫혀 있을 것",
+        "hazard": "물 분출 (잠시 몸을 못 가누고 30L가 쏟아진다)"
+      },
+      {
+        "type": "Remove",
+        "text": "패킹 갈고리를 축 둘레에 걸어 헌 패킹을 끌어낸다. 두 번 끌어내면 다 빠진다.",
+        "cmd": "ballast.{t}.packing.hook",
+        "tool": "packing_hook",
+        "repeat": 2,
+        "requires": "밸브가 닫혀 있을 것. 빈손일 것",
+        "hazard": "물 분출"
+      },
+      {
+        "type": "Remove",
+        "text": "헌 패킹을 폐기함에 버린다.",
+        "cmd": "hand.drop"
+      },
+      {
+        "type": "Install",
+        "text": "후방 예비품 사물함에서 패킹 끈을 꺼낸다.",
+        "cmd": "locker.take.packing_cord"
+      },
+      {
+        "type": "Install",
+        "text": "패킹 끈을 쥔 채 축 둘레에 원을 그려 감아 넣는다. 세 번 감으면 다 찬다.",
+        "cmd": "ballast.{t}.packing.wrap",
+        "tool": "hand",
+        "repeat": 3,
+        "requires": "밸브가 닫혀 있을 것",
+        "hazard": "물 분출"
+      },
+      {
+        "type": "Fasten",
+        "text": "렌치로 패킹 너트를 시계 방향으로 세 칸 조인다. 덜 조이면 축 둘레로 물이 배어 나오고, 다섯 칸까지 조이면 축을 물어 밸브가 다시 굳는다.",
+        "cmd": "ballast.{t}.gland.up",
+        "tool": "wrench",
+        "repeat": 3,
+        "requires": "셋째 칸에 맞출 것",
+        "hazard": "둘째 칸 이하면 축 둘레로 물이 샌다. 다섯째 칸이면 바퀴를 한 번 돌린 뒤 밸브가 다시 굳는다."
+      },
+      {
+        "type": "Work",
+        "text": "배수 회로(C3) 칼날 스위치를 올려 배수 펌프를 돌린다. 이미 올라가 있으면 그대로 둔다.",
+        "cmd": "switch.C3.on",
+        "tool": "hand"
+      },
+      {
+        "type": "Work",
+        "text": "흡입 선택 레버를 손으로 잡고 한 칸씩 끌어 그 탱크 자리에 맞춘다. 앞 탱크는 둘째 칸, 뒤 탱크는 셋째 칸이다. 이제 펌프는 빌지가 아니라 탱크를 빤다.",
+        "cmd": "pump.suction.{t}",
+        "tool": "hand",
+        "requires": "탱크를 빠는 동안 빌지 수위를 볼 것",
+        "hazard": "흡입 선택 레버를 탱크에 둔 동안에는 빌지의 물이 빠지지 않는다."
+      },
+      {
+        "type": "Inspect",
+        "text": "탱크 유리관의 물이 붉은 금(정상 수위)까지 내려올 때까지 기다린다. 앞 탱크가 가득 차 있으면 1분 30초쯤 걸린다. 경사계의 바늘이 가운데로 돌아오는지 함께 본다.",
+        "wait": { "until": [ { "q": "reading.ballast.{t}.glass", "unit": "L", "below": 151 } ], "every": 1, "max": 600 }
+      },
+      {
+        "type": "Close",
+        "text": "흡입 선택 레버를 첫째 칸(빌지)으로 되돌린다. 되돌리지 않으면 빌지가 차오른다.",
+        "cmd": "pump.suction.bilge",
+        "tool": "hand",
+        "requires": "첫째 칸(빌지)으로 되돌릴 것",
+        "hazard": "레버를 탱크 칸에 그대로 두면 빌지가 차올라 축전지가 잠긴다. 탱크가 비면 펌프가 공기를 빨아 헛돈다."
+      },
+      {
+        "type": "Test",
+        "text": "침수 밸브 바퀴를 한 바퀴 열었다가 곧 끝까지 닫아 손으로 돌아가는지 본다. 축 둘레가 말라 있는지, 경사계가 5도 안으로 돌아오는지 본다."
+      }
+    ]
+  }
+}

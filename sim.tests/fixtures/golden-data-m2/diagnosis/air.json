@@ -1,0 +1,113 @@
+// 공기 (교범 05쪽 '송풍 팬과 흡수통').
+{
+  "pairs": {
+    "co2.rising": {
+      "no": 9,
+      "priority": 30,
+      "page": "05-진단-표-공기-감각-항법-케이블.md",
+      "section": "송풍 팬과 흡수통",
+      "sees": [
+        [ { "q": "panel.gauge.co2", "unit": "pct", "trend": 60, "above": 0.03, "says": "이산화탄소가 오르면" } ],
+        [ { "q": "cue.fan.hum", "unit": "cue", "below": 0.5 }, { "q": "cue.fan.streamer", "unit": "cue", "for": 5, "below": 0.5 } ]
+      ],
+      "checks": [
+        {
+          "all": [
+            { "q": "cue.fan.hum", "unit": "cue", "below": 0.5 },
+            { "q": "cue.fan.stall", "unit": "cue", "above": 0.5, "says": "멎은 팬의 낮은 웅웅 소리" },
+            { "q": "cue.igniter.glow", "unit": "cue", "above": 0.5, "says": "산소 화로 점화기 창" }
+          ],
+          "verdict": "AIR-01"
+        },
+        {
+          "each": { "c": "C2" },
+          "all": [
+            { "q": "cue.fan.hum", "unit": "cue", "below": 0.5 },
+            { "q": "cue.igniter.glow", "unit": "cue", "below": 0.5 }
+          ],
+          "verdict": "ELC-01"
+        },
+        {
+          "all": [
+            { "q": "cue.fan.hum", "unit": "cue", "above": 0.5 },
+            { "q": "cue.scrubber.indicator", "unit": "cue", "above": 0.5, "says": "보라색" }
+          ],
+          "verdict": "AIR-02"
+        }
+      ],
+      "verdicts": {
+        "AIR-01": {
+          "fault": "AIR-01",
+          "says": "팬 정지",
+          "do": [
+            { "procedure": "proc.fan.bearing", "if": [ { "q": "inventory.fan_bearing", "unit": "none", "above": 0.5 } ] },
+            { "procedure": "proc.fan.spin", "if": [ { "q": "inventory.fan_bearing", "unit": "none", "below": 0.5 } ] }
+          ],
+          "verify": { "all": [ { "q": "cue.fan.hum", "unit": "cue", "above": 0.5 }, { "q": "cue.fan.rattle", "unit": "cue", "below": 0.3 } ], "within": 30, "hold": 5 }
+        },
+        "ELC-01": { "fault": "ELC-01", "says": "C2 퓨즈 단선", "same": "fuse.blown" },
+        "AIR-02": {
+          "fault": "AIR-02",
+          "says": "흡수제 포화",
+          "do": [ { "procedure": "proc.canister.replace" } ],
+          "verify": { "all": [ { "q": "cue.scrubber.indicator", "unit": "cue", "below": 0.3 } ], "within": 30 }
+        }
+      },
+      "exposure": { "setup": { "depthM": 300, "air": { "co2": 1.4 } }, "seconds": 120 },
+      "cases": [
+        { "expect": "AIR-01", "inject": [ { "fault": "AIR-01" } ] },
+        { "expect": "AIR-01", "inject": [ { "fault": "AIR-01" }, { "fault": "AIR-02" } ] },
+        { "expect": "ELC-01", "bind": { "c": "C2" }, "inject": [ { "fault": "ELC-01", "part": "fuse.C2" } ] },
+        { "expect": "AIR-02", "inject": [ { "fault": "AIR-02" } ] },
+        { "expect": "none" }
+      ]
+    },
+    "o2.low": {
+      "no": 21,
+      "priority": 35,
+      "page": "05-진단-표-공기-감각-항법-케이블.md",
+      "section": "산소 화로",
+      "sees": [
+        [ { "q": "cue.furnace.smoke", "unit": "cue", "above": 0.5 } ],
+        [ { "q": "panel.gauge.o2", "unit": "pct", "for": 30, "below": 17.8 },
+          { "q": "cue.furnace.burn", "unit": "cue", "below": 0.5 } ]
+      ],
+      "checks": [
+        { "all": [ { "q": "cue.furnace.smoke", "unit": "cue", "above": 0.5 },
+                   { "q": "cue.igniter.glow", "unit": "cue", "above": 0.5 } ],
+          "verdict": "AIR-03" },
+        { "each": { "c": "C2" },
+          "all": [ { "q": "cue.igniter.glow", "unit": "cue", "below": 0.5 } ],
+          "verdict": "ELC-01" },
+        { "all": [ { "q": "panel.gauge.o2", "unit": "pct", "below": 17.8 },
+                   { "q": "cue.furnace.burn", "unit": "cue", "below": 0.5 },
+                   { "q": "cue.igniter.glow", "unit": "cue", "above": 0.5 } ],
+          "verdict": "light" }
+      ],
+      "verdicts": {
+        "AIR-03": {
+          "fault": "AIR-03",
+          "says": "화로 막힘",
+          "do": [ { "wait": 1, "until": [ { "q": "cue.furnace.burn", "unit": "cue", "below": 0.01 } ], "every": 5, "max": 660, "release": true },
+                  { "wait": 120 },
+                  { "procedure": "proc.furnace.clean" } ],
+          "verify": { "all": [ { "q": "cue.furnace.smoke", "unit": "cue", "below": 0.1 },
+                               { "q": "cue.furnace.burn", "unit": "cue", "above": 0.5 } ], "within": 30, "hold": 10 }
+        },
+        "ELC-01": { "fault": "ELC-01", "says": "점화기 꺼짐 (C2)", "same": "fuse.blown" },
+        "light": {
+          "says": "양초를 켰는데 산소가 오르지 않으면",
+          "do": [ { "cmds": [ { "tool": "hand", "cmd": "candle.light" } ] } ],
+          "verify": { "all": [ { "q": "cue.furnace.burn", "unit": "cue", "above": 0.5 } ], "within": 5 }
+        }
+      },
+      "exposure": { "setup": { "depthM": 300, "air": { "o2": 17.6 } }, "seconds": 90 },
+      "cases": [
+        { "expect": "AIR-03", "setup": { "air": { "candle": 600 } }, "inject": [ { "fault": "AIR-03" } ] },
+        { "expect": "ELC-01", "bind": { "c": "C2" }, "inject": [ { "fault": "ELC-01", "part": "fuse.C2" } ] },
+        { "expect": "light" },
+        { "expect": "none", "setup": { "air": { "o2": 20.9 } } }
+      ]
+    }
+  }
+}

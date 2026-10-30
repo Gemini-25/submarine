@@ -1,0 +1,78 @@
+// 밸러스트 (교범 04쪽 '기울기', 32쪽 '가르기'). WP18. 붉은 금 아래 탱크 채우기(refill)와 침투유가 없을 때의 망치(응급)는 WP23.
+{
+  "pairs": {
+    "attitude.tilt": {
+      "no": 19,
+      "priority": 30,
+      "page": "04-진단-표-물과-선체.md",
+      "section": "기울기",
+      "sees": [
+        [ { "q": "reading.inclinometer", "unit": "deg", "above": 5, "says": "경사계가 한쪽으로 쏠린다" } ],
+        [ { "q": "reading.inclinometer", "unit": "deg", "below": -5, "says": "경사계가 한쪽으로 쏠린다" } ],
+        [ { "q": "reading.ballast.fore.glass", "unit": "L", "below": 140, "for": 30, "says": "한 탱크 유리관이 붉은 금 아래" } ],
+        [ { "q": "reading.ballast.aft.glass", "unit": "L", "below": 140, "for": 30, "says": "한 탱크 유리관이 붉은 금 아래" } ]
+      ],
+      "checks": [
+        {
+          "each": { "t": "fore,aft" },
+          "all": [ { "q": "reading.ballast.{t}.glass", "unit": "L", "above": 160, "typical": 300, "says": "한 탱크 유리관만 붉은 금 위로 오른다" } ],
+          "verdict": "WTR-04"
+        },
+        {
+          "each": { "t": "fore,aft" },
+          "all": [ { "q": "reading.ballast.{t}.glass", "unit": "L", "below": 140, "says": "한 탱크 유리관이 붉은 금 아래" },
+                   { "q": "part.pump.suction.prop.pos", "unit": "none", "above": 0.5, "says": "레버가 둘째나 셋째 칸" } ],
+          "verdict": "selector"
+        },
+        {
+          "each": { "t": "fore,aft" },
+          "all": [ { "q": "reading.ballast.{t}.glass", "unit": "L", "below": 140, "says": "한 탱크 유리관이 붉은 금 아래" },
+                   { "q": "part.pump.suction.prop.pos", "unit": "none", "below": 0.5, "says": "레버가 첫째 칸" } ],
+          "verdict": "refill"
+        },
+        {
+          "each": { "z": "fore,mid,aft" },
+          "all": [ { "q": "zone.{z}.alarm", "unit": "none", "above": 0.5, "says": "구역 경고등" } ],
+          "verdict": "flooding"
+        }
+      ],
+      "verdicts": {
+        "WTR-04": {
+          "fault": "WTR-04",
+          "says": "밸러스트 밸브 고착",
+          "do": [
+            { "procedure": "proc.ballast.repack", "bind": { "t": "{t}" }, "if": [ { "q": "inventory.penetrating_oil", "unit": "none", "above": 0.5 } ] },
+            { "procedure": "proc.ballast.hammer", "bind": { "t": "{t}" }, "if": [ { "q": "inventory.penetrating_oil", "unit": "none", "below": 0.5 } ] }
+          ],
+          "verify": { "all": [ { "q": "reading.ballast.{t}.glass", "unit": "L", "below": 160 } ], "within": 600 }
+        },
+        "selector": {
+          "says": "흡입 선택 레버를 탱크에 둠",
+          "do": [ { "cmds": [ { "tool": "hand", "cmd": "pump.suction.bilge" } ] } ],
+          "verify": { "all": [ { "q": "part.pump.suction.prop.pos", "unit": "none", "below": 0.5 } ], "within": 5 }
+        },
+        "refill": {
+          "says": "앞서 탱크를 너무 뺐다",
+          "do": [
+            { "cmds": [ { "tool": "hand", "cmd": "ballast.{t}.flood.open" } ] },
+            { "wait": 1, "until": [ { "q": "reading.ballast.{t}.glass", "unit": "L", "above": 149 } ], "every": 1, "max": 600 },
+            { "cmds": [ { "tool": "hand", "cmd": "ballast.{t}.flood.close" } ] }
+          ],
+          "verify": { "all": [ { "q": "reading.ballast.{t}.glass", "unit": "L", "above": 140 }, { "q": "reading.ballast.{t}.glass", "unit": "L", "below": 160 } ], "within": 30 }
+        },
+        "flooding": { "says": "그 구역의 침수", "do": [] }
+      },
+      "exposure": { "setup": { "depthM": 100, "switches": { "C3": true } }, "seconds": 300 },
+      "cases": [
+        { "expect": "WTR-04", "bind": { "t": "fore" }, "inject": [ { "fault": "WTR-04" } ] },
+        { "expect": "WTR-04", "bind": { "t": "aft" }, "inject": [ { "fault": "WTR-04", "part": "ballast.aft.valve" } ] },
+        { "expect": "selector", "bind": { "t": "aft" }, "setup": { "parts": [ { "part": "pump.suction", "prop": "pos", "value": 2 } ] } },
+        { "expect": "refill", "bind": { "t": "aft" }, "setup": { "parts": [ { "part": "ballast.tank.aft", "prop": "water", "value": 120 } ] } },
+        { "expect": "flooding", "bind": { "z": "aft" }, "setup": { "depthM": 600, "hatchClosed": true },
+          "inject": [ { "fault": "WTR-01" }, { "fault": "HUL-01", "part": "leak.rivet.09" }, { "fault": "HUL-01", "part": "leak.rivet.10" },
+                      { "fault": "HUL-01", "part": "leak.rivet.11" }, { "fault": "HUL-01", "part": "leak.rivet.12" } ] },
+        { "expect": "none" }
+      ]
+    }
+  }
+}

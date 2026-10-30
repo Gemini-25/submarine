@@ -1,0 +1,134 @@
+// 물 (교범 04쪽 '배수 펌프 가르기', '펌프 베어링').
+{
+  "pairs": {
+    "pump.noflow": {
+      "no": 5,
+      "priority": 40,
+      "page": "04-진단-표-물과-선체.md",
+      "section": "배수 펌프 가르기",
+      "sees": [
+        [ { "q": "cue.pump.hum", "unit": "cue", "above": 0.5 },
+          { "q": "panel.gauge.pumpFlow", "unit": "Lpm", "for": 5, "below": 6 },
+          { "q": "panel.gauge.bilge", "unit": "L", "above": 30, "says": "빌지 계기가 오르는데 물이 빠지지 않을 때" } ]
+      ],
+      "checks": [
+        { "all": [ { "q": "cue.pump.gravel", "unit": "cue", "above": 0.3, "says": "자갈 구르는 소리" } ], "verdict": "WTR-01" },
+        { "all": [ { "q": "cue.pump.backflow", "unit": "cue", "above": 0.3, "says": "배관에서 물이 되돌아오는 소리" },
+                   { "q": "panel.gauge.pumpCurrent", "unit": "A", "above": 2.0, "typical": 2.5, "says": "약 2.5A" } ],
+          "verdict": "WTR-03" },
+        { "all": [ { "q": "part.pump.check_valve.prop.discharge", "unit": "none", "below": 0.5, "says": "배출 밸브 바퀴가 끝까지 잠겨 있다" },
+                   { "q": "panel.gauge.pumpCurrent", "unit": "A", "below": 1.6, "typical": 1.2, "says": "약 1.2A" } ],
+          "verdict": "discharge" }
+      ],
+      "verdicts": {
+        "WTR-01": {
+          "fault": "WTR-01",
+          "says": "흡입구 막힘",
+          "do": [ { "procedure": "proc.strainer.clean" }, { "restore": "switches" } ],
+          "verify": { "all": [ { "q": "cue.pump.gravel", "unit": "cue", "below": 0.3 } ], "within": 60, "hold": 5 }
+        },
+        "WTR-03": {
+          "fault": "WTR-03",
+          "says": "역류 방지 밸브 고착",
+          "do": [ { "procedure": "proc.checkvalve.clean" }, { "restore": "switches" } ],
+          "verify": { "all": [ { "q": "cue.pump.backflow", "unit": "cue", "below": 0.3 },
+                               { "q": "cue.checkvalve.drip", "unit": "cue", "below": 0.3 } ], "within": 60, "hold": 5 }
+        },
+        "discharge": {
+          "says": "배출 밸브 잠김",
+          "do": [ { "cmds": [ { "tool": "hand", "cmd": "pump.discharge.open", "repeat": 3 } ] } ],
+          "verify": { "all": [ { "q": "panel.gauge.pumpFlow", "unit": "Lpm", "above": 60 } ], "within": 20 }
+        }
+      },
+      "exposure": { "setup": { "depthM": 300, "switches": { "C3": true }, "bilges": { "bilge.aft": 150 } }, "seconds": 60 },
+      "cases": [
+        { "expect": "WTR-01", "inject": [ { "fault": "WTR-01" } ] },
+        { "expect": "WTR-03", "inject": [ { "fault": "WTR-03" } ] },
+        { "expect": "WTR-01", "inject": [ { "fault": "WTR-01" }, { "fault": "WTR-02" } ] },
+        { "expect": "discharge", "setup": { "parts": [ { "part": "pump.check_valve", "prop": "discharge", "value": 0 } ] } },
+        { "expect": "none" }
+      ]
+    },
+    "pump.stopped": {
+      "no": 6,
+      "priority": 45,
+      "page": "04-진단-표-물과-선체.md",
+      "section": "배수 펌프 가르기",
+      "sees": [
+        [ { "q": "panel.gauge.bilge", "unit": "L", "above": 60 },
+          { "q": "cue.pump.hum", "unit": "cue", "for": 3, "below": 0.5, "says": "펌프 소리 없음" } ]
+      ],
+      "checks": [
+        { "each": { "c": "C3" }, "all": [ { "q": "cue.fuse.{c}.blackened", "unit": "cue", "above": 0.5 } ], "verdict": "ELC-01" },
+        { "all": [ { "q": "cue.circuit.C3.lamp", "unit": "cue", "below": 0.5 } ], "verdict": "switch_off" },
+        { "all": [ { "q": "panel.gauge.voltage", "unit": "V", "below": 80, "typical": 72, "says": "C3 퓨즈, 전압" } ], "verdict": "low_voltage" }
+      ],
+      "verdicts": {
+        "ELC-01": { "fault": "ELC-01", "says": "C3 퓨즈", "same": "fuse.blown" },
+        "switch_off": {
+          "says": "C3 스위치",
+          "do": [ { "cmds": [ { "tool": "hand", "cmd": "switch.C3.on" } ] } ],
+          "verify": { "all": [ { "q": "cue.pump.hum", "unit": "cue", "above": 0.5 } ], "within": 5 }
+        },
+        "low_voltage": { "says": "전압", "do": [] }
+      },
+      "exposure": { "setup": { "depthM": 300, "bilges": { "bilge.aft": 150 } }, "seconds": 30 },
+      "cases": [
+        { "expect": "switch_off" },
+        { "expect": "ELC-01", "bind": { "c": "C3" }, "setup": { "switches": { "C3": true } }, "inject": [ { "fault": "ELC-01", "part": "fuse.C3" } ] },
+        { "expect": "low_voltage", "setup": { "switches": { "C3": true }, "batteryCharge": 0.1 } },
+        { "expect": "none", "setup": { "switches": { "C3": true } } }
+      ]
+    },
+    "pump.hot": {
+      "no": 7,
+      "priority": 45,
+      "page": "04-진단-표-물과-선체.md",
+      "section": "펌프 베어링",
+      "sees": [
+        [ { "q": "cue.pump.grind", "unit": "cue", "above": 0.3, "says": "갈리는 소리" },
+          { "q": "cue.pump.gravel", "unit": "cue", "below": 0.3, "says": "자갈 소리" } ],
+        [ { "q": "panel.gauge.pumpCurrent", "unit": "A", "for": 20, "above": 3.2 },
+          { "q": "cue.pump.gravel", "unit": "cue", "below": 0.3 } ]
+      ],
+      "checks": [
+        {
+          "prep": [ { "cmd": "tool.stethoscope" } ],
+          "undo": [ { "cmd": "tool.hand" } ],
+          "all": [ { "q": "cue.pump.gravel", "unit": "cue", "below": 0.3 },
+                   { "measure": "stethoscope", "target": "pump.body", "unit": "cue", "above": 0.5, "says": "청진기에 거친 소리" } ],
+          "verdict": "WTR-02"
+        },
+        {
+          "each": { "c": "C3" },
+          "prep": [ { "cmd": "tool.voltmeter" } ],
+          "undo": [ { "cmd": "tool.hand" } ],
+          "all": [ { "q": "cue.pump.grind", "unit": "cue", "below": 0.3, "says": "갈리는 소리가 없고" },
+                   { "measure": "voltmeter", "target": "switch.{c}", "unit": "V", "above": 10, "says": "10V 넘음" } ],
+          "verdict": "ELC-02"
+        }
+      ],
+      "verdicts": {
+        "ELC-02": { "fault": "ELC-02", "says": "C3 칼날 스위치 접점 부식", "same": "switch.drop" },
+        "WTR-02": {
+          "fault": "WTR-02",
+          "says": "펌프 베어링 마모",
+          "do": [
+            { "procedure": "proc.bearing.replace", "if": [ { "q": "inventory.pump_bearing", "unit": "none", "above": 0.5 } ] },
+            { "procedure": "proc.bearing.oil", "if": [ { "q": "inventory.pump_bearing", "unit": "none", "below": 0.5 },
+                                                      { "q": "cue.pump.oilcup", "unit": "cue", "below": 0.5, "says": "유리 기름 잔이 비어 있다" } ] },
+            { "restore": "switches" }
+          ],
+          "verify": { "all": [ { "q": "cue.pump.hum", "unit": "cue", "above": 0.5 }, { "q": "cue.pump.grind", "unit": "cue", "below": 0.3 } ], "within": 120, "hold": 10 }
+        }
+      },
+      "exposure": { "setup": { "depthM": 300, "switches": { "C3": true }, "bilges": { "bilge.aft": 150 } }, "seconds": 60 },
+      "cases": [
+        { "expect": "WTR-02", "inject": [ { "fault": "WTR-02" } ] },
+        { "expect": "ELC-02", "bind": { "c": "C3" }, "inject": [ { "fault": "ELC-02", "part": "contact.C3" } ] },
+        { "expect": "none", "inject": [ { "fault": "WTR-01" }, { "fault": "WTR-02" } ] },
+        { "expect": "none" }
+      ]
+    }
+  }
+}

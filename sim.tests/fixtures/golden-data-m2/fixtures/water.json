@@ -1,0 +1,352 @@
+{
+  "params": {
+    "lubeLife": 600,
+    "flapScrub": 0.34
+  },
+  "fixtures": [
+    {
+      "id": "pump.cap.bolt.{n}",
+      "bind": {
+        "n": "1..4"
+      },
+      "part": "pump.bearing",
+      "kind": "fastener",
+      "zone": "aft",
+      "prop": "capBolt{n}",
+      "group": "cap",
+      "verbs": {
+        "loosen": {
+          "tool": "wrench",
+          "noise": "wrench",
+          "rejectIf": [
+            {
+              "if": "self.capOpen >= 0.5",
+              "reason": "cover_open"
+            }
+          ]
+        },
+        "tighten": {
+          "tool": "wrench",
+          "noise": "wrench",
+          "rejectIf": [
+            {
+              "if": "self.capOpen >= 0.5",
+              "reason": "cover_open"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "pump.cap",
+      "part": "pump.bearing",
+      "kind": "cover",
+      "zone": "aft",
+      "prop": "capOpen",
+      "heldBy": "cap",
+      "verbs": {
+        "open": {
+          "tool": "hand",
+          "noise": "cover",
+          "hazards": [
+            {
+              "if": "device.bilge_pump.temp >= 60",
+              "hazard": "burn"
+            }
+          ]
+        },
+        "close": {
+          "tool": "hand",
+          "noise": "cover"
+        }
+      }
+    },
+    {
+      "id": "pump.bearing",
+      "part": "pump.bearing",
+      "kind": "socket",
+      "zone": "aft",
+      "needReason": "need_bearing",
+      "verbs": {
+        "pull": {
+          "tool": "hand",
+          "noise": "cover",
+          "rejectIf": [
+            {
+              "if": "self.capOpen < 0.5",
+              "reason": "cover_closed"
+            }
+          ],
+          "hazards": [
+            {
+              "if": "circuit.C3.energized == 1 && device.bilge_pump.enabled == 1",
+              "hazard": "pinch"
+            }
+          ],
+          "set": {
+            "lube": 0,
+            "lubeArmed": 0,
+            "lubeLife": 0,
+            "lubePatch": 0,
+            "oil": 0
+          },
+          "gives": [
+            {
+              "if": "part.pump.bearing.wear > 0",
+              "item": "pump_bearing_worn"
+            },
+            {
+              "item": "pump_bearing"
+            }
+          ]
+        },
+        "insert": {
+          "noise": "cover",
+          "rejectIf": [
+            {
+              "if": "self.capOpen < 0.5",
+              "reason": "cover_closed"
+            }
+          ],
+          "hazards": [
+            {
+              "if": "circuit.C3.energized == 1 && device.bilge_pump.enabled == 1",
+              "hazard": "pinch"
+            }
+          ],
+          "accepts": {
+            "pump_bearing": {
+              "renew": true
+            },
+            "pump_bearing_worn": {}
+          }
+        }
+      }
+    },
+    {
+      "id": "pump.oilcup",
+      "part": "pump.bearing",
+      "kind": "work",
+      "zone": "aft",
+      "verbs": {
+        "oil": {
+          "tool": "oil_can",
+          "gesture": "stroke",
+          "noise": "oil",
+          "rejectIf": [
+            {
+              "if": "self.present < 0.5",
+              "reason": "no_bearing"
+            },
+            {
+              "if": "self.lube >= 1",
+              "reason": "cup_full"
+            }
+          ],
+          "effects": [
+            {
+              "add": "oil",
+              "by": 1,
+              "max": 3
+            },
+            {
+              "if": "self.oil >= 3",
+              "set": "lube",
+              "to": 1
+            },
+            {
+              "if": "self.oil >= 3",
+              "arm": "lubeLife",
+              "to": "$lubeLife"
+            },
+            {
+              "if": "self.oil >= 3 && part.pump.bearing.wear >= 0.8",
+              "quality": "temporary"
+            },
+            {
+              "if": "self.oil >= 3 && part.pump.bearing.wear >= 0.8",
+              "set": "lubePatch",
+              "to": 1
+            },
+            {
+              "if": "self.oil >= 3 && part.pump.bearing.wear < 0.8",
+              "set": "lubePatch",
+              "to": 0
+            },
+            {
+              "if": "self.oil >= 3",
+              "set": "oil",
+              "to": 0
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "pump.body",
+      "part": "pump.bearing",
+      "kind": "work",
+      "zone": "aft",
+      "touch": {
+        "temp": "device.bilge_pump.temp",
+        "vibrating": "device.bilge_pump.running == 1 && pump.drag >= 0.2"
+      }
+    },
+    {
+      "id": "checkvalve.bolt.{n}",
+      "bind": {
+        "n": "1..4"
+      },
+      "part": "pump.check_valve",
+      "kind": "fastener",
+      "zone": "aft",
+      "prop": "bonnetBolt{n}",
+      "group": "bonnet",
+      "sequenceFrom": "proc.checkvalve.clean",
+      "onAllTight": [
+        {
+          "set": "weep",
+          "to": 0
+        },
+        {
+          "if": "self.bonnetBad >= 0.5",
+          "set": "weep",
+          "to": 1
+        }
+      ],
+      "verbs": {
+        "loosen": {
+          "tool": "wrench",
+          "noise": "wrench",
+          "rejectIf": [
+            {
+              "if": "self.bonnetOpen >= 0.5",
+              "reason": "cover_open"
+            }
+          ],
+          "effects": [
+            {
+              "set": "weep",
+              "to": 0
+            }
+          ]
+        },
+        "tighten": {
+          "tool": "wrench",
+          "noise": "wrench",
+          "rejectIf": [
+            {
+              "if": "self.bonnetOpen >= 0.5",
+              "reason": "cover_open"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "checkvalve.bonnet",
+      "part": "pump.check_valve",
+      "kind": "cover",
+      "zone": "aft",
+      "prop": "bonnetOpen",
+      "heldBy": "bonnet",
+      "verbs": {
+        "open": {
+          "tool": "hand",
+          "noise": "cover",
+          "hazards": [
+            {
+              "if": "self.discharge > 0 || device.bilge_pump.running == 1",
+              "hazard": "spray"
+            }
+          ]
+        },
+        "close": {
+          "tool": "hand",
+          "noise": "cover"
+        }
+      }
+    },
+    {
+      "id": "checkvalve.flap",
+      "part": "pump.check_valve",
+      "kind": "socket",
+      "zone": "aft",
+      "needReason": "need_flapper",
+      "verbs": {
+        "pull": {
+          "tool": "hand",
+          "noise": "cover",
+          "rejectIf": [
+            {
+              "if": "self.bonnetOpen < 0.5",
+              "reason": "cover_closed"
+            }
+          ],
+          "gives": [
+            {
+              "item": "check_flapper"
+            }
+          ]
+        },
+        "insert": {
+          "noise": "cover",
+          "rejectIf": [
+            {
+              "if": "self.bonnetOpen < 0.5",
+              "reason": "cover_closed"
+            }
+          ],
+          "accepts": {
+            "check_flapper": {}
+          }
+        }
+      }
+    },
+    {
+      "id": "wash_bucket",
+      "part": "pump.check_valve",
+      "kind": "work",
+      "zone": "aft",
+      "verbs": {
+        "scrub": {
+          "tool": "scrub_brush",
+          "hold": "check_flapper",
+          "gesture": "scrub",
+          "noise": "scrub",
+          "rejectIf": [
+            {
+              "if": "self.stuck <= 0",
+              "reason": "flapper_clean"
+            }
+          ],
+          "effects": [
+            {
+              "add": "stuck",
+              "by": "-$flapScrub",
+              "min": 0
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "pump.discharge",
+      "part": "pump.check_valve",
+      "kind": "valve",
+      "zone": "aft",
+      "prop": "discharge",
+      "turns": 3,
+      "verbs": {
+        "open": {
+          "tool": "hand",
+          "noise": "valve"
+        },
+        "close": {
+          "tool": "hand",
+          "noise": "valve"
+        }
+      }
+    }
+  ]
+}

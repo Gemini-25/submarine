@@ -1,0 +1,248 @@
+{
+  "name": "해치를 닫으면 앞쪽 누수는 후방 전동 펌프가 닿지 못해 수동 펌프로 퍼야 한다",
+  "seed": 114,
+  "depth": 300,
+  "inject": [
+    {
+      "tick": 0,
+      "fault": "HUL-01",
+      "part": "leak.rivet.02"
+    }
+  ],
+  "commands": [
+    {
+      "tick": 0,
+      "cmd": "hatch.close"
+    },
+    {
+      "tick": 0,
+      "cmd": "switch.C3.on"
+    },
+    {
+      "tick": 6000,
+      "cmd": "handpump.stroke"
+    },
+    {
+      "tick": 6024,
+      "cmd": "handpump.stroke"
+    },
+    {
+      "tick": 6048,
+      "cmd": "handpump.stroke"
+    },
+    {
+      "tick": 6072,
+      "cmd": "handpump.stroke"
+    },
+    {
+      "tick": 6096,
+      "cmd": "handpump.stroke"
+    },
+    {
+      "tick": 6120,
+      "cmd": "handpump.stroke"
+    },
+    {
+      "tick": 6144,
+      "cmd": "handpump.stroke"
+    },
+    {
+      "tick": 6168,
+      "cmd": "handpump.stroke"
+    },
+    {
+      "tick": 6192,
+      "cmd": "handpump.stroke"
+    },
+    {
+      "tick": 6216,
+      "cmd": "handpump.stroke"
+    },
+    {
+      "tick": 6240,
+      "cmd": "handpump.stroke"
+    },
+    {
+      "tick": 6264,
+      "cmd": "handpump.stroke"
+    },
+    {
+      "tick": 6288,
+      "cmd": "handpump.stroke"
+    },
+    {
+      "tick": 6312,
+      "cmd": "handpump.stroke"
+    },
+    {
+      "tick": 6336,
+      "cmd": "handpump.stroke"
+    },
+    {
+      "tick": 6360,
+      "cmd": "handpump.stroke"
+    },
+    {
+      "tick": 6384,
+      "cmd": "handpump.stroke"
+    },
+    {
+      "tick": 6408,
+      "cmd": "handpump.stroke"
+    },
+    {
+      "tick": 6432,
+      "cmd": "handpump.stroke"
+    },
+    {
+      "tick": 6456,
+      "cmd": "handpump.stroke"
+    },
+    {
+      "tick": 6480,
+      "cmd": "handpump.stroke"
+    },
+    {
+      "tick": 6504,
+      "cmd": "handpump.stroke"
+    },
+    {
+      "tick": 6528,
+      "cmd": "handpump.stroke"
+    },
+    {
+      "tick": 6552,
+      "cmd": "handpump.stroke"
+    },
+    {
+      "tick": 6576,
+      "cmd": "handpump.stroke"
+    },
+    {
+      "tick": 6600,
+      "cmd": "handpump.stroke"
+    },
+    {
+      "tick": 6624,
+      "cmd": "handpump.stroke"
+    },
+    {
+      "tick": 6648,
+      "cmd": "handpump.stroke"
+    },
+    {
+      "tick": 6672,
+      "cmd": "handpump.stroke"
+    },
+    {
+      "tick": 6696,
+      "cmd": "handpump.stroke"
+    },
+    {
+      "tick": 6720,
+      "cmd": "handpump.stroke"
+    },
+    {
+      "tick": 6744,
+      "cmd": "handpump.stroke"
+    },
+    {
+      "tick": 6768,
+      "cmd": "handpump.stroke"
+    },
+    {
+      "tick": 6792,
+      "cmd": "handpump.stroke"
+    },
+    {
+      "tick": 6816,
+      "cmd": "handpump.stroke"
+    },
+    {
+      "tick": 6840,
+      "cmd": "handpump.stroke"
+    },
+    {
+      "tick": 6864,
+      "cmd": "handpump.stroke"
+    },
+    {
+      "tick": 6888,
+      "cmd": "handpump.stroke"
+    },
+    {
+      "tick": 6912,
+      "cmd": "handpump.stroke"
+    },
+    {
+      "tick": 6936,
+      "cmd": "handpump.stroke"
+    },
+    {
+      "tick": 6960,
+      "cmd": "handpump.stroke"
+    },
+    {
+      "tick": 6984,
+      "cmd": "handpump.stroke"
+    },
+    {
+      "tick": 7008,
+      "cmd": "handpump.stroke"
+    },
+    {
+      "tick": 7032,
+      "cmd": "handpump.stroke"
+    },
+    {
+      "tick": 7056,
+      "cmd": "handpump.stroke"
+    },
+    {
+      "tick": 7080,
+      "cmd": "handpump.stroke"
+    },
+    {
+      "tick": 7104,
+      "cmd": "handpump.stroke"
+    },
+    {
+      "tick": 7128,
+      "cmd": "handpump.stroke"
+    },
+    {
+      "tick": 7152,
+      "cmd": "handpump.stroke"
+    },
+    {
+      "tick": 7176,
+      "cmd": "handpump.stroke"
+    }
+  ],
+  "expect": [
+    {
+      "always": "pump.netFlow == 0",
+      "fromTick": 100,
+      "toTick": 7200,
+      "note": "후방 빌지는 비어 있다"
+    },
+    {
+      "atTick": 6000,
+      "assert": "bilge.fwd.water > 120"
+    },
+    {
+      "atTick": 7200,
+      "assert": "bilge.fwd.water < 100 && handpump.totalL == 75"
+    },
+    {
+      "byTick": 6005,
+      "fromTick": 6000,
+      "assert": "noise.current >= 55",
+      "note": "장비 소음 30 + 수동 펌프 25"
+    },
+    {
+      "never": "noise.current >= 55",
+      "toTick": 5999
+    }
+  ]
+}

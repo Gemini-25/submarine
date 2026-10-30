@@ -1,0 +1,38 @@
+{
+  "senses": {
+    "tubeWeakFilament": 0.5,
+    "filamentDecayPerSecond": 0.001,
+    "bulbFlickerSeconds": 0.25,
+    "bulbFlickerOffFraction": 0.4,
+    "panelWiring": {
+      "crossMoisture": 0.5,
+      "unseatedCrossMoisture": 0.2,
+      "followBox": "junction.C4",
+      "followPerMin": 0.08
+    },
+    "searchlight": {
+      "burnPerSecond": 0.0002,
+      "wideGap": 0.3,
+      "wideBurnFactor": 2,
+      "shortLength": 0.35,
+      "gapGrowPerSecond": 0.0005,
+      "gapMark": 0.15,
+      "outGap": 0.8,
+      "outLength": 0.05,
+      "flickerGap": 0.4,
+      "flickerLength": 0.1,
+      "flickerSeconds": 0.2,
+      "flickerDipFraction": 0.6,
+      "dipLoad": 0.3
+    },
+    "gauges": {
+      "fullScale": {
+        "voltage": 1.25,
+        "current": 3000,
+        "bilge": 600,
+        "depth": 600,
+        "pumpCurrent": 600
+      }
+    }
+  }
+}

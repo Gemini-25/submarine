@@ -415,7 +415,7 @@ public partial class Submarine
     void BuildAftLocker(Node3D root)
     {
         var m = Mount(root, "AftLocker", new Vector3(1.5f, 1.3f, -HalfWidth), Vector3.Back);
-        float w = 0.7f, h = 0.75f, d = 0.15f;
+        float w = 0.7f, h = AftLockerHeight, d = 0.15f;
         var shelves = new[] { 0.03f, 0.27f, 0.51f };
         Kit.Locker(m, w, h, d, shelves, false, "후방 예비품");
         Geo.Blocker(m, new Vector3(w, h, d), new Vector3(0, h / 2, d / 2));

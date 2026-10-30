@@ -151,11 +151,15 @@ public static partial class Kit
 
     // ── 사물함 ───────────────────────────────────────────
 
+    /// <summary>사물함 앞 테 맨 위 제목판의 높이. 그 뒤는 칸에서 보이지 않는다.</summary>
+    public const float LockerHeader = 0.08f;
+
     /// <summary>
     /// 강철 선반 사물함(모스호 예비품 사물함). 원점은 바닥, 벽 면 위 가운데. 앞이 +Z.
     /// shelfYs는 선반 윗면 높이. 앞이 트여 있어 물건이 보인다(doors면 닫힌 덧창 문 두 짝).
+    /// lip은 선반 앞 턱의 높이. 작은 물건을 두는 사물함은 낮춰서 턱 뒤에 물건이 숨지 않게 한다.
     /// </summary>
-    public static Node3D Locker(Node3D? parent, float width = 1.0f, float height = 1.65f, float depth = 0.38f, float[]? shelfYs = null, bool doors = false, string label = "")
+    public static Node3D Locker(Node3D? parent, float width = 1.0f, float height = 1.65f, float depth = 0.38f, float[]? shelfYs = null, bool doors = false, string label = "", float lip = 0.04f)
     {
         var root = Root("Locker", parent);
         var paint = ArtMat.Machinery;
@@ -171,12 +175,12 @@ public static partial class Kit
         // 앞 테
         foreach (float s in new[] { -1f, 1f })
             mb.Box(paint, new Vector3(s * (width / 2 - 0.025f), height / 2, depth - 0.006f), new Vector3(0.05f, height, 0.012f), 0.004f, 0.03f);
-        mb.Box(paint, new Vector3(0, height - 0.04f, depth - 0.006f), new Vector3(width, 0.08f, 0.012f), 0.004f, 0.03f);
+        mb.Box(paint, new Vector3(0, height - LockerHeader / 2, depth - 0.006f), new Vector3(width, LockerHeader, 0.012f), 0.004f, 0.03f);
         foreach (float y in shelfYs)
         {
             mb.Box(paint, new Vector3(0, y - 0.01f, depth / 2), new Vector3(width - 2 * t, 0.02f, depth - 0.02f), 0.004f, 0.04f);
             // 선반 앞 턱: 배가 기울어도 물건이 쏟아지지 않게
-            mb.Box(paint, new Vector3(0, y + 0.02f, depth - 0.03f), new Vector3(width - 2 * t, 0.04f, 0.008f), 0.003f, 0.03f);
+            mb.Box(paint, new Vector3(0, y + lip / 2, depth - 0.03f), new Vector3(width - 2 * t, lip, 0.008f), Math.Min(0.003f, lip / 4), 0.03f);
         }
         if (doors)
             foreach (float s in new[] { -1f, 1f })
@@ -194,7 +198,7 @@ public static partial class Kit
             foreach (var p in Line(new Vector3(s * (width / 2 - 0.025f), 0.06f, depth), new Vector3(s * (width / 2 - 0.025f), height - 0.06f, depth), 0.09f))
                 spots.Add((p, Vector3.Back));
         Rivets(root, paint, spots, 0.007f);
-        if (label.Length > 0) Text(root, label, new Vector3(0, height - 0.04f, depth + 0.001f), 0.045f, new Color(0.85f, 0.82f, 0.7f));
+        if (label.Length > 0) Text(root, label, new Vector3(0, height - LockerHeader / 2, depth + 0.001f), 0.045f, new Color(0.85f, 0.82f, 0.7f));
         return root;
     }
 

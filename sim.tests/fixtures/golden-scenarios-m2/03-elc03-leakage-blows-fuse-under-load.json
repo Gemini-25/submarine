@@ -1,0 +1,43 @@
+{
+  "name": "ELC-03 누전 회로에 부하가 걸리면 같은 퓨즈가 끊긴다",
+  "seed": 103,
+  "depth": 200,
+  "inject": [
+    {
+      "tick": 0,
+      "fault": "ELC-03",
+      "part": "junction.C3"
+    }
+  ],
+  "commands": [
+    {
+      "tick": 100,
+      "cmd": "switch.C3.on"
+    }
+  ],
+  "expect": [
+    {
+      "byTick": 101,
+      "assert": "circuit.C3.current > circuit.C3.rating"
+    },
+    {
+      "atTick": 130,
+      "assert": "circuit.C3.fuse == 'ok'",
+      "note": "2초가 지나기 전에는 버틴다"
+    },
+    {
+      "byTick": 145,
+      "assert": "circuit.C3.fuse == 'blown' && events.Spark >= 1"
+    },
+    {
+      "byTick": 146,
+      "assert": "panel.lamp.switchboard == 'fault'"
+    },
+    {
+      "never": "events.Explosion >= 1 || mission.status == 'failed'",
+      "toTick": 146,
+      "note": "수소가 없으면 퓨즈 불꽃은 폭발하지 않는다"
+    }
+  ],
+  "ordered": true
+}

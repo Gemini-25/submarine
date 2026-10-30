@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using DeepLine.Sim.Autoplay;
 using DeepLine.Sim.Faults;
 using Xunit.Abstractions;
 
@@ -304,6 +305,10 @@ public class DeterminismTests
     // M1 손 수리 기록(golden-hand/)으로 만들어서, data/ 튜닝이나 새 시나리오와 무관하다(DECISIONS M2 불변 조건 I1).
     // 규칙을 일부러 바꿨다면 DEEPLINE_REGEN_GOLDEN=1 dotnet test 로 다시 만들고, 바뀐 키를 커밋 메시지에 적는다.
     // 의미 테스트가 따로 지키지 않는 규칙은 기준 해시로만 지키지 말 것.
+    //
+    // M2 묶음(키 앞에 'm2/'): M2 마감 때 얼린 데이터(golden-data-m2/, 교범 빼고 data/ 전부), 그때의 시나리오 사본
+    // (golden-scenarios-m2/, M0 16개와 M2 셋), 훈련 열여섯의 풀이 기록 사본(golden-drills-m2/, 솔버 없이 손 명령만 다시 낸다),
+    // 그리고 위기 한 판. 축압기 개스킷과 분기함 말리기는 m2-power-b, 자이로 다시 켜기와 항법 계산기는 m2-nav 기록이 지난다.
 
     const int GoldenEvery = 1200;
     /// <summary>손 수리 기록은 짧아서 1초마다 해시를 남긴다.</summary>
@@ -311,16 +316,36 @@ public class DeterminismTests
 
     static string GoldenScenarioDir => Path.Combine(TestData.FixtureDir, "golden-scenarios");
     static string GoldenHandDir => Path.Combine(TestData.FixtureDir, "golden-hand");
+    static string GoldenScenarioM2Dir => Path.Combine(TestData.FixtureDir, "golden-scenarios-m2");
+    static string GoldenDrillM2Dir => Path.Combine(TestData.FixtureDir, "golden-drills-m2");
+    const string M2 = "m2/";
     static bool Regenerating => Environment.GetEnvironmentVariable("DEEPLINE_REGEN_GOLDEN") == "1";
 
     static GameData GoldenData() => GameData.LoadFromDirectory(Path.Combine(TestData.FixtureDir, "golden-data"));
+
+    static readonly Lazy<GameData> _goldenM2 = new(() => GameData.LoadFromDirectory(Path.Combine(TestData.FixtureDir, "golden-data-m2")));
+    static GameData GoldenDataM2() => _goldenM2.Value;
 
     public static IEnumerable<object[]> GoldenCases() =>
         Directory.GetFiles(GoldenScenarioDir, "*.json")
             .Concat(Directory.GetFiles(GoldenHandDir, "*.json"))
             .Select(f => Path.GetFileName(f)).OrderBy(f => f, StringComparer.Ordinal)
             .Append("replay-log").Append("replay-random").Append("mission-m1-crisis")
+            .Concat(GoldenM2Keys())
             .Select(k => new object[] { k });
+
+    static IEnumerable<string> GoldenM2Keys() =>
+        Directory.GetFiles(GoldenScenarioM2Dir, "*.json").Select(f => M2 + Path.GetFileName(f))
+            .Concat(Directory.GetFiles(GoldenDrillM2Dir, "*.json").Select(f => M2 + "drill-" + Path.GetFileNameWithoutExtension(f)))
+            .OrderBy(k => k, StringComparer.Ordinal)
+            .Append(M2 + "mission-m1-crisis");
+
+    static DrillLog GoldenDrillM2(string mission) =>
+        DrillRunner.FromJson(File.ReadAllText(Path.Combine(GoldenDrillM2Dir, mission + ".json")));
+
+    public static IEnumerable<object[]> GoldenDrillsM2() =>
+        Directory.GetFiles(GoldenDrillM2Dir, "*.json").Select(Path.GetFileNameWithoutExtension).OrderBy(m => m, StringComparer.Ordinal)
+            .Select(m => new object[] { m! });
 
     /// <summary>손 수리 기록이 이름대로 한다. 명령이 거부되어 아무것도 안 하는 기록이 기준이 되는 것을 막는다.</summary>
     [Theory]
@@ -353,10 +378,27 @@ public class DeterminismTests
         var data = GoldenData();
         Assert.NotEmpty(data.Procedures);
         Assert.Contains(data.Missions, m => m.Id == "m1-crisis");
+        var m2 = GoldenDataM2();
+        Assert.Equal(26, m2.Faults.Count);
+        Assert.Equal(17, m2.Missions.Count);
+        Assert.NotNull(m2.Diagnosis);
+    }
+
+    /// <summary>얼린 풀이 기록을 얼린 M2 데이터에서 다시 내면 훈련이 성공으로 끝난다. 거부된 명령만 남은 기록이 기준이 되는 것을 막는다.</summary>
+    [Theory]
+    [MemberData(nameof(GoldenDrillsM2))]
+    public void Golden_m2_drill_replays_still_finish_their_drills(string mission)
+    {
+        var log = GoldenDrillM2(mission);
+        Assert.Equal("succeeded", log.Status);
+        MissionStatus status = MissionStatus.Running;
+        DrillRunner.Replay(GoldenDataM2(), log, sim => status = sim.Status);
+        Assert.Equal(MissionStatus.Succeeded, status);
     }
 
     static List<string> GoldenRun(string key)
     {
+        if (key.StartsWith(M2, StringComparison.Ordinal)) return GoldenRunM2(key[M2.Length..]);
         var hashes = new List<string>();
         if (key == "mission-m1-crisis")
         {
@@ -387,6 +429,37 @@ public class DeterminismTests
         var result = ScenarioRunner.Run(GoldenData(), ScenarioFile.Load(file), sim =>
         {
             if (sim.Tick % every == 0) hashes.Add(sim.StateHash().ToString("X16"));
+        });
+        hashes.Add(result.FinalHash.ToString("X16"));
+        return hashes;
+    }
+
+    /// <summary>M2 묶음 한 키: 위기 한 판, 훈련 기록 다시 내기(1200틱 해시와 마지막), 또는 얼린 시나리오(1200틱마다와 마지막).</summary>
+    static List<string> GoldenRunM2(string key)
+    {
+        var data = GoldenDataM2();
+        var hashes = new List<string>();
+        if (key == "mission-m1-crisis")
+        {
+            var sim = new Simulation();
+            sim.StartMission(data, "m1-crisis");
+            CrisisPlayer.Run(sim, data, s =>
+            {
+                if (s.Tick % GoldenEvery == 0) hashes.Add(s.StateHash().ToString("X16"));
+            });
+            hashes.Add(sim.StateHash().ToString("X16"));
+            return hashes;
+        }
+        if (key.StartsWith("drill-", StringComparison.Ordinal))
+        {
+            var (final, every) = DrillRunner.Replay(data, GoldenDrillM2(key["drill-".Length..]));
+            hashes.AddRange(every.Select(h => h.Hash.ToString("X16")));
+            hashes.Add(final.ToString("X16"));
+            return hashes;
+        }
+        var result = ScenarioRunner.Run(data, ScenarioFile.Load(Path.Combine(GoldenScenarioM2Dir, key)), sim =>
+        {
+            if (sim.Tick % GoldenEvery == 0) hashes.Add(sim.StateHash().ToString("X16"));
         });
         hashes.Add(result.FinalHash.ToString("X16"));
         return hashes;

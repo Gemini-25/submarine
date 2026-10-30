@@ -1,0 +1,40 @@
+{
+  "name": "위기 훈련: 후방 기관 구역",
+  "briefing": [
+    "모선 아르고스호 → 모스호 기관사. 수심 300m 정박 훈련.",
+    "후방 기관 구역에서 계통 이상이 보고되었다. 상황판과 구역 경고등을 확인하고, 교범(Tab)을 참고해 원인을 찾아 고칠 것.",
+    "모든 이상을 해결하고 빌지 수위를 60L 아래로 1분 동안 유지하면 훈련을 마친다. 축전지가 바닷물에 잠기면 염소가 생긴다."
+  ],
+  "seed": 4242,
+  "setup": {
+    "depthM": 300,
+    "switches": {
+      "C3": true
+    }
+  },
+  "events": [
+    {
+      "atSeconds": 0,
+      "fault": "WTR-01"
+    },
+    {
+      "atSeconds": 20,
+      "fault": "HUL-01",
+      "part": "leak.rivet.09"
+    },
+    {
+      "atSeconds": 60,
+      "fault": "ELC-01",
+      "part": "fuse.C3"
+    }
+  ],
+  "success": {
+    "assert": "circuit.C3.fuse == 'ok' && part.pump.intake.prop.clog < 0.05 && part.pump.intake.prop.basketOut == 0 && part.pump.intake.prop.coverOpen == 0 && leak.rivet.09.inflow < 0.05 && bilge.total < 60",
+    "holdSeconds": 60,
+    "objectives": [
+      "경보가 울린 계통을 모두 정상으로 되돌린다",
+      "빌지 수위를 60L 아래로 1분 동안 유지한다"
+    ]
+  },
+  "timeLimitSeconds": 1500
+}

@@ -1,0 +1,27 @@
+{
+  "name": "선체 훈련 B: 현창과 케이블 챔버",
+  "briefing": [
+    "모선 아르고스호 → 모스호 기관사. 수심 300m 정박 훈련.",
+    "전방 구역 경고등이 켜졌다. 케이블 챔버에는 감지기가 없으니 수위 유리를 때때로 볼 것. 새는 자리를 보고 교범(Tab)에서 맞는 수리를 찾아 할 것. 배수 펌프는 돌고 있다.",
+    "새는 곳을 모두 고치고, 챔버 해치를 닫고 조임 바퀴를 푼 뒤 흡입 선택기를 빌지로 되돌린 채 1분을 버티면 훈련을 마친다."
+  ],
+  "seed": 1904,
+  "setup": {
+    "depthM": 300,
+    "switches": { "C3": true }
+  },
+  "events": [
+    { "atSeconds": 0, "fault": "HUL-02", "part": "leak.viewport.1" },
+    { "atSeconds": 20, "fault": "HUL-04" }
+  ],
+  "success": {
+    "assert": "leak.viewport.1.totalInflow < 0.01 && zone.fore.alarm == 0 && leak.chamber_door.totalInflow < 0.05 && chamber.water < 20 && part.chamber.state.prop.innerOpen < 0.5 && part.chamber.state.prop.squeeze <= 0 && pump.suction == 'bilge'",
+    "holdSeconds": 60,
+    "objectives": [
+      "현창 밀봉을 간다",
+      "챔버 바깥 문 밀봉을 간다",
+      "챔버 해치를 닫고 조임 바퀴를 푼 뒤, 흡입 선택기를 빌지로 되돌린 채 1분을 버틴다"
+    ]
+  },
+  "timeLimitSeconds": 1800
+}

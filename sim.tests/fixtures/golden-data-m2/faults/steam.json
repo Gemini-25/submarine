@@ -1,0 +1,12 @@
+{
+  "PWR-03": {
+    "name": "증기 축압기 누설",
+    "system": "power",
+    "partKind": "steam_joint",
+    "defaultPart": "steam.joint",
+    "state": "Fault",
+    "set": { "integrity": 0.4, "seatQ": 0.4 },
+    "clearedWhen": "self.integrity >= 0.6 && self.present >= 0.5 && self.bolt1 >= 0.5 && self.bolt2 >= 0.5 && self.bolt3 >= 0.5 && self.bolt4 >= 0.5",
+    "baseRatePerHour": 0
+  }
+}

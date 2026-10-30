@@ -1,0 +1,42 @@
+{
+  "name": "ELC-03 누전은 부하가 없어도 전력을 새게 하고, 퓨즈는 버틴다",
+  "seed": 102,
+  "depth": 200,
+  "setup": {
+    "devices": {
+      "bilge_pump": false
+    }
+  },
+  "inject": [
+    {
+      "tick": 0,
+      "fault": "ELC-03",
+      "part": "junction.C3"
+    }
+  ],
+  "commands": [
+    {
+      "tick": 100,
+      "cmd": "switch.C3.on"
+    }
+  ],
+  "expect": [
+    {
+      "atTick": 50,
+      "assert": "circuit.C3.leak == 0",
+      "note": "회로가 꺼져 있으면 누설도 없다"
+    },
+    {
+      "byTick": 101,
+      "assert": "circuit.C3.leak > 300"
+    },
+    {
+      "never": "circuit.C3.fuse == 'blown'",
+      "toTick": 6000
+    },
+    {
+      "byTick": 6000,
+      "assert": "battery.charge < start - 0.03"
+    }
+  ]
+}

@@ -1,0 +1,100 @@
+{
+  "PWR-01": {
+    "name": "축전지 셀 열화",
+    "system": "power",
+    "partKind": "cell",
+    "defaultPart": "cell.3",
+    "state": "Fault",
+    "set": {
+      "health": 0.3
+    },
+    "baseRatePerHour": 0.02
+  },
+  "ELC-01": {
+    "name": "퓨즈 단선",
+    "system": "switchboard",
+    "partKind": "fuse",
+    "state": "Broken",
+    "set": {
+      "blown": 1
+    },
+    "baseRatePerHour": 0.005
+  },
+  "ELC-03": {
+    "name": "누전",
+    "system": "switchboard",
+    "partKind": "junction",
+    "state": "Fault",
+    "set": {
+      "moisture": 0.95
+    },
+    "clearedWhen": "self.moisture < 0.6 && self.coverOpen == 0",
+    "baseRatePerHour": 0.01
+  },
+  "AIR-01": {
+    "name": "송풍 팬 정지",
+    "system": "air",
+    "partKind": "fan_motor",
+    "defaultPart": "fan.motor",
+    "state": "Fault",
+    "set": {
+      "stalled": 1,
+      "bearingWorn": 1
+    },
+    "baseRatePerHour": 0.02
+  },
+  "AIR-02": {
+    "name": "흡수제 포화",
+    "system": "air",
+    "partKind": "canister",
+    "defaultPart": "scrubber.canister",
+    "state": "Fault",
+    "set": {
+      "saturation": 1
+    },
+    "baseRatePerHour": 0
+  },
+  "WTR-01": {
+    "name": "펌프 흡입구 막힘",
+    "system": "water",
+    "partKind": "intake",
+    "defaultPart": "pump.intake",
+    "state": "Fault",
+    "set": {
+      "clog": 1
+    },
+    "baseRatePerHour": 0.02
+  },
+  "WTR-02": {
+    "name": "펌프 베어링 마모",
+    "system": "water",
+    "partKind": "bearing",
+    "defaultPart": "pump.bearing",
+    "state": "Fault",
+    "set": {},
+    "wear": 0.85,
+    "baseRatePerHour": 0.01
+  },
+  "WTR-03": {
+    "name": "역류 방지 밸브 고착",
+    "system": "water",
+    "partKind": "check_valve",
+    "defaultPart": "pump.check_valve",
+    "state": "Fault",
+    "set": {
+      "stuck": 1
+    },
+    "clearedWhen": "self.stuck < 0.01 && self.present >= 0.5 && self.bonnetOpen == 0",
+    "baseRatePerHour": 0.01
+  },
+  "HUL-01": {
+    "name": "리벳 이음 누수",
+    "system": "hull",
+    "partKind": "rivet",
+    "state": "Fault",
+    "set": {
+      "integrity": 0.35
+    },
+    "baseRatePerHour": 0.03
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "steam.accumulator": {
+    "kind": "accumulator",
+    "visible": ["pressure", "linePressure", "stop", "bleed"],
+    "props": {
+      "bleed": 0,
+      "linePressure": 1,
+      "pressure": 1,
+      "stop": 4
+    }
+  },
+  "steam.joint": {
+    "kind": "steam_joint",
+    "visible": ["bolt1", "bolt2", "bolt3", "bolt4", "present", "wrap", "wrapTurns"],
+    "props": {
+      "bolt1": 1,
+      "bolt2": 1,
+      "bolt3": 1,
+      "bolt4": 1,
+      "seatQ": 1,
+      "integrity": 1,
+      "present": 1,
+      "rough": 0,
+      "scraped": 0,
+      "wrap": 0,
+      "wrapArmed": 0,
+      "wrapLife": 0,
+      "wrapTurns": 0
+    }
+  }
+}
