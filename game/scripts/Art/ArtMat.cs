@@ -163,6 +163,10 @@ public static class ArtMat
         ("light_color", V(new Color(0.62f, 0.48f, 0.30f))), ("dark_color", V(new Color(0.40f, 0.29f, 0.17f))), ("varnish", 0f));
     public static ShaderMaterial Marble => Shaded("marble", "marble");
 
+    /// <summary>결 방향과 색을 고른 나무(도구 자루, WP25). 자루는 모형의 Y축을 따라 놓여 결도 Y를 따라야 한다.</summary>
+    public static ShaderMaterial WoodGrain(string tag, Vector3 axis, Color light, Color dark, float varnish) => Shaded($"wood_{tag}", "wood",
+        ("grain_axis", axis), ("light_color", V(light)), ("dark_color", V(dark)), ("varnish", varnish));
+
     // ── 빛나는 것 ────────────────────────────────────────
 
     /// <summary>발광 재질. 밝기를 따로 바꾸므로 공유하지 않는다.</summary>

@@ -161,6 +161,16 @@ public partial class AutoPlayer
         var node = _main.Sub.GetNode<Node3D>("Floor_mallet");
         for (int i = 0; i < 1500 && node.Position.X <= 5.3f; i++) await Frame();
         Check(node.Visible && node.Position.X > 5.3f, $"화면의 나무망치가 전방 바닥에 없다 (x {node.Position.X:F2})");
+        // 도착한 모형은 제 자리에 똑바로 누웠고, 가장 낮은 곳이 갑판 위다(미끄러지기만 하고 박히지 않는다, WP25).
+        var rest = World.Submarine.FloorSlots[DeepLine.Sim.Data.GameData.ZoneIndex("fore")]["mallet"];
+        for (int i = 0; i < 600 && node.Position.DistanceTo(rest.Center) > 0.011f; i++) await Frame();
+        await Frame(2);
+        var restBasis = rest.AlongX ? Basis.Identity : Basis.FromEuler(new Vector3(0, -Mathf.Pi / 2, 0));
+        Check(node.Position.DistanceTo(rest.Center) <= 0.011f && node.Basis.IsEqualApprox(restBasis), $"구른 나무망치가 제 자리에 똑바로 눕지 않았다 (자리 {node.Position}, 기저 {node.Basis})");
+        float lowest = node.FindChildren("*", nameof(MeshInstance3D), true, false).Cast<MeshInstance3D>()
+            .SelectMany(mi => Enumerable.Range(0, 8).Select(k => (mi.GlobalTransform * mi.GetAabb().GetEndpoint(k)).Y)).Min();
+        Check(lowest >= -0.005f, $"구른 나무망치가 갑판을 뚫었다 (가장 낮은 곳 y {lowest:F3})");
+        Check(_main.Sub.FloorDoorScrapes == 0, $"구른 나무망치가 해치 문틀을 긁고 지나갔다 ({_main.Sub.FloorDoorScrapes}프레임)");
         await Perform("tool.pickup.mallet");
         Step(0.1);
         Check(Snap.Crew.ToolPlaces["mallet"] == "belt", "구른 나무망치를 줍지 못했다");

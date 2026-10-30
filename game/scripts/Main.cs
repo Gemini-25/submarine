@@ -29,6 +29,7 @@ public partial class Main : Node3D
     public PlayerController Player { get; private set; } = null!;
     public InteractionController Hands { get; private set; } = null!;
     public Hud Hud { get; private set; } = null!;
+    public HeldItemView Held { get; private set; } = null!;
     public ManualOverlay Manual { get; private set; } = null!;
     public NotepadOverlay Notepad { get; private set; } = null!;
     public BodyEffects Body { get; private set; } = null!;
@@ -75,9 +76,9 @@ public partial class Main : Node3D
         Hands = new InteractionController { Name = "Hands" };
         AddChild(Hands);
         Hands.Setup(Runner, Player, Sub);
-        var held = new HeldItemView { Name = "Held" };
-        Player.Camera.AddChild(held);
-        held.Setup(Runner, Hands);
+        Held = new HeldItemView { Name = "Held" };
+        Player.Camera.AddChild(Held);
+        Held.Setup(Runner, Hands);
 
         Body = new BodyEffects { Name = "Body" };
         AddChild(Body);
