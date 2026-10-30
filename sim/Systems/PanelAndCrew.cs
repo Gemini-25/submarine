@@ -152,6 +152,7 @@ static class PanelSystem
                 if (nav >= 0) lamps[nav] = Max(lamps[nav], LampState.Warning);
             }
             lamps[PanelSystems.Cable] = Max(lamps[PanelSystems.Cable], CableGear.PanelLamp(w)); // 윈치 미끄럼 스위치 (WP15)
+            lamps[PanelSystems.Power] = Max(lamps[PanelSystems.Power], Steam.PanelLamp(w)); // 축압기 압력 스위치 (WP19)
         }
         else
         {

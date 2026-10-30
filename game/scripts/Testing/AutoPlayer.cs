@@ -70,6 +70,7 @@ public partial class AutoPlayer : Node
         ["drill-cable"] = DrillCableSuite,
         ["drill-power"] = DrillPowerSuite,
         ["drill-switchboard"] = DrillSwitchboardSuite,
+        ["drill-power-b"] = DrillPowerBSuite, ["drill-hull-b"] = DrillHullBSuite, ["drill-shakedown"] = DrillShakedownSuite, // WP19 (AutoPlayer.TierB.cs)
         ["drill-ballast"] = DrillBallastSuite,
         ["drill-water-b"] = DrillWaterBSuite,
         ["drill-air-b"] = DrillAirBSuite,

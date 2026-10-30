@@ -125,6 +125,7 @@ static class NoiseSystem
             n += level;
         }
         n += ShaftGland.SquealNoise(w); // 축 패킹을 너무 조이면 끽끽 소리 (M2 HUL-03)
+        n += Steam.Noise(w); // 빼기 밸브와 이음의 쉿 소리 (M2 PWR-03)
 
         var actions = w.Noise.Actions;
         for (int i = actions.Count - 1; i >= 0; i--)

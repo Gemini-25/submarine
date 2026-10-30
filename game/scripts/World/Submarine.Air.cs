@@ -115,7 +115,7 @@ public partial class Submarine
         CoverVisual(guardIt, hinge, Vector3.Right, 85);
 
         // 종이 띠: 보호망 벽 쪽 테에 매달려, 팬이 돌면 바람에 날린다.
-        var ribbon = new Node3D { Position = new Vector3(0, -0.005f, 0) };
+        var ribbon = new Node3D { Name = "FanRibbon", Position = new Vector3(0, -0.005f, 0) };
         hinge.AddChild(ribbon);
         Geo.Box(ribbon, new Vector3(0.02f, 0.12f, 0.002f), new Vector3(0, -0.06f, 0), Geo.Cream);
         float lift = 0;

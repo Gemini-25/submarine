@@ -1,0 +1,32 @@
+{
+  "name": "동력 훈련 B: 증기 축압기",
+  "briefing": [
+    "모선 아르고스호 → 모스호 기관사. 수심 300m 정박 훈련.",
+    "후방에서 쉿 하는 소리가 그치지 않고 실내가 눅눅해졌다는 보고가 들어왔다. 배수 펌프는 돌고 있다. 현장의 소리와 계기를 보고 원인을 찾아 교범(Tab)대로 고칠 것.",
+    "축압기 이음을 정식으로 고치고, 젖은 분기함을 말려 배수 펌프가 1분 동안 퓨즈 걱정 없이 돌면 훈련을 마친다."
+  ],
+  "seed": 1903,
+  "setup": {
+    "depthM": 300,
+    "switches": { "C3": true },
+    "bilges": { "bilge.aft": 80 },
+    "parts": [
+      { "part": "air.humidity", "prop": "rh", "value": 0.7 },
+      { "part": "junction.C3", "prop": "moisture", "value": 0.62 },
+      { "part": "junction.C8", "prop": "moisture", "value": 0.5 }
+    ]
+  },
+  "events": [
+    { "atSeconds": 0, "fault": "PWR-03" }
+  ],
+  "success": {
+    "assert": "part.steam.joint.prop.integrity >= 0.95 && part.steam.accumulator.prop.stop >= 4 && part.steam.accumulator.prop.bleed <= 0 && circuit.C3.moisture < 0.6 && circuit.C3.fuse == 'ok' && device.bilge_pump.running == 1",
+    "holdSeconds": 60,
+    "objectives": [
+      "축압기 이음을 개스킷으로 정식 수리한다",
+      "젖은 분기함을 말린다",
+      "배수 펌프를 1분 동안 돌린다"
+    ]
+  },
+  "timeLimitSeconds": 1800
+}

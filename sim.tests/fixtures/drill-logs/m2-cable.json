@@ -1,13 +1,13 @@
 {
-  "mission": "m2-cable", "seed": 1515, "dataStamp": "d7af3f53cc50c7db", "handTicks": 12,
-  "finalTick": 2620, "finalHash": 18148502069813704852, "status": "succeeded",
+  "mission": "m2-cable", "seed": 1515, "dataStamp": "a6e5e410a96cce58", "handTicks": 12,
+  "finalTick": 2620, "finalHash": 3725567983547831530, "status": "succeeded",
   "findings": [
     {"tick":1460,"pair":"siphon.trace","verdict":"CBL-02","bind":"","outcome":"fixed"},
     {"tick":2200,"pair":"winch.weak","verdict":"CBL-01","bind":"","outcome":"fixed"}
   ],
   "hashes": [
-    {"tick":1200,"hash":11405883047349789113},
-    {"tick":2400,"hash":15285454120232430325}
+    {"tick":1200,"hash":4443624486408468611},
+    {"tick":2400,"hash":5699174785175289139}
   ],
   "lines": [
     {"tick":0,"step":{"seq":1,"kind":"Wait","ticks":20,"value":0,"value2":0,"jobStep":-1,"note":"look"}},

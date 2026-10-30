@@ -1,0 +1,162 @@
+{
+  "proc.steam.wrap": {
+    "title": "축압기 이음 감기",
+    "fault": "PWR-03",
+    "grade": "temporary",
+    "steps": [
+      {
+        "type": "Inspect",
+        "text": "축압기 압력계가 처지고, 관 이음에서 김이 오르며 쉿 소리가 나면 이음이 샌다. 이음과 플랜지에 맨손을 대지 않는다."
+      },
+      {
+        "type": "Isolate",
+        "text": "정지 밸브 핸들을 시계 방향으로 끝까지 네 바퀴 돌려 닫는다.",
+        "cmd": "steam.stop.close",
+        "tool": "hand",
+        "repeat": 4,
+        "requires": "없음",
+        "hazard": "정지 밸브를 열어 둔 채 빼기 밸브를 열면 축압기의 증기가 다 빠진다."
+      },
+      {
+        "type": "Isolate",
+        "text": "빼기 밸브 핸들을 반시계 방향으로 두 바퀴 돌려 끝까지 연다. 관에 남은 증기가 큰 소리를 내며 빠진다.",
+        "cmd": "steam.bleed.open",
+        "tool": "hand",
+        "repeat": 2
+      },
+      {
+        "type": "Isolate",
+        "text": "관 압력계가 1.5kg/cm² 아래로 떨어질 때까지 기다린다. 약 10초가 걸린다.",
+        "requires": "관 압력계가 1.5kg/cm² 아래일 것",
+        "hazard": "관에 증기가 남은 채 이음에 손을 대면 증기에 덴다."
+      },
+      {
+        "type": "Install",
+        "text": "후방 예비품 사물함에서 이음 감개 테이프를 꺼낸다.",
+        "cmd": "locker.take.packing_tape",
+        "tool": "hand"
+      },
+      {
+        "type": "Work",
+        "text": "테이프를 쥔 채 관 이음에 대고 원을 그려 감는다. 세 번 감으면 이음이 덮인다.",
+        "cmd": "steam.joint.wrap",
+        "repeat": 3,
+        "requires": "관 압력계가 1.5kg/cm² 아래일 것",
+        "hazard": "증기에 덴다."
+      },
+      {
+        "type": "Close",
+        "text": "빼기 밸브를 시계 방향으로 두 바퀴 돌려 닫는다.",
+        "cmd": "steam.bleed.close",
+        "tool": "hand",
+        "repeat": 2
+      },
+      {
+        "type": "Test",
+        "text": "정지 밸브를 네 바퀴 돌려 끝까지 연다. 관 압력계가 축압기 압력계를 따라 오르고, 쉿 소리가 잦아들면 맞다. 감은 테이프는 관 압력이 15kg/cm²이면 약 15분 버티고 터진다. 터지기 전에 개스킷을 간다.",
+        "cmd": "steam.stop.open",
+        "tool": "hand",
+        "repeat": 4
+      }
+    ]
+  },
+  "proc.steam.gasket": {
+    "title": "축압기 개스킷 교체",
+    "fault": "PWR-03",
+    "grade": "proper",
+    "steps": [
+      {
+        "type": "Inspect",
+        "text": "이음에서 김이 오르는지, 감은 테이프가 터졌는지 본다. 축압기 압력계를 읽어 둔다. 증기를 빼면 그만큼 윈치 보조 동력을 잃고, 임무 중에는 다시 채울 수 없다."
+      },
+      {
+        "type": "Isolate",
+        "text": "정지 밸브 핸들을 시계 방향으로 끝까지 네 바퀴 돌려 닫는다.",
+        "cmd": "steam.stop.close",
+        "tool": "hand",
+        "repeat": 4,
+        "requires": "없음",
+        "hazard": "정지 밸브를 열어 둔 채 빼기 밸브를 열면 축압기의 증기가 다 빠진다."
+      },
+      {
+        "type": "Isolate",
+        "text": "빼기 밸브 핸들을 반시계 방향으로 두 바퀴 돌려 끝까지 연다.",
+        "cmd": "steam.bleed.open",
+        "tool": "hand",
+        "repeat": 2
+      },
+      {
+        "type": "Isolate",
+        "text": "관 압력계가 0을 가리킬 때까지 기다린다. 약 15초가 걸린다. 빼기 밸브는 열어 둔다.",
+        "requires": "관 압력계가 0일 것",
+        "hazard": "관에 증기가 남은 채 플랜지 볼트를 풀면 증기가 뿜어 나와 덴다."
+      },
+      {
+        "type": "Open",
+        "text": "렌치로 플랜지 볼트 네 개를 반시계 방향으로 돌려 푼다. 감아 둔 테이프는 이때 끊어진다.",
+        "cmd": "steam.flange.bolt.{n}.loosen",
+        "tool": "wrench",
+        "repeat": 4,
+        "requires": "관 압력계가 0일 것",
+        "hazard": "증기에 덴다."
+      },
+      {
+        "type": "Remove",
+        "text": "플랜지 사이에서 헌 개스킷을 뽑는다.",
+        "cmd": "steam.gasket.pull",
+        "tool": "hand",
+        "requires": "빈손일 것"
+      },
+      {
+        "type": "Remove",
+        "text": "헌 개스킷을 폐기함에 버린다. 다시 끼우지 않는다.",
+        "cmd": "hand.drop",
+        "hazard": "헌 개스킷을 다시 끼우면 처음부터 조금씩 샌다."
+      },
+      {
+        "type": "Work",
+        "text": "긁개로 플랜지 면에 눌어붙은 개스킷 찌꺼기를 긁어낸다. 세 번 긁으면 면이 깨끗해진다.",
+        "cmd": "steam.flange.face.scrape",
+        "tool": "scraper",
+        "repeat": 3,
+        "requires": "개스킷을 뽑았을 것",
+        "hazard": "찌꺼기를 남기면 새 개스킷이 고르게 앉지 않아 조금씩 샌다."
+      },
+      {
+        "type": "Install",
+        "text": "후방 예비품 사물함에서 축압기 개스킷을 꺼낸다.",
+        "cmd": "locker.take.gasket",
+        "tool": "hand"
+      },
+      {
+        "type": "Install",
+        "text": "새 개스킷을 플랜지 사이에 끼운다.",
+        "cmd": "steam.gasket.insert"
+      },
+      {
+        "type": "Fasten",
+        "text": "렌치로 플랜지 볼트를 1, 3, 2, 4 순서로 조인다. 맞은편 볼트를 번갈아 조여 개스킷을 고르게 누른다.",
+        "cmd": "steam.flange.bolt.{n}.tighten",
+        "tool": "wrench",
+        "repeat": 4,
+        "order": [1, 3, 2, 4],
+        "requires": "1, 3, 2, 4 순서를 지킬 것",
+        "hazard": "순서를 어기면 개스킷이 한쪽으로 몰려 조금씩 샌다. 다 고친 듯 보여도 실내가 점점 눅눅해진다."
+      },
+      {
+        "type": "Close",
+        "text": "빼기 밸브를 시계 방향으로 두 바퀴 돌려 닫는다.",
+        "cmd": "steam.bleed.close",
+        "tool": "hand",
+        "repeat": 2
+      },
+      {
+        "type": "Test",
+        "text": "정지 밸브를 네 바퀴 돌려 끝까지 연다. 관 압력계가 축압기 압력계를 따라 오른다. 2분 동안 이음에서 쉿 소리와 김이 없으면 맞다.",
+        "cmd": "steam.stop.open",
+        "tool": "hand",
+        "repeat": 4
+      }
+    ]
+  }
+}

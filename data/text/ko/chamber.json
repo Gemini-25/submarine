@@ -1,0 +1,14 @@
+{
+  "cue.chamber.gurgle": "중앙 바닥 아래에서 꾸르륵 물이 드는 소리",
+  "fixture.chamber.hatch": "챔버 안쪽 해치",
+  "fixture.chamber.hatch.dog.{n}": "챔버 해치 걸쇠 {n}",
+  "fixture.chamber.seal": "챔버 바깥 문 밀봉",
+  "fixture.chamber.seal.screw.{n}": "밀봉 누름쇠 나사 {n}",
+  "fixture.chamber.squeeze": "챔버 문 조임 바퀴",
+  "reading.chamber.glass": "챔버 수위 유리",
+  "reason.hatch_closed": "안쪽 해치가 닫혀 있어 손이 닿지 않는다.",
+  "reason.hatch_open": "해치가 열려 있어 걸쇠가 걸리지 않는다.",
+  "reason.hatch_pressed": "수압에 눌려 해치가 열리지 않는다.",
+  "reason.need_chamber_seal": "끼울 챔버 문 밀봉을 쥐고 있지 않다.",
+  "reason.retainer_tight": "누름쇠 나사가 밀봉을 물고 있다."
+}

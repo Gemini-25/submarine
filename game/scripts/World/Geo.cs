@@ -19,6 +19,15 @@ public static class Geo
 
     static readonly Dictionary<(Color, float, float), StandardMaterial3D> Cache = new();
 
+    /// <summary>끝낼 때 정적 캐시가 붙잡은 Godot 자원을 놓는다. C# 정리는 엔진의 누수 검사보다 늦게 돌기 때문이다 (Main._ExitTree).</summary>
+    internal static void ReleaseStatics()
+    {
+        foreach (var m in Cache.Values) m.Dispose();
+        Cache.Clear();
+        _font?.Dispose();
+        _font = null;
+    }
+
     public static StandardMaterial3D Mat(Color color, float roughness = 0.75f, float metallic = 0.3f)
     {
         if (Cache.TryGetValue((color, roughness, metallic), out var m)) return m;

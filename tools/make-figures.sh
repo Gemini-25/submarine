@@ -14,7 +14,7 @@ only=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --jobs) jobs="$2"; shift 2 ;;
-    *) only="$1"; shift ;;
+    *) only="${only:+$only,}$1"; shift ;;
   esac
 done
 
@@ -43,5 +43,23 @@ for j in "${!pids[@]}"; do
   fi
 done
 grep -h "FIGURE" "$LOG"/make-*.log | sort
+# 만든 그림의 지문을 figures.lock.json에 모은다 (Godot의 figures 확인 묶음이 견준다). 정의에서 빠진 그림의 지문은 지운다.
+python3 - "$out" <<'PY'
+import json, os, sys
+out = sys.argv[1]
+lock = os.path.join(out, "figures.lock.json")
+data = json.load(open(lock)) if os.path.exists(lock) else {}
+names = set(json.load(open(os.path.join(out, "figures.json"))))
+part = os.path.join(out, ".lock")
+if os.path.isdir(part):
+    for n in os.listdir(part):
+        data[n] = open(os.path.join(part, n)).read().strip()
+        os.remove(os.path.join(part, n))
+    os.rmdir(part)
+data = {k: data[k] for k in sorted(data) if k in names}
+with open(lock, "w") as f:
+    json.dump(data, f, ensure_ascii=False, indent=2)
+    f.write("\n")
+PY
 [[ $failed -eq 0 ]] && echo "교범 그림 만들기 끝"
 exit $failed

@@ -826,10 +826,12 @@ These rules apply to every page.
 - The overlay uses the same renderer.
 
 **Figures (WP26)**
-- A figure is one line of its own: `![그림 30-1. 배수 펌프의 베어링 뚜껑과 볼트 번호](fig/30-bearing-cover.png)`. The number is `그림 <page>-<n>`, counted from 1 on each page without gaps; the body refers to it as `(그림 30-1)`. Placeholders work inside the caption. No other images, links, HTML or code blocks.
-- Figures are never drawn by hand. Each one is defined in `data/manual/fig/figures.json` and made by `tools/make-figures.sh` from the real scene (state set by commands and procedures, fixed camera, ink-line pass) or drawn from data (circuit and flow diagrams, bolt order). The Godot `figures` suite fails when a definition goes stale.
-- No new Korean inside a figure: only callout numbers, Latin tags (A, B) and equipment names from `data/text/ko` or the data. The meaning of every number goes in the Markdown under the figure, usually as the order of the page's 무엇이 있나 table.
-- Every page carries at least three figures (`ManualTests`). Pages that add a fault add its figures in the same work package.
+- A figure is one line of its own, with a blank line before and after: `![그림 30-1. 배수 펌프의 베어링 뚜껑과 볼트 번호](fig/30-bearing-cover.png)`. The number is `그림 <page>-<n>`, counted from 1 on each page without gaps; when the body refers to a figure it writes `(그림 30-1)`. Placeholders work inside the caption. No other images, links, HTML (except the `<!-- pair:… -->` markers below) or code blocks.
+- Figures are never drawn by hand. Each one is defined in `data/manual/fig/figures.json` and made by `tools/make-figures.sh` from the real scene (state set by commands and procedures, fixed camera, ink-line pass) or drawn from data (circuit and flow diagrams, bolt order, instrument dials). `make-figures.sh` writes a fingerprint per figure to `figures.lock.json` (definition, rest positions of the objects it names, diagram inputs); the Godot `figures` suite recomputes it and fails when a figure is stale.
+- No new Korean inside a figure: only callout numbers, step badges, Latin tags (A, B), circuit numbers, numbers from the data, and equipment names from `data/text/ko` (the `fig.*` keys for places and system parts) or a data fixture's nameplate. The meaning of every number goes in the Markdown under the figure.
+- A part keeps the same callout number in every figure on its page (the page's 무엇이 있나 number). A hand-written numbered list right before a strip has as many items as the procedure has steps (`ManualTests`).
+- The suite checks what a reader sees: the target of every callout and red ring is not hidden behind another mesh (depth pass), callout circles do not sit on another target, a row of four or more aligned targets gets its circles in a band outside the row, rings stay inside their panel, a held tool shows inside its panel, and an A·B figure shows a visible difference around its targets — the suite fails when two panels match.
+- Every page carries at least three figures (`ManualTests`), except the contents page. Pages that add a fault add its figures in the same work package.
 
 **Rules carried over from M1**
 - The M1 pages keep their prose; only their numbers become placeholders. A snapshot test proves they render exactly as today.

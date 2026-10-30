@@ -266,7 +266,12 @@ public class ObservationTests
     {
         var ids = TestData.Data.Cues.Select(c => c.Id).ToHashSet();
         foreach (var c in TestData.Data.Circuits) Assert.Contains($"junction.{c.Id}.dew", ids);
-        foreach (var l in TestData.Data.LeakPoints) Assert.Contains($"{l.Id}.hiss", ids);
+        // 현창은 쉿 소리 대신 졸졸 소리, 챔버 바깥 문은 실내로 들지 않아 쉿 소리도 물줄기도 없다 (WP19: 출처 leaks-viewport+chamber_door)
+        foreach (var l in TestData.Data.LeakPoints)
+        {
+            Assert.Equal(l.Kind is not ("viewport" or "chamber_door"), ids.Contains($"{l.Id}.hiss"));
+            Assert.Equal(l.Kind != "chamber_door", ids.Contains($"{l.Id}.drip"));
+        }
         for (int n = 1; n <= TestData.T.Battery.Cells; n++) Assert.Contains($"cell.{n}.fizz", ids);
         Assert.Equal(TestData.Data.Cues.Select(c => c.Id).OrderBy(x => x, StringComparer.Ordinal), TestData.Data.Cues.Select(c => c.Id));
         Assert.All(TestData.Data.Cues, c => Assert.True(TestData.Data.Text.ContainsKey(c.Caption)));

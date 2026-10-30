@@ -18,6 +18,7 @@ public partial class InkRenderer : Node
     Camera3D _cam = null!;
     Shader _idShader = null!;
     ShaderMaterial _normalMat = null!;
+    ShaderMaterial _depthMat = null!;
 
     public override void _Ready()
     {
@@ -73,6 +74,24 @@ public partial class InkRenderer : Node
                     """,
             },
         };
+        // 깊이: 카메라에서의 거리(0~8m)를 12비트로, 번호와 같이 채널마다 16단계씩 밝은 쪽 절반에 담는다. 가림 검사에 쓴다.
+        _depthMat = new ShaderMaterial
+        {
+            Shader = new Shader
+            {
+                Code = """
+                    shader_type spatial;
+                    render_mode unshaded, cull_disabled, depth_draw_opaque, shadows_disabled, fog_disabled;
+                    void fragment() {
+                        float v = floor(clamp(-VERTEX.z / 8.0, 0.0, 1.0) * 4095.0);
+                        float r = floor(v / 256.0);
+                        float g = floor((v - r * 256.0) / 16.0);
+                        float b = v - r * 256.0 - g * 16.0;
+                        ALBEDO = (vec3(128.0) + vec3(r, g, b) * 8.0 + vec3(4.0)) / 255.0;
+                    }
+                    """,
+            },
+        };
     }
 
     /// <summary>카메라 자세. Ortho가 0보다 크면 정사영(그 폭, 미터).</summary>
@@ -84,10 +103,16 @@ public partial class InkRenderer : Node
         public int W, H;
         public int[] Ids = Array.Empty<int>();
         public Vector3[] Normals = Array.Empty<Vector3>();
+        /// <summary>화소마다 카메라 앞쪽 거리(미터). 아무것도 없으면 무한.</summary>
+        public float[] Depth = Array.Empty<float>();
         /// <summary>물체 번호 → 원래 재질의 밝기(0~1).</summary>
         public Dictionary<int, float> Albedo = new();
         /// <summary>진하게 칠할 물체 번호.</summary>
         public HashSet<int> Accent = new();
+        /// <summary>물체 번호 → 메시 (보이는지 검사에 쓴다).</summary>
+        public Dictionary<int, GeometryInstance3D> Owner = new();
+        /// <summary>번호로 읽히지 않은 화소 수 (번호 재질을 받지 않고 그려진 메시가 있으면 0보다 크다).</summary>
+        public int BadPixels;
         public Camera3D Camera = null!;
     }
 
@@ -118,17 +143,19 @@ public partial class InkRenderer : Node
     /// <summary>
     /// 세계를 찍는다. highlight 아래의 메시는 붉은 먹으로 칠한다. 크기는 그림 크기 × Supersample.
     /// </summary>
-    public async Task<Capture> Shoot(Node3D worldRoot, Pose pose, Vector2I size, IEnumerable<Node> highlight, bool showGlass)
+    public async Task<Capture> Shoot(Node3D worldRoot, Pose pose, Vector2I size, IEnumerable<Node> highlight, bool showGlass, IEnumerable<Node>? hide = null)
     {
         var rs = new Vector2I(size.X * Supersample, size.Y * Supersample);
         Aim(pose, size);
         _cam.Current = true;
 
         var accentRoots = highlight.ToList();
+        var hideRoots = hide?.ToList() ?? new List<Node>();
         var swapped = new List<(GeometryInstance3D G, Material? Old)>();
         var hidden = new List<Node3D>();
         var cap = new Capture { W = rs.X, H = rs.Y, Camera = _cam };
         var idMats = new List<(GeometryInstance3D G, ShaderMaterial M)>();
+        var overlays = new List<(GeometryInstance3D G, Material M)>();
         int next = 1;
         foreach (var n in Walk(worldRoot))
         {
@@ -137,13 +164,18 @@ public partial class InkRenderer : Node
                 if (((Node3D)n).Visible) { hidden.Add((Node3D)n); ((Node3D)n).Visible = false; }
                 continue;
             }
-            if (n is not GeometryInstance3D g || !g.IsVisibleInTree()) continue;
-            if (g is not (MeshInstance3D or MultiMeshInstance3D)) continue;
+            // 보이지 않는 메시도 번호를 준다: 찍는 두 프레임 사이에 장면 갱신이 그 메시를 보이게 하면 제 재질로 그려져 번호를 망친다
+            if (n is not GeometryInstance3D g) continue;
+            // 그림에서 숨길 것(열린 덮개처럼 부품을 가리는 것)과 번호 재질을 받을 수 없는 것은 그리지 않는다
+            if (g is not (MeshInstance3D or MultiMeshInstance3D) || hideRoots.Any(r => r == g || r.IsAncestorOf(g)))
+            {
+                if (g.Visible) { hidden.Add(g); g.Visible = false; }
+                continue;
+            }
             var (lum, clear) = Look(g);
             if (clear && !showGlass)
             {
-                hidden.Add(g);
-                g.Visible = false;
+                if (g.Visible) { hidden.Add(g); g.Visible = false; }
                 continue;
             }
             int id = next++;
@@ -155,6 +187,8 @@ public partial class InkRenderer : Node
             var m = new ShaderMaterial { Shader = _idShader };
             m.SetShaderParameter("id_color", new Vector3(c.R, c.G, c.B));
             swapped.Add((g, g.MaterialOverride));
+            if (g.MaterialOverlay != null) { overlays.Add((g, g.MaterialOverlay)); g.MaterialOverlay = null; }
+            cap.Owner[id] = g;
             idMats.Add((g, m));
             cap.Albedo[id] = clear ? 0.9f : lum;
             if (accentRoots.Any(r => r == g || r.IsAncestorOf(g))) cap.Accent.Add(id);
@@ -165,11 +199,22 @@ public partial class InkRenderer : Node
             var idImg = await Grab();
             foreach (var (g, _) in idMats) g.MaterialOverride = _normalMat;
             var nImg = await Grab();
+            foreach (var (g, _) in idMats) g.MaterialOverride = _depthMat;
+            var dImg = await Grab();
             Decode(cap, idImg, nImg);
+            var db = dImg.GetData();
+            cap.Depth = new float[cap.W * cap.H];
+            for (int i = 0; i < cap.Depth.Length; i++)
+            {
+                int r = db[i * 3], g = db[i * 3 + 1], b = db[i * 3 + 2];
+                cap.Depth[i] = r < 128 || g < 128 || b < 128 ? float.PositiveInfinity
+                    : ((((r - 128) >> 3) << 8) | (((g - 128) >> 3) << 4) | ((b - 128) >> 3)) / 4095f * 8f;
+            }
         }
         finally
         {
             foreach (var (g, old) in swapped) g.MaterialOverride = old;
+            foreach (var (g, m) in overlays) g.MaterialOverlay = m;
             foreach (var h in hidden) h.Visible = true;
             _cam.Current = false;
         }
@@ -198,6 +243,8 @@ public partial class InkRenderer : Node
         {
             int r = id[i * 3], g = id[i * 3 + 1], b = id[i * 3 + 2];
             int v = r < 128 || g < 128 || b < 128 ? 0 : (((r - 128) >> 3) << 8) | (((g - 128) >> 3) << 4) | ((b - 128) >> 3);
+            // 바탕(검정)도 번호(k*8+132)도 아닌 화소: 번호 재질 없이 그려진 메시
+            if ((r | g | b) != 0 && (v == 0 || !cap.Albedo.ContainsKey(v) || Math.Abs((r - 128) % 8 - 4) > 2)) cap.BadPixels++;
             cap.Ids[i] = cap.Albedo.ContainsKey(v) ? v : 0;
             cap.Normals[i] = new Vector3(nb[i * 3] / 127.5f - 1, nb[i * 3 + 1] / 127.5f - 1, nb[i * 3 + 2] / 127.5f - 1);
         }
@@ -229,7 +276,9 @@ public partial class InkRenderer : Node
                 var c = b.AlbedoColor;
                 bool clear = b.Transparency != BaseMaterial3D.TransparencyEnum.Disabled && c.A < 0.6f;
                 // 빛나는 것(켜진 표시등, 필라멘트)은 색과 상관없이 가장 밝게: 그림에서는 켜짐과 꺼짐만 가린다.
-                if (b.EmissionEnabled && b.EmissionEnergyMultiplier > 0.05f && Luma(b.Emission) > 0.03f) return (1f, false);
+                // 빛을 내는 재질이 꺼져 있거나 흐리면(꺼진 전구, 흐린 필라멘트) 짙게 칠해 켜진 것과 가른다.
+                if (b.EmissionEnabled)
+                    return b.EmissionEnergyMultiplier * Luma(b.Emission) > 0.4f ? (1f, false) : (Math.Min(Luma(c), 0.12f), clear);
                 return (Luma(c), clear);
             }
             case ShaderMaterial s:

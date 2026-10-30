@@ -66,7 +66,7 @@ static class CableGear
         r.Tape = P("siphon.state", "tape");
         r.TubePresent = P("siphon.tube.1", "present");
         r.TubeFilament = P("siphon.tube.1", "filament");
-        r.SteamPressure = P("steam.accumulator", "pressure");
+        r.SteamPressure = Steam.AssistPressure(w); // 관 압력 (WP19: 정지 밸브를 닫으면 보조가 끊긴다)
         r.Winch = r.LineOut.Exists;
         r.Siphon = r.Trace.Exists;
         if (w.TryDeviceIndex("hook_winch", out int wd)) r.WinchDevice = wd;

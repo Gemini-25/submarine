@@ -43,6 +43,10 @@ public sealed class FigureSpec
     /// <summary>piping: water(빌지 배수) 또는 ballast(밸러스트)나 air(공기), steam(증기).</summary>
     public string? System { get; set; }
 
+    // ── dial ──
+    /// <summary>dial: 데이터에서 그리는 계기 도식. lamps(표시등 세 상태), voltmeter(전압계 두 눈금), hydrometer(비중계 뜨개), inclinometer(경사계).</summary>
+    public string? Dial { get; set; }
+
     public int Width => Size is { Length: 2 } ? Size[0] : 960;
     public int Height => Size is { Length: 2 } ? Size[1] : 540;
 
@@ -82,6 +86,10 @@ public sealed record SceneSpec
     public int First { get; set; } = 1;
     /// <summary>compare와 panels의 칸 머리 글자 (A, B …). 한국어는 쓰지 않는다.</summary>
     public string? Tag { get; set; }
+    /// <summary>배치도의 띠: 'x0,x1=이름 키'마다 경계 점선과 이름 (구역이나 빌지 칸).</summary>
+    public List<string>? Bands { get; set; }
+    /// <summary>그림에서 숨길 것 (열린 덮개나 뚜껑처럼 부품을 가리는 것): 물체 ID나 node:이름. 그 노드와 자손 메시, 물체면 조준 상자 안의 메시.</summary>
+    public List<string>? Hide { get; set; }
     /// <summary>유리와 물처럼 비치는 것을 그린다 (기본은 빼고 그 너머를 그린다).</summary>
     public bool ShowGlass { get; set; }
 }
@@ -141,5 +149,7 @@ public sealed class StripSpec
     public string? Mission { get; set; }
     public List<PrepSpec>? Prep { get; set; }
     /// <summary>칸마다 부를 대상: '단계 번호 → 대상'. 그 단계에서 손이 가는 곳에 표를 한다.</summary>
+    /// <summary>단계 번호 → 그 칸에서 숨길 것 (열린 덮개처럼 부품을 가리는 것). SceneSpec.Hide와 같다.</summary>
+    public Dictionary<string, List<string>>? Hide { get; set; }
     public Dictionary<string, string>? Marks { get; set; }
 }

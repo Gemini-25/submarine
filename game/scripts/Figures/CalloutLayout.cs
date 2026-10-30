@@ -9,7 +9,8 @@ namespace DeepLine.Game.Figures;
 /// </summary>
 public static class CalloutLayout
 {
-    public static Vector2[] Place(IReadOnlyList<Vector2> anchors, Rect2 frame, float radius = 14, IReadOnlyList<Rect2>? avoid = null, Rect2? outside = null)
+    public static Vector2[] Place(IReadOnlyList<Vector2> anchors, Rect2 frame, float radius = 14, IReadOnlyList<Rect2>? avoid = null, Rect2? outside = null,
+        IReadOnlyList<(int Owner, Rect2 Box)>? boxes = null)
     {
         var placed = new List<Vector2>();
         var leaders = new List<(Vector2 A, Vector2 B)>();
@@ -51,6 +52,15 @@ public static class CalloutLayout
                     }
                     foreach (var (la, lb) in leaders)
                         if (Cross(a, p, la, lb)) score += 1500;
+                    // 번호 대상의 투영 상자: 동그라미가 남의 상자 위에 앉거나 지시선이 남의 상자를 지나면 그것을 가리키는 것처럼 읽힌다.
+                    // 제 상자 위도 피한다 (부품을 덮는다).
+                    if (boxes != null)
+                        foreach (var (j, bx) in boxes)
+                        {
+                            if (bx.Size.X <= 0) continue;
+                            if (bx.Grow(radius).HasPoint(p)) score += j == i ? 500 : 4000;
+                            if (j != i && SegmentHitsRect(a, p, bx.Grow(-2))) score += 1500;
+                        }
                     if (avoid != null)
                         foreach (var r in avoid)
                             if (r.Grow(radius).HasPoint(p)) score += 3000;
@@ -62,6 +72,15 @@ public static class CalloutLayout
             leaders.Add((a, best));
         }
         return result;
+    }
+
+    /// <summary>선분이 상자를 지나는가 (끝점 하나가 상자 안이어도).</summary>
+    public static bool SegmentHitsRect(Vector2 a, Vector2 b, Rect2 r)
+    {
+        if (r.Size.X <= 0 || r.Size.Y <= 0) return false;
+        for (int k = 0; k <= 16; k++)
+            if (r.HasPoint(a.Lerp(b, k / 16f))) return true;
+        return false;
     }
 
     static float SegmentDistance(Vector2 p, Vector2 a, Vector2 b)

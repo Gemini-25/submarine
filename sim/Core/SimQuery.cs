@@ -494,6 +494,11 @@ static class SimQuery
                 End(2);
                 return Navigation.Compile(w, At(1)) ?? throw Unknown();
 
+            // 증기 (M2 WP19): 축압기와 배관의 파생 값. 상태 부품이 없으면 모르는 경로다.
+            case "steam":
+                End(2);
+                return Steam.Compile(w, At(1)) ?? throw Unknown();
+
             default:
                 throw Unknown();
         }

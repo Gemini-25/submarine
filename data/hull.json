@@ -38,6 +38,39 @@
       "seaPaths": [
         { "areaCm2": 0.58, "times": "self.ringsOut" }
       ]
+    },
+    "viewport": {
+      "props": {
+        "crack": 0,
+        "deadlight": 1,
+        "dog1": 0,
+        "dog2": 0,
+        "present": 1,
+        "ringBolt1": 1,
+        "ringBolt2": 1,
+        "ringBolt3": 1,
+        "ringBolt4": 1,
+        "ringBolt5": 1,
+        "ringBolt6": 1,
+        "ringOff": 0,
+        "seatQ": 1
+      },
+      "visible": ["deadlight", "dog1", "dog2", "ringBolt1", "ringBolt2", "ringBolt3", "ringBolt4", "ringBolt5", "ringBolt6", "ringOff", "present", "crack"],
+      "seaPaths": [
+        { "areaCm2": 0.4, "times": "looseCount(ring)", "when": "self.deadlight >= 0.5 || self.dog1 < 0.5 || self.dog2 < 0.5" },
+        { "areaCm2": 1, "times": "self.ringOff", "when": "self.deadlight >= 0.5 || self.dog1 < 0.5 || self.dog2 < 0.5" }
+      ]
+    },
+    "chamber_door": {
+      "props": {
+        "present": 1,
+        "retainer1": 1,
+        "retainer2": 1,
+        "retainer3": 1,
+        "retainer4": 1,
+        "seatQ": 1
+      },
+      "visible": ["present", "retainer1", "retainer2", "retainer3", "retainer4"]
     }
   },
   "points": {

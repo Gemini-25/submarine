@@ -201,12 +201,14 @@ public static class PanelWiring
         return true;
     }
 
-    /// <summary>같은 함의 분기함(C4)이 더 젖어 있으면 배선함 습기가 그쪽으로 위로만 기어오른다.</summary>
+    /// <summary>같은 함의 분기함(C4)이 더 젖어 있거나 증기 이슬이 맺으면 배선함 습기가 그쪽으로 위로만 기어오른다.</summary>
     internal static void Creep(SimWorld w)
     {
         if (w.T.Senses?.PanelWiring is not { } t || !w.TryPart(PartId, out var p) || !w.TryPart(t.FollowBox, out var box)) return;
-        double m = p.Get("moisture"), target = box.Get("moisture");
-        if (target > m) p.Set("moisture", m + (target - m) * Math.Min(1, t.FollowPerMin * w.Dt / 60));
+        double m = p.Get("moisture"), dew = Steam.Dew(w, PartId, -1), target = Math.Max(box.Get("moisture"), dew);
+        // 증기 축압기가 새면 김이 배선함에도 직접 맺는다(tuning.steam.dewBoxes, WP19). 이슬이 맺는 동안은 그 빠르기로.
+        double rate = dew > m ? Math.Max(t.FollowPerMin, w.T.Steam!.DewCreepPerMin) : t.FollowPerMin;
+        if (target > m) p.Set("moisture", m + (target - m) * Math.Min(1, rate * w.Dt / 60));
     }
 }
 

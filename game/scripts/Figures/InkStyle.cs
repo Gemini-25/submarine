@@ -90,10 +90,14 @@ public static class InkStyle
     static Color Tone(float albedo, Vector3 n, bool accent)
     {
         if (albedo < 0.05f && !accent) return Soot;
+        // 재질 밝기가 단계를 정하고(0.55 넘으면 종이, 0.33 넘으면 옅은 음영, 그 아래 짙은 음영: 진보라 지시약 창(0.31)이 짙게 나온다), 빛 방향은 한 단계만 더하고 뺀다.
+        // 밝게 올리는 것은 재질이 밝은 편(0.45 넘게)일 때만: 보라 지시약 창처럼 중간 밝기의 색이 빛을 받아 흰 것과 같아지지 않게.
+        // 그래야 흰 지시약 창과 보라 창, 깨끗한 바구니와 막힌 바구니처럼 재질 밝기의 차이가 그림에 남는다.
         float lit = Math.Clamp(n.Dot(LightDir), 0, 1);
-        int level = lit > 0.62f ? 0 : lit > 0.25f ? 1 : 2;
-        if (albedo < 0.09f) level = Math.Min(2, level + 1);
-        if (albedo > 0.6f) level = Math.Max(0, level - 1);
+        int level = albedo > 0.55f ? 0 : albedo > 0.33f ? 1 : 2;
+        if (lit > 0.7f && albedo > 0.45f) level--;
+        else if (lit < 0.2f) level++;
+        level = Math.Clamp(level, 0, 2);
         if (accent) return level == 0 ? RedLight : RedLight.Lerp(Red, 0.5f);
         return level switch { 0 => Paper, 1 => Light, _ => Mid };
     }

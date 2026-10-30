@@ -57,6 +57,8 @@ static class Modules
         ["cable"] = new[] { "winch.drum", "siphon.state" },
         // 습도는 tuning.humidity도 있어야 돈다 (Systems.HumidityRuntime.Build).
         ["humidity"] = new[] { "air.humidity" },
+        // 케이블 챔버 (WP19). 칸 없이 선체·물 칸 안에서 돈다; tuning.chamber도 있어야 한다.
+        ["chamber"] = new[] { "chamber.state" },
         // 칼날 스위치 접점 (WP17). tuning.contacts도 있어야 돈다 (Systems.ContactRefs.Build).
         ["contacts"] = new[] { "contact.C1", "contact.C2", "contact.C3", "contact.C4", "contact.C5", "contact.C6", "contact.C7", "contact.C8" },
     };

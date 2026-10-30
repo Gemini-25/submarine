@@ -12,6 +12,8 @@ namespace DeepLine.Game.Player;
 /// </summary>
 public partial class HeldItemView : Node3D
 {
+    /// <summary>전압계 문자판의 두 눈금: 바깥 0~150V(버스, 회로), 안쪽 붉은 0~30V(셀 하나). 바늘은 ±50° 사이를 돈다.</summary>
+    public const float VoltOuterMax = 150, VoltInnerMax = 30, VoltSweepDeg = 100;
     static readonly Vector3 ToolRest = new(0.27f, -0.21f, -0.48f);
     static readonly Vector3 ItemRest = new(-0.27f, -0.23f, -0.5f);
 
@@ -23,6 +25,9 @@ public partial class HeldItemView : Node3D
     Node3D _needle = null!;
     StandardMaterial3D _basketMat = null!;
     float _needleAngle, _swing, _bob;
+
+    /// <summary>지금 그려진 손의 것들 (오른손 도구, 왼손 물건). 교범 그림이 손에 든 도구가 칸 안에 보이는지 본다.</summary>
+    public IEnumerable<Node3D> Shown => _tools.Values.Concat(_items.Values).Where(n => n.Visible);
 
     public void Setup(SimRunner runner, InteractionController hands)
     {
@@ -74,20 +79,20 @@ public partial class HeldItemView : Node3D
         Geo.Box(v, new Vector3(0.12f, 0.08f, 0.002f), new Vector3(0, 0.01f, 0.026f), Geo.Mat(Geo.Cream, 0.8f, 0));
         for (int k = 0; k <= 6; k++)
         {
-            float a = Mathf.DegToRad(50 - 100 * k / 6f);
+            float a = Mathf.DegToRad(VoltSweepDeg / 2 - VoltSweepDeg * k / 6f);
             var tick = Geo.Box(v, new Vector3(0.002f, 0.01f, 0.001f), new Vector3(-Mathf.Sin(a) * 0.055f, -0.025f + Mathf.Cos(a) * 0.055f, 0.028f), Geo.Bakelite);
             tick.Rotation = new Vector3(0, 0, a);
             if (k % 2 == 0)
-                Geo.Text(v, $"{k * 25}", new Vector3(-Mathf.Sin(a) * 0.068f, -0.025f + Mathf.Cos(a) * 0.068f, 0.028f), 0.011f, Geo.Bakelite);
+                Geo.Text(v, $"{k * VoltOuterMax / 6}", new Vector3(-Mathf.Sin(a) * 0.068f, -0.025f + Mathf.Cos(a) * 0.068f, 0.028f), 0.011f, Geo.Bakelite);
         }
         // 안쪽 둘째 눈금 0~30V (붉은 글씨): 축전지 셀 하나를 잴 때 쓴다 (M2 WP11).
         var red = Geo.Mat(new Color(0.55f, 0.08f, 0.05f), 0.8f, 0);
         for (int k = 0; k <= 3; k++)
         {
-            float a = Mathf.DegToRad(50 - 100 * k / 3f);
+            float a = Mathf.DegToRad(VoltSweepDeg / 2 - VoltSweepDeg * k / 3f);
             var tick = Geo.Box(v, new Vector3(0.0015f, 0.006f, 0.001f), new Vector3(-Mathf.Sin(a) * 0.044f, -0.025f + Mathf.Cos(a) * 0.044f, 0.028f), red);
             tick.Rotation = new Vector3(0, 0, a);
-            Geo.Text(v, $"{k * 10}", new Vector3(-Mathf.Sin(a) * 0.035f, -0.025f + Mathf.Cos(a) * 0.035f, 0.028f), 0.008f, new Color(0.55f, 0.08f, 0.05f));
+            Geo.Text(v, $"{k * VoltInnerMax / 3}", new Vector3(-Mathf.Sin(a) * 0.035f, -0.025f + Mathf.Cos(a) * 0.035f, 0.028f), 0.008f, new Color(0.55f, 0.08f, 0.05f));
         }
         Geo.Text(v, "V", new Vector3(0, -0.012f, 0.028f), 0.012f, Geo.Bakelite);
         _needle = new Node3D { Position = new Vector3(0, -0.025f, 0.029f) };

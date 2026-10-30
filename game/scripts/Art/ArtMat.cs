@@ -17,6 +17,15 @@ public static class ArtMat
 
     static readonly Dictionary<string, Texture2D> Textures = new(StringComparer.Ordinal);
 
+    /// <summary>끝낼 때 정적 캐시가 붙잡은 Godot 자원을 놓는다. C# 정리는 엔진의 누수 검사보다 늦게 돌기 때문이다 (Main._ExitTree).</summary>
+    internal static void ReleaseStatics()
+    {
+        foreach (var t in Textures.Values) t.Dispose();
+        foreach (var m in Cache.Values) m.Dispose();
+        foreach (var s in Shaders.Values) s.Dispose();
+        Textures.Clear(); Cache.Clear(); Shaders.Clear(); Wettable.Clear();
+    }
+
     static Texture2D Tex(string name)
     {
         if (!Textures.TryGetValue(name, out var t))

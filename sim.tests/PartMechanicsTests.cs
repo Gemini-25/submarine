@@ -452,30 +452,26 @@ public class PartMechanicsTests
     [Fact]
     public void Kind_template_is_merged_over_the_part_template()
     {
-        var data = Load(new Mut
-        {
-            NoMech = true,
-            // 실제 데이터의 다른 종류 틀(축 패킹 등)은 그대로 두고 현창 틀만 더한다.
-            Hull = h => (h["kindTemplates"] ??= new JsonObject())["viewport"] = JsonNode.Parse("""
-                { "props": { "deadlight": 1, "integrity": 0.9 },
-                  "seaPaths": [ { "areaCm2": 0.4, "when": "self.deadlight < 0.5" } ] }
-                """),
-        });
+        // 실제 데이터의 현창 틀 (WP19 HUL-02): 종류 쪽 상태 값과 바다 경로가 공통 템플릿 위에 붙는다.
+        var data = TestData.Data;
         var vp = data.Parts.Single(p => p.Id == "leak.viewport.1");
         Assert.Equal("viewport", vp.Kind);
         Assert.Equal(1, vp.Props["deadlight"]);
-        Assert.Equal(0.9, vp.Props["integrity"]); // 종류 쪽이 이긴다
+        Assert.Equal(1, vp.Props["integrity"]);    // 공통 템플릿에서 (실제 현창 틀에는 integrity가 없다)
+        // 두 틀에 같은 키가 있으면 종류 쪽이 이긴다: 실제 현창 틀에 integrity 0.9 하나만 더한다.
+        var over = Load(new Mut { NoMech = true, Hull = h => h["kindTemplates"]!["viewport"]!["props"]!["integrity"] = 0.9 });
+        Assert.Equal(0.9, over.Parts.Single(p => p.Id == "leak.viewport.1").Props["integrity"]); // 종류 쪽이 이긴다
         Assert.Equal(1, vp.Props["patchFactor"]); // 공통 템플릿에서
-        Assert.Single(vp.SeaPaths);
+        Assert.Equal(2, vp.SeaPaths.Count);
         var rivet = data.Parts.Single(p => p.Id == "leak.rivet.01");
         Assert.False(rivet.Props.ContainsKey("deadlight"));
         Assert.Empty(rivet.SeaPaths);
 
-        // 누수 지점의 바다 경로는 zone을 비우면 그 지점의 구역으로 들어간다.
+        // 누수 지점의 바다 경로는 zone을 비우면 그 지점의 구역으로 들어간다 (덮개가 열린 채 테 볼트 하나를 풀었다).
         var sim = new Simulation(data, 1, TestData.Setup(s =>
         {
             s.DepthM = 100;
-            s.Parts = new List<PartSetup> { new() { Part = "leak.viewport.1", Prop = "deadlight", Value = 0 } };
+            s.Parts = new List<PartSetup> { new() { Part = "leak.viewport.1", Prop = "ringBolt1", Value = 0 } };
         }));
         string zone = data.LeakPoints.Single(l => l.Id == "leak.viewport.1").Zone;
         var closed = new Simulation(data, 1, TestData.Setup(s => s.DepthM = 100));
@@ -500,7 +496,7 @@ public class PartMechanicsTests
     {
         var sim = NewSim();
         var w = sim.World;
-        var none = Parts.PropRef.Resolve(w, "steam.accumulator", "pressure");
+        var none = Parts.PropRef.Resolve(w, "no.such.part", "pressure");
         Assert.False(none.Exists);
         Assert.Equal(-1, none.Index);
         Assert.Equal(0.7, none.Get(0.7));
@@ -538,20 +534,25 @@ public class PartMechanicsTests
     [Fact]
     public void A_state_part_turns_its_module_on()
     {
+        // 실제 데이터에는 축압기(steam.accumulator, WP19)가 있어 증기 모듈이 켜지고, 고장이 없으면 압력이 그대로다.
+        var on = TestData.NewSim();
+        Assert.True(on.World.Mechanics.Steam);
+        on.Run(5);
+        Assert.Equal(1, on.Q("part.steam.accumulator.prop.pressure"));
+
+        // 증기 조각 파일을 모두 빼면 상태 부품이 없어 모듈이 꺼진다.
         var dir = Directory.CreateTempSubdirectory("deepline-mod-");
         try
         {
-            foreach (var f in Directory.GetFiles(TestData.DataDir, "*.json", SearchOption.AllDirectories))
+            foreach (var f in Directory.GetFiles(TestData.DataDir, "*", SearchOption.AllDirectories))
             {
+                if (Path.GetFileName(f) is "steam.json" or "m2-power-b.json" or "m2-shakedown.json") continue; // 축압기 고장을 쓰는 훈련도 뺀다
                 var to = Path.Combine(dir.FullName, Path.GetRelativePath(TestData.DataDir, f));
                 Directory.CreateDirectory(Path.GetDirectoryName(to)!);
                 File.Copy(f, to);
             }
-            Edit(dir.FullName, "parts.json", n => n["steam.accumulator"] = new JsonObject { ["kind"] = "accumulator", ["props"] = new JsonObject { ["pressure"] = 1 } });
-            var on = new Simulation(GameData.LoadFromDirectory(dir.FullName), 1);
-            Assert.True(on.World.Mechanics.Steam);
-            on.Run(5); // 빈 칸이라 아무 일도 없다
-            Assert.Equal(1, on.Q("part.steam.accumulator.prop.pressure"));
+            var off = new Simulation(GameData.LoadFromDirectory(dir.FullName), 1);
+            Assert.False(off.World.Mechanics.Steam);
         }
         finally
         {

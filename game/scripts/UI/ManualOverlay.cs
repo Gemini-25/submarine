@@ -200,6 +200,20 @@ public partial class ManualOverlay : CanvasLayer
     public IEnumerable<(string Title, string Figure, Vector2I Size)> PageFigures =>
         _pages.SelectMany(p => p.Body().Where(b => b.Figure != null).Select(b => (p.Title, b.Figure!, Figure(b.Figure!)?.GetSize() is { } sz ? (Vector2I)sz : Vector2I.Zero)));
 
+    /// <summary>지금 쪽에 실제로 넣은 그림 수 (자동 확인용).</summary>
+    public int ShownFigures { get; private set; }
+
+    /// <summary>그림을 누른 것처럼: 본문의 MetaClicked 처리기를 거쳐 크게 본다 (자동 확인용).</summary>
+    public void ClickFigure(string path) => _text.EmitSignal(RichTextLabel.SignalName.MetaClicked, path);
+
+    /// <summary>읽어 둔 그림을 비운다 (크게 보는 그림은 남긴다).</summary>
+    public void ClearFigureCache(IEnumerable<string>? keep = null)
+    {
+        var k = new HashSet<string>(keep ?? Enumerable.Empty<string>(), StringComparer.Ordinal);
+        foreach (var path in _figures.Keys.ToList())
+            if (!k.Contains(path) && !(_zoom.Visible && _figures[path] == _zoomImage.Texture)) _figures.Remove(path);
+    }
+
     /// <summary>그림을 읽는다 (한 번만). 없거나 깨졌으면 오류를 알리고 null.</summary>
     ImageTexture? Figure(string path)
     {
@@ -227,6 +241,9 @@ public partial class ManualOverlay : CanvasLayer
     {
         _text.Clear();
         _shownBlocks.Clear();
+        ShownFigures = 0;
+        // 다른 쪽의 그림은 GPU에 남기지 않는다
+        ClearFigureCache(blocks.Where(b => b.Figure != null).Select(b => b.Figure!));
         float avail = _text.Size.X > 100 ? _text.Size.X - 28 : 900;
         foreach (var b in blocks)
         {
@@ -244,6 +261,7 @@ public partial class ManualOverlay : CanvasLayer
                 _text.PushParagraph(HorizontalAlignment.Center);
                 _text.PushMeta(b.Figure);
                 _text.AddImage(tex, (int)(size.X * scale), (int)(size.Y * scale), tooltip: b.Caption ?? "");
+                ShownFigures++;
                 _text.Pop();
                 _text.Pop();
                 _text.AppendText("\n");

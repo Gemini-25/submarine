@@ -122,7 +122,8 @@ sealed class PartMechanics
                 .Where(f => f.Def.Kind == FixtureKind.Fastener && f.PartId == part.Id && f.Group == group)
                 .Select(f => part.PropIndex(f.Prop!))
                 .ToArray();
-            if (members.Length == 0) throw new KeyNotFoundException($"부품 {part.Id}에 볼트 묶음 '{group}'이 없다");
+            // 장치 파일 없이 만든 GameData(시험)에는 볼트가 없다: 풀린 볼트 0개로 본다.
+            if (members.Length == 0 && _w.Data.Fixtures.Instances.Count > 0) throw new KeyNotFoundException($"부품 {part.Id}에 볼트 묶음 '{group}'이 없다");
             times = _ =>
             {
                 int loose = 0;
