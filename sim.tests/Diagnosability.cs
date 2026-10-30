@@ -547,3 +547,67 @@ public class FurnaceDiagnosability
         Assert.False(c2["cue.furnace.smoke"].Differs(b["cue.furnace.smoke"]));
     }
 }
+
+/// <summary>
+/// 칼날 스위치 접점 부식 (ELC-02, WP17). 노출 설정은 Diagnosability와 같다(배수 펌프를 돌림). 조명 회로(C1)와 배수 회로(C3)의 부식이
+/// 기준, 셀 열화(PWR-01), 같은 회로의 퓨즈 단선과 누전(ELC-01, ELC-03), 펌프 베어링(WTR-02)과 구별되고, 교범 03과 24가 이름 대는 확인
+/// (상황판 전압계는 그대로, 부하 단자와 칼날 위아래 전압계, 칼날 소리, 펌프 갈림 소리)으로 갈리는지 본다.
+/// </summary>
+public class ContactDiagnosability
+{
+    static readonly (string Key, string Fault, string? Part)[] Cases =
+    {
+        ("ELC-02.C1", "ELC-02", "contact.C1"), ("ELC-02.C3", "ELC-02", "contact.C3"), ("PWR-01", "PWR-01", "cell.3"),
+        ("ELC-01.C1", "ELC-01", "fuse.C1"), ("ELC-03.C1", "ELC-03", "junction.C1"), ("WTR-02", "WTR-02", null),
+    };
+
+    static SortedDictionary<string, DiagnosisHarness.Element> Run(string? fault, string? part)
+    {
+        var sim = TestData.NewSim(setup: TestData.Setup(s =>
+        {
+            s.Switches["C3"] = true;
+            s.Bilges["bilge.aft"] = 150;
+        }));
+        if (fault != null) sim.Inject(fault, part);
+        sim.Run(60);
+        return DiagnosisHarness.Observe(new ObservableQuery(sim), TestData.Data);
+    }
+
+    static readonly Lazy<SortedDictionary<string, DiagnosisHarness.Element>> _baseline = new(() => Run(null, null));
+    static readonly Lazy<Dictionary<string, SortedDictionary<string, DiagnosisHarness.Element>>> _vectors =
+        new(() => Cases.ToDictionary(c => c.Key, c => Run(c.Fault, c.Part)));
+
+    [Fact]
+    public void Elc02_is_noticeable_documented_and_distinct()
+    {
+        foreach (var key in new[] { "ELC-02.C1", "ELC-02.C3" })
+        {
+            var sep = DiagnosisHarness.Separating(_vectors.Value[key], _baseline.Value);
+            Assert.NotEmpty(sep);
+            foreach (var k in sep) Assert.True(DiagnosisHarness.Documented(k, TestData.Data), $"{key}를 드러내는 '{k}'에 문구가 없다");
+            foreach (var (other, _, _) in Cases.Where(c => !c.Key.StartsWith("ELC-02", StringComparison.Ordinal)))
+                Assert.NotEmpty(DiagnosisHarness.Separating(_vectors.Value[key], _vectors.Value[other]));
+        }
+    }
+
+    [Fact]
+    public void Elc02_pairs_split_on_the_check_the_manual_names()
+    {
+        var v = _vectors.Value;
+        var b = _baseline.Value;
+        // 조명이 어둡고 전압이 낮은 쌍: 상황판 전압계는 그대로(셀 열화는 낮다), 칼날 위아래와 부하 단자가 다르다.
+        Assert.False(v["ELC-02.C1"]["panel.gauge.voltage"].Differs(b["panel.gauge.voltage"]));
+        Assert.True(v["PWR-01"]["panel.gauge.voltage"].Differs(b["panel.gauge.voltage"]));
+        Assert.True(v["ELC-02.C1"]["measure.voltmeter.switch.C1"].Differs(b["measure.voltmeter.switch.C1"]));
+        Assert.True(v["ELC-02.C1"]["measure.voltmeter.circuit.C1"].Differs(b["measure.voltmeter.circuit.C1"]));
+        Assert.False(v["PWR-01"]["measure.voltmeter.switch.C1"].Differs(b["measure.voltmeter.switch.C1"]));
+        Assert.True(v["ELC-02.C1"]["panel.lamp.switchboard"].Differs(b["panel.lamp.switchboard"]));
+        // 펌프가 뜨겁고 전류가 높은 쌍: 둘 다 펌프 전류가 높지만, 갈리는 소리(WTR-02)와 칼날 위아래 강하(ELC-02)로 갈린다.
+        Assert.True(v["ELC-02.C3"]["panel.gauge.pumpCurrent"].Differs(b["panel.gauge.pumpCurrent"]));
+        Assert.True(v["ELC-02.C3"]["measure.voltmeter.switch.C3"].Differs(v["WTR-02"]["measure.voltmeter.switch.C3"]));
+        Assert.True(v["ELC-02.C3"]["cue.pump.grind"].Differs(v["WTR-02"]["cue.pump.grind"]));
+        // 같은 회로의 퓨즈 단선, 누전과는 회로가 살아 있는지와 칼날 소리로 갈린다.
+        Assert.True(v["ELC-02.C1"]["measure.voltmeter.circuit.C1"].Differs(v["ELC-01.C1"]["measure.voltmeter.circuit.C1"]));
+        Assert.True(v["ELC-02.C1"]["cue.knife.C1.crackle"].Differs(v["ELC-03.C1"]["cue.knife.C1.crackle"]));
+    }
+}

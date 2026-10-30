@@ -60,6 +60,9 @@ sealed class ContactRefs
 
     public bool IsBurnt(int c) => Burnt[c].Get() >= 0.5;
 
+    /// <summary>회로 c의 칼날 스위치 접점 강하 (정규화). 접점 모듈이 없으면 0.</summary>
+    public static double DropOf(SimWorld w, int c) => w.Contacts is { } k ? k.Drop[c].Get() : 0;
+
     /// <summary>
     /// 부하 쪽 전압의 비율 (0~1). demand는 그 회로 장비가 버스 전압에서 끌어갈 전류(정규화)다.
     /// 녹이 없으면 정확히 1이다(기본 상태에서 아무것도 바꾸지 않는다).

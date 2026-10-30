@@ -72,6 +72,7 @@ public partial class AutoPlayer : Node
         ["drill-water-b"] = DrillWaterBSuite,
         ["drill-air-b"] = DrillAirBSuite,
         ["instruments"] = InstrumentsSuite,
+        ["drill-switchboard-b"] = DrillSwitchboardBSuite,
     };
 
     async Task Run()

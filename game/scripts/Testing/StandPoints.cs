@@ -60,7 +60,8 @@ public static class StandPoints
         // ── M1 네 곳 (대상은 M1 확인보다 넓다) ──
         new("switchboard", At(4.1f, 0.3f), false,
             [ "switch.C2", "bus", ..Circuits.Select(c => $"switch.{c}"), ..Circuits.Select(c => $"fuse.{c}"), ..Circuits.Select(c => $"terminal.{c}"),
-              ..Circuits.Select(c => $"switch.{c}.clamp"), ..Circuits.Select(c => $"ammeter.{c}") ], None),
+              ..Circuits.Select(c => $"knife.{c}.clamp"), ..Circuits.Select(c => $"ammeter.{c}"),
+              ..Circuits.SelectMany(c => new[] { $"knife.{c}.blade", $"knife.{c}.jaw", $"knife.{c}.base" }) ], None),
         new("strainer", At(1.55f, -0.3f), true,
             [ "strainer.cover", "strainer.bolt.1", "strainer.bolt.2", "strainer.bolt.3", "strainer.bolt.4", "wash_bucket" ], None),
         new("locker", At(3.75f, -0.25f), false, [ "locker.fuse", "locker.wood_wedge", "locker.timber_shore", "discard" ], None),
