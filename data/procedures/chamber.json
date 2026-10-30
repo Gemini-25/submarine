@@ -1,0 +1,118 @@
+{
+  "proc.chamber.reseal": {
+    "title": "챔버 바깥 문 밀봉 교체",
+    "fault": "HUL-04",
+    "grade": "proper",
+    "steps": [
+      {
+        "type": "Inspect",
+        "text": "흡입 선택기를 챔버에 두고 배수 펌프를 돌려도 챔버 수위 유리가 내려가지 않으면 바깥 문 밀봉이 샌다. 중앙 바닥 아래에서 꾸르륵 소리가 난다."
+      },
+      {
+        "type": "Isolate",
+        "text": "조임 바퀴를 시계 방향으로 끝까지 세 번 돌려 바깥 문을 문틀에 누른다. 새는 양이 3할로 준다.",
+        "cmd": "chamber.squeeze.up",
+        "tool": "hand",
+        "repeat": 3
+      },
+      {
+        "type": "Isolate",
+        "text": "펌프 흡입 선택기를 '챔버'에 둔다.",
+        "cmd": "pump.suction.chamber",
+        "tool": "hand"
+      },
+      {
+        "type": "Isolate",
+        "text": "배수 회로(C3) 스위치를 올려 펌프를 돌린다.",
+        "cmd": "switch.C3.on",
+        "tool": "hand"
+      },
+      {
+        "type": "Isolate",
+        "text": "챔버 수위 유리가 20L 아래로 내려갈 때까지 기다린다. 챔버 줄은 분당 48L밖에 빼지 못한다.",
+        "requires": "챔버 수위가 20L 아래일 것",
+        "hazard": "물이 문턱 위에 있으면 안쪽 해치가 수압에 눌려 열리지 않는다."
+      },
+      {
+        "type": "Open",
+        "text": "안쪽 해치 걸쇠 네 개를 손으로 돌려 푼다.",
+        "cmd": "chamber.hatch.dog.{n}.loosen",
+        "tool": "hand",
+        "repeat": 4
+      },
+      {
+        "type": "Open",
+        "text": "안쪽 해치를 들어 연다. 남은 물이 전중 빌지로 넘친다.",
+        "cmd": "chamber.hatch.open",
+        "tool": "hand",
+        "requires": "챔버 수위가 20L 아래일 것"
+      },
+      {
+        "type": "Open",
+        "text": "챔버 안으로 웅크려 들어가 드라이버로 밀봉 누름쇠 나사 네 개를 푼다.",
+        "cmd": "chamber.seal.screw.{n}.loosen",
+        "tool": "screwdriver",
+        "repeat": 4
+      },
+      {
+        "type": "Remove",
+        "text": "헌 밀봉을 바깥 문 둘레에서 뽑는다. 밀봉을 빼 둔 동안은 갑절 샌다. 서두른다.",
+        "cmd": "chamber.seal.pull",
+        "tool": "hand",
+        "requires": "빈손일 것"
+      },
+      {
+        "type": "Remove",
+        "text": "헌 밀봉을 폐기함에 버린다.",
+        "cmd": "hand.drop"
+      },
+      {
+        "type": "Install",
+        "text": "전기 예비품 벽장에서 챔버 문 밀봉을 꺼낸다.",
+        "cmd": "locker.take.chamber_seal",
+        "tool": "hand"
+      },
+      {
+        "type": "Install",
+        "text": "새 밀봉을 바깥 문 둘레의 홈에 끼운다.",
+        "cmd": "chamber.seal.insert"
+      },
+      {
+        "type": "Fasten",
+        "text": "드라이버로 누름쇠 나사를 1, 3, 2, 4 순서로 조인다.",
+        "cmd": "chamber.seal.screw.{n}.tighten",
+        "tool": "screwdriver",
+        "repeat": 4,
+        "order": [1, 3, 2, 4],
+        "requires": "1, 3, 2, 4 순서를 지킬 것",
+        "hazard": "순서를 어기면 밀봉이 한쪽으로 몰려 챔버가 천천히 다시 찬다."
+      },
+      {
+        "type": "Close",
+        "text": "챔버에서 나와 안쪽 해치를 닫는다.",
+        "cmd": "chamber.hatch.close",
+        "tool": "hand"
+      },
+      {
+        "type": "Close",
+        "text": "해치 걸쇠 네 개를 조인다.",
+        "cmd": "chamber.hatch.dog.{n}.tighten",
+        "tool": "hand",
+        "repeat": 4
+      },
+      {
+        "type": "Close",
+        "text": "조임 바퀴를 반시계 방향으로 세 번 돌려 푼다.",
+        "cmd": "chamber.squeeze.down",
+        "tool": "hand",
+        "repeat": 3
+      },
+      {
+        "type": "Test",
+        "text": "흡입 선택기를 '빌지'로 되돌린다. 몇 분 뒤 챔버 수위 유리가 오르지 않으면 맞다.",
+        "cmd": "pump.suction.bilge",
+        "tool": "hand"
+      }
+    ]
+  }
+}

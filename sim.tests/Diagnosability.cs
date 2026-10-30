@@ -113,6 +113,7 @@ public class Diagnosability
         ("WTR-01", null), ("WTR-02", null), ("WTR-03", null), ("HUL-01", "leak.rivet.09"),
         // M2 계통 작업이 더한 고장 (같은 하네스, 같은 노출 설정)
         ("HUL-03", null),
+        ("PWR-03", null), ("HUL-02", null), ("HUL-04", null),
         ("WTR-04", null), // 밸러스트 밸브 고착 (WP18)
     };
 
@@ -200,6 +201,22 @@ public class Diagnosability
         // 축 패킹과 후방 리벳 이음: 둘 다 후방 경고등. 축 고리 둘레의 물과 이음새의 쉿 소리로 가른다 (교범 04 '축 패킹').
         Splits("HUL-03", "HUL-01", "cue.shaft.stream");
         Splits("HUL-03", "HUL-01", "cue.leak.rivet.09.hiss");
+        // 축압기 누설과 누전: 둘 다 분기함이 젖는다. 관 이음의 김과 쉿 소리, 축압기 압력계로 가른다 (교범 22쪽 '가르기', WP19).
+        Splits("PWR-03", "ELC-03", "cue.steam.hiss");
+        Splits("PWR-03", "ELC-03", "cue.steam.plume");
+        Splits("PWR-03", "ELC-03", "reading.steam.pressure");
+        // 현창과 전방 리벳 이음(1~4번): 같은 전방 경고등과 선체 표시등. 유리 테의 물방울과 졸졸 소리, 이음새의 쉿 소리로 가른다 (교범 35쪽 '가르기').
+        var fore = Run("HUL-01", "leak.rivet.01");
+        Assert.False(v["HUL-02"]["zone.fore.alarm"].Differs(fore["zone.fore.alarm"]));
+        Assert.False(v["HUL-02"]["panel.lamp.hull"].Differs(fore["panel.lamp.hull"]));
+        foreach (var path in new[] { "cue.viewport.1.beads", "cue.viewport.1.trickle", "cue.leak.rivet.01.hiss" })
+        {
+            Assert.True(v["HUL-02"][path].Differs(fore[path]), $"HUL-02와 리벳 01이 {path}로 갈리지 않는다");
+            Assert.True(DiagnosisHarness.Documented(path, TestData.Data), $"'{path}'에 문구가 없다");
+        }
+        // 챔버 바깥 문: 표시등 없이 챔버 수위 유리와 바닥 아래의 꾸르륵 소리로만 (교범 37쪽).
+        Splits("HUL-04", "HUL-01", "reading.chamber.glass");
+        Splits("HUL-04", "HUL-01", "cue.chamber.gurgle");
         // 기울기: 밸러스트 밸브 고착과 한쪽 침수. 탱크 유리관과 탱크로 드는 물소리로 가른다 (교범 04 '기울기', 32쪽).
         Splits("WTR-04", "HUL-01", "reading.ballast.fore.glass");
         Splits("WTR-04", "HUL-01", "cue.ballast.fore.rush");

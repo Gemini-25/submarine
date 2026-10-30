@@ -516,7 +516,12 @@ public class CableGearTests
     [Fact]
     public void Steam_assist_sets_the_hoist_speed_when_the_accumulator_exists()
     {
-        var sim = WithExtraParts("""{ "steam.accumulator": { "kind": "accumulator", "props": { "pressure": 0 } } }""");
+        // 관 압력이 0 (증기를 다 뺀 축압기, WP19): 윈치 보조가 없다.
+        var sim = TestData.NewSim(setup: TestData.Setup(s => s.Parts = new List<PartSetup>
+        {
+            new() { Part = "steam.accumulator", Prop = "pressure", Value = 0 },
+            new() { Part = "steam.accumulator", Prop = "linePressure", Value = 0 },
+        }));
         sim.Cmd("device.hook_winch.on");
         sim.Cmd("winch.control.haul");
         sim.Run(10);

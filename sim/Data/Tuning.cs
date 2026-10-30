@@ -44,12 +44,18 @@ public sealed class Tuning
     [Optional] public PumpBearingTuning? PumpBearing { get; set; }
     /// <summary>축 패킹 누름판 (M2 HUL-03). 없으면 축 패킹 지점도 다른 누수 지점처럼 integrity로만 샌다.</summary>
     [Optional] public ShaftGlandTuning? ShaftGland { get; set; }
+    /// <summary>현창 밀봉의 열화와 유리 금 (M2 WP19 HUL-02, data/tuning/viewport.json). 없으면 현창도 integrity로만 샌다.</summary>
+    [Optional] public ViewportTuning? Viewport { get; set; }
+    /// <summary>케이블 챔버의 조임 바퀴, 안쪽 해치, 바깥 문 밀봉 (M2 WP19 HUL-04, data/tuning/chamber.json). chamber.state가 있으면 필요하다.</summary>
+    [Optional] public ChamberTuning? Chamber { get; set; }
     /// <summary>감각 계통: 진공관 필라멘트와 상황판 전구 (M2 WP13). 없으면 필라멘트가 약해지지 않는다.</summary>
     [Optional] public SensesTuning? Senses { get; set; }
     /// <summary>펌프 흡입 선택기 (M2 WP18, data/tuning/attitude.json). pump.suction 부품이 있으면 필요하다.</summary>
     [Optional] public SuctionTuning? Suction { get; set; }
     /// <summary>트림과 밸러스트 탱크 (M2 WP18, data/tuning/attitude.json). 기울기 모듈의 상태 부품이 있으면 필요하다.</summary>
     [Optional] public AttitudeTuning? Attitude { get; set; }
+    /// <summary>증기 축압기와 배관 (M2 WP19 PWR-03, data/tuning/steam.json). 상태 부품 steam.accumulator가 있으면 필요하다.</summary>
+    [Optional] public SteamTuning? Steam { get; set; }
     /// <summary>칼날 스위치 접점 (M2 WP17 ELC-02, data/tuning/switchboard.json). 접점 부품이 있으면 필요하다.</summary>
     [Optional] public ContactsTuning? Contacts { get; set; }
     /// <summary>산소 화로의 재와 배기구 (M2 WP17 AIR-03, data/tuning/air.json). 없으면 양초는 M0처럼 늘 같은 양의 산소를 낸다.</summary>

@@ -1,0 +1,249 @@
+{
+  "params": {
+    "wrapLifeS": 900,
+    "oldGasketIntegrity": 0.8,
+    "misorderCap": 0.85,
+    "roughLoss": -0.15
+  },
+  "fixtures": [
+    {
+      "id": "steam.stop",
+      "part": "steam.accumulator",
+      "kind": "valve",
+      "zone": "aft",
+      "prop": "stop",
+      "turns": 4,
+      "verbs": {
+        "open": {
+          "tool": "hand",
+          "noise": "valve"
+        },
+        "close": {
+          "tool": "hand",
+          "noise": "valve"
+        }
+      }
+    },
+    {
+      "id": "steam.bleed",
+      "part": "steam.accumulator",
+      "kind": "valve",
+      "zone": "aft",
+      "prop": "bleed",
+      "turns": 2,
+      "verbs": {
+        "open": {
+          "tool": "hand",
+          "noise": "valve"
+        },
+        "close": {
+          "tool": "hand",
+          "noise": "valve"
+        }
+      }
+    },
+    {
+      "id": "steam.joint",
+      "part": "steam.joint",
+      "kind": "work",
+      "zone": "aft",
+      "prop": "wrapTurns",
+      "verbs": {
+        "wrap": {
+          "gesture": "rotate",
+          "tool": "hand",
+          "hold": "packing_tape",
+          "count": 3,
+          "noise": "wrap",
+          "rejectIf": [
+            {
+              "if": "self.present < 0.5 || self.bolt1 < 0.5 || self.bolt2 < 0.5 || self.bolt3 < 0.5 || self.bolt4 < 0.5",
+              "reason": "flange_open"
+            },
+            {
+              "if": "self.integrity >= 0.95",
+              "reason": "joint_sound"
+            }
+          ],
+          "hazards": [
+            {
+              "if": "part.steam.accumulator.prop.linePressure >= 0.1",
+              "hazard": "burn",
+              "detail": "steam"
+            }
+          ],
+          "onComplete": [
+            {
+              "set": "wrap",
+              "to": 1
+            },
+            {
+              "set": "wrapLife",
+              "to": "$wrapLifeS"
+            },
+            {
+              "set": "wrapArmed",
+              "to": 1
+            },
+            {
+              "consume": true
+            },
+            {
+              "quality": "temporary"
+            }
+          ]
+        }
+      },
+      "touch": {
+        "temp": "steam.lineTempC",
+        "wet": "steam.leak > 0.05"
+      }
+    },
+    {
+      "id": "steam.flange.bolt.{n}",
+      "bind": {
+        "n": "1..4"
+      },
+      "part": "steam.joint",
+      "kind": "fastener",
+      "zone": "aft",
+      "prop": "bolt{n}",
+      "group": "flange",
+      "sequenceFrom": "proc.steam.gasket",
+      "verbs": {
+        "loosen": {
+          "tool": "wrench",
+          "noise": "wrench",
+          "hazards": [
+            {
+              "if": "part.steam.accumulator.prop.linePressure > 0.05",
+              "hazard": "burn",
+              "detail": "steam"
+            }
+          ],
+          "effects": [
+            {
+              "set": "wrap",
+              "to": 0
+            },
+            {
+              "set": "wrapTurns",
+              "to": 0
+            },
+            {
+              "set": "wrapArmed",
+              "to": 0
+            },
+            {
+              "set": "wrapLife",
+              "to": 0
+            }
+          ]
+        },
+        "tighten": {
+          "tool": "wrench",
+          "noise": "wrench",
+          "hook": "seat"
+        }
+      }
+    },
+    {
+      "id": "steam.gasket",
+      "part": "steam.joint",
+      "kind": "socket",
+      "zone": "aft",
+      "needReason": "need_gasket",
+      "verbs": {
+        "pull": {
+          "tool": "hand",
+          "noise": "cover",
+          "rejectIf": [
+            {
+              "if": "self.bolt1 >= 0.5 || self.bolt2 >= 0.5 || self.bolt3 >= 0.5 || self.bolt4 >= 0.5",
+              "reason": "flange_bolts_tight"
+            }
+          ],
+          "hazards": [
+            {
+              "if": "part.steam.accumulator.prop.linePressure > 0.05",
+              "hazard": "burn",
+              "detail": "steam"
+            }
+          ],
+          "gives": [
+            {
+              "item": "gasket_old"
+            }
+          ],
+          "set": {
+            "rough": 1,
+            "scraped": 0
+          }
+        },
+        "insert": {
+          "noise": "cover",
+          "accepts": {
+            "gasket": {
+              "set": {
+                "seatQ": 1
+              }
+            },
+            "gasket_old": {
+              "set": {
+                "seatQ": "$oldGasketIntegrity"
+              }
+            }
+          },
+          "effects": [
+            {
+              "if": "self.rough >= 0.5",
+              "add": "seatQ",
+              "by": "$roughLoss",
+              "min": 0
+            }
+          ],
+          "rejectIf": [
+            {
+              "if": "self.bolt1 >= 0.5 || self.bolt2 >= 0.5 || self.bolt3 >= 0.5 || self.bolt4 >= 0.5",
+              "reason": "flange_closed"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "steam.flange.face",
+      "part": "steam.joint",
+      "kind": "work",
+      "zone": "aft",
+      "prop": "scraped",
+      "verbs": {
+        "scrape": {
+          "gesture": "scrub",
+          "tool": "scraper",
+          "count": 3,
+          "noise": "scrape",
+          "rejectIf": [
+            {
+              "if": "self.present >= 0.5",
+              "reason": "gasket_in"
+            },
+            {
+              "if": "self.bolt1 >= 0.5 || self.bolt2 >= 0.5 || self.bolt3 >= 0.5 || self.bolt4 >= 0.5",
+              "reason": "flange_closed"
+            }
+          ],
+          "onComplete": [
+            {
+              "set": "rough",
+              "to": 0
+            }
+          ]
+        }
+      },
+      "touch": {
+        "temp": "steam.lineTempC"
+      }
+    }
+  ]
+}

@@ -56,6 +56,38 @@ public partial class ScreenshotTour : Node
         _main.Restart();
         _main.Runner.Paused = true;
 
+        // 증기 축압기 플랜지 (WP19): 개스킷을 꽂은 상태와 뺀 상태. 그릇 쪽은 해치를 닫아야 보인다.
+        if (_main.Runner.Data.Parts.Any(p => p.Id == "steam.joint"))
+        {
+            _main.Runner.Send("hatch.close");
+            _main.Runner.StepMany(_main.Runner.Data.Tuning.TicksPerSecond * 2);
+            var eye = new Vector3(2.05f, 0.05f, 0.25f);
+            var flange = new Vector3(2.0f, 0.6f, 0.8f);
+            async Task Shot(string name)
+            {
+                _main.Player.PlaceAt(eye, flange);
+                for (int i = 0; i < 30; i++)
+                {
+                    _main.Player.LookAt3D(flange);
+                    await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+                }
+                await Capture(name);
+            }
+            await Shot("12-accumulator-gasket-in");
+            // 교범대로 관의 증기를 빼고 볼트를 풀어 개스킷을 뽑는다.
+            foreach (var c in new[] { "steam.stop.close", "steam.stop.close", "steam.stop.close", "steam.stop.close", "steam.bleed.open", "steam.bleed.open" })
+            {
+                _main.Runner.Send(c);
+                _main.Runner.StepMany(12);
+            }
+            _main.Runner.StepMany(_main.Runner.Data.Tuning.TicksPerSecond * 30);
+            foreach (var c in new[] { "tool.wrench", "steam.flange.bolt.1.loosen", "steam.flange.bolt.2.loosen", "steam.flange.bolt.3.loosen", "steam.flange.bolt.4.loosen", "tool.hand", "steam.gasket.pull" })
+            {
+                _main.Runner.Send(c);
+                _main.Runner.StepMany(12);
+            }
+            await Shot("13-accumulator-gasket-out");
+        }
         // 교범을 편 화면
         _main.OpenManual("퓨즈 교체");
         for (int i = 0; i < 10; i++) await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
