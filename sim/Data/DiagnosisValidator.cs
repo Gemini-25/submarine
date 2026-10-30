@@ -18,6 +18,9 @@ static class DiagnosisValidator
     public static readonly IReadOnlyList<string> LabelUnits = Array.AsReadOnly(new[] { "cue", "band", "sg" });
     public static readonly IReadOnlyList<string> RestoreKinds = Array.AsReadOnly(new[] { "throttle", "switches" });
     public static readonly IReadOnlyList<string> CalcKinds = Array.AsReadOnly(new[] { "headingGap", "distanceGap" });
+    /// <summary>align gauge가 영점을 맞출 때 쓰는 기준 계기 (교범 41쪽 표): 계기 → (손 도구, 재는 자리).</summary>
+    public static readonly IReadOnlyDictionary<string, (string Tool, string Target)> ZeroReferences =
+        new SortedDictionary<string, (string, string)>(StringComparer.Ordinal) { ["voltage"] = ("voltmeter", "bus") };
     public static readonly IReadOnlyList<string> HeardKinds = Array.AsReadOnly(new[] { "bell.nolamp" });
 
     /// <summary>each 출처의 값들. FixtureCatalog의 문법(circuits, cells, leaks, 1..4, a,b,c)에 낱개 값 하나를 더한다.</summary>
@@ -191,6 +194,8 @@ static class DiagnosisValidator
 
         var pageRx = new Regex(@"^\d\d-.+\.md$");
         var nos = new SortedSet<int>();
+        // 절차 ID → 틀 변수 → 그 절차를 부르는 판정들이 묶는 값 (절차 기다림의 경로를 펼칠 때 쓴다).
+        var procVars = new Dictionary<string, Dictionary<string, SortedSet<string>>>(StringComparer.Ordinal);
         foreach (var pair in dx.Pairs)
         {
             string file = dx.Origin[pair.Id];
@@ -272,7 +277,20 @@ static class DiagnosisValidator
                 {
                     Check(a.Kinds == 1, $"{w}.do: 행동은 정확히 한 종류여야 한다");
                     Check(a.Restore == null || RestoreKinds.Contains(a.Restore), $"{w}.do: restore '{a.Restore}'를 모른다");
-                    Check(a.Align == null || a.Align == "gyro", $"{w}.do: align '{a.Align}'를 모른다");
+                    Check(a.Align == null || a.Align is "gyro" or "gauge", $"{w}.do: align '{a.Align}'를 모른다");
+                    Check(a.Bind.Count == 0 || a.Procedure != null || a.Align == "gauge", $"{w}.do: bind는 procedure와 align gauge에만 쓴다");
+                    if (a.Align == "gauge")
+                    {
+                        Check(a.Bind.Count == 1 && a.Bind.ContainsKey("gauge"), $"{w}.do: align gauge에는 bind {{gauge}} 하나가 있어야 한다");
+                        if (a.Bind.TryGetValue("gauge", out var g))
+                            foreach (var b in Expansions(vars))
+                            {
+                                string gv = Sub(g, b);
+                                if (Unbound(gv, $"{w}.do.bind.gauge")) continue;
+                                Check(ZeroReferences.ContainsKey(gv) && d.Fixtures.Instances.Any(f => f.Id == $"gauge.{gv}.zero"),
+                                    $"{w}.do: align gauge '{gv}'의 기준 계기나 영점 나사가 없다");
+                            }
+                    }
                     Check(a.Reset == null || a.Reset == "navcomp", $"{w}.do: reset '{a.Reset}'를 모른다");
                     Check(a.Wait == null || a.Wait > 0, $"{w}.do: wait > 0");
                     Check(!a.Release || a.Until.Count > 0, $"{w}.do: release는 until과 함께만 쓴다");
@@ -291,7 +309,13 @@ static class DiagnosisValidator
                         firstProc = false;
                         foreach (var (k, val) in a.Bind)
                             foreach (var b in Expansions(vars))
-                                Unbound(Sub(val, b), $"{w}.do.bind.{k}");
+                            {
+                                string bv = Sub(val, b);
+                                if (Unbound(bv, $"{w}.do.bind.{k}")) continue;
+                                if (!procVars.TryGetValue(proc.Id, out var pv)) procVars[proc.Id] = pv = new(StringComparer.Ordinal);
+                                if (!pv.TryGetValue(k, out var set)) pv[k] = set = new SortedSet<string>(StringComparer.Ordinal);
+                                set.Add(bv);
+                            }
                         foreach (var step in proc.Steps)
                             if (step.Cmd != null && step.Cmd.StartsWith("locker.take.", StringComparison.Ordinal))
                                 PathOk("inventory." + step.Cmd[12..], $"{w}.do ({proc.Id})", out _);
@@ -351,7 +375,10 @@ static class DiagnosisValidator
                 var wait = p.Steps[i].Wait;
                 if (wait == null) continue;
                 string w = $"procedures.{p.Id}.steps[{i}].wait";
-                var none = new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal);
+                // 절차의 틀 변수는 그 절차를 부르는 판정들이 묶는 값으로 펼친다 (WP23).
+                var none = procVars.TryGetValue(p.Id, out var pv)
+                    ? pv.ToDictionary(kv => kv.Key, kv => (IReadOnlyList<string>)kv.Value.ToArray(), StringComparer.Ordinal)
+                    : new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal);
                 foreach (var c in wait.Until) Cond(c, w + ".until", Place.Wait, none);
                 foreach (var c in wait.Then) Cond(c, w + ".then", Place.Wait, none);
                 string? touched = p.Steps[i].Cmd is { } cmd && cmd.EndsWith(".touch", StringComparison.Ordinal) ? cmd[..^6] : null;

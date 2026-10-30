@@ -31,7 +31,8 @@
         "type": "Isolate",
         "text": "챔버 수위 유리가 20L 아래로 내려갈 때까지 기다린다. 챔버 줄은 분당 48L밖에 빼지 못한다.",
         "requires": "챔버 수위가 20L 아래일 것",
-        "hazard": "물이 문턱 위에 있으면 안쪽 해치가 수압에 눌려 열리지 않는다."
+        "hazard": "물이 문턱 위에 있으면 안쪽 해치가 수압에 눌려 열리지 않는다.",
+        "wait": { "until": [ { "q": "reading.chamber.glass", "unit": "L", "below": 20 } ], "every": 5, "max": 1200 }
       },
       {
         "type": "Open",

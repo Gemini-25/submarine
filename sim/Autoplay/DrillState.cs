@@ -33,6 +33,8 @@ internal sealed class Op
     public List<double> Baseline { get; set; } = new();
     public int Tries { get; set; }
     public bool Release { get; set; }
+    /// <summary>절차 기다림의 묶음 값 "k=v;k=v" (절차의 bind). null이면 일의 묶음 값을 쓴다.</summary>
+    public string? Bind { get; set; }
     /// <summary>지켜보기의 최솟값과 최댓값.</summary>
     public double Lo { get; set; } = double.PositiveInfinity;
     public double Hi { get; set; } = double.NegativeInfinity;

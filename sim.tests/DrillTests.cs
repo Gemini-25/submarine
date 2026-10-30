@@ -5,8 +5,8 @@ using Xunit.Abstractions;
 namespace DeepLine.Sim.Tests;
 
 /// <summary>
-/// Tier A 드릴 (WP16, docs/plans/WP16-solver.md 5.3절): DrillSolver가 관찰과 교범(진단 자료)만으로 훈련을 사람 속도로, 다치지 않고 푼다.
-/// 동력 훈련(m2-power-a)은 WP11이 본선에 들어온 뒤 더한다.
+/// M2 드릴 16개 (WP16 Tier A 여덟, WP23 2차 여덟; docs/plans/WP16-solver.md 5.3절): DrillSolver가 관찰과 교범(진단 자료)만으로
+/// 훈련을 사람 속도로, 다치지 않고 푼다.
 /// </summary>
 public class DrillTests
 {
@@ -24,6 +24,16 @@ public class DrillTests
         ["m2-senses-a"] = (new[] { "bell.nolamp/SNS-01 lamp=water", "pump.stopped/switch_off", "hydrophone.noisy/SNS-03 tube=1" }, Array.Empty<string>()),
         ["m2-nav"] = (new[] { "heading.off/NAV-01", "distance.wrong/NAV-02" }, new[] { "heading.off/unsettled" }),
         ["m2-cable"] = (new[] { "winch.weak/CBL-01", "siphon.trace/CBL-02" }, Array.Empty<string>()),
+        // 2차 (WP23)
+        ["m2-switchboard-b"] = (new[] { "switch.drop/ELC-02 c=C1", "switch.drop/ELC-02 c=C5" }, Array.Empty<string>()),
+        // 막힌 화로에 양초를 한 번 켜 보고(연기로 AIR-03을 안다), 화로 청소 절차의 끝에서 다시 켠다.
+        ["m2-air-b"] = (new[] { "o2.low/light", "o2.low/AIR-03" }, Array.Empty<string>()),
+        ["m2-water-b"] = (new[] { "pump.noflow/WTR-03" }, Array.Empty<string>()),
+        ["m2-ballast"] = (new[] { "attitude.tilt/WTR-04 t=fore", "attitude.tilt/refill t=aft" }, Array.Empty<string>()),
+        ["m2-senses-b"] = (new[] { "panel.crossed/SNS-02", "searchlight.weak/SNS-04", "gauge.voltage/SNS-05", "pump.stopped/switch_off" }, Array.Empty<string>()),
+        ["m2-power-b"] = (new[] { "junction.dew/PWR-03", "junction.dew/ELC-03 c=C3" }, Array.Empty<string>()),
+        ["m2-hull-b"] = (new[] { "fore.alarm/HUL-02 v=1", "chamber.rising/HUL-04" }, Array.Empty<string>()),
+        ["m2-shakedown"] = (new[] { "junction.dew/PWR-03", "junction.dew/ELC-03 c=C3", "bell.nolamp/SNS-01 lamp=hull", "aft.alarm/HUL-03" }, Array.Empty<string>()),
     };
 
     public static IEnumerable<object[]> Drills => Expected.Keys.Select(k => new object[] { k });
@@ -176,10 +186,21 @@ public class DrillLogTests
     [InlineData("m2-nav", "phase:wait:proc.gyro.bearing#2")]
     [InlineData("m2-nav", "park")]
     [InlineData("m2-cable", "hand:lining_worn")]
+    [InlineData("m2-switchboard-b", "tool:file")]
+    [InlineData("m2-air-b", "park")]
+    [InlineData("m2-water-b", "prop:pump.check_valve.bonnetOpen")]
+    [InlineData("m2-ballast", "phase:wait:proc.ballast.repack#13")]
+    [InlineData("m2-senses-b", "prop:searchlight.rods.doorOpen")]
+    [InlineData("m2-power-b", "phase:wait:proc.steam.gasket#3")]
+    [InlineData("m2-hull-b", "phase:wait:proc.chamber.reseal#4")]
+    [InlineData("m2-hull-b", "prop:chamber.state.innerOpen")]
+    [InlineData("m2-shakedown", "rings")]
     public void Save_and_restore_mid_repair_continues_hash_identical(string mission, string at)
     {
         bool Point(Simulation s, DrillSolver solver) => at switch
         {
+            _ when at.StartsWith("tool:", StringComparison.Ordinal) => s.Query("crew.tool").Text == at[5..],
+            _ when at.StartsWith("prop:", StringComparison.Ordinal) => s.Query($"part.{at[5..at.LastIndexOf('.')]}.prop.{at[(at.LastIndexOf('.') + 1)..]}").Number >= 1,
             "soldering" => s.Query("part.junction.C6.prop.coverOpen").Number == 1 && s.Query("crew.tool").Text == "soldering_iron",
             "rings" => s.Query("part.leak.shaft_packing.prop.ringsOut").Number >= 2,
             "door" => s.Query("part.hydrophone.case.prop.doorOpen").Number == 1,
@@ -344,12 +365,17 @@ public class DrillLogTests
             {
                 if (step.Kind == PlanKind.Decide) decided[$"{step.Pair}/{step.Verdict}"] = step.Bind ?? "";
                 if (step.Kind is not (PlanKind.Do or PlanKind.Skip) || step.Job == null || step.Note == null || !step.Note.StartsWith("proc.", StringComparison.Ordinal)) return;
-                var key = (step.Job, step.Note);
+                // 같은 판정이 묶음 값만 달리해 두 번 일할 수 있다 (배전반 C1, C5): 열쇠에 묶음 값을 넣는다.
+                var key = (step.Job + "|" + decided[step.Job], step.Note);
                 if (!got.ContainsKey(key))
                 {
                     var proc = TestData.Data.Procedure(step.Note);
-                    var b = decided[step.Job].Split(';', StringSplitOptions.RemoveEmptyEntries).Select(kv => kv.Split('=')[1]).ToList();
-                    var bind = proc.Bind.ToDictionary(n => n, _ => b.Single());
+                    // 절차의 묶음 값은 판정의 조치에 적힌 bind를 판정의 묶음 값으로 채운 것이다.
+                    var dxp = TestData.Data.Diagnosis!.Pair(step.Job.Split('/')[0]);
+                    var vd = dxp.Verdicts[step.Job.Split('/')[1]];
+                    if (vd.Same != null) vd = TestData.Data.Diagnosis!.Pair(vd.Same).Verdicts[step.Job.Split('/')[1]];
+                    var jb = decided[step.Job].Split(';', StringSplitOptions.RemoveEmptyEntries).ToDictionary(kv => kv.Split('=')[0], kv => kv.Split('=')[1]);
+                    var bind = vd.Do.First(a => a.Procedure == proc.Id).Bind.ToDictionary(kv => kv.Key, kv => FixtureCatalog.Expand(kv.Value, jb));
                     var belt = Enumerable.Range(1, TestData.T.ToolBoard!.BeltSlots).Select(n => s.Query($"crew.belt.{n}").Text ?? "").ToArray();
                     expected[key] = ProcedureRunner.ExpandSteps(proc, bind, belt, new ObservableQuery(s).Read).Where(i => i.Command != null).Select(i => i.Command!.Cmd).ToList();
                     got[key] = new List<string>();
@@ -388,6 +414,93 @@ public class DrillLogTests
         var nav = Solved("m2-nav").Lines;
         long gyroOff = nav.First(l => l.Step.Cmd == "gyro.switch.off").Tick, screw = nav.First(l => l.Step.Cmd == "gyro.case.screw.1.loosen").Tick;
         Assert.True(screw - gyroOff > TestData.Ticks(30));
+    }
+
+    /// <summary>
+    /// 2차 절차의 기다림 (WP23, WP19 보고서의 기다림 표): 명령을 내는 그 틱에 교범의 조건이 서 있다.
+    /// 플랜지 볼트는 관 압력계가 0.5kg/cm² 아래, 챔버 안쪽 해치는 수위 유리가 20L 아래, 침수 밸브는 침투유를 바르고 30초 뒤,
+    /// 흡입 선택 레버는 탱크 유리관이 붉은 금(150L)에 닿은 뒤 빌지로 되돌린다.
+    /// </summary>
+    [Theory]
+    [InlineData("m2-power-b")]
+    [InlineData("m2-hull-b")]
+    [InlineData("m2-ballast")]
+    public void Tier_b_waits_hold_when_the_command_is_given(string mission)
+    {
+        int seen = 0;
+        long oiled = -1;
+        var hooks = new DrillHooks
+        {
+            BeforeStep = (s, step) =>
+            {
+                if (step.Kind != PlanKind.Do || step.Cmd is not { } c) return;
+                double Q(string path) => s.Query(path).Number;
+                if (c.StartsWith("steam.flange.bolt.", StringComparison.Ordinal) && c.EndsWith(".loosen", StringComparison.Ordinal))
+                {
+                    Assert.True(Q("reading.steam.line") < 0.5, $"{c}: 관 압력 {Q("reading.steam.line"):F2}kg/cm²");
+                    seen++;
+                }
+                if (c == "chamber.hatch.open")
+                {
+                    Assert.True(Q("reading.chamber.glass") < 20, $"{c}: 챔버 {Q("reading.chamber.glass"):F1}L");
+                    seen++;
+                }
+                if (c.EndsWith(".stem.oil", StringComparison.Ordinal)) oiled = s.Tick;
+                if (c.EndsWith(".flood.close", StringComparison.Ordinal) && step.Note == "proc.ballast.repack")
+                {
+                    Assert.True(s.Tick - oiled >= TestData.Ticks(30), $"{c}: 침투유 {(s.Tick - oiled) / 20.0}초 뒤");
+                    seen++;
+                }
+                if (c == "pump.suction.bilge" && step.Note == "proc.ballast.repack")
+                {
+                    Assert.True(Q("reading.ballast.fore.glass") < 151, $"{c}: 앞 탱크 {Q("reading.ballast.fore.glass"):F1}L");
+                    seen++;
+                }
+            },
+        };
+        var log = DrillRunner.Solve(TestData.Data, mission, hooks: hooks);
+        Assert.Equal("succeeded", log.Status);
+        Assert.True(seen >= (mission == "m2-ballast" ? 2 : 1), $"본 명령 {seen}개");
+        // 기다림은 절차 자료에서 온다: 손으로 쓴 기다림 걸음이 아니라 until 기다림으로 기록된다.
+        string wref = mission switch { "m2-power-b" => "proc.steam.gasket#3", "m2-hull-b" => "proc.chamber.reseal#4", _ => "proc.ballast.repack#13" };
+        Assert.Contains(log.Lines, l => l.Step.Kind == PlanKind.Wait && l.Step.Note == "until " + wref);
+    }
+
+    /// <summary>
+    /// 같은 쌍의 일이 손을 놓고 기다리는 동안에는 그 쌍에서 손을 쓰는 판정을 내지 않는다 (WP23).
+    /// 산소 화로: 막힌 화로의 양초가 다 타기를 기다리는 동안 '양초가 타지 않는다'(light)로 새 양초를 켜지 않는다. 양초는 둘만 쓴다.
+    /// </summary>
+    [Fact]
+    public void A_parked_job_keeps_its_pair_from_acting_on_the_symptom_it_waits_for()
+    {
+        var log = DrillLogTests.Solved("m2-air-b");
+        Assert.Equal("succeeded", log.Status);
+        Assert.Equal(2, log.Lines.Count(l => l.Step.Kind == PlanKind.Do && l.Step.Cmd == "candle.light"));
+        long parked = log.Lines.First(l => l.Step.Kind == PlanKind.Note && l.Step.Note?.StartsWith("park ", StringComparison.Ordinal) == true).Tick;
+        long cleaned = log.Lines.First(l => l.Step.Cmd == "o2.furnace.touch").Tick;
+        Assert.DoesNotContain(log.Lines, l => l.Tick > parked && l.Tick < cleaned && l.Step.Kind == PlanKind.Decide);
+    }
+
+    /// <summary>계기 영점(align gauge): 손에 든 전압계로 버스 바를 재고, 그 차이만큼 영점 나사를 돌려 바늘을 1V 안에 맞춘다.</summary>
+    [Fact]
+    public void The_gauge_is_zeroed_against_the_handheld_voltmeter()
+    {
+        double gap = double.NaN;
+        var log = DrillRunner.Solve(TestData.Data, "m2-senses-b", hooks: new DrillHooks
+        {
+            BeforeStep = (s, step) =>
+            {
+                if (step.Kind == PlanKind.Verify && step.Verdict == "SNS-05")
+                    gap = Math.Abs(s.Query("panel.gauge.voltage").Number - s.Measure("voltmeter", "bus")) * 120;
+            },
+        });
+        Assert.Equal("succeeded", log.Status);
+        int zero = log.Lines.ToList().FindIndex(l => l.Step.Cmd?.StartsWith("gauge.voltage.zero.", StringComparison.Ordinal) == true);
+        Assert.True(zero > 0);
+        var before = log.Lines.Take(zero).Last(l => l.Step.Kind == PlanKind.Measure);
+        Assert.Equal(("voltmeter", "bus"), (before.Step.Tool, before.Step.Target));
+        Assert.DoesNotContain(log.Lines, l => l.Step.Kind == PlanKind.Verify && l.Step.Verdict == "SNS-05" && l.Step.Ok == false);
+        Assert.True(gap < 1, $"바늘과 버스 바 {gap:F2}V");
     }
 
     /// <summary>축 패킹 끈 교체는 너트 A를 손 자리 값(nutA)의 칸 수만큼 푼다 (repeatFrom). 처음 칸 수가 1이나 3이어도 풀고 성공한다.</summary>
@@ -534,6 +647,7 @@ public class DrillElsewhereTests
     [InlineData("m2-switchboard-a", "ELC-03", "junction.C2", "fuse.blown/ELC-03", "c=C2")]
     [InlineData("m2-hull-a", "HUL-01", "leak.rivet.10", "aft.alarm/HUL-01", "point=leak.rivet.10")]
     [InlineData("m2-senses-a", "SNS-03", "hydrophone.tube.2", "hydrophone.noisy/SNS-03", "tube=2")]
+    [InlineData("m2-hull-b", "HUL-02", "leak.viewport.2", "fore.alarm/HUL-02", "v=2")]
     public void Solver_finds_the_fault_wherever_it_is(string mission, string fault, string part, string verdict, string bind)
     {
         var data = DataValidationTests.LoadModified(Path.Combine("missions", mission + ".json"), n =>
@@ -542,6 +656,8 @@ public class DrillElsewhereTests
                 if ((string?)e!["fault"] == fault) e["part"] = part;
             if (mission == "m2-switchboard-a")
                 n["success"]!["assert"] = ((string)n["success"]!["assert"]!).Replace("C1", "C2", StringComparison.Ordinal);
+            if (mission == "m2-hull-b")
+                n["success"]!["assert"] = ((string)n["success"]!["assert"]!).Replace("leak.viewport.1", "leak.viewport.2", StringComparison.Ordinal);
             if (mission == "m2-senses-a")
                 n["success"]!["assert"] = ((string)n["success"]!["assert"]!).Replace("hydrophone.tube.1.prop.filament", "hydrophone.tube.1.prop.present", StringComparison.Ordinal);
         });

@@ -11,7 +11,7 @@
     "switches": {
       "C3": true
     },
-    "throttle": 0.8
+    "throttle": 0.75
   },
   "events": [
     {

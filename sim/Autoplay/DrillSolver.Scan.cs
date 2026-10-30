@@ -263,6 +263,9 @@ public sealed partial class DrillSolver
     {
         need = null;
         passes = 0;
+        // 이 쌍의 일이 손을 놓고 기다리는 동안에는 같은 쌍에서 손을 쓰는 판정을 내지 않는다 (WP23).
+        // 기다리는 일이 만든 증상(예: 양초가 다 타기를 기다리는 동안 '양초가 타지 않는다')에 다른 조치를 하지 않게 한다. 적어 두기만 하는 판정은 그대로 낸다.
+        if (ParkedOn(pair) && Acts(pair, ch.Verdict)) return null;
         var values = Values(ch);
         var passing = new List<IReadOnlyDictionary<string, string>>();
         int considered = 0;
@@ -292,6 +295,14 @@ public sealed partial class DrillSolver
             "only" => passing.Count == 1 ? passing[0] : null,
             _ => considered > 0 && passing.Count == considered ? NoBind : null,
         };
+    }
+
+    bool ParkedOn(PairDef pair) => _s.Jobs.Any(j => j.Pair == pair.Id && j.Phase == "parked");
+
+    bool Acts(PairDef pair, string verdict)
+    {
+        var v = pair.Verdicts[verdict];
+        return (v.Same != null ? _book.Diagnosis.Pair(v.Same).Verdicts[verdict] : v).Do.Count > 0;
     }
 
     /// <summary>eval 연산: 확인 하나를 평가한다. 손이 들면 prep, 재기를 앞에 끼우고 다시 온다.</summary>

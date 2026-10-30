@@ -28,6 +28,7 @@
         "type": "Isolate",
         "text": "관 압력계가 1.5kg/cm² 아래로 떨어질 때까지 기다린다. 약 10초가 걸린다.",
         "requires": "관 압력계가 1.5kg/cm² 아래일 것",
+        "wait": { "until": [ { "q": "reading.steam.line", "unit": "kgcm2", "below": 1.4 } ], "every": 1, "max": 120 },
         "hazard": "관에 증기가 남은 채 이음에 손을 대면 증기에 덴다."
       },
       {
@@ -89,6 +90,7 @@
         "type": "Isolate",
         "text": "관 압력계가 0을 가리킬 때까지 기다린다. 약 15초가 걸린다. 빼기 밸브는 열어 둔다.",
         "requires": "관 압력계가 0일 것",
+        "wait": { "until": [ { "q": "reading.steam.line", "unit": "kgcm2", "below": 0.5 } ], "every": 1, "max": 120 },
         "hazard": "관에 증기가 남은 채 플랜지 볼트를 풀면 증기가 뿜어 나와 덴다."
       },
       {

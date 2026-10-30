@@ -22,6 +22,7 @@ public sealed partial class DrillSolver
         "conclude" => ProcessConclude(op),
         "action" => ProcessAction(op),
         "jobdone" => ProcessJobDone(op),
+        "zero" => ProcessZero(op),
         _ => throw new InvalidOperationException($"모르는 연산 '{op.Kind}'"),
     };
 
@@ -68,7 +69,8 @@ public sealed partial class DrillSolver
         if (_s.Agenda.Count > 1 && _s.Agenda[1] is { Kind: "until", Which: "then", Start: < 0 } then)
         {
             then.Start = Now;
-            then.Baseline = WaitConds(then).Conds.Select(c => c.Delta ? DeltaSource(c) : double.NaN).ToList();
+            var tb = WaitBind(then);
+            then.Baseline = WaitConds(then).Conds.Select(c => c.Delta ? DeltaSource(c, tb) : double.NaN).ToList();
         }
         _s.Agenda.RemoveAt(0);
         return Emit(PlanKind.Do, Hand, cmd: cmd, value: op.Value, value2: op.Value2, text: op.Which == "floor" ? "floor" : null,
@@ -133,6 +135,20 @@ public sealed partial class DrillSolver
         _s.Agenda.RemoveAt(0);
         double shown = op.Tool == "voltmeter" ? Systems.Units.ToDisplay("V", raw) : raw;
         return Emit(PlanKind.Measure, Look, tool: op.Tool, target: op.Target, reading: shown, pair: _s.Evaluating);
+    }
+
+    /// <summary>영점 나사: 방금 잰 기준 값과 지금 바늘의 차이를 한 칸의 몫으로 나눈 만큼 돌린다 (시뮬레이션 단위로 셈한다).</summary>
+    PlanStep? ProcessZero(Op op)
+    {
+        _s.Agenda.RemoveAt(0);
+        string g = op.Target!;
+        double reference = _s.Memo[op.Note!], needle = _q.Number("panel.gauge." + g);
+        _s.Memo.Remove(op.Note!);
+        var gauge = _book.Gauges[g];
+        var cmds = SensesDrill.ZeroCommands(g, needle, reference, gauge[0], gauge[1]);
+        if (cmds.Count > 0)
+            _s.Agenda.InsertRange(0, StepsToOps(new[] { new StepDef { Cmd = cmds[0], Tool = "screwdriver", Repeat = cmds.Count } }, NoBind, op.Origin!, op.Job));
+        return null;
     }
 
     PlanStep ProcessLamptest(Op op)
@@ -202,7 +218,12 @@ public sealed partial class DrillSolver
         return (op.Which switch { "then" => w.Then, "retry" => w.Retry, _ => w.Until }, w.Every, w.Max);
     }
 
-    double DeltaSource(CondDef c) => c.Q != null ? Display(c.Unit, c.Q, _q.Number(c.Q)) : c.Calc != null ? Calc(c.Calc) : double.NaN;
+    double DeltaSource(CondDef c, IReadOnlyDictionary<string, string> bind) =>
+        c.Q != null ? Display(c.Unit, Sub(c.Q, bind), _q.Number(Sub(c.Q, bind))) : c.Calc != null ? Calc(c.Calc) : double.NaN;
+
+    /// <summary>기다림의 묶음 값: 절차의 bind가 있으면 그것, 없으면 일의 묶음 값.</summary>
+    IReadOnlyDictionary<string, string> WaitBind(Op op) =>
+        op.Bind != null ? ParseBind(op.Bind) : JobOf(op.Job)?.Bind ?? (IReadOnlyDictionary<string, string>)NoBind;
 
     bool WaitHolds(Op op, IReadOnlyList<CondDef> conds, IReadOnlyDictionary<string, string> bind)
     {
@@ -211,7 +232,7 @@ public sealed partial class DrillSolver
             var c = conds[i];
             if (c.Delta)
             {
-                double now = DeltaSource(c), base0 = i < op.Baseline.Count ? op.Baseline[i] : double.NaN;
+                double now = DeltaSource(c, bind), base0 = i < op.Baseline.Count ? op.Baseline[i] : double.NaN;
                 if (!Judge(c, now - base0, null)) return false;
             }
             else if (Test(c, bind, $"wait:{op.WaitRef}:{i}", true, out _, out _) != R.True) return false;
@@ -222,11 +243,11 @@ public sealed partial class DrillSolver
     PlanStep? ProcessUntil(Op op)
     {
         var (conds, every, max) = WaitConds(op);
-        var bind = JobOf(op.Job)?.Bind ?? (IReadOnlyDictionary<string, string>)NoBind;
+        var bind = WaitBind(op);
         if (op.Start < 0)
         {
             op.Start = Now;
-            op.Baseline = conds.Select(c => c.Delta ? DeltaSource(c) : double.NaN).ToList();
+            op.Baseline = conds.Select(c => c.Delta ? DeltaSource(c, bind) : double.NaN).ToList();
         }
         if (WaitHolds(op, conds, bind))
         {
@@ -256,7 +277,7 @@ public sealed partial class DrillSolver
         var (conds, every, max) = WaitConds(op);
         if (op.Start < 0) op.Start = Now;
         _s.Agenda.RemoveAt(0);
-        if (!WaitHolds(op, conds, NoBind)) return null;
+        if (!WaitHolds(op, conds, WaitBind(op))) return null;
         if (Now - op.Start > _book.Ticks(max))
         {
             Stop(DrillOutcome.Stuck, "wait_timeout:" + op.WaitRef);
@@ -279,20 +300,21 @@ public sealed partial class DrillSolver
         _book.BeltSlots == 0 ? Array.Empty<string>() : Enumerable.Range(1, _book.BeltSlots).Select(n => _q.Read($"crew.belt.{n}").Text ?? "").ToArray();
 
     /// <summary>펼친 절차 항목을 연산으로: 기다림은 before → wait, until → until, 명령, then → until, retry → retry.</summary>
-    List<Op> ToOps(IReadOnlyList<ProcedureRunner.PlanItem> items, int job)
+    List<Op> ToOps(IReadOnlyList<ProcedureRunner.PlanItem> items, int job, IReadOnlyDictionary<string, string>? bind = null)
     {
+        string? bt = bind is { Count: > 0 } ? BindText(bind) : null;
         var ops = new List<Op>();
         foreach (var item in items)
         {
             var w = item.Wait;
             string wref = $"{item.Origin}#{item.Step}";
             if (w?.Before is { } before) ops.Add(new Op { Kind = "wait", Ticks = _book.Ticks(before), Job = job, Step = item.Step, Origin = item.Origin, Note = "wait " + wref });
-            if (w is { Until.Count: > 0 }) ops.Add(new Op { Kind = "until", Which = "until", WaitRef = wref, Release = w.Release, Job = job, Step = item.Step, Origin = item.Origin });
+            if (w is { Until.Count: > 0 }) ops.Add(new Op { Kind = "until", Which = "until", WaitRef = wref, Release = w.Release, Job = job, Step = item.Step, Origin = item.Origin, Bind = bt });
             if (item.Command is not { } c) continue;
             ops.Add(new Op { Kind = "cmd", Cmd = c.Cmd, Value = c.Value, Value2 = c.Value2, Origin = item.Origin, Step = item.Step, Job = job });
-            if (w is { Then.Count: > 0 }) ops.Add(new Op { Kind = "until", Which = "then", WaitRef = wref, Job = job, Step = item.Step, Origin = item.Origin });
+            if (w is { Then.Count: > 0 }) ops.Add(new Op { Kind = "until", Which = "then", WaitRef = wref, Job = job, Step = item.Step, Origin = item.Origin, Bind = bt });
             if (w is { Retry.Count: > 0 })
-                ops.Add(new Op { Kind = "retry", Which = "retry", WaitRef = wref, Cmd = c.Cmd, Target = c.Cmd[..c.Cmd.LastIndexOf('.')], Job = job, Step = item.Step, Origin = item.Origin });
+                ops.Add(new Op { Kind = "retry", Which = "retry", WaitRef = wref, Cmd = c.Cmd, Target = c.Cmd[..c.Cmd.LastIndexOf('.')], Job = job, Step = item.Step, Origin = item.Origin, Bind = bt });
         }
         var first = ops.FirstOrDefault(o => o.Kind == "cmd");
         if (first != null) first.First = true;
@@ -338,7 +360,7 @@ public sealed partial class DrillSolver
             var head = job.Parked[0];
             var (conds, _, max) = WaitConds(head);
             // ProcessUntil과 같은 순서: 조건이 섰으면 시간이 지났어도 다시 시작한다 (손이 다른 일로 오래 바빴을 수 있다).
-            if (!WaitHolds(head, conds, job.Bind))
+            if (!WaitHolds(head, conds, WaitBind(head)))
             {
                 if (Now - head.Start > _book.Ticks(max))
                 {
@@ -394,7 +416,7 @@ public sealed partial class DrillSolver
                 }
             job.Blocked = false;
             if (a.If.Count > 0) next.Value = 1;
-            ops.AddRange(ToOps(items, job.Id));
+            ops.AddRange(ToOps(items, job.Id, bind));
         }
         else if (a.Cmds.Count > 0) ops.AddRange(StepsToOps(a.Cmds, job.Bind, origin, job.Id));
         else if (a.Restore == "switches")
@@ -409,6 +431,15 @@ public sealed partial class DrillSolver
                 ops.Add(new Op { Kind = "cmd", Cmd = "propulsion.set", Value = job.Telegraph, Origin = origin, Step = op.Step, Job = job.Id });
         }
         else if (a.Align == "gyro") ops.AddRange(CommandsToOps(NavDrill.AlignCommands(_q, _book), origin, job.Id));
+        else if (a.Align == "gauge")
+        {
+            // 기준 계기를 손에 들고 재고, 그 값과 바늘의 차이만큼 영점 나사를 돌린다 (교범 41쪽). 나사 수는 잰 뒤에 셈한다.
+            string g = Sub(a.Bind["gauge"], job.Bind);
+            var (tool, target) = DiagnosisValidator.ZeroReferences[g];
+            ops.AddRange(CommandsToOps(new[] { "tool." + tool }, origin, job.Id));
+            ops.Add(new Op { Kind = "measure", Tool = tool, Target = target, Note = $"m:{tool}:{target}", Job = job.Id, Step = op.Step });
+            ops.Add(new Op { Kind = "zero", Target = g, Note = $"m:{tool}:{target}", Origin = origin, Job = job.Id, Step = op.Step });
+        }
         else if (a.Reset == "navcomp") ops.AddRange(CommandsToOps(NavDrill.ResetCommands(_q, _book), origin, job.Id));
         else if (a.Wait is { } secs) ops.Add(new Op { Kind = "wait", Ticks = _book.Ticks(secs), Job = job.Id, Step = op.Step, Note = "wait " + origin });
         ops.Add(next);

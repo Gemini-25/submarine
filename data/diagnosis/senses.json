@@ -53,7 +53,7 @@
         "SNS-05": {
           "fault": "SNS-05",
           "says": "상황판 계기 영점 보정",
-          "do": [ { "procedure": "proc.gauge.zero", "bind": { "gauge": "voltage" } } ],
+          "do": [ { "procedure": "proc.gauge.zero", "bind": { "gauge": "voltage" } }, { "align": "gauge", "bind": { "gauge": "voltage" } } ],
           "verify": { "all": [ { "q": "panel.gauge.voltage", "unit": "V", "above": 115 } ], "within": 10, "hold": 5 }
         }
       },
