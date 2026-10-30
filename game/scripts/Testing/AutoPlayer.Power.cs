@@ -170,6 +170,7 @@ public partial class AutoPlayer
     /// <summary>다 쓴 셀은 무거워서 셀 상자의 다 쓴 셀 칸에 넣는다.</summary>
     async Task CrateDrop()
     {
+        _gestures++;
         int before = _issued.Count;
         var it = await Approach("discard.crate");
         if (it == null) return;

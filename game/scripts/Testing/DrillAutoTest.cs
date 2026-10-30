@@ -67,7 +67,15 @@ public partial class AutoPlayer
                 if (step.Kind == PlanKind.Do) await Execute(step);
                 else if (step.Kind == PlanKind.Measure) await Observe(step);
                 if (_failures.Count > 0) break;
-                _main.Runner.StepMany(step.Ticks);
+                StepRunner(mission, step.Ticks);
+                if (step.Kind == PlanKind.Do && step.Cmd!.EndsWith(".touch", StringComparison.Ordinal))
+                {
+                    // 만진 결과: 이 걸음 동안 모인 Touched 사건의 띠와 HUD에 보인 낱말이 같다.
+                    var touched = felt.LastOrDefault(e => e.Kind == SimEventKind.Touched);
+                    Check(touched.Kind == SimEventKind.Touched, $"'{step.Cmd}'를 했는데 만진 결과가 없다");
+                    if (touched.Kind == SimEventKind.Touched)
+                        Check(_main.Hud.LastFelt == UI.Texts.Touch((int)touched.Value, touched.Detail), $"만진 결과 띠 {touched.Value}인데 HUD 낱말이 '{_main.Hud.LastFelt}'");
+                }
                 if (step.Kind == PlanKind.Do && step.Cmd == "propulsion.set")
                     Check(Math.Abs(PowerReading("telegraph") - step.Value) < 1e-9, $"전령기를 {step.Value}에 두려 했는데 {PowerReading("telegraph")}");
                 if (step.Kind == PlanKind.Do) await Frame();
@@ -103,8 +111,66 @@ public partial class AutoPlayer
         Check(!submerged, $"{mission}: 축전지가 잠겼다");
         await Frame(5);
         Check(_main.Hud.ResultOpen && _main.Hud.ResultTitle == "훈련 완료", $"{mission}: 결과 화면이 '훈련 완료'가 아니다 ({_main.Hud.ResultTitle})");
-        Check(_main.Runner.Paused, $"{mission}: 끝났는데 러너가 멈춰 있지 않다");
 
+        if (_main.Player.Crouching) await Crouch(false);
+        _atShaft = false;
+        _main.Runner.Start(Data, back);
+        _main.Restart();
+        await Frame(2);
+    }
+
+    /// <summary>
+    /// 러너를 풀어 둔 채 틱을 나아간다. 임무가 끝났으면 Main이 결과 처리로 러너를 멈췄는지 본다(MissionSucceeded → Paused).
+    /// 그 뒤 다시 멈춘다. StepMany는 동기라서 그 사이에 프레임이 틱을 더하지 않는다.
+    /// </summary>
+    void StepRunner(string mission, int ticks)
+    {
+        if (ticks <= 0) return;
+        bool wasRunning = _main.Runner.Running;
+        _main.Runner.Paused = false;
+        _main.Runner.StepMany(ticks);
+        if (wasRunning && !_main.Runner.Running)
+            Check(_main.Runner.Paused, $"{mission}: 임무가 끝났는데 러너가 멈추지 않았다");
+        _main.Runner.Paused = true;
+    }
+
+    /// <summary>
+    /// drill:&lt;임무&gt;:replay — 솔버 없이 golden 기록의 Do 줄만 그 틱에 손동작으로 따라 한다 (설계 4.2절 재생 모드).
+    /// 1200틱 해시, 마지막 틱과 해시, 상태가 golden과 같아야 한다.
+    /// </summary>
+    async Task DrillReplaySuite(string mission)
+    {
+        var golden = GoldenLog(mission);
+        if (golden == null) { Check(false, $"{mission}의 golden 기록이 없다 (sim.tests/fixtures/drill-logs)"); return; }
+        string back = Snap.Mission.Id;
+        _main.Runner.Start(Data, mission);
+        _main.Restart();
+        await Frame(2);
+        var sim = _main.Runner.Sim;
+        var hashes = new List<DrillHash>();
+        void OnTick() { if (sim.Tick % DrillRunner.HashEvery == 0) hashes.Add(new DrillHash(sim.Tick, sim.StateHash())); }
+        _main.Runner.Ticked += OnTick;
+        int gestures = _gestures;
+        try
+        {
+            foreach (var line in golden.Lines)
+            {
+                if (_failures.Count > 0) break;
+                if (line.Step.Kind != PlanKind.Do) continue;
+                StepRunner(mission, (int)(line.Tick - sim.Tick));
+                await Execute(line.Step);
+                await Frame();
+            }
+            StepRunner(mission, (int)(golden.FinalTick - sim.Tick));
+        }
+        finally
+        {
+            _main.Runner.Ticked -= OnTick;
+        }
+        GD.Print($"AUTOTEST: {mission} 재생 {sim.Tick / (double)Data.Tuning.TicksPerSecond / 60:F1}분, 손동작 {_gestures - gestures}번, 상태 {sim.Query("mission.status").Text}");
+        Check(hashes.SequenceEqual(golden.Hashes), $"{mission} 재생: 1200틱 해시가 golden과 다르다");
+        Check(sim.Tick == golden.FinalTick && sim.StateHash() == golden.FinalHash, $"{mission} 재생: 마지막 틱과 해시가 golden과 다르다");
+        Check(sim.Query("mission.status").Text == golden.Status, $"{mission} 재생: 상태 {sim.Query("mission.status").Text} (golden {golden.Status})");
         if (_main.Player.Crouching) await Crouch(false);
         _atShaft = false;
         _main.Runner.Start(Data, back);
