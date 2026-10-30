@@ -72,9 +72,10 @@ public partial class Submarine : Node3D
         BuildCable();
         BuildPower(); // 축전지 갑판, 셀 상자, 전동기 브러시, 기관 전령기 (M2 WP11)
         BuildShaftGlandFixtures(); // 선체: 축 패킹 상자 (Submarine.Hull)
-        BuildSwitchboardTierA(query); // 분기함, 전류계, 납땜인두 전원, 브리지 대기 (WP8)
+        BuildSwitchboardTierA(query); // 분기함, 전류계, 납땜인두 전원 (WP8)
         BuildBallast(); // 밸러스트 조절반: 흡입 선택기, 침수 밸브, 탱크 유리관, 경사계 (WP18)
         BuildSensesB(); // 감각 2차 (WP20): 상황판 배선함, 탐조등과 레버와 현창 불빛, 계기 유리와 영점 나사
+        BuildGadgets(); // 계산 도구: 탁상 계산기, 계산자, 계산 도표, 저항 측정 브리지 (WP22)
     }
 
     /// <summary>표현 층이 매 프레임 부른다.</summary>
