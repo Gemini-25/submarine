@@ -23,7 +23,7 @@
     "steps": [
       { "type": "Inspect", "text": "청음기 문 유리 너머로 두 진공관의 필라멘트를 본다. 불빛이 흐리거나 꺼진 관이 탄 것이다." },
       { "type": "Isolate", "text": "청음기를 끈다.", "cmd": "device.hydrophone.off" },
-      { "type": "Inspect", "text": "청음기 몸체를 맨손으로 만져 본다. 따뜻한 정도로 식을 때까지 기다린다.", "cmd": "hydrophone.touch", "tool": "hand" },
+      { "type": "Inspect", "text": "청음기 몸체를 맨손으로 만져 본다. 따뜻한 정도로 식을 때까지 기다린다.", "cmd": "hydrophone.touch", "tool": "hand", "wait": { "before": 30, "retry": [ { "touched": "hydrophone", "unit": "band", "above": 2.5 } ], "every": 5, "max": 600 } },
       { "type": "Open", "text": "드라이버로 문 나사 두 개를 반시계로 돌려 푼다.", "cmd": "hydrophone.door.screw.{n}.loosen", "tool": "screwdriver", "repeat": 2 },
       { "type": "Open", "text": "문을 연다.", "cmd": "hydrophone.door.open", "tool": "hand" },
       { "type": "Remove", "text": "탄 진공관을 소켓에서 곧게 뽑는다.", "cmd": "hydrophone.tube.{tube}.pull", "tool": "hand", "requires": "청음기를 끄고 몸체가 식었을 것", "hazard": "켠 채로 뽑으면 감전된다. 뜨거울 때 뽑으면 손을 덴다." },
@@ -43,7 +43,7 @@
     "steps": [
       { "type": "Inspect", "text": "사물함의 6호 진공관 칸이 비었는지 확인한다. 소나의 진공관은 청음기의 것과 같은 6호 관이다." },
       { "type": "Isolate", "text": "청음기를 끈다.", "cmd": "device.hydrophone.off" },
-      { "type": "Inspect", "text": "청음기 몸체를 맨손으로 만져 본다. 따뜻한 정도로 식을 때까지 기다린다.", "cmd": "hydrophone.touch", "tool": "hand" },
+      { "type": "Inspect", "text": "청음기 몸체를 맨손으로 만져 본다. 따뜻한 정도로 식을 때까지 기다린다.", "cmd": "hydrophone.touch", "tool": "hand", "wait": { "before": 30, "retry": [ { "touched": "hydrophone", "unit": "band", "above": 2.5 } ], "every": 5, "max": 600 } },
       { "type": "Open", "text": "드라이버로 문 나사 두 개를 반시계로 돌려 푼다.", "cmd": "hydrophone.door.screw.{n}.loosen", "tool": "screwdriver", "repeat": 2 },
       { "type": "Open", "text": "문을 연다.", "cmd": "hydrophone.door.open", "tool": "hand" },
       { "type": "Remove", "text": "탄 진공관을 소켓에서 곧게 뽑는다.", "cmd": "hydrophone.tube.{tube}.pull", "tool": "hand", "requires": "청음기를 끄고 몸체가 식었을 것", "hazard": "켠 채로 뽑으면 감전된다. 뜨거울 때 뽑으면 손을 덴다." },

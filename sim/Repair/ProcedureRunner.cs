@@ -9,15 +9,32 @@ namespace DeepLine.Sim.Repair;
 /// </summary>
 public static class ProcedureRunner
 {
-    public static IReadOnlyList<Command> Expand(ProcedureDef procedure, IReadOnlyDictionary<string, string>? bind = null)
+    /// <summary>
+    /// 펼친 절차의 한 항목 (WP16): 명령 하나, 또는 명령 없는 기다림 하나. 명령 있는 단계의 기다림은 그 단계의 첫 명령(도구 고르기 다음)에 붙는다.
+    /// Origin은 절차 ID(또는 가짜 절차의 이름), Step은 단계 번호(0부터, 공구판 왕복은 그 도구를 쓰는 단계).
+    /// </summary>
+    public readonly record struct PlanItem(Command? Command, StepWait? Wait, string Origin, int Step);
+
+    public static IReadOnlyList<Command> Expand(ProcedureDef procedure, IReadOnlyDictionary<string, string>? bind = null) =>
+        Plain(procedure, bind, null).Where(i => i.Command != null).Select(i => i.Command!).ToArray();
+
+    /// <summary>단계를 명령으로 펼친다. read가 있으면 repeatFrom을 그것으로 읽는다. 기다림은 항목에 싣는다.</summary>
+    static List<PlanItem> Plain(ProcedureDef procedure, IReadOnlyDictionary<string, string>? bind, Func<string, QueryValue>? read)
     {
-        var commands = new List<Command>();
-        foreach (var step in procedure.Steps)
+        var items = new List<PlanItem>();
+        for (int si = 0; si < procedure.Steps.Count; si++)
         {
-            if (step.Cmd == null) continue;
-            if (step.Tool != null) commands.Add(new Command($"tool.{step.Tool}"));
+            var step = procedure.Steps[si];
+            if (step.Cmd == null)
+            {
+                if (step.Wait != null) items.Add(new PlanItem(null, step.Wait, procedure.Id, si));
+                continue;
+            }
+            if (step.Tool != null) items.Add(new PlanItem(new Command($"tool.{step.Tool}"), null, procedure.Id, si));
             // Fasten 단계에 order가 있으면 {n}을 그 순서로 펼친다 (조이는 순서가 숨은 결함의 기준).
-            var numbers = step.Order.Count > 0 ? step.Order : Enumerable.Range(1, step.Repeat);
+            int repeat = step.RepeatFrom != null && read != null ? Math.Max(0, (int)Math.Round(read(step.RepeatFrom).Number)) : step.Repeat;
+            var numbers = step.Order.Count > 0 ? step.Order : Enumerable.Range(1, repeat);
+            bool first = true;
             foreach (int n in numbers)
             {
                 string cmd = step.Cmd.Replace("{n}", n.ToString(System.Globalization.CultureInfo.InvariantCulture), StringComparison.Ordinal);
@@ -27,10 +44,11 @@ public static class ProcedureRunner
                         throw new ArgumentException($"절차 {procedure.Id}: '{name}'를 채워야 합니다.");
                     cmd = cmd.Replace("{" + name + "}", value, StringComparison.Ordinal);
                 }
-                commands.Add(new Command(cmd));
+                items.Add(new PlanItem(new Command(cmd), first ? step.Wait : null, procedure.Id, si));
+                first = false;
             }
         }
-        return commands;
+        return items;
     }
 
     /// <summary>
@@ -38,9 +56,46 @@ public static class ProcedureRunner
     /// 공구띠에 없는 도구를 쥐기 전에 공구판에 다녀오는 명령을 끼운다.
     /// 칸이 모자라면 남은 절차에서 가장 늦게(또는 다시는) 쓰지 않을 도구를 먼저 돌려놓는다.
     /// </summary>
-    public static IReadOnlyList<Command> ExpandWithBelt(ProcedureDef procedure, IReadOnlyDictionary<string, string>? bind, IReadOnlyList<string> belt)
+    public static IReadOnlyList<Command> ExpandWithBelt(ProcedureDef procedure, IReadOnlyDictionary<string, string>? bind, IReadOnlyList<string> belt) =>
+        ExpandSteps(procedure, bind, belt).Where(i => i.Command != null).Select(i => i.Command!).ToArray();
+
+    /// <summary>
+    /// ExpandWithBelt와 같은 명령열에 절차 단계의 기다림을 끼운 것 (WP16). read가 있으면 repeatFrom을 그것으로 읽는다
+    /// (솔버는 ObservableQuery.Read를 넘긴다).
+    /// </summary>
+    public static IReadOnlyList<PlanItem> ExpandSteps(ProcedureDef procedure, IReadOnlyDictionary<string, string>? bind, IReadOnlyList<string> belt,
+        Func<string, QueryValue>? read = null)
     {
-        var plain = Expand(procedure, bind);
+        var plain = Plain(procedure, bind, read);
+        var commands = plain.Where(i => i.Command != null).Select(i => i.Command!).ToList();
+        var slots = belt.ToArray();
+        var items = new List<PlanItem>();
+        int ci = 0;
+        foreach (var item in plain)
+        {
+            if (item.Command is { } c)
+            {
+                if (ToolOf(c) is { } tool && tool != "hand" && Array.IndexOf(slots, tool) < 0)
+                {
+                    int free = Array.IndexOf(slots, "");
+                    if (free < 0)
+                    {
+                        free = Victim(slots, commands, ci);
+                        items.Add(new PlanItem(new Command($"toolboard.return.{slots[free]}"), null, item.Origin, item.Step));
+                    }
+                    items.Add(new PlanItem(new Command($"toolboard.take.{tool}"), null, item.Origin, item.Step));
+                    slots[free] = tool;
+                }
+                ci++;
+            }
+            items.Add(item);
+        }
+        return items;
+    }
+
+    /// <summary>공구판 왕복 고리만: 명령열 앞에 지금 공구띠에서 필요한 toolboard.return/take를 끼운다 (희생 칸 규칙은 ExpandWithBelt와 같다).</summary>
+    public static IReadOnlyList<Command> PlanBelt(IReadOnlyList<Command> plain, IReadOnlyList<string> belt)
+    {
         var slots = belt.ToArray();
         var commands = new List<Command>();
         for (int i = 0; i < plain.Count; i++)
@@ -62,33 +117,20 @@ public static class ProcedureRunner
         return commands;
     }
 
-    /// <summary>시뮬레이션의 지금 공구띠에서 출발한다. 공구판 모듈이 없으면 Expand와 같다.</summary>
+    /// <summary>시뮬레이션의 지금 공구띠에서 출발한다. 공구판 모듈이 없으면 Expand와 같다. repeatFrom은 사람이 보는 값(손 자리 값)으로 읽는다.</summary>
     public static IReadOnlyList<Command> ExpandWithBelt(Simulation sim, ProcedureDef procedure, IReadOnlyDictionary<string, string>? bind = null)
     {
-        procedure = WithLiveRepeats(sim, procedure);
+        var read = new Autoplay.ObservableQuery(sim).Read;
         var tb = sim.Data.Tuning.ToolBoard;
-        if (tb == null) return Expand(procedure, bind);
+        if (tb == null) return Plain(procedure, bind, read).Where(i => i.Command != null).Select(i => i.Command!).ToArray();
         var belt = Enumerable.Range(1, tb.BeltSlots).Select(n => sim.Query($"crew.belt.{n}").Text ?? "").ToArray();
-        return ExpandWithBelt(procedure, bind, belt);
-    }
-
-    /// <summary>repeatFrom이 있는 단계의 횟수를 지금 상태에서 읽은 절차 사본 (없으면 그대로).</summary>
-    static ProcedureDef WithLiveRepeats(Simulation sim, ProcedureDef p)
-    {
-        if (!p.Steps.Any(s => s.RepeatFrom != null)) return p;
-        var steps = p.Steps.Select(s => s.RepeatFrom == null ? s : new ProcedureStep
-        {
-            Type = s.Type, Text = s.Text, Cmd = s.Cmd, Tool = s.Tool, Order = s.Order, Requires = s.Requires, Hazard = s.Hazard, Revision = s.Revision,
-            // 사람이 보는 값만 읽는다 (부품의 visible 값; 관찰 화이트리스트를 거친다).
-            Repeat = Math.Max(0, (int)Math.Round(new Autoplay.ObservableQuery(sim).Number(s.RepeatFrom))),
-        }).ToList();
-        return new ProcedureDef { Id = p.Id, Title = p.Title, Fault = p.Fault, Grade = p.Grade, Bind = p.Bind, Steps = steps };
+        return ExpandSteps(procedure, bind, belt, read).Where(i => i.Command != null).Select(i => i.Command!).ToArray();
     }
 
     static string? ToolOf(Command c) =>
         c.Cmd.StartsWith("tool.", StringComparison.Ordinal) && c.Cmd.IndexOf('.', 5) < 0 ? c.Cmd[5..] : null;
 
-    /// <summary>돌려놓을 칸: 남은 명령에서 다음에 쓰는 때가 가장 늦은 도구 (다시 안 쓰면 그것).</summary>
+    /// <summary>돌려놓을 칸: 남은 명령에서 다음에 쓰는 때가 가장 늦은 도구 (다시 안 쓰면 그것). 같으면 낮은 칸.</summary>
     static int Victim(string[] slots, IReadOnlyList<Command> plain, int from)
     {
         int best = 0, bestNext = -1;

@@ -26,5 +26,6 @@
       "멈춤쇠를 푼 채 하중을 1분 동안 잡아 둔다"
     ]
   },
-  "timeLimitSeconds": 1500
+  "timeLimitSeconds": 1500,
+  "rounds": [ "siphon.trace" ]
 }

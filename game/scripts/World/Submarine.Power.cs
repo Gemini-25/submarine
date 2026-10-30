@@ -23,11 +23,15 @@ public partial class Submarine
     /// <summary>판을 열어 둔 우물 위를 사람만 밟는 층 (조준선은 지나간다). Geo의 층과 겹치지 않는다.</summary>
     public const uint PlayerOnlyLayer = 8;
 
-    /// <summary>기관 전령기의 눈금 (정지, 미속, 저속, 반속, 전속)과 스로틀 값. 시뮬레이션의 propulsion.set 값이다.</summary>
-    public static readonly double[] TelegraphNotches = { 0, 0.25, 0.5, 0.75, 1 };
+    /// <summary>
+    /// 기관 전령기의 눈금 (정지, 미속, 저속, 반속, 전속)과 스로틀 값. 시뮬레이션의 propulsion.set 값이다.
+    /// 자료(tuning.power.telegraphNotches)에서 읽는다: 자동 플레이어(DrillSolver)와 같은 출처 (WP16).
+    /// </summary>
+    public static double[] TelegraphNotches { get; private set; } = { 0, 0.25, 0.5, 0.75, 1 };
 
     void BuildPower()
     {
+        if (_data.Tuning.Power is { TelegraphNotches.Count: > 1 } power) TelegraphNotches = power.TelegraphNotches.ToArray();
         BuildCellsAndDeck();
         BuildJumperRackAndCrate();
         BuildMotorBrushes();
