@@ -500,3 +500,50 @@ public class CheckValveDiagnosability
         Assert.True(weep["cue.leak.rivet.09.hiss"].Differs(rivet["cue.leak.rivet.09.hiss"]));
     }
 }
+
+/// <summary>
+/// 공기 Tier B (WP17): AIR-03 산소 화로 막힘. 노출 설정: 산소 18%에서 양초 하나를 켜고 60초 (설계 시험 계획 5절 '켠 양초').
+/// 기준과 구별되고, M0 고장 9종과도 구별되며, 'O2가 오르지 않음' 가르기(점화기 C2)를 교범이 말하는 확인으로 한다.
+/// </summary>
+public class FurnaceDiagnosability
+{
+    static SortedDictionary<string, DiagnosisHarness.Element> Run(string? fault, string? part)
+    {
+        var sim = TestData.NewSim(setup: TestData.Setup(s => s.Air["o2"] = 18));
+        if (fault != null) sim.Inject(fault, part);
+        sim.Run(1); // 주입한 고장이 한 틱 돈 뒤에 양초를 켠다 (끊긴 C2의 점화기가 꺼진 뒤)
+        sim.Cmd("candle.light");
+        sim.Run(60);
+        return DiagnosisHarness.Observe(new ObservableQuery(sim), TestData.Data);
+    }
+
+    static readonly Lazy<SortedDictionary<string, DiagnosisHarness.Element>> _baseline = new(() => Run(null, null));
+    static readonly Lazy<Dictionary<string, SortedDictionary<string, DiagnosisHarness.Element>>> _vectors =
+        new(() => Diagnosability.M0Faults.Append(("AIR-03", null)).ToDictionary(f => f.Fault, f => Run(f.Fault, f.Part)));
+
+    [Fact]
+    public void Air03_is_noticeable_documented_and_distinct_from_every_M0_fault()
+    {
+        var v = _vectors.Value["AIR-03"];
+        var sep = DiagnosisHarness.Separating(v, _baseline.Value);
+        Assert.True(sep.Count > 0, "AIR-03은 고장 없는 상태와 구별되지 않는다");
+        foreach (var k in sep) Assert.True(DiagnosisHarness.Documented(k, TestData.Data), $"AIR-03을 드러내는 '{k}'에 문구가 없다");
+        foreach (var other in _vectors.Value.Keys.Where(k => k != "AIR-03"))
+            Assert.True(DiagnosisHarness.Separating(v, _vectors.Value[other]).Count > 0, $"AIR-03과 {other}가 같다");
+    }
+
+    [Fact]
+    public void Oxygen_not_recovering_splits_on_the_furnace_smoke_and_the_igniter_window()
+    {
+        var b = _baseline.Value;
+        var furnace = _vectors.Value["AIR-03"];
+        var c2 = _vectors.Value["ELC-01"]; // M0 목록의 ELC-01은 C2 퓨즈다
+        Assert.True(furnace["cue.furnace.smoke"].Differs(b["cue.furnace.smoke"]));
+        Assert.True(furnace["cue.furnace.acrid"].Differs(b["cue.furnace.acrid"]));
+        Assert.True(furnace["cue.furnace.choke"].Differs(b["cue.furnace.choke"]));
+        Assert.False(furnace["cue.igniter.glow"].Differs(b["cue.igniter.glow"]));
+        Assert.True(c2["cue.igniter.glow"].Differs(furnace["cue.igniter.glow"]));
+        Assert.True(c2["cue.furnace.burn"].Differs(furnace["cue.furnace.burn"])); // 점화기가 없으면 양초가 타지 않는다
+        Assert.False(c2["cue.furnace.smoke"].Differs(b["cue.furnace.smoke"]));
+    }
+}

@@ -64,6 +64,7 @@ public partial class Submarine : Node3D
         M1Ids.UnionWith(Interactables.Keys);
         BuildLayout();
         BuildAir(); // 배치의 환풍기와 흡수통 표지에 동작을 붙인다 (WP9)
+        BuildFurnaceFixtures(); // 산소 화로 (WP17, AIR-03)
         BindToolBoard(); // 배치가 놓은 공구판 윤곽에 동작을 붙인다
         BuildSpareCompartments(); // 예비품 칸 (중앙 벽장, 후방 사물함)
         BuildPumpBearing(); // WP10: 배치의 펌프 표지 자리에 베어링 뚜껑, 볼트, 기름 컵, 몸통
