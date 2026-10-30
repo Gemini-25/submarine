@@ -30,6 +30,8 @@ static class HullSystem
             double gland = ShaftGland.Update(w, part);
             // 현창: 밀봉 열화와 금 간 유리 (HUL-02). 다른 지점은 정확히 1.
             gland *= Viewport.Update(w, part);
+            // 케이블 챔버 바깥 문: 조임 바퀴와 빠진 밀봉 (HUL-04). 다른 지점은 정확히 1.
+            gland *= Chamber.DoorFactor(w, part);
             double integrity = part.Get("integrity");
             if (s > 1)
             {
@@ -131,6 +133,7 @@ static class WaterSystem
             AddInflow(w, w.LeakZone[i], liters);
         }
         if (w.Mechanics.HasSeaPaths) SeaPaths.Flow(w);
+        Chamber.Spill(w); // 열린 안쪽 해치로 챔버 물이 넘친다 (HUL-04). 챔버 상태 부품이 없으면 아무것도 하지 않는다.
 
         // 2. 전동 펌프. 배출량 = 정격 × (1 − 흡입구 막힘), 역류 방지 밸브가 열린 채 고착되면 되돌아온다.
         //    흡입 선택기(M2 WP18)가 탱크나 챔버 줄에 있으면 그쪽에서 빤다(Suction.Pump).

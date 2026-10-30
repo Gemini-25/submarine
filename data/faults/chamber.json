@@ -1,0 +1,12 @@
+{
+  "HUL-04": {
+    "name": "케이블 챔버 바깥 문 밀봉",
+    "system": "hull",
+    "partKind": "chamber_door",
+    "defaultPart": "leak.chamber_door",
+    "state": "Fault",
+    "set": { "integrity": 0.3, "seatQ": 0.3 },
+    "clearedWhen": "self.integrity >= 0.6 && self.present >= 0.5 && self.retainer1 >= 0.5 && self.retainer2 >= 0.5 && self.retainer3 >= 0.5 && self.retainer4 >= 0.5",
+    "baseRatePerHour": 0
+  }
+}

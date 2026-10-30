@@ -57,6 +57,8 @@ static class Modules
         ["cable"] = new[] { "winch.drum", "siphon.state" },
         // 습도는 tuning.humidity도 있어야 돈다 (Systems.HumidityRuntime.Build).
         ["humidity"] = new[] { "air.humidity" },
+        // 케이블 챔버 (WP19). 칸 없이 선체·물 칸 안에서 돈다; tuning.chamber도 있어야 한다.
+        ["chamber"] = new[] { "chamber.state" },
     };
 
     public static bool Has(SimWorld w, string module) => GateParts[module].Any(id => w.PartIndex(id) >= 0);

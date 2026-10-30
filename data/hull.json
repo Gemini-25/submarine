@@ -60,6 +60,17 @@
         { "areaCm2": 0.4, "times": "looseCount(ring)", "when": "self.deadlight >= 0.5 || self.dog1 < 0.5 || self.dog2 < 0.5" },
         { "areaCm2": 1, "times": "self.ringOff", "when": "self.deadlight >= 0.5 || self.dog1 < 0.5 || self.dog2 < 0.5" }
       ]
+    },
+    "chamber_door": {
+      "props": {
+        "present": 1,
+        "retainer1": 1,
+        "retainer2": 1,
+        "retainer3": 1,
+        "retainer4": 1,
+        "seatQ": 1
+      },
+      "visible": ["present", "retainer1", "retainer2", "retainer3", "retainer4"]
     }
   },
   "points": {

@@ -1,0 +1,8 @@
+{
+  "cues": {
+    "chamber.gurgle": { "sense": "Sound", "anchor": "chamber.hatch", "q": "leak.chamber_door.totalInflow", "map": [[0, 0], [0.05, 0.15], [1, 0.8], [2, 1]], "caption": "cue.chamber.gurgle" }
+  },
+  "instruments": {
+    "chamber.glass": { "anchor": "chamber.hatch", "q": "chamber.water", "unit": "L", "label": "reading.chamber.glass" }
+  }
+}

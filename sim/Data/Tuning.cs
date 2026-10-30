@@ -46,6 +46,8 @@ public sealed class Tuning
     [Optional] public ShaftGlandTuning? ShaftGland { get; set; }
     /// <summary>현창 밀봉의 열화와 유리 금 (M2 WP19 HUL-02, data/tuning/viewport.json). 없으면 현창도 integrity로만 샌다.</summary>
     [Optional] public ViewportTuning? Viewport { get; set; }
+    /// <summary>케이블 챔버의 조임 바퀴, 안쪽 해치, 바깥 문 밀봉 (M2 WP19 HUL-04, data/tuning/chamber.json). chamber.state가 있으면 필요하다.</summary>
+    [Optional] public ChamberTuning? Chamber { get; set; }
     /// <summary>감각 계통: 진공관 필라멘트와 상황판 전구 (M2 WP13). 없으면 필라멘트가 약해지지 않는다.</summary>
     [Optional] public SensesTuning? Senses { get; set; }
     /// <summary>펌프 흡입 선택기 (M2 WP18, data/tuning/attitude.json). pump.suction 부품이 있으면 필요하다.</summary>
