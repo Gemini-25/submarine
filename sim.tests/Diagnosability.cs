@@ -456,3 +456,78 @@ public class CableDiagnosability
         Assert.True(v["ELC-01"]["cue.siphon.tape"].Differs(b["cue.siphon.tape"]));
     }
 }
+
+/// <summary>
+/// 감각 2차 고장 (WP20): SNS-02, SNS-04, SNS-05가 기준, 서로, M0 고장, SNS-01과 구별되는가.
+/// 노출 설정은 후방 빌지 150L에 탐조등을 켠 것 (SNS-02는 빌지가 있어야, SNS-04는 탐조등이 켜져 있어야 드러난다).
+/// </summary>
+public class SensesBDiagnosability
+{
+    static readonly (string Fault, string? Part)[] Faults = { ("SNS-02", null), ("SNS-04", null), ("SNS-05", null), ("SNS-01", null), ("SNS-03", null) };
+
+    static SortedDictionary<string, DiagnosisHarness.Element> Run(string? fault, string? part, double t = 30)
+    {
+        var sim = TestData.NewSim(setup: TestData.Setup(s => { s.Bilges["bilge.aft"] = 150; s.Devices["searchlight"] = true; }));
+        if (fault != null) sim.Inject(fault, part);
+        sim.Run(t);
+        return DiagnosisHarness.Observe(new ObservableQuery(sim), TestData.Data);
+    }
+
+    static readonly Lazy<SortedDictionary<string, DiagnosisHarness.Element>> _baseline = new(() => Run(null, null));
+    static readonly Lazy<Dictionary<string, SortedDictionary<string, DiagnosisHarness.Element>>> _vectors =
+        new(() => Faults.Concat(Diagnosability.M0Faults).ToDictionary(f => f.Fault, f => Run(f.Fault, f.Part)));
+
+    [Fact]
+    public void Senses_B_faults_are_noticeable_documented_and_distinct()
+    {
+        foreach (var (fault, _) in Faults.Take(3))
+        {
+            var sep = DiagnosisHarness.Separating(_vectors.Value[fault], _baseline.Value);
+            Assert.True(sep.Count > 0, $"{fault}는 고장 없는 상태와 구별되지 않는다");
+            foreach (var k in sep) Assert.True(DiagnosisHarness.Documented(k, TestData.Data), $"{fault}를 드러내는 '{k}'에 문구가 없다");
+            foreach (var other in _vectors.Value.Keys.Where(k => k != fault))
+                Assert.True(DiagnosisHarness.Separating(_vectors.Value[fault], _vectors.Value[other]).Count > 0, $"{fault}와 {other}가 같다");
+        }
+    }
+
+    [Fact]
+    public void Senses_B_faults_split_on_the_checks_the_manual_names()
+    {
+        var v = _vectors.Value;
+        var b = _baseline.Value;
+        // SNS-02: 선체 표시등이 켜졌는데 구역 경고등은 꺼져 있고, 배선함에 이슬 (교범 02, 05, 38)
+        Assert.True(v["SNS-02"]["panel.lamp.hull"].Differs(b["panel.lamp.hull"]));
+        Assert.False(v["SNS-02"]["zone.aft.alarm"].Differs(b["zone.aft.alarm"]));
+        Assert.True(v["SNS-02"]["cue.panel.wiring.dew"].Differs(b["cue.panel.wiring.dew"]));
+        // SNS-01과의 가르기: 램프 시험은 SNS-02에서 다 켜진다
+        Assert.True(v["SNS-02"]["measure.lamptest.panel"].Differs(v["SNS-01"]["measure.lamptest.panel"]));
+        // SNS-04: 누렇게 흔들리고 지직거린다 (교범 05, 40)
+        Assert.True(v["SNS-04"]["cue.searchlight.sputter"].Differs(b["cue.searchlight.sputter"]));
+        Assert.True(v["SNS-04"]["cue.searchlight.yellow"].Differs(b["cue.searchlight.yellow"]));
+        // SNS-05: 전압 바늘이 낮은데 동력 표시등과 버스 바 전압은 그대로 (교범 02, 41)
+        Assert.True(v["SNS-05"]["panel.gauge.voltage"].Differs(b["panel.gauge.voltage"]));
+        Assert.False(v["SNS-05"]["panel.lamp.power"].Differs(b["panel.lamp.power"]));
+        Assert.False(v["SNS-05"]["measure.voltmeter.bus"].Differs(b["measure.voltmeter.bus"]));
+        // PWR-01(셀 하나 열화)은 버스 바 전압도 함께 낮다
+        Assert.True(v["SNS-05"]["measure.voltmeter.bus"].Differs(v["PWR-01"]["measure.voltmeter.bus"]));
+    }
+
+    /// <summary>
+    /// 아크가 꺼진 뒤(150초)의 SNS-04는 감각 노랑을 SNS-03의 소리 끊김(320초), C4 퓨즈와 같이 쓴다.
+    /// 탐조등 소리와 청음기 소리, 상황판 전원으로 갈린다 (교범 05, 40 '가르기').
+    /// </summary>
+    [Fact]
+    public void Dark_searchlight_splits_from_SNS03_and_the_C4_fuse()
+    {
+        var dark = Run("SNS-04", null, 150);
+        var baseDark = Run(null, null, 150);
+        var silent = Run("SNS-03", null, 320);
+        var c4 = Run("ELC-01", "fuse.C4", 150);
+        Assert.True(dark["panel.lamp.senses"].Differs(baseDark["panel.lamp.senses"]));
+        Assert.True(dark["cue.searchlight.arc"].Differs(silent["cue.searchlight.arc"]));
+        Assert.True(dark["cue.hydrophone.listen"].Differs(silent["cue.hydrophone.listen"]));
+        Assert.True(dark["panel.on"].Differs(c4["panel.on"]));
+        foreach (var k in DiagnosisHarness.Separating(dark, baseDark))
+            Assert.True(DiagnosisHarness.Documented(k, TestData.Data), $"꺼진 탐조등(SNS-04)을 드러내는 '{k}'에 문구가 없다");
+    }
+}

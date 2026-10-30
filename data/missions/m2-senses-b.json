@@ -1,0 +1,46 @@
+{
+  "name": "감각 훈련 B: 상황판 배선, 탐조등, 계기",
+  "briefing": [
+    "모선 아르고스호 → 모스호 기관사. 수심 300m 정박 훈련.",
+    "선체 표시등이 켜져 있다는 보고가 들어왔으나 구역 경고등은 조용하다. 탐조등 당직은 불빛이 누렇게 흔들린다고 했고, 조종사는 상황판 전압이 낮게 보인다고 했다. 상황판과 탐조등을 확인하고, 매뉴얼(Tab)을 참고해 원인을 찾아 고칠 것.",
+    "상황판의 표시등과 전압 계기가 현장과 맞고, 탐조등이 새 탄소봉으로 하얗게 타고, 빌지 수위를 60L 아래로 30초 동안 유지하면 훈련을 마친다."
+  ],
+  "seed": 2020,
+  "setup": {
+    "depthM": 300,
+    "devices": {
+      "searchlight": true
+    },
+    "bilges": {
+      "bilge.aft": 150
+    }
+  },
+  "events": [
+    {
+      "atSeconds": 0,
+      "fault": "SNS-02",
+      "part": "panel.wiring"
+    },
+    {
+      "atSeconds": 0,
+      "fault": "SNS-04",
+      "part": "searchlight.rods"
+    },
+    {
+      "atSeconds": 0,
+      "fault": "SNS-05",
+      "part": "gauge.voltage"
+    }
+  ],
+  "success": {
+    "assert": "part.panel.wiring.prop.moisture < 0.5 && part.panel.wiring.prop.seated >= 1 && part.panel.wiring.prop.coverOpen == 0 && part.searchlight.rods.prop.length >= 0.5 && part.searchlight.rods.prop.gap <= 0.3 && part.searchlight.rods.prop.doorOpen == 0 && device.searchlight.running == 1 && part.gauge.voltage.prop.offset > -0.01 && part.gauge.voltage.prop.offset < 0.01 && part.gauge.voltage.prop.stick == 0 && part.gauge.voltage.prop.bezelOpen == 0 && bilge.total < 60",
+    "holdSeconds": 30,
+    "objectives": [
+      "선체와 배수 표시등이 현장과 맞게 한다",
+      "탐조등이 새 탄소봉으로 하얗게 타게 한다",
+      "상황판 전압 계기를 버스 바 전압에 맞춘다",
+      "빌지 수위를 60L 아래로 30초 동안 유지한다"
+    ]
+  },
+  "timeLimitSeconds": 1500
+}
