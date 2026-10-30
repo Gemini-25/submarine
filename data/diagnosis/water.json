@@ -80,7 +80,8 @@
         {
           "prep": [ { "cmd": "tool.stethoscope" } ],
           "undo": [ { "cmd": "tool.hand" } ],
-          "all": [ { "measure": "stethoscope", "target": "pump.body", "unit": "cue", "above": 0.5, "says": "청진기에 거친 소리" } ],
+          "all": [ { "q": "cue.pump.gravel", "unit": "cue", "below": 0.3 },
+                   { "measure": "stethoscope", "target": "pump.body", "unit": "cue", "above": 0.5, "says": "청진기에 거친 소리" } ],
           "verdict": "WTR-02"
         }
       ],

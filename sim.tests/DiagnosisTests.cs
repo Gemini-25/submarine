@@ -183,12 +183,12 @@ public class DiagnosisTests
             var setup = Merge(pair.Exposure.Setup, cs.Setup);
             long at = TestData.Ticks(cs.Seconds ?? pair.Exposure.Seconds);
 
-            (DrillSolver Solver, Simulation World, DrillLog Log) Go(string only, bool assume = false)
+            (DrillSolver Solver, Simulation World, DrillLog Log) Go(string only)
             {
                 var sim = new Simulation(TestData.Data, 1, setup);
                 foreach (var inj in cs.Inject) sim.Inject(inj.Fault, inj.Part);
                 var book = Book.From(TestData.Data, null);
-                var solver = new DrillSolver(book, new ObservableQuery(sim), new DrillOptions(new[] { only }, Act: false, EvaluateAtTick: at, AssumeSees: assume));
+                var solver = new DrillSolver(book, new ObservableQuery(sim), new DrillOptions(new[] { only }, Act: false, EvaluateAtTick: at));
                 byte[]? snap = null;
                 var log = DrillRunner.Run(sim, solver, book, new DrillHooks
                 {
@@ -203,7 +203,7 @@ public class DiagnosisTests
                 return (solver, world, log);
             }
 
-            var (main, world, mainLog) = Go(pair.Id, cs.Via != null);
+            var (main, world, mainLog) = Go(pair.Id);
             bool sees = cs.Via == null ? main.SeesStood == true : Go(cs.Via).Solver.SeesStood == true;
             var decided = main.Findings.FirstOrDefault(f => f.Outcome == "decided");
             return _runs[(pairId, index)] = new CaseRun(sees, decided?.Verdict, decided?.Bind, world, mainLog);
