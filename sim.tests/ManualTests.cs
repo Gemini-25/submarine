@@ -310,6 +310,32 @@ public class ManualTests
         Assert.Equal(FigureDefs().Keys.OrderBy(k => k, StringComparer.Ordinal), locked);
     }
 
+    /// <summary>한 쪽 안에서 같은 부품은 모든 그림에서 같은 번호다 (그 쪽 '무엇이 있나' 표의 번호). figures.json의 callouts와 first로 셈한다.</summary>
+    [Fact]
+    public void A_part_keeps_its_callout_number_on_its_page()
+    {
+        var numbers = new Dictionary<(string Page, string Target), HashSet<int>>();
+        foreach (var (name, def) in FigureDefs())
+        {
+            if ((string?)def?["kind"] is "sequence" or "plan") continue; // 볼트 번호도는 볼트 번호, 배치도는 쪽 표의 차례를 따로 쓴다
+            var scenes = def?["scenes"]?.AsArray().Select(n => n!) ?? (def?["scene"] is { } one ? new[] { one } : Array.Empty<JsonNode>());
+            foreach (var scene in scenes)
+            {
+                int first = (int?)scene["first"] ?? 1;
+                var callouts = scene["callouts"]?.AsArray() ?? new JsonArray();
+                for (int i = 0; i < callouts.Count; i++)
+                    foreach (var target in ((string)callouts[i]!).Split('|'))
+                    {
+                        var key = (name[..2], target);
+                        if (!numbers.TryGetValue(key, out var set)) numbers[key] = set = new HashSet<int>();
+                        set.Add(first + i);
+                    }
+            }
+        }
+        foreach (var ((page, target), set) in numbers)
+            Assert.True(set.Count == 1, $"{page}쪽에서 '{target}'이 그림마다 다른 번호다: {string.Join(", ", set.Order())}");
+    }
+
     /// <summary>서로 다른 그림이 같은 그림 파일이면 안 된다 (같은 자리, 같은 상태를 두 번 찍은 것).</summary>
     [Fact]
     public void No_two_figures_are_the_same_image()

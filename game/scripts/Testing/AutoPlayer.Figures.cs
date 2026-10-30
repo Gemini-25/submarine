@@ -79,6 +79,10 @@ public partial class AutoPlayer
         // 문과 덮개의 움직임이 멎을 때까지 (화면 갱신 빠르기와 상관없이 같은 자리를 읽도록)
         await ToSignal(GetTree().CreateTimer(1.5), SceneTreeTimer.SignalName.Timeout);
         var rest = _main.Sub.Interactables.ToDictionary(kv => kv.Key, kv => kv.Value.GlobalPosition);
+        // node: 대상의 처음 자리도 같은 때 잰다 (뒤의 그림이 장면을 움직이기 전)
+        foreach (System.Text.RegularExpressions.Match m in System.Text.RegularExpressions.Regex.Matches(File.ReadAllText(path), "node:([A-Za-z0-9_]+)"))
+            if (!rest.ContainsKey("node:" + m.Groups[1].Value) && FindNode(_main.Sub, m.Groups[1].Value) is { } nd)
+                rest["node:" + m.Groups[1].Value] = MeshCenter(nd) ?? nd.GlobalPosition;
 
         string before = Snap.Mission.Id;
         void OnEvent(SimEvent e)
@@ -152,6 +156,26 @@ public partial class AutoPlayer
         foreach (var (id, p) in rest.Where(kv => !kv.Key.StartsWith("gadget.", StringComparison.Ordinal)).OrderBy(kv => kv.Key, StringComparer.Ordinal))
             if (System.Text.RegularExpressions.Regex.IsMatch(json, "[\"|]" + System.Text.RegularExpressions.Regex.Escape(id) + "[\"|@=]"))
                 sb.Append($"\n{id}:{Math.Round(p.X, 2):F2},{Math.Round(p.Y, 2):F2},{Math.Round(p.Z, 2):F2}");
+        // 서는 자리(station 카메라)의 눈과 바라볼 점
+        foreach (System.Text.RegularExpressions.Match m in System.Text.RegularExpressions.Regex.Matches(json, "\"station\":\"([^\"]+)\""))
+            if (_main.Sub.Stations.TryGetValue(m.Groups[1].Value, out var st))
+                sb.Append($"\nST {m.Groups[1].Value} {st.Eye.X:F2},{st.Eye.Y:F2},{st.Eye.Z:F2} {st.Target.X:F2},{st.Target.Y:F2},{st.Target.Z:F2}");
+        // 순서 띠와 볼트 번호도: 절차의 단계(명령, 종류, 차례, 되풀이)와 그 명령이 부르는 물체의 자리
+        string? procId = spec.Strip?.Procedure ?? spec.Procedure;
+        if (procId != null)
+        {
+            var proc = Data.Procedure(procId);
+            foreach (var step in proc.Steps)
+            {
+                sb.Append($"\nP {step.Type} {step.Cmd} {step.Repeat} {(step.Order == null ? "" : string.Join(",", step.Order))}");
+                if (step.Cmd is { Length: > 0 } cmd)
+                {
+                    string prefix = cmd.Split('{')[0];
+                    foreach (var (id, p) in rest.Where(kv => prefix.Length > 3 && kv.Key.StartsWith(prefix, StringComparison.Ordinal)).OrderBy(kv => kv.Key, StringComparer.Ordinal))
+                        sb.Append($"\n{id}:{Math.Round(p.X, 2):F2},{Math.Round(p.Y, 2):F2},{Math.Round(p.Z, 2):F2}");
+                }
+            }
+        }
         if (spec.Kind is "circuit" or "piping" or "dial")
         {
             foreach (var c in Data.Circuits) sb.Append($"\nC {c.Id} {c.Name}");
@@ -379,6 +403,12 @@ public partial class AutoPlayer
             int lamp = DeepLine.Sim.Data.Bindings.PanelLamps.ToList().IndexOf(one["panel.bulb.".Length..].Split('@')[0]);
             Check(lamp >= 0 && _main.Sub.LampLit(lamp), $"번호를 단 표시등 '{one}'이 꺼져 있다");
         }
+        if (scene.Lit is { } lit)
+        {
+            var lamps = DeepLine.Sim.Data.Bindings.PanelLamps;
+            for (int i = 0; i < lamps.Count; i++)
+                Check(_main.Sub.LampLit(i) == lit.Contains(lamps[i]), $"표시등 '{lamps[i]}'이 {(lit.Contains(lamps[i]) ? "켜져" : "꺼져")} 있어야 하는데 아니다");
+        }
         foreach (var pair in scene.Names ?? new List<string>())
         {
             int eq = pair.IndexOf('=');
@@ -442,6 +472,14 @@ public partial class AutoPlayer
                 for (int i = 0; i < targets.Count; i++)
                     Check(SeenAt(cap, targets[i].Node, targets[i].Point, anchors[i] - rect.Position) != false,
                         $"'{targets[i].Label}'의 대상 {targets[i].Node.Name}이 그림에서 보이지 않는다 (다른 메시가 그 앞을 가린다)");
+            // 진하게 칠할 것은 그림에 실제로 칠해져 있어야 한다 ('붉게 칠했다'는 캡션과 맞게). 배치도는 붉은 고리가 자리를 짚으므로 보지 않는다.
+            foreach (var h in plan ? new List<string>() : scene.Highlight ?? new List<string>())
+            {
+                var mine = HighlightNodes(h).SelectMany(n => n is GeometryInstance3D g ? new[] { g } : Descendants(n).OfType<GeometryInstance3D>()).ToHashSet();
+                var ids = cap.Owner.Where(kv => mine.Contains(kv.Value)).Select(kv => kv.Key).ToHashSet();
+                int painted = cap.Ids.Count(ids.Contains) / (InkRenderer.Supersample * InkRenderer.Supersample);
+                Check(painted >= 30, $"진하게 칠할 '{h}'가 그림에 {painted}화소만 칠해졌다 (보이지 않거나 비치는 재질)");
+            }
             // 진하게 칠한 메시는 그 대상 둘레에만 있어야 한다
             foreach (var h in scene.Highlight ?? new List<string>())
             {
@@ -506,8 +544,9 @@ public partial class AutoPlayer
         }
 
         _lastBoxes = boxes.ToList();
+        var avoidBoxes = (scene.Avoid ?? new List<string>()).Select(a => ProjectedBox(Resolve(a).Node, rect, null)).ToList();
         if (plan) PlanLabels(sheet, rect, labelFrame, targets.Select((t, i) => (t.Label, t.Name, anchors[i])).ToList());
-        else ViewLabels(sheet, rect, targets.Select((t, i) => (t.Label, t.Name, anchors[i])).ToList(), boxes, CheckLayout);
+        else ViewLabels(sheet, rect, targets.Select((t, i) => (t.Label, t.Name, anchors[i])).ToList(), boxes, CheckLayout, avoidBoxes);
         return anchors;
     }
 
@@ -648,7 +687,8 @@ public partial class AutoPlayer
     /// 지시선은 남의 상자를 지나지 않는다(CalloutLayout). 계기 줄처럼 넷 넘게 가로로 늘어선 대상은 동그라미를 줄 위나 아래의
     /// 빈 띠로 빼고 세로 지시선으로 잇는다. 놓은 뒤에도 남의 상자 위에 앉은 동그라미가 있으면 check로 알린다.
     /// </summary>
-    static void ViewLabels(Sheet sheet, Rect2 rect, List<(string Label, bool Name, Vector2 Anchor)> items, List<Rect2>? boxes = null, Action<bool, string>? check = null)
+    static void ViewLabels(Sheet sheet, Rect2 rect, List<(string Label, bool Name, Vector2 Anchor)> items, List<Rect2>? boxes = null, Action<bool, string>? check = null,
+        List<Rect2>? avoidBoxes = null)
     {
         var groups = items.Select((x, i) => (x, i)).Where(t => !t.x.Name).GroupBy(t => t.x.Label)
             .Select(g => (Label: g.Key, Anchors: g.Select(t => t.x.Anchor).ToList(), Boxes: boxes == null ? new List<Rect2>() : g.Select(t => boxes[t.i]).ToList())).ToList();
@@ -661,7 +701,7 @@ public partial class AutoPlayer
         foreach (int k in singles)
             if (rows.Count > 0 && centers[k].Y - centers[rows[^1][^1]].Y < rect.Size.Y * 0.06f) rows[^1].Add(k);
             else rows.Add(new List<int> { k });
-        var taken = new List<Rect2>();
+        var taken = new List<Rect2>(avoidBoxes ?? new List<Rect2>());
         foreach (var row in rows.Where(r => r.Count >= 4 && r.Max(k => centers[k].X) - r.Min(k => centers[k].X) > rect.Size.X * 0.3f))
         {
             var rowBoxes = row.SelectMany(k => groups[k].Boxes).Where(b => b.Size.X > 0).ToList();
@@ -702,6 +742,16 @@ public partial class AutoPlayer
                 sheet.Dot(a, 3.4f);
             }
             sheet.Callout(c, groups[k].Label);
+            // 동그라미는 제 대상에서 떨어져 지시선이 보여야 하고, 피할 물체 위에 앉지 않는다
+            if (check != null)
+            {
+                // (지시선 여럿인 무리는 끝점 하나가 동그라미 테 가까이 오는 것까지는 둔다)
+                float minGap = groups[k].Anchors.Count > 1 ? 15 : 22;
+                foreach (var a in groups[k].Anchors)
+                    check((c - a).Length() >= minGap, $"번호 {groups[k].Label}의 동그라미가 제 대상에 붙어 지시선이 보이지 않는다");
+                foreach (var b in avoidBoxes ?? new List<Rect2>())
+                    check(!b.Grow(2).HasPoint(c), $"번호 {groups[k].Label}의 동그라미가 번호 없는 이웃 물체 위에 앉았다");
+            }
             if (check != null)
                 for (int j = 0; j < groups.Count; j++)
                     if (j != k && groups[j].Boxes.Any(b => b.Size.X > 0 && b.Grow(2).HasPoint(c)))

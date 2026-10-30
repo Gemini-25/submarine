@@ -109,21 +109,22 @@ public partial class AutoPlayer
                 Check(pumpParts.Contains("pump.intake") && pumpParts.Contains("pump.check_valve"), "배수 펌프 부품에 흡입구나 역류 방지 밸브가 없다");
                 var suction = Data.Fixtures.Instances.FirstOrDefault(f => f.Id == "pump.suction");
                 Check(suction != null, "흡입 선택기 장치가 없다");
+                // 흡입 거름망은 선택 레버와 펌프 사이의 공통 흡입관에 있다: 어느 갈래를 빨든 거름망을 지난다 (sim도 그렇다)
                 AddNode("selector", 3, 1.5f, "pump.suction", "fig.selector", "selector");
-                AddNode("pump", 4, 1.5f, "pump.body", "device.bilge_pump", "pump");
-                AddNode("check", 5, 1.5f, "checkvalve.bonnet", "fig.checkvalve", "valve");
-                AddNode("discharge", 6, 1.5f, "pump.discharge", "fig.discharge", "valve");
-                AddNode("sea.out", 7, 1.5f, "", "", "sea");
-                Edge("selector", "pump"); Edge("pump", "check"); Edge("check", "discharge"); Edge("discharge", "sea.out");
+                AddNode("strainer", 4, 1.5f, "strainer.basket", "fig.strainer", "strainer");
+                AddNode("pump", 5, 1.5f, "pump.body", "device.bilge_pump", "pump");
+                AddNode("check", 6, 1.5f, "checkvalve.bonnet", "fig.checkvalve", "valve");
+                AddNode("discharge", 7, 1.5f, "pump.discharge", "fig.discharge", "valve");
+                AddNode("sea.out", 8, 1.5f, "", "", "sea");
+                Edge("selector", "strainer"); Edge("strainer", "pump"); Edge("pump", "check"); Edge("check", "discharge"); Edge("discharge", "sea.out");
                 var positions = suction?.Def.Positions ?? new List<string>();
                 for (int i = 0; i < positions.Count; i++)
                 {
                     switch (positions[i])
                     {
                         case "bilge":
-                            AddNode("bilge.aft", 1, i, "", "fig.bilge.aft", "bilge");
-                            AddNode("bilge", 2, i, "strainer.basket", "fig.strainer", "strainer");
-                            Edge("bilge.aft", "bilge"); Edge("bilge", "selector");
+                            AddNode("bilge", 2, i, "", "fig.bilge.aft", "bilge");
+                            Edge("bilge", "selector");
                             break;
                         case "fore":
                             AddNode("tank.fore", 2, i, "ballast.fore.body", "fig.tank.fore", "tank");
@@ -143,14 +144,14 @@ public partial class AutoPlayer
                 }
                 // 수동 펌프: 전중 빌지에서 바로 바다로
                 AddNode("bilge.mid", 2, positions.Count + 0.4f, "", "fig.bilge.mid", "bilge");
-                AddNode("handpump", 4, positions.Count + 0.4f, "handpump", "fig.handpump", "pump");
-                AddNode("sea.hand", 7, positions.Count + 0.4f, "", "", "sea");
+                AddNode("handpump", 5, positions.Count + 0.4f, "handpump", "fig.handpump", "pump");
+                AddNode("sea.hand", 8, positions.Count + 0.4f, "", "", "sea");
                 Edge("bilge.mid", "handpump"); Edge("handpump", "sea.hand");
                 break;
             }
             case "air":
                 AddNode("furnace", 0, 0, "o2.furnace", "fig.furnace", "box");
-                AddNode("cabin", 1, 0, "", "fig.cabin", "air");
+                AddNode("cabin", 1, 0, "", "", "air"); // 실내 공기: 이름 없이 겹동그라미 (캡션이 풀어 쓴다)
                 AddNode("fan", 2, 0, "fan.motor", "device.vent_fan", "fan");
                 AddNode("scrubber", 3, 0, "scrubber.canister", "fig.scrubber", "tank");
                 Edge("furnace", "cabin"); Edge("cabin", "fan"); Edge("fan", "scrubber"); Edge("scrubber", "cabin");
@@ -208,7 +209,9 @@ public partial class AutoPlayer
             var (_, _, label, shape) = nodes[key];
             var col = Red(key) ? InkStyle.Red : InkStyle.Ink;
             Symbol(sheet, at, shape, col);
-            if (label.Length > 0) sheet.Text(at + new Vector2(0, 40), label, 15, 0, backing: true, color: col);
+            // 갈래 사이(반 줄)에 놓인 노드는 이름을 위에 단다: 아래로 들어오는 관의 이음을 가리지 않게
+            bool above = nodes[key].Row % 1 != 0 && nodes[key].Row < rows - 1;
+            if (label.Length > 0) sheet.Text(at + new Vector2(0, above ? -30 : 40), label, 15, 0, backing: true, color: col);
         }
         return sheet;
     }
@@ -246,18 +249,19 @@ public partial class AutoPlayer
         {
             case "lamps":
             {
-                // 꺼짐은 빈 동그라미, 노랑은 옅은 붉은 칠, 빨강은 붉은 칠 (경사계 도식의 띠와 같은 먹)
-                var keys = new[] { "fig.lamp.off", "fig.lamp.warning", "fig.lamp.fault" };
-                var fills = new[] { InkStyle.Paper, InkStyle.RedLight, InkStyle.Red };
+                // 장면 그림과 같은 약속: 꺼진 전구는 짙게, 켜진 전구는 희게. 노랑은 흰 전구에 옅은 붉은 테, 빨강은 흰 전구에 붉은 테.
+                // 그림 안에는 A, B, C만 두고 뜻은 캡션에 쓴다.
+                var rims = new Color?[] { null, InkStyle.RedLight, InkStyle.Red };
                 for (int i = 0; i < 3; i++)
                 {
                     var c = new Vector2(w * (i + 0.5f) / 3, h * 0.42f);
-                    var fill = fills[i];
-                    sheet.Add(cv => cv.DrawCircle(c, 34, InkStyle.Mid, true, -1, true));
+                    sheet.Add(cv => cv.DrawCircle(c, 34, InkStyle.Light, true, -1, true));
                     sheet.Ring(c, 34, 2.4f);
+                    var fill = i == 0 ? InkStyle.Mid : InkStyle.Paper;
                     sheet.Add(cv => cv.DrawCircle(c, 24, fill, true, -1, true));
+                    if (rims[i] is { } rim) sheet.Ring(c, 29, 8f, rim);
                     sheet.Ring(c, 24, 2.2f);
-                    sheet.Text(c + new Vector2(0, 66), Name(keys[i]), 17, 0);
+                    sheet.Badge(c + new Vector2(-12, 50), ((char)('A' + i)).ToString());
                 }
                 break;
             }
@@ -272,22 +276,20 @@ public partial class AutoPlayer
                     sheet.Frame(frame, 1.4f);
                     var c = new Vector2(frame.GetCenter().X, frame.End.Y - 46);
                     float ro = Math.Min(frame.Size.Y - 90, frame.Size.X / 2 - 40), ri = ro * 0.72f;
-                    // 바깥 눈금 0~150V: 25V마다 큰 금, 5V마다 작은 금, 50V마다 숫자
-                    for (int v = 0; v <= (int)Player.HeldItemView.VoltOuterMax; v += 5)
+                    // 바깥 눈금 0~150V: 손에 든 전압계 모형(Kit.Tools)과 같이 6칸(25V마다 금), 50V마다 숫자
+                    for (int k = 0; k <= 6; k++)
                     {
-                        float deg = -half + 2 * half * v / Player.HeldItemView.VoltOuterMax;
-                        bool major = v % 25 == 0;
-                        sheet.Line(Polar(c, ro, deg), Polar(c, ro + (major ? 14 : 7), deg), major ? 2.2f : 1.2f);
-                        if (v % 50 == 0) sheet.Text(Polar(c, ro + 30, deg) + new Vector2(0, 6), Num(v), 16, 0);
+                        float deg = -half + 2 * half * k / 6f;
+                        sheet.Line(Polar(c, ro, deg), Polar(c, ro + 14, deg), 2.2f);
+                        if (k % 2 == 0) sheet.Text(Polar(c, ro + 30, deg) + new Vector2(0, 6), Num(Player.HeldItemView.VoltOuterMax * k / 6), 16, 0);
                     }
                     Arc(c, ro, -half, half, 1.6f, InkStyle.Ink);
-                    // 안쪽 붉은 눈금 0~30V: 2V마다 작은 금, 10V마다 숫자
-                    for (int v = 0; v <= (int)Player.HeldItemView.VoltInnerMax; v += 2)
+                    // 안쪽 붉은 눈금 0~30V: 3칸(10V마다 금과 숫자)
+                    for (int k = 0; k <= 3; k++)
                     {
-                        float deg = -half + 2 * half * v / Player.HeldItemView.VoltInnerMax;
-                        bool major = v % 10 == 0;
-                        sheet.Line(Polar(c, ri, deg), Polar(c, ri - (major ? 12 : 6), deg), major ? 2f : 1.1f, InkStyle.Red);
-                        if (major) sheet.Text(Polar(c, ri - 26, deg) + new Vector2(0, 5), Num(v), 14, 0, color: InkStyle.Red);
+                        float deg = -half + 2 * half * k / 3f;
+                        sheet.Line(Polar(c, ri, deg), Polar(c, ri - 12, deg), 2f, InkStyle.Red);
+                        sheet.Text(Polar(c, ri - 26, deg) + new Vector2(0, 5), Num(Player.HeldItemView.VoltInnerMax * k / 3), 14, 0, color: InkStyle.Red);
                     }
                     Arc(c, ri, -half, half, 1.4f, InkStyle.Red);
                     sheet.Text(c + new Vector2(0, 30), "V", 18, 0);
@@ -348,37 +350,121 @@ public partial class AutoPlayer
             }
             case "inclinometer":
             {
+                // 장면의 경사계(Kit.Gauge 기본값, Submarine.Ballast): 270° 바늘 계기, 큰 금 4칸에 칸마다 작은 금 4개, 숫자 없음.
+                // 바늘은 가운데가 수평이고 ±InclinometerRangeDeg에서 끝에 닿는다. 표시등 문턱(노랑, 빨강)은 실제 얼굴에 없으므로 계기 밖에 쐐기로 보인다.
                 var at = Data.Tuning.Attitude ?? throw new ArgumentException("tuning.attitude가 없다");
-                float range = World.Submarine.InclinometerRangeDeg, half = 60;
+                var probe = new Art.KitGauge();
+                float start = probe.StartDeg, sweep = probe.SweepDeg;
+                probe.Free();
+                const int major = 4, minor = 4;
+                float range = World.Submarine.InclinometerRangeDeg;
                 float warn = (float)at.LampWarnDeg, fault = (float)at.LampFaultDeg;
+                // 화면 각(세로에서 시계 방향): 계기의 a = start − sweep·f를 뒤집은 것
+                float Th(float trim) => sweep * (0.5f + trim / (2 * range)) - start;
                 var examples = new[] { ("A", 0f), ("B", (warn + fault) / 2) };
                 for (int i = 0; i < 2; i++)
                 {
                     var frame = new Rect2(Gutter + i * (w - Gutter) / 2, Gutter, (w - Gutter) / 2 - Gutter, h - 2 * Gutter);
                     sheet.Frame(frame, 1.4f);
-                    var c = new Vector2(frame.GetCenter().X, frame.End.Y - 40);
-                    float r = Math.Min(frame.Size.Y - 80, frame.Size.X / 2 - 40);
-                    float D(float deg) => deg / range * half;
-                    // 노랑 띠(warn~fault)는 옅은 붉은 칠, 빨강 띠(fault 넘어)는 붉은 칠 — 표시등 도식과 같은 먹
+                    var c = frame.GetCenter() + new Vector2(0, 8);
+                    float r = Math.Min(frame.Size.Y, frame.Size.X) / 2 - 34;
+                    sheet.Add(cv => cv.DrawCircle(c, r + 10, InkStyle.Paper, true, -1, true));
+                    sheet.Ring(c, r + 10, 3f);
+                    for (int k = 0; k <= major * minor; k++)
+                    {
+                        float f = k / (float)(major * minor);
+                        bool big = k % minor == 0;
+                        float deg = sweep * f - start;
+                        sheet.Line(Polar(c, r, deg), Polar(c, r - (big ? 16 : 8), deg), big ? 2.4f : 1.2f);
+                    }
+                    // 계기 밖의 문턱 쐐기: 노랑(옅은 붉은)과 빨강(붉은), 양쪽
                     foreach (int side in new[] { -1, 1 })
-                    {
-                        Band(c, r - 16, r, D(side * warn), D(side * fault), InkStyle.RedLight);
-                        Band(c, r - 16, r, D(side * fault), D(side * range), InkStyle.Red);
-                    }
-                    Arc(c, r, -half, half, 1.6f, InkStyle.Ink);
-                    for (int deg = -(int)range; deg <= range; deg++)
-                    {
-                        bool major = deg % 5 == 0;
-                        sheet.Line(Polar(c, r, D(deg)), Polar(c, r + (major ? 14 : 7), D(deg)), major ? 2.2f : 1.1f);
-                        if (major) sheet.Text(Polar(c, r + 30, D(deg)) + new Vector2(0, 6), Num(Math.Abs(deg)), 16, 0);
-                    }
+                        foreach (var (deg, col) in new[] { (warn, InkStyle.RedLight), (fault, InkStyle.Red) })
+                        {
+                            float th = Th(side * deg);
+                            var tip = Polar(c, r + 13, th);
+                            sheet.Add(cv => cv.DrawColoredPolygon(new[] { tip, Polar(c, r + 28, th - 4), Polar(c, r + 28, th + 4) }, col));
+                        }
                     var (tag, value) = examples[i];
-                    Needle(c, r - 6, D(value));
+                    Needle(c, r - 12, Th(value));
                     sheet.Badge(frame.Position + new Vector2(6, 6), tag);
-                    // 바늘이 오른쪽이면 이물이, 왼쪽이면 고물이 숙은 것이다 (13쪽)
-                    sheet.Text(new Vector2(frame.Position.X + 14, frame.End.Y - 12), Name("fig.trim.stern"), 15, -1);
-                    sheet.Text(new Vector2(frame.End.X - 14, frame.End.Y - 12), Name("fig.trim.bow"), 15, 1);
                 }
+                break;
+            }
+            case "sliderule":
+            {
+                // 계산자 곱셈 풀이 예 (DeepLine.Instruments.SlideRule의 눈금 자리): 커서를 D의 a에, C의 왼쪽 1을 커서에, 커서를 C의 b로.
+                var v = spec.Values is { Length: 2 } sv ? sv : throw new ArgumentException("sliderule에는 values [a, b]가 있어야 한다");
+                var rule = new DeepLine.Instruments.SlideRule();
+                double product = rule.Multiply(v[0], v[1]);
+                float slide = (float)rule.Slide, cursor = (float)rule.Cursor;
+                // 슬라이드가 오른쪽으로 빠진 만큼까지 종이에 들게 자 길이를 줄인다
+                float x0 = 70, len = (w - 120) / (1 + Math.Max(0, slide)), bodyTop = 70, slideTop = 120, slideBottom = 190, bodyBottom = 250;
+                float X(double pos) => x0 + (float)pos * len;
+                sheet.Frame(new Rect2(x0 - 20, bodyTop, len + 40, bodyBottom - bodyTop), 2f);
+                sheet.Add(cv => cv.DrawRect(new Rect2(X(slide) - 10, slideTop, len + 20, slideBottom - slideTop), InkStyle.Light, true));
+                sheet.Frame(new Rect2(X(slide) - 10, slideTop, len + 20, slideBottom - slideTop), 2f);
+                IEnumerable<(double V, bool Major)> Marks()
+                {
+                    for (int k = 10; k <= 100; k++)
+                    {
+                        if (k > 50 && k % 5 != 0) continue;
+                        yield return (k / 10.0, k % 10 == 0);
+                    }
+                }
+                foreach (var (val, major) in Marks())
+                {
+                    double pos = Math.Log10(val);
+                    // D (몸체 아래쪽), C (슬라이드 아래쪽), CI (슬라이드 위쪽, 붉게, 거꾸로)
+                    sheet.Line(new Vector2(X(pos), slideBottom), new Vector2(X(pos), slideBottom + (major ? 16 : 8)), major ? 1.8f : 1f);
+                    sheet.Line(new Vector2(X(slide + pos), slideBottom), new Vector2(X(slide + pos), slideBottom - (major ? 16 : 8)), major ? 1.8f : 1f);
+                    sheet.Line(new Vector2(X(slide + 1 - pos), slideTop), new Vector2(X(slide + 1 - pos), slideTop + (major ? 14 : 7)), major ? 1.6f : 0.9f, InkStyle.Red);
+                    if (major)
+                    {
+                        string t = Num(val % 10 == 0 ? 1 : val);
+                        sheet.Text(new Vector2(X(pos), slideBottom + 34), t, 15, 0);
+                        sheet.Text(new Vector2(X(slide + pos), slideBottom - 22), t, 15, 0);
+                        sheet.Text(new Vector2(X(slide + 1 - pos), slideTop + 30), t, 13, 0, color: InkStyle.Red);
+                    }
+                }
+                sheet.Text(new Vector2(x0 - 34, slideBottom + 34), "D", 17, 0, bold: true);
+                sheet.Text(new Vector2(X(slide) - 26, slideBottom - 22), "C", 17, 0, bold: true);
+                sheet.Text(new Vector2(X(slide) - 26, slideTop + 30), "CI", 15, 0, color: InkStyle.Red, bold: true);
+                // 커서 선(붉은 실선)과 읽는 자리
+                sheet.Line(new Vector2(X(cursor), bodyTop - 16), new Vector2(X(cursor), bodyBottom + 16), 2.6f, InkStyle.Red);
+                sheet.Dashed(new Vector2(X(Math.Log10(v[0])), bodyTop - 16), new Vector2(X(Math.Log10(v[0])), bodyBottom + 16), 1.6f, InkStyle.Red);
+                foreach (var (pos, y, tag) in new[] { (Math.Log10(v[0]), bodyBottom + 36f, "1"), (slide + Math.Log10(v[1]), bodyTop - 30f, "3"), (cursor, bodyBottom + 36f, "4") })
+                    sheet.Callout(new Vector2(X(pos), y), tag);
+                sheet.Callout(new Vector2(X(slide), bodyTop - 30), "2");
+                _ = product;
+                break;
+            }
+            case "nomogram":
+            {
+                // 계산 도표 1장(수심별 누수량)의 자 놓는 예 (DeepLine.Instruments.Nomogram, 눈금은 데이터의 튜닝 값으로 만든다)
+                var v = spec.Values is { Length: 2 } nv ? nv : throw new ArgumentException("nomogram에는 values [왼쪽, 오른쪽]이 있어야 한다");
+                var t = Data.Tuning;
+                var chart = new DeepLine.Instruments.Nomogram(new DeepLine.Instruments.NomogramTuning(t.Water.LeakK, t.Battery.CapacityWh, t.Water.BatterySubmergeStartL)).LeakRate;
+                var box = new Rect2(140, 26, w - 280, h - 52);
+                Vector2 P(DeepLine.Instruments.ChartPoint q) => new(box.Position.X + (float)q.X * box.Size.X, box.End.Y - (float)q.Y * box.Size.Y);
+                foreach (var scale in new[] { chart.Left, chart.Middle, chart.Right })
+                {
+                    var lo = P(scale.Point(scale.Min)); var hi = P(scale.Point(scale.Max));
+                    sheet.Line(lo, hi, 2f);
+                    int side = scale == chart.Left ? -1 : 1;
+                    foreach (var tick in scale.Ticks)
+                    {
+                        var at = P(scale.Point(tick.Value));
+                        sheet.Line(at, at + new Vector2(side * (tick.Major ? 12 : 6), 0), tick.Major ? 1.6f : 1f);
+                        if (tick.Label != null) sheet.Text(at + new Vector2(side * 16, 4), tick.Label, 11, -side);
+                    }
+                }
+                var a = P(chart.Left.Point(v[0])); var bpt = P(chart.Right.Point(v[1]));
+                sheet.Line(a, bpt, 2.4f, InkStyle.Red);
+                sheet.Ring(a, 7, 2.4f, InkStyle.Red);
+                sheet.Ring(bpt, 7, 2.4f, InkStyle.Red);
+                var cross = new Vector2(P(new DeepLine.Instruments.ChartPoint(chart.Middle.X, 0)).X, box.End.Y - (float)chart.CrossingY(chart.Left.Point(v[0]), chart.Right.Point(v[1])) * box.Size.Y);
+                sheet.Ring(cross, 10, 2.8f, InkStyle.Red);
                 break;
             }
             default:

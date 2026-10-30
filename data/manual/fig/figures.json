@@ -155,9 +155,12 @@
         "panel.bezel.power|panel.bezel.switchboard|panel.bezel.air|panel.bezel.water|panel.bezel.hull|panel.bezel.senses|panel.bezel.nav|panel.bezel.cable",
         "gauge.voltage.glass",
         "gauge.current.glass",
+        "gauge.current.glass@0,0,0.22",
+        "gauge.current.glass@0,0,0.44",
         "gauge.bilge.glass",
         "gauge.depth.glass",
         "gauge.pumpCurrent.glass",
+        "gauge.pumpCurrent.glass@0,0,0.22",
         "gauge.voltage.zero|gauge.current.zero|gauge.bilge.zero|gauge.depth.zero|gauge.pumpCurrent.zero",
         "panel.lamptest",
         "propulsion.telegraph",
@@ -184,33 +187,34 @@
         "camera": {
           "at": "panel.bulb.water",
           "offset": [
-            -1.4,
+            -1.1,
             -0.02,
             0.11
           ],
           "shift": [
             0,
-            0,
+            0.03,
             0.11
           ],
-          "fov": 44
+          "fov": 54
         },
-        "tag": "A"
+        "tag": "A",
+        "lit": []
       },
       {
         "camera": {
           "at": "panel.bulb.water",
           "offset": [
-            -1.4,
+            -1.1,
             -0.02,
             0.11
           ],
           "shift": [
             0,
-            0,
+            0.03,
             0.11
           ],
-          "fov": 44
+          "fov": 54
         },
         "callouts": [
           "panel.bulb.switchboard",
@@ -221,7 +225,21 @@
             "advance": 70
           }
         ],
-        "tag": "B"
+        "tag": "B",
+        "lit": [
+          "switchboard",
+          "hull"
+        ],
+        "avoid": [
+          "panel.bulb.power",
+          "panel.bulb.switchboard",
+          "panel.bulb.air",
+          "panel.bulb.water",
+          "panel.bulb.hull",
+          "panel.bulb.senses",
+          "panel.bulb.nav",
+          "panel.bulb.cable"
+        ]
       }
     ]
   },
@@ -260,7 +278,8 @@
         {
           "advance": 30
         }
-      ]
+      ],
+      "first": 2
     }
   },
   "03-switchboard": {
@@ -288,7 +307,6 @@
         "switch.C3",
         "fuse.C3",
         "terminal.C3",
-        "ammeter.C3",
         "bus"
       ],
       "prep": [
@@ -317,7 +335,8 @@
         },
         "callouts": [
           "fuse.C3"
-        ]
+        ],
+        "first": 2
       },
       {
         "camera": {
@@ -339,7 +358,8 @@
           {
             "advance": 70
           }
-        ]
+        ],
+        "first": 2
       }
     ]
   },
@@ -1178,6 +1198,30 @@
       ]
     }
   },
+  "09-multiply": {
+    "kind": "dial",
+    "dial": "sliderule",
+    "size": [
+      960,
+      330
+    ],
+    "values": [
+      2.4,
+      3.7
+    ]
+  },
+  "09-chart": {
+    "kind": "dial",
+    "dial": "nomogram",
+    "size": [
+      960,
+      460
+    ],
+    "values": [
+      300,
+      2
+    ]
+  },
   "10-hazards": {
     "kind": "plan",
     "size": [
@@ -1542,7 +1586,6 @@
           "fov": 60,
           "dolly": -0.2
         },
-        "mission": "m2-ballast",
         "prep": [
           {
             "advance": 3
@@ -1581,6 +1624,7 @@
     ],
     "highlight": [
       "selector",
+      "strainer",
       "tank.fore",
       "tank.aft",
       "flood.fore",
@@ -1862,8 +1906,8 @@
           ],
           "fov": 40
         },
-        "callouts": [
-          "gauge.voltage.glass"
+        "marks": [
+          "gauge.voltage.glass=click"
         ],
         "mission": "m2-power-a",
         "prep": [
@@ -1888,8 +1932,8 @@
           ],
           "fov": 40
         },
-        "callouts": [
-          "gauge.voltage.glass"
+        "marks": [
+          "gauge.voltage.glass=click"
         ],
         "mission": "m2-power-a",
         "prep": [
@@ -2069,7 +2113,7 @@
         }
       },
       "marks": {
-        "2": "propulsion.telegraph"
+        "2": "propulsion.telegraph=down"
       }
     }
   },
@@ -2611,7 +2655,8 @@
         },
         "callouts": [
           "fuse.C3"
-        ]
+        ],
+        "first": 2
       },
       {
         "camera": {
@@ -2633,7 +2678,8 @@
           {
             "advance": 70
           }
-        ]
+        ],
+        "first": 2
       }
     ]
   },
@@ -2681,9 +2727,9 @@
         "fov": 50
       },
       "callouts": [
-        "knife.C1.blade",
+        "node:BladeC1",
         "knife.C1.jaw",
-        "knife.C1.clamp",
+        "node:ClampC1",
         "knife.C1.base"
       ],
       "mission": "m2-switchboard-b"
@@ -2931,8 +2977,8 @@
           ],
           "fov": 40
         },
-        "callouts": [
-          "ammeter.C1"
+        "marks": [
+          "ammeter.C1=click"
         ],
         "prep": [
           {
@@ -2950,11 +2996,8 @@
           ],
           "fov": 40
         },
-        "callouts": [
-          "ammeter.C1"
-        ],
-        "highlight": [
-          "ammeter.C1"
+        "marks": [
+          "ammeter.C1=click"
         ],
         "mission": "m2-switchboard-a",
         "prep": [
@@ -3103,11 +3146,11 @@
         "camera": {
           "at": "fan.hub",
           "offset": [
-            0.22,
-            -0.48,
-            0.3
+            0.75,
+            -0.3,
+            0.1
           ],
-          "fov": 60
+          "fov": 50
         },
         "callouts": [
           "node:FanRibbon"
@@ -3123,11 +3166,11 @@
         "camera": {
           "at": "fan.hub",
           "offset": [
-            0.22,
-            -0.48,
-            0.3
+            0.75,
+            -0.3,
+            0.1
           ],
-          "fov": 60
+          "fov": 50
         },
         "callouts": [
           "node:FanRibbon"
@@ -3459,7 +3502,8 @@
             "procedure": "proc.furnace.clean",
             "through": 4
           }
-        ]
+        ],
+        "first": 3
       },
       {
         "camera": {
@@ -3481,7 +3525,7 @@
           "o2.furnace.vent"
         ],
         "highlight": [
-          "o2.furnace.grate",
+          "node:FurnaceAsh",
           "o2.furnace.vent"
         ],
         "mission": "m2-air-b",
@@ -3494,7 +3538,8 @@
             "procedure": "proc.furnace.clean",
             "through": 4
           }
-        ]
+        ],
+        "first": 3
       }
     ]
   },
@@ -3690,16 +3735,16 @@
           ],
           "fov": 45
         },
-        "callouts": [
-          "gauge.bilge.glass",
-          "gauge.pumpCurrent.glass"
+        "marks": [
+          "gauge.bilge.glass=click",
+          "gauge.pumpCurrent.glass=click"
         ],
         "prep": [
           {
             "procedure": "proc.strainer.clean"
           },
           {
-            "advance": 20
+            "advance": 150
           }
         ]
       },
@@ -3713,16 +3758,13 @@
           ],
           "fov": 45
         },
-        "callouts": [
-          "gauge.bilge.glass",
-          "gauge.pumpCurrent.glass"
-        ],
-        "highlight": [
-          "gauge.pumpCurrent.glass"
+        "marks": [
+          "gauge.bilge.glass=click",
+          "gauge.pumpCurrent.glass=click"
         ],
         "prep": [
           {
-            "advance": 20
+            "advance": 150
           }
         ]
       }
@@ -3954,8 +3996,8 @@
           ],
           "fov": 40
         },
-        "callouts": [
-          "gauge.pumpCurrent.glass"
+        "marks": [
+          "gauge.pumpCurrent.glass=click"
         ],
         "mission": "m2-water-a",
         "prep": [
@@ -3980,8 +4022,8 @@
           ],
           "fov": 40
         },
-        "callouts": [
-          "gauge.pumpCurrent.glass"
+        "marks": [
+          "gauge.pumpCurrent.glass=click"
         ],
         "mission": "m2-water-a",
         "prep": [
@@ -4153,7 +4195,8 @@
             "procedure": "proc.checkvalve.clean",
             "through": 5
           }
-        ]
+        ],
+        "first": 4
       },
       {
         "camera": {
@@ -4182,7 +4225,8 @@
             "procedure": "proc.checkvalve.clean",
             "through": 5
           }
-        ]
+        ],
+        "first": 4
       }
     ]
   },
@@ -4312,39 +4356,6 @@
         "ballast.fore.body|ballast.aft.body"
       ]
     }
-  },
-  "32-compare": {
-    "kind": "compare",
-    "size": [
-      960,
-      320
-    ],
-    "scenes": [
-      {
-        "camera": {
-          "station": "ballast",
-          "fov": 60
-        },
-        "mission": "m2-ballast",
-        "prep": [
-          {
-            "advance": 3
-          }
-        ]
-      },
-      {
-        "camera": {
-          "station": "ballast",
-          "fov": 60
-        },
-        "mission": "m2-ballast",
-        "prep": [
-          {
-            "advance": 600
-          }
-        ]
-      }
-    ]
   },
   "32-hammer": {
     "kind": "strip",
@@ -5482,7 +5493,7 @@
         "tube": "1"
       },
       "marks": {
-        "2": "hydrophone.switch"
+        "2": "hydrophone.switch=down"
       }
     }
   },
@@ -5529,7 +5540,7 @@
         }
       },
       "marks": {
-        "12": "hydrophone.switch"
+        "12": "hydrophone.switch=up"
       }
     }
   },
@@ -5762,8 +5773,8 @@
           ],
           "fov": 40
         },
-        "callouts": [
-          "gauge.voltage.glass"
+        "marks": [
+          "gauge.voltage.glass=click"
         ]
       },
       {
@@ -5776,11 +5787,8 @@
           ],
           "fov": 40
         },
-        "callouts": [
-          "gauge.voltage.glass"
-        ],
-        "highlight": [
-          "gauge.voltage.glass"
+        "marks": [
+          "gauge.voltage.glass=click"
         ],
         "mission": "m2-senses-b",
         "prep": [
@@ -6318,6 +6326,9 @@
           ],
           "fov": 55
         }
+      },
+      "marks": {
+        "2": "winch.control"
       }
     }
   },

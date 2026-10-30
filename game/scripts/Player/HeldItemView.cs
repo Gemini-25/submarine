@@ -110,10 +110,10 @@ public partial class HeldItemView : Node3D
 
         // 바늘: 0V가 왼쪽 끝(+50도), 눈금 끝이 오른쪽 끝(-50도). 계기 바늘의 관성.
         // 셀 하나를 잴 때는 안쪽 30V 눈금으로 읽는다(셀 단자의 낮은 전압용 단자).
-        double scale = _hands.Probing.StartsWith("cell.", StringComparison.Ordinal) ? 30.0 : 150.0;
+        double scale = _hands.Probing.StartsWith("cell.", StringComparison.Ordinal) ? VoltInnerMax : VoltOuterMax;
         float f = (float)Math.Clamp(_hands.ProbeVolts / scale, 0, 1);
         _needleAngle += (f - _needleAngle) * Math.Min(1, dt * 6);
-        _needle.Rotation = new Vector3(0, 0, Mathf.DegToRad(50 - 100 * _needleAngle));
+        _needle.Rotation = new Vector3(0, 0, Mathf.DegToRad(VoltSweepDeg / 2 - VoltSweepDeg * _needleAngle));
 
         // 망치질: 한 번 내려쳤다가 돌아온다. 문지르기와 돌리기는 잡은 동안 손이 흔들린다.
         _swing = Math.Max(0, _swing - dt / (float)InteractionController.SwingSeconds);
