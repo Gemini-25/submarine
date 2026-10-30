@@ -987,8 +987,9 @@ public partial class AutoPlayer
             if (mark != null) DrawMark(sheet, rect, mark, gesture);
             else Check(last == null || last.StartsWith("tool.", StringComparison.Ordinal), $"{key}단계 칸에 손이 간 곳이 없다 (마지막 명령 {last}). marks에 대상을 준다");
             // 손에 든 도구는 칸 안에 보여야 한다 (손 밖으로 나간 도구는 그 단계의 손동작을 보여 주지 못한다)
-            if (render && _lastCap is { } cap && _main.Held is { } held)
-                foreach (var h in held.Shown)
+            // (명령이 없는 단계, 곧 계기나 표시등을 보는 칸은 손에 든 것과 상관없다)
+            if (render && last != null && _lastCap is { } cap && _main.Held is { } held)
+                foreach (var h in held.ShownTools)
                 {
                     var ids = cap.Owner.Where(kv => h.IsAncestorOf(kv.Value)).Select(kv => kv.Key).ToHashSet();
                     int px = cap.Ids.Count(ids.Contains);

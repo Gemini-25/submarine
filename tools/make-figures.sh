@@ -9,6 +9,7 @@ cd "$(dirname "$0")/.."
 GODOT="${GODOT:-godot}"
 LOG="${TMPDIR:-/tmp}/deepline-figures"
 mkdir -p "$LOG"
+rm -f "$LOG"/make-*.log
 jobs=3
 only=""
 while [[ $# -gt 0 ]]; do

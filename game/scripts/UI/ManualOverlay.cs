@@ -236,6 +236,9 @@ public partial class ManualOverlay : CanvasLayer
 
     public bool Zoomed => _zoom.Visible;
 
+    /// <summary>크게 보기를 닫는다 (교범은 그대로).</summary>
+    public void CloseZoom() => _zoom.Visible = false;
+
     /// <summary>쪽을 그린다: 글은 BBCode로, 그림은 교범 폭에 맞춰(실제 크기보다 키우지 않고) 가운데에, 누르면 크게 본다.</summary>
     void Render(List<MarkdownBb.Block> blocks)
     {

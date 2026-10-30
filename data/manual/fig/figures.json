@@ -632,18 +632,17 @@
     ],
     "scene": {
       "camera": {
-        "at": "toolboard.rag",
-        "offset": [
-          0.85,
-          0.0,
-          0.5
+        "eye": [
+          3.4,
+          1.38,
+          -0.25
         ],
-        "shift": [
-          0,
-          -0.03,
-          -0.08
+        "target": [
+          2.8,
+          1.38,
+          -0.85
         ],
-        "fov": 66
+        "fov": 64
       },
       "callouts": [
         "toolboard.wrench",
@@ -5013,6 +5012,11 @@
       "views": {
         "2": {
           "station": "switchboard"
+        },
+        "6": {
+          "station": "shaft",
+          "fov": 60,
+          "dolly": 0.45
         }
       }
     }
@@ -5287,6 +5291,15 @@
         "lamp": "water"
       },
       "views": {
+        "3": {
+          "at": "panel.bulb.water",
+          "offset": [
+            -0.8,
+            0.1,
+            0.15
+          ],
+          "fov": 72
+        },
         "5": {
           "station": "locker.top"
         }

@@ -77,9 +77,9 @@ public partial class Main : Node3D
         Hands = new InteractionController { Name = "Hands" };
         AddChild(Hands);
         Hands.Setup(Runner, Player, Sub);
-        var held = Held = new HeldItemView { Name = "Held" };
-        Player.Camera.AddChild(held);
-        held.Setup(Runner, Hands);
+        Held = new HeldItemView { Name = "Held" };
+        Player.Camera.AddChild(Held);
+        Held.Setup(Runner, Hands);
 
         Body = new BodyEffects { Name = "Body" };
         AddChild(Body);
