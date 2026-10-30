@@ -35,22 +35,24 @@ static class DiagnosisHarness
     public static SortedDictionary<string, Element> Observe(ObservableQuery q, GameData d)
     {
         var v = new SortedDictionary<string, Element>(StringComparer.Ordinal);
+        // 지각 여유는 진단 자료의 margins에서 읽는다 (WP16). 자료가 없는 기준 데이터에서는 아래의 같은 값.
+        double Mg(string unit, double fallback) => d.Diagnosis?.Margins.TryGetValue(unit, out var m) == true ? m : fallback;
         void Text(string path) => v[path] = new Element(0, q.Read(path).Text ?? q.Read(path).ToString(), 0);
         void Num(string path, double margin, bool ratio = false) => v[path] = new Element(q.Number(path), null, margin, ratio);
 
         Num("panel.on", 0.5);
         foreach (var lamp in PanelSystems.Names) Text($"panel.lamp.{lamp}");
-        Num("panel.gauge.voltage", 5 * Volt);
-        Num("panel.gauge.current", 0.4 * Amp);
+        Num("panel.gauge.voltage", Mg("V", 5) * Volt);
+        Num("panel.gauge.current", Mg("A", 0.4) * Amp);
         Num("panel.gauge.co2", 0.3);
         Num("panel.gauge.o2", 0.3);
-        Num("panel.gauge.bilge", 20);
+        Num("panel.gauge.bilge", Mg("L", 20));
         Num("panel.gauge.depth", 10);
-        Num("panel.gauge.pumpCurrent", 0.4 * Amp);
-        Num("panel.gauge.pumpFlow", 0.1);
+        Num("panel.gauge.pumpCurrent", Mg("A", 0.4) * Amp);
+        Num("panel.gauge.pumpFlow", Mg("Lpm", 6) / 60);
         foreach (var z in GameData.Zones) Num($"zone.{z}.alarm", 0.5);
 
-        foreach (var c in d.Cues) Num($"cue.{c.Id}", 0.3);
+        foreach (var c in d.Cues) Num($"cue.{c.Id}", Mg("cue", 0.3));
         foreach (var r in d.Instruments)
         {
             if (r.Unit == "s") continue; // 시계는 고장을 알려 주지 않는다
@@ -69,10 +71,10 @@ static class DiagnosisHarness
         for (int n = 1; n <= d.Tuning.Battery.Cells; n++)
         {
             Num($"measure.voltmeter.cell.{n}", 5 * Volt);
-            Num($"measure.hydrometer.cell.{n}", 0.010);
+            Num($"measure.hydrometer.cell.{n}", Mg("sg", 0.010));
             Num($"measure.bridge.cell.{n}", 2, ratio: true);
         }
-        foreach (var p in d.StethoscopeTargets) Num($"measure.stethoscope.{p.Id}", 0.3);
+        foreach (var p in d.StethoscopeTargets) Num($"measure.stethoscope.{p.Id}", Mg("cue", 0.3));
         Num("measure.lamptest.panel", 0.5);
         return v;
     }
@@ -697,5 +699,99 @@ public class SensesBDiagnosability
         Assert.True(dark["panel.on"].Differs(c4["panel.on"]));
         foreach (var k in DiagnosisHarness.Separating(dark, baseDark))
             Assert.True(DiagnosisHarness.Documented(k, TestData.Data), $"꺼진 탐조등(SNS-04)을 드러내는 '{k}'에 문구가 없다");
+    }
+}
+
+/// <summary>
+/// Tier A 진단 가능성 행렬 (WP16, 설계 5.2절). 고장마다 그 고장을 판정하는 쌍의 노출 설정(과 그 사례의 부품)을 쓴다:
+/// 추진이 도는 노출(PWR-02, NAV-02, HUL-03), 시험 하중(CBL-01), 빌지 150(SNS-01) 같은 것이다.
+/// (1) 고장 없는 같은 노출과 구별되고, (2) 같은 계통의 다른 고장과 같은 노출에서 구별되고, (3) 가르는 원소마다 문서(캡션, 계기 이름, 쌍의 글귀)가 있다.
+/// 여유는 진단 자료의 margins이고, 항법 각도만 행렬에서 쓰는 더 엄한 값(0.5도)을 남긴다.
+/// </summary>
+public class TierADiagnosability
+{
+    readonly ITestOutputHelper _out;
+    public TierADiagnosability(ITestOutputHelper output) => _out = output;
+
+    static DiagnosisData Dx => TestData.Data.Diagnosis!;
+
+    /// <summary>고장 → (노출 설정, 초, 주입할 부품): 그 고장을 처음 판정하는 쌍(번호 순)의 노출과 그 고장을 넣는 첫 사례.</summary>
+    static (MissionSetup Setup, double Seconds, string? Part) Exposure(string fault)
+    {
+        foreach (var pair in Dx.Pairs.OrderBy(p => p.No))
+        {
+            if (!pair.Verdicts.Values.Any(v => v.Fault == fault && (v.Do.Count > 0 || v.Same != null))) continue;
+            var cs = pair.Cases.FirstOrDefault(c => c.Inject.Count == 1 && c.Inject[0].Fault == fault);
+            if (cs == null) continue;
+            var setup = System.Text.Json.JsonSerializer.Deserialize<MissionSetup>(System.Text.Json.JsonSerializer.Serialize(pair.Exposure.Setup))!;
+            if (cs.Setup?.Parts != null) setup.Parts = (setup.Parts ?? new()).Concat(cs.Setup.Parts).ToList();
+            return (setup, cs.Seconds ?? pair.Exposure.Seconds, cs.Inject[0].Part);
+        }
+        throw new InvalidOperationException($"{fault}를 판정하는 쌍과 사례가 없다");
+    }
+
+    static SortedDictionary<string, DiagnosisHarness.Element> Observe(MissionSetup setup, double seconds, string? fault, string? part)
+    {
+        var sim = new Simulation(TestData.Data, 1, setup);
+        if (fault != null) sim.Inject(fault, part);
+        sim.Run(seconds);
+        return DiagnosisHarness.Observe(new ObservableQuery(sim), TestData.Data);
+    }
+
+    /// <summary>교범 03, 05쪽의 가르기 줄: C2 퓨즈와 팬 정지, 축 회전계가 고른 계수기 톱니와 오르내리는 브러시, 물 표시등 전구와 베어링 마모.</summary>
+    static readonly (string, string)[] Confusable = { ("ELC-01", "AIR-01"), ("NAV-02", "PWR-02"), ("SNS-01", "WTR-02") };
+
+    static string SystemOf(string fault) => TestData.Data.Faults.First(f => f.Id == fault).System;
+
+    static readonly Dictionary<string, SortedSet<string>> _lamps = new(StringComparer.Ordinal);
+
+    /// <summary>그 고장이 자기 노출에서 쓰는 상황판 표시등: 바꾸거나 켜 두는 것. 전구 고장은 그 전구의 계통을 쓴다.</summary>
+    static SortedSet<string> LampsOf(string fault)
+    {
+        lock (_lamps)
+        {
+            if (_lamps.TryGetValue(fault, out var known)) return known;
+            var (setup, seconds, part) = Exposure(fault);
+            var a = Observe(setup, seconds, null, null);
+            var b = Observe(setup, seconds, fault, part);
+            // 바뀐 표시등과 그 노출에서 켜져 있는 표시등 (빌지가 찬 노출에서는 물 표시등이 바탕에서도 켜져 있다).
+            var set = new SortedSet<string>(DiagnosisHarness.Separating(a, b).Where(k => k.StartsWith("panel.lamp.", StringComparison.Ordinal)).Select(k => k[11..]), StringComparer.Ordinal);
+            foreach (var (k, v) in b)
+                if (k.StartsWith("panel.lamp.", StringComparison.Ordinal) && v.Text is not ("off" or null)) set.Add(k[11..]);
+            if (part != null && part.StartsWith("panel.bulb.", StringComparison.Ordinal)) set.Add(part[11..]);
+            return _lamps[fault] = set;
+        }
+    }
+
+    /// <summary>쌍의 글귀가 인용한 원소인가: 그 고장을 후보로 둔 쌍의 조건이 이 경로를 읽고 says가 있다.</summary>
+    static bool Cited(string path, string fault) =>
+        Dx.Pairs.Where(p => p.Verdicts.Values.Any(v => v.Fault == fault)).Any(p =>
+            p.Sees.SelectMany(r => r).Concat(p.Checks.SelectMany(c => c.All)).Any(c => c.Says != null &&
+                (c.Q != null && Repair.FixtureCatalog.Expand(c.Q, new Dictionary<string, string>()).Split('{')[0] is var head && path.StartsWith(head, StringComparison.Ordinal)
+                 || c.Measure != null && path.StartsWith($"measure.{c.Measure}.", StringComparison.Ordinal))));
+
+    [Fact]
+    public void Every_Tier_A_fault_is_noticeable_distinct_within_its_system_and_documented()
+    {
+        foreach (var fault in DiagnosisTests.TierA)
+        {
+            var (setup, seconds, part) = Exposure(fault);
+            var baseline = Observe(setup, seconds, null, null);
+            var mine = Observe(setup, seconds, fault, part);
+            var sep = DiagnosisHarness.Separating(mine, baseline);
+            _out.WriteLine($"{fault}: 표시등 [{string.Join(", ", LampsOf(fault))}], {string.Join(", ", sep.Take(6))}");
+            Assert.True(sep.Count > 0, $"{fault}는 같은 노출의 고장 없는 상태와 구별되지 않는다");
+            Assert.True(sep.Any(k => DiagnosisHarness.Documented(k, TestData.Data) || Cited(k, fault)), $"{fault}를 드러내는 원소에 문서가 없다: {string.Join(", ", sep)}");
+
+            // 같은 계통, 그리고 표시등을 함께 쓰는 고장끼리 (설계 5.2절 2): SNS-01(물 표시등 전구)과 WTR-01·02, C2의 ELC-01과 AIR-01 같은 것.
+            // 교범의 가르기 표가 짚는 헷갈리는 쌍도 견준다 (표시등을 함께 쓰지 않아도).
+            foreach (var other in DiagnosisTests.TierA.Where(o => o != fault && (SystemOf(o) == SystemOf(fault) || LampsOf(o).Overlaps(LampsOf(fault))
+                                                                                || Confusable.Contains((fault, o)) || Confusable.Contains((o, fault)))))
+            {
+                string? otherPart = Exposure(other).Part ?? TestData.Data.Faults.First(f => f.Id == other).DefaultPart;
+                var theirs = Observe(setup, seconds, other, otherPart);
+                Assert.True(DiagnosisHarness.Separating(mine, theirs).Count > 0, $"{fault}와 {other}가 {fault}의 노출에서 구별되지 않는다");
+            }
+        }
     }
 }

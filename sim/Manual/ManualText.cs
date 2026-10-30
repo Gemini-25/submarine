@@ -38,12 +38,17 @@ public static partial class ManualText
     [GeneratedRegex(@"\{\{([a-z0-9]+):([^{}|]+?)(?:\|(\d))?\}\}")]
     private static partial Regex Placeholder();
 
+    /// <summary>진단 쌍 표지 줄 (WP16): `&lt;!-- pair:&lt;쌍 ID&gt; --&gt;`. 렌더할 때 그 줄과 뒤따르는 빈 줄 하나를 지운다.</summary>
+    [GeneratedRegex(@"^[ \t]*<!--[ \t]*pair:([A-Za-z0-9_.\-]+)[ \t]*-->[ \t]*\r?\n(?:[ \t]*\r?\n)?", RegexOptions.Multiline)]
+    public static partial Regex PairMarker();
+
     static readonly ConditionalWeakTable<GameData, JsonObject> Trees = new();
 
     /// <summary>자리표시자를 모두 채운다. 하나라도 틀리면 ManualTextException (모든 오류를 모아서).</summary>
     public static string Render(string markdown, GameData data)
     {
         var errors = new List<string>();
+        markdown = PairMarker().Replace(markdown, "");
         string result = Placeholder().Replace(markdown, m =>
         {
             try
@@ -83,6 +88,29 @@ public static partial class ManualText
         }
         if (errors.Count > 0) throw new ManualTextException(errors);
         return pages;
+    }
+
+    /// <summary>
+    /// 차례(00쪽)의 '## 계통 탭' 표: | 탭 | 00~19 | 줄마다 (이름, 첫 쪽, 끝 쪽). 교범 화면의 계통 탭이 이것을 읽는다 (WP16).
+    /// 표가 없으면 비어 있다.
+    /// </summary>
+    public static IReadOnlyList<(string Name, int From, int To)> Tabs(string markdown)
+    {
+        var tabs = new List<(string, int, int)>();
+        bool inSection = false;
+        foreach (var raw in markdown.Split('\n'))
+        {
+            string line = raw.Trim();
+            if (line.StartsWith("## ", StringComparison.Ordinal)) { inSection = line[3..].Trim() == "계통 탭"; continue; }
+            if (!inSection || !line.StartsWith('|')) continue;
+            var cells = line.Trim('|').Split('|').Select(c => c.Trim()).ToArray();
+            if (cells.Length < 2) continue;
+            var range = cells[1].Split('~');
+            if (range.Length == 2 && int.TryParse(range[0], NumberStyles.None, CultureInfo.InvariantCulture, out int from)
+                && int.TryParse(range[1], NumberStyles.None, CultureInfo.InvariantCulture, out int to))
+                tabs.Add((cells[0], from, to));
+        }
+        return tabs;
     }
 
     /// <summary>장 제목: 첫 '# ' 줄 (게임의 MarkdownBb.Title과 같은 규칙).</summary>

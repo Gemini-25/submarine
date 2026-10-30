@@ -162,58 +162,15 @@ public partial class AutoPlayer
     }
 
     /// <summary>
-    /// 명령 하나를 손동작으로. 전동기 끝과 축전지 우물의 물체는 그 작업 자리(StandPoints)에 서서(우물은 웅크려서) 겨냥한다.
-    /// 장치 옆면이 통로 쪽이 아니라서 공용 Approach의 서는 곳으로는 겨냥이 비스듬하다. 나머지는 공용 Perform.
+    /// 명령 하나를 손동작으로. 전동기 끝과 축전지 우물의 물체도 공용 Perform이 그 작업 자리(StandPoints)에 서서 겨냥한다
+    /// (Approach가 덮개 안의 물체를 다룬다. WP16에서 겨냥하는 길을 하나로 모았다).
     /// </summary>
-    async Task PowerPerform(string cmd)
-    {
-        var p = cmd.Split('.');
-        if (p[0] is "tool" or "toolboard" or "switch" or "hand" or "locker") { await Perform(cmd); return; }
-        var (target, motion) = Map(cmd);
-        if (!Sub.Interactables.TryGetValue(target, out var it)) { await Perform(cmd); return; }
-        var st = StandPoints.All.FirstOrDefault(s => s.WorkView && s.Name == it.Station && s.Name is "motor" or "battery");
-        if (st == null) { await Perform(cmd); return; }
-        _gestures++;
-        int before = _issued.Count;
-        if (await StandAt(st) && await AimFrom(st, target))
-        {
-            var hands = _main.Hands;
-            hands.PointerDown(it);
-            switch (motion)
-            {
-                case Motion.Up:
-                case Motion.Down:
-                    for (int k = 0; k < 10; k++) hands.PointerMove(new Vector2(0, motion == Motion.Up ? -20 : 20));
-                    break;
-                case Motion.Ccw:
-                case Motion.Cw:
-                {
-                    float r = InteractionController.RotateRadius, sign = motion == Motion.Ccw ? 1 : -1;
-                    var prev = Vector2.Zero;
-                    for (int k = 0; k <= 48; k++)
-                    {
-                        float a = sign * k * Mathf.Tau / 24;
-                        var pt = new Vector2(Mathf.Cos(a), -Mathf.Sin(a)) * r;
-                        hands.PointerMove(pt - prev);
-                        prev = pt;
-                    }
-                    break;
-                }
-                case Motion.Scrub:
-                    hands.PointerMove(new Vector2(InteractionController.ScrubPixels + 10, 0));
-                    hands.PointerMove(new Vector2(-2 * InteractionController.ScrubPixels - 20, 0));
-                    break;
-            }
-            hands.PointerUp();
-        }
-        if (st.Crouch) await Crouch(false);
-        var got = _issued.Skip(before).ToList();
-        Check(got.Count == 1 && got[0] == cmd, $"'{cmd}'를 하려 했는데 손동작이 낸 명령: [{string.Join(", ", got)}]");
-    }
+    Task PowerPerform(string cmd) => Perform(cmd);
 
     /// <summary>다 쓴 셀은 무거워서 셀 상자의 다 쓴 셀 칸에 넣는다.</summary>
     async Task CrateDrop()
     {
+        _gestures++;
         int before = _issued.Count;
         var it = await Approach("discard.crate");
         if (it == null) return;

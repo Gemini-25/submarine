@@ -5,6 +5,7 @@
   "fixture.checkvalve.bolt.{n}": "보닛 볼트 {n}",
   "fixture.checkvalve.bonnet": "역류 방지 밸브 보닛",
   "fixture.checkvalve.flap": "역지 밸브 판",
+  "cue.pump.oilcup": "유리 기름 잔에 기름이 차 있다",
   "fixture.pump.bearing": "펌프 베어링",
   "fixture.pump.body": "펌프 몸체",
   "fixture.pump.cap": "베어링 뚜껑",

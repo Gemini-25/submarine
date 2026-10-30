@@ -51,6 +51,35 @@ public static class NavDrill
         return Enumerable.Repeat(n > 0 ? "gyro.align.down" : "gyro.align.up", Math.Abs(n)).ToArray();
     }
 
+    // ── 교범 보기(Book)로 셈한다 (DrillSolver, WP16). 위의 GameData 판과 같은 셈이다.
+
+    public static double TrueFromCompass(Book b, double compassDeg) => compassDeg - Core.Curve.Eval(b.DeviationCard, compassDeg);
+
+    public static double RepeaterOffset(ObservableQuery q, Book b)
+    {
+        double diff = q.Number("reading.gyro.repeater") - TrueFromCompass(b, q.Number("reading.compass"));
+        diff %= 360;
+        if (diff > 180) diff -= 360;
+        if (diff < -180) diff += 360;
+        return diff;
+    }
+
+    public static IReadOnlyList<string> AlignCommands(ObservableQuery q, Book b)
+    {
+        if (q.Number("cue.gyro.settleLamp") < 0.5) return Array.Empty<string>();
+        int n = (int)Math.Round(RepeaterOffset(q, b) / AlignStepDeg, MidpointRounding.AwayFromZero);
+        return Enumerable.Repeat(n > 0 ? "gyro.align.down" : "gyro.align.up", Math.Abs(n)).ToArray();
+    }
+
+    public static double DistanceFromRevs(ObservableQuery q, Book b) => q.Number("reading.shaft.revs") * b.AdvancePerRevM / 1000;
+
+    public static IReadOnlyList<string> ResetCommands(ObservableQuery q, Book b)
+    {
+        double delta = DistanceFromRevs(q, b) - q.Number("reading.navcomp.counter");
+        int n = (int)Math.Round(delta / ResetStepKm, MidpointRounding.AwayFromZero);
+        return Enumerable.Repeat(n > 0 ? "navcomp.reset.up" : "navcomp.reset.down", Math.Abs(n)).ToArray();
+    }
+
     /// <summary>축 회전계로 셈한 거리 (km, 교범 43쪽).</summary>
     public static double DistanceFromRevs(ObservableQuery q, GameData d) =>
         q.Number("reading.shaft.revs") * (d.Tuning.Nav ?? throw new InvalidOperationException("tuning.nav가 없다")).AdvancePerRevM / 1000;
