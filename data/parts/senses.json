@@ -159,5 +159,110 @@
       "filament": 1,
       "present": 1
     }
+  },
+  "panel.wiring": {
+    "kind": "panel_wiring",
+    "visible": [
+      "coverOpen",
+      "screw1",
+      "screw2",
+      "screw3",
+      "screw4",
+      "seated"
+    ],
+    "props": {
+      "coverOpen": 0,
+      "crossA": 3,
+      "crossB": 4,
+      "moisture": 0.1,
+      "screw1": 1,
+      "screw2": 1,
+      "screw3": 1,
+      "screw4": 1,
+      "seated": 1
+    }
+  },
+  "searchlight.rods": {
+    "kind": "arc_rods",
+    "visible": [
+      "doorOpen",
+      "latch1",
+      "latch2",
+      "length",
+      "present"
+    ],
+    "props": {
+      "doorOpen": 0,
+      "gap": 0.15,
+      "latch1": 1,
+      "latch2": 1,
+      "length": 1,
+      "present": 1
+    }
+  },
+  "gauge.voltage": {
+    "kind": "panel_gauge",
+    "visible": [
+      "bezelOpen",
+      "zero"
+    ],
+    "props": {
+      "bezelOpen": 0,
+      "offset": 0,
+      "stick": 0,
+      "zero": 0
+    }
+  },
+  "gauge.current": {
+    "kind": "panel_gauge",
+    "visible": [
+      "bezelOpen",
+      "zero"
+    ],
+    "props": {
+      "bezelOpen": 0,
+      "offset": 0,
+      "stick": 0,
+      "zero": 0
+    }
+  },
+  "gauge.bilge": {
+    "kind": "panel_gauge",
+    "visible": [
+      "bezelOpen",
+      "zero"
+    ],
+    "props": {
+      "bezelOpen": 0,
+      "offset": 0,
+      "stick": 0,
+      "zero": 0
+    }
+  },
+  "gauge.depth": {
+    "kind": "panel_gauge",
+    "visible": [
+      "bezelOpen",
+      "zero"
+    ],
+    "props": {
+      "bezelOpen": 0,
+      "offset": 0,
+      "stick": 0,
+      "zero": 0
+    }
+  },
+  "gauge.pumpCurrent": {
+    "kind": "panel_gauge",
+    "visible": [
+      "bezelOpen",
+      "zero"
+    ],
+    "props": {
+      "bezelOpen": 0,
+      "offset": 0,
+      "stick": 0,
+      "zero": 0
+    }
   }
 }

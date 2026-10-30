@@ -41,6 +41,8 @@ static class FixtureHooks
             double floor = w.Humidity is { } h ? Math.Min(m0, h.Target(w, v.Part)) : 0;
             v.Part.Set("moisture", Math.Max(Math.Max(0, m0 - jt.RagDry), floor));
         },
+        // 상황판 계기의 유리를 두드린다 (SNS-05, WP20): 걸린 바늘이 한 번 제자리로 간다.
+        ["gaugeTap"] = (w, v) => Systems.GaugeDrift.Tap(w, v.Part),
     };
 }
 

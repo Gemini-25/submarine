@@ -34,4 +34,34 @@ public static class SensesDrill
         if (Math.Abs(a - b) < 0.3) return null;
         return a < b ? "1" : "2";
     }
+
+    // ── 감각 훈련 B (m2-senses-b, WP20) ──────────────────────
+
+    /// <summary>
+    /// 선체와 배수 표시등이 현장과 엇갈린다(SNS-02): 구역 경고등이 모두 꺼졌는데 선체 표시등이 켜져 있거나,
+    /// 빌지 유리관이 주의 문턱을 넘었는데 배수 표시등이 꺼져 있고 램프 시험에서는 배수 전구가 켜진다.
+    /// 상황판이 꺼져 있으면 판단하지 않는다.
+    /// </summary>
+    public static bool LampsContradictSite(ObservableQuery q, double warnL)
+    {
+        if (q.Number("panel.on") < 0.5) return false;
+        bool zones = false;
+        foreach (var z in Data.GameData.Zones) zones |= q.Number($"zone.{z}.alarm") >= 0.5;
+        bool phantomHull = !zones && q.Read("panel.lamp.hull").Text != "off";
+        return phantomHull || (WaterLampSilent(q, warnL) && DarkBulb(q) == null);
+    }
+
+    /// <summary>탐조등이 켜진 채 누렇게 흔들리거나 지직거린다(SNS-04).</summary>
+    public static bool ArcSputters(ObservableQuery q) =>
+        q.Number("cue.searchlight.sputter") >= 0.2 || q.Number("cue.searchlight.yellow") >= 0.2;
+
+    /// <summary>
+    /// 상황판 계기를 기준 계기의 값에 맞추는 영점 나사 명령들 (한 눈금 = 눈금 끝의 step 몫, 교범 41쪽).
+    /// needle과 reference는 같은 단위(시뮬레이션 단위), fullScale도 같다.
+    /// </summary>
+    public static IReadOnlyList<string> ZeroCommands(string gauge, double needle, double reference, double fullScale, double step)
+    {
+        int n = (int)Math.Round((reference - needle) / (fullScale * step), MidpointRounding.AwayFromZero);
+        return Enumerable.Repeat(n > 0 ? $"gauge.{gauge}.zero.up" : $"gauge.{gauge}.zero.down", Math.Abs(n)).ToArray();
+    }
 }

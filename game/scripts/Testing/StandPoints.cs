@@ -67,7 +67,7 @@ public static class StandPoints
         new("locker", At(3.75f, -0.25f), false, [ "locker.fuse", "locker.wood_wedge", "locker.timber_shore", "discard" ], None),
         new("panel", At(7.3f, -0.1f), false,
             [ "panel", ..DeepLine.Sim.Data.Bindings.PanelLamps.Select(l => $"panel.bezel.{l}"), ..DeepLine.Sim.Data.Bindings.PanelLamps.Select(l => $"panel.bulb.{l}"), ..DriftGauges.Select(g => $"gauge.{g}.glass"),
-              ..DriftGauges.Select(g => $"gauge.{g}.zero"), "panel.lamptest", "propulsion.telegraph", "searchlight.switch" ], None),
+              ..DriftGauges.Select(g => $"gauge.{g}.zero"), ..DriftGauges.Select(g => $"gauge.{g}"), "panel.lamptest", "propulsion.telegraph", "searchlight.switch" ], None),
 
         // ── 후방 ──
         new("motor", At(1.75f, 0.2f), false, [ "motor.cover", "motor.cover.bolt.1", "motor.cover.bolt.2", "motor.brush.spring" ], None),
@@ -93,9 +93,9 @@ public static class StandPoints
         new("chamber.in", At(4.0f, 0.64f), true, [ "chamber.seal", ..Four("chamber.seal.screw") ], [ "chamber.hatch" ]),
 
         // ── 전방 ──
-        new("panelbox", At(7.45f, -0.2f), true, [ "panel.wiring.cover", ..Four("panel.wiring.screw"), ..Junction("C4") ], None),
+        new("panelbox", At(7.45f, -0.2f), true, [ "panel.wiring.cover", ..Four("panel.wiring.screw"), "panel.wiring.strip", "panel.wiring.terminals", ..Junction("C4") ], None),
         new("searchlight", At(7.0f, -0.1f), false,
-            [ "searchlight.door", "searchlight.latch.1", "searchlight.latch.2", "searchlight.feed", "searchlight.housing" ], None),
+            [ "searchlight.door", "searchlight.latch.1", "searchlight.latch.2", "searchlight.feed", "searchlight.housing", "searchlight.rods" ], None),
         new("viewport.1", At(7.5f, -0.45f), false, Viewport(1), None),
         new("viewport.2", At(7.5f, 0.45f), false, Viewport(2), None),
         new("battery", At(5.7f, 0f), true, Cells(), [ "battery.deck" ]),

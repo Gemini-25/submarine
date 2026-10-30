@@ -105,7 +105,10 @@
     "kind": "Continuous",
     "defaultOn": false,
     "zone": "fore",
-    "parts": []
+    "parts": [],
+    "heatFactor": 0.7,
+    "coolingWPerC": 2,
+    "heatCapacityJPerC": 240
   },
   "sonar": {
     "name": "소나 발신",

@@ -77,6 +77,7 @@ public partial class Submarine : Node3D
         BuildSwitchboardB(); // 칼날 스위치 접점: 집게 나사, 칼날, 위 집게, 받침 (WP17 ELC-02)
         BuildBallast(); // 밸러스트 조절반: 흡입 선택기, 침수 밸브, 탱크 유리관, 경사계 (WP18)
         BuildCheckValve(); // 역류 방지 밸브 보닛, 판, 배출 밸브 바퀴, 세척통의 판 솔질 (WP17 WTR-03)
+        BuildSensesB(); // 감각 2차 (WP20): 상황판 배선함, 탐조등과 레버와 현창 불빛, 계기 유리와 영점 나사
         BuildGadgets(); // 계산 도구: 탁상 계산기, 계산자, 계산 도표, 저항 측정 브리지 (WP22)
     }
 

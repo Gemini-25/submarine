@@ -113,6 +113,8 @@ static class Electrical
             if (def.Kind == DeviceKind.Throttle) load *= ds.Throttle;
             // 닳은 브러시의 불꽃이 전류를 흔든다 (PWR-02). 불꽃이 없으면 정확히 1.
             if (d == w.Propulsion) load *= BrushGear.SurgeFactor(w);
+            // 탄소봉 간격이 넓어 아크가 흔들리면 전류도 흔들린다 (SNS-04). 흔들리지 않으면 정확히 1.
+            load *= Searchlight.LoadFactor(w, d);
             ds.LoadFactor = load;
             if (def.LoadType == LoadType.Resistive)
             {
@@ -336,6 +338,7 @@ static class DeviceRules
                 return false;
         foreach (var p in w.DeviceParts[d])
             if (!Tubes.Alive(p)) return false; // 빠졌거나 필라멘트가 끊긴 진공관 (SNS-03)
+        if (!Searchlight.CanRun(w, d)) return false; // 탄소봉이 없거나 다 탔거나 간격이 너무 넓다, 장전 문이 열렸다 (SNS-04)
         // 항법 모듈: 자이로 전원 스위치와 베어링, 항법 계산기 전원 레버 (모듈이 없으면 늘 참).
         if (!Navigation.CanRun(w, d)) return false;
         if (d == w.Propulsion && !BrushGear.CanRun(w))
