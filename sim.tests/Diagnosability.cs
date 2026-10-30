@@ -486,6 +486,7 @@ public class CheckValveDiagnosability
         var stuck = Run("WTR-03");
         var weep = Run(null, s => s.Parts = new() { new() { Part = "pump.check_valve", Prop = "weep", Value = 1 } });
         var rivet = Run("HUL-01");
+        var shaft = Run("HUL-03");
 
         foreach (var (v, name) in new[] { (closed, "배출 밸브 잠김"), (weep, "새는 보닛") })
         {
@@ -498,6 +499,10 @@ public class CheckValveDiagnosability
         Assert.True(closed["cue.pump.backflow"].Differs(stuck["cue.pump.backflow"]));
         Assert.True(weep["cue.checkvalve.drip"].Differs(rivet["cue.checkvalve.drip"]));
         Assert.True(weep["cue.leak.rivet.09.hiss"].Differs(rivet["cue.leak.rivet.09.hiss"]));
+        // 같은 후방 경고를 내는 축 패킹(HUL-03)과는 보닛 물방울과 축 둘레 물줄기로 갈린다.
+        Assert.Equal(shaft["zone.aft.alarm"].Num, weep["zone.aft.alarm"].Num);
+        Assert.True(weep["cue.checkvalve.drip"].Differs(shaft["cue.checkvalve.drip"]));
+        Assert.True(weep["cue.shaft.stream"].Differs(shaft["cue.shaft.stream"]));
     }
 }
 
