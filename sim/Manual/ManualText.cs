@@ -90,6 +90,29 @@ public static partial class ManualText
         return pages;
     }
 
+    /// <summary>
+    /// 차례(00쪽)의 '## 계통 탭' 표: | 탭 | 00~19 | 줄마다 (이름, 첫 쪽, 끝 쪽). 교범 화면의 계통 탭이 이것을 읽는다 (WP16).
+    /// 표가 없으면 비어 있다.
+    /// </summary>
+    public static IReadOnlyList<(string Name, int From, int To)> Tabs(string markdown)
+    {
+        var tabs = new List<(string, int, int)>();
+        bool inSection = false;
+        foreach (var raw in markdown.Split('\n'))
+        {
+            string line = raw.Trim();
+            if (line.StartsWith("## ", StringComparison.Ordinal)) { inSection = line[3..].Trim() == "계통 탭"; continue; }
+            if (!inSection || !line.StartsWith('|')) continue;
+            var cells = line.Trim('|').Split('|').Select(c => c.Trim()).ToArray();
+            if (cells.Length < 2) continue;
+            var range = cells[1].Split('~');
+            if (range.Length == 2 && int.TryParse(range[0], NumberStyles.None, CultureInfo.InvariantCulture, out int from)
+                && int.TryParse(range[1], NumberStyles.None, CultureInfo.InvariantCulture, out int to))
+                tabs.Add((cells[0], from, to));
+        }
+        return tabs;
+    }
+
     /// <summary>장 제목: 첫 '# ' 줄 (게임의 MarkdownBb.Title과 같은 규칙).</summary>
     public static string Title(string markdown) =>
         markdown.Split('\n').Select(l => l.Trim()).FirstOrDefault(l => l.StartsWith("# ", StringComparison.Ordinal))?[2..].Trim() ?? "";

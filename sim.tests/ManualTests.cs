@@ -29,7 +29,7 @@ public class ManualTests
             n["noise"]!["actions"]!["wrench"]!["level"] = 4;
         });
         var pages = ManualText.LoadPages(ManualDir, data);
-        Assert.Contains("| 퓨즈 | 11 | 퓨즈 교체 |", pages.Single(p => p.File.StartsWith("01-", StringComparison.Ordinal)).Markdown);
+        Assert.Contains("| 퓨즈 | 11 | |", pages.Single(p => p.File.StartsWith("07-", StringComparison.Ordinal)).Markdown);
         Assert.Contains("| 볼트 하나 (렌치) | 4 |", pages.Single(p => p.File.StartsWith("29-", StringComparison.Ordinal)).Markdown); // 펌프 흡입 거름망 청소
         Assert.Contains("| 렌치 (볼트 하나) | 4 | 2초 |", pages.Single(p => p.File.StartsWith("11-", StringComparison.Ordinal)).Markdown); // 소음 표
     }
@@ -159,5 +159,34 @@ public class ManualTests
         var e = Assert.Throws<DataValidationException>(() => ObservationTests.LoadWith(dir =>
             File.WriteAllText(Path.Combine(dir, "text", "ko", "extra.json"), new JsonObject { ["tool.wrench"] = "스패너" }.ToJsonString())));
         Assert.Contains(e.Errors, x => x.Contains("tool.wrench") && x.Contains("ko.json") && x.Contains("extra.json"));
+    }
+
+    /// <summary>
+    /// 차례(00쪽, WP16): 모든 쪽이 그 번호와 제목으로 실려 있고, 계통 탭이 쪽 번호를 빈틈없이 덮으며, 모든 쪽이 어느 탭에 든다.
+    /// 쪽을 더하면 차례의 '쪽' 표에도 한 줄 더한다.
+    /// </summary>
+    [Fact]
+    public void The_contents_page_lists_every_page_and_its_tabs_cover_them()
+    {
+        var pages = ManualText.LoadPages(ManualDir, TestData.Data);
+        string toc = pages.Single(p => p.File.StartsWith("00-", StringComparison.Ordinal)).Markdown;
+        var tabs = ManualText.Tabs(toc);
+        Assert.True(tabs.Count >= 9);
+        for (int i = 1; i < tabs.Count; i++) Assert.Equal(tabs[i - 1].To + 1, tabs[i].From);
+        Assert.Equal(0, tabs[0].From);
+        foreach (var p in pages.Where(p => !p.File.StartsWith("00-", StringComparison.Ordinal)))
+        {
+            int n = int.Parse(p.File[..2], System.Globalization.CultureInfo.InvariantCulture);
+            var tab = tabs.Single(t => t.From <= n && n <= t.To);
+            Assert.Contains($"| {p.File[..2]} | {p.Title} | {tab.Name} |", toc);
+        }
+    }
+
+    /// <summary>진단 표 03~05쪽에 '(작성 중' 자리가 남지 않는다 (Tier A 계통이 모두 채웠다).</summary>
+    [Fact]
+    public void Diagnosis_pages_have_no_placeholders_left()
+    {
+        foreach (var p in ManualText.LoadPages(ManualDir, TestData.Data).Where(p => p.File[..2] is "03" or "04" or "05"))
+            Assert.DoesNotContain("(작성 중", p.Markdown);
     }
 }
