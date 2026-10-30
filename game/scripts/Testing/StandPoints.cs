@@ -44,6 +44,13 @@ public static class StandPoints
         return ids.ToArray();
     }
 
+    static string[] Calculator() =>
+    [
+        "gadget.calculator", ..Enumerable.Range(1, 8).Select(i => $"gadget.calculator.lever.{i}"), "gadget.calculator.crank",
+        "gadget.calculator.shift.left", "gadget.calculator.shift.right",
+        "gadget.calculator.clear.result", "gadget.calculator.clear.counter", "gadget.calculator.clear.setting",
+    ];
+
     static string[] Tools() => World.Submarine.BoardTools.Select(t => $"toolboard.{t.Id}").ToArray();
 
     static readonly string[] DriftGauges = { "voltage", "current", "bilge", "depth", "pumpCurrent" };
@@ -94,7 +101,12 @@ public static class StandPoints
         new("navdesk", At(6.0f, -0.35f), false,
             [ "navcomp.cover", "navcomp.cover.screw.1", "navcomp.cover.screw.2", "navcomp.reset", "navcomp.power", "navcomp.gear",
               "gadget.compass", "gadget.calculator", "gadget.sliderule" ], None),
-        new("nomogram", At(6.65f, -0.4f), false, [ "gadget.nomogram" ], None),
+        new("nomogram", At(6.65f, -0.4f), false, [ "gadget.nomogram", "gadget.nomogram.end.a", "gadget.nomogram.end.b" ], None),
+        // 계산 도구 (WP22): 탁상 계산기, 계산자, 저항 측정 브리지는 가까이 보는 작업 시점이 따로 있다.
+        new("calculator", At(6.0f, -0.35f), false, Calculator(), None),
+        new("sliderule", At(6.3f, -0.35f), false, [ "gadget.sliderule", "gadget.sliderule.slide", "gadget.sliderule.cursor" ], None),
+        new("bridge", At(6.45f, 0.35f), false,
+            [ ..Four("gadget.bridge.dial"), "bridge.lead", "gadget.bridge.range.1", "gadget.bridge.range.2", "gadget.bridge.range.3", "gadget.bridge.key", "gadget.bridge" ], None),
         new("gyro", At(7.1f, -0.35f), false, [ "gyro.lid", ..Four("gyro.case.screw"), "gyro.switch", "gyro.align", "gyro.case", "gyro.bearing" ], None),
         new("commdesk", At(6.4f, 0.35f), false,
             [ "gadget.bridge", "bridge.lead", "siphon.ink", "siphon.bulb", "siphon.testkey", "siphon.arm", "siphon.pen", "siphon.tube.1" ], None),
