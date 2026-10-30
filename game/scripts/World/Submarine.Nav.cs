@@ -132,16 +132,12 @@ public partial class Submarine
         {
             new Vector2(0, 0), new Vector2(0.07f, 0), new Vector2(0.1f, 0.06f), new Vector2(0.1f, 0.1f), new Vector2(0.09f, 0.115f), new Vector2(0, 0.115f),
         }, 20, smoothAngle: 40);
+        // 탁상 계산기 몸통, 계산자 쟁반, 도표 판. 움직이는 부분(손잡이, 자, 도표 종이)은 WP22의 장치가 얹는다.
         mb.Box(ArtMat.BlackEnamel, new Vector3(6.0f, top + 0.04f, -0.78f), new Vector3(0.18f, 0.08f, 0.14f), 0.008f);
-        mb.Tube(ArtMat.BareSteel, Transform3D.Identity, new[] { new Vector3(6.1f, top + 0.05f, -0.78f), new Vector3(6.13f, top + 0.1f, -0.78f) }, 0.007f, 8);
-        mb.Box(ArtMat.Bakelite, new Vector3(6.13f, top + 0.1f, -0.78f), new Vector3(0.016f, 0.016f, 0.016f), 0.007f, 0.01f);
         mb.Box(ArtMat.Wood, new Vector3(6.3f, top + 0.01f, -0.78f), new Vector3(0.3f, 0.02f, 0.07f), 0.003f);
         mb.Box(ArtMat.Porcelain, new Vector3(6.3f, top + 0.022f, -0.78f), new Vector3(0.28f, 0.006f, 0.035f), 0.001f);
         mb.Box(ArtMat.Wood, new Vector3(6.65f, 1.6f, -HalfWidth + 0.008f), new Vector3(0.42f, 0.62f, 0.016f), 0.003f);
         mb.Box(ArtMat.Porcelain, new Vector3(6.65f, 1.6f, -HalfWidth + 0.017f), new Vector3(0.38f, 0.58f, 0.002f), 0);
-        for (int k = 0; k < 3; k++)
-            mb.Box(ArtMat.Ink, new Vector3(6.5f + k * 0.15f, 1.6f, -HalfWidth + 0.019f), new Vector3(0.003f, 0.5f, 0.001f), 0);
-        mb.Box(ArtMat.BareSteel, new Transform3D(Basis.FromEuler(new Vector3(0, 0, 0.35f)), new Vector3(6.65f, 1.6f, -HalfWidth + 0.022f)), new Vector3(0.4f, 0.012f, 0.003f), 0);
         mb.Instance(root, "NavGadgets");
     }
 
