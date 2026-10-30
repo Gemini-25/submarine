@@ -543,7 +543,7 @@ public class PartMechanicsTests
         {
             foreach (var f in Directory.GetFiles(TestData.DataDir, "*", SearchOption.AllDirectories))
             {
-                if (Path.GetFileName(f) == "steam.json") continue;
+                if (Path.GetFileName(f) is "steam.json" or "m2-power-b.json" or "m2-shakedown.json") continue; // 축압기 고장을 쓰는 훈련도 뺀다
                 var to = Path.Combine(dir.FullName, Path.GetRelativePath(TestData.DataDir, f));
                 Directory.CreateDirectory(Path.GetDirectoryName(to)!);
                 File.Copy(f, to);
