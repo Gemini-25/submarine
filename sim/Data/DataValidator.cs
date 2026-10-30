@@ -260,6 +260,7 @@ static class DataValidator
         Systems.CableGear.Validate(d, errors);
         Systems.Suction.Validate(d, errors);
         SwitchboardTuningValidator.Validate(d, errors);
+        ContactsTuningValidator.Validate(d, errors);
 
         if (errors.Count > 0)
             throw new DataValidationException(errors);

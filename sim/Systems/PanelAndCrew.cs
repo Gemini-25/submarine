@@ -109,6 +109,17 @@ static class PanelSystem
                 if (s.CircuitSwitchOn[c] && (s.CircuitFuseBlown[c] || s.CircuitWiringBurnt[c])) sb = Max(sb, LampState.Fault);
                 else if (s.CircuitCurrent[c] > pt.CircuitWarnFraction * w.Data.Circuits[c].FuseRating) sb = Max(sb, LampState.Warning);
             }
+            // 칼날 스위치 접점 강하 (ELC-02, WP17): 어느 회로든 강하가 panelWarnDropV를 넘으면 주의, 타서 열린 접점은 고장.
+            if (w.Contacts is { } contacts)
+            {
+                double warn = w.T.Contacts!.PanelWarnDropV / Units.NominalVolts;
+                for (int c = 0; c < w.Circuits.Length; c++)
+                {
+                    if (!contacts.Corrosion[c].Exists) continue;
+                    if (s.CircuitSwitchOn[c] && contacts.IsBurnt(c)) sb = Max(sb, LampState.Fault);
+                    else if (contacts.Drop[c].Get() > warn) sb = Max(sb, LampState.Warning);
+                }
+            }
             lamps[PanelSystems.Switchboard] = sb;
 
             lamps[PanelSystems.Air] = Max(

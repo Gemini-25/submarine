@@ -74,15 +74,23 @@ static class Electrical
             cs.FuseBlownSeen = blown;
             // 분기함 배선이 탔으면(퓨즈 대용 철사의 대가, WP8) 퓨즈는 멀쩡해도 회로가 죽는다.
             cs.Energized = v > 0 && cs.SwitchOn && !blown && w.JunctionBurnt[c].Get() < 0.5;
+            // 칼날 스위치 접점이 타서 열렸으면(ELC-02, WP17) 회로가 죽는다.
+            if (w.Contacts is { } burnt && burnt.IsBurnt(c)) cs.Energized = false;
             cs.Current = 0;
             cs.PowerW = 0;
             cs.LeakCurrent = 0;
         }
 
+        // 접점 강하 (ELC-02, WP17): 회로마다 부하 쪽 전압. 접점 모듈이 없으면 버스 전압 그대로다.
+        Span<double> circuitV = stackalloc double[w.Circuits.Length];
+        for (int c = 0; c < circuitV.Length; c++) circuitV[c] = v;
+        if (w.Contacts is { } contacts) ContactVolts(w, contacts, v, circuitV);
+
         for (int d = 0; d < w.Devices.Length; d++)
         {
             var def = w.Data.Devices[d];
             var ds = w.Devices[d];
+            double vc = circuitV[w.DeviceCircuit[d]];
             bool wants = def.Kind switch
             {
                 DeviceKind.Pulse => ds.PulseTicks > 0,
@@ -90,7 +98,7 @@ static class Electrical
                 _ => ds.Enabled,
             };
             var circuit = w.Circuits[w.DeviceCircuit[d]];
-            ds.Running = wants && circuit.Energized && v >= def.MinVoltage && !ds.CutOut && DeviceRules.CanRun(w, d);
+            ds.Running = wants && circuit.Energized && vc >= def.MinVoltage && !ds.CutOut && DeviceRules.CanRun(w, d);
             // 펄스는 정해진 틱 수만큼 돈다 (전기가 없어도 시간은 흐른다).
             if (!settle && ds.PulseTicks > 0) ds.PulseTicks--;
             if (!ds.Running)
@@ -108,13 +116,13 @@ static class Electrical
             ds.LoadFactor = load;
             if (def.LoadType == LoadType.Resistive)
             {
-                ds.PowerW = def.PowerW * load * v * v;
-                ds.Current = def.PowerW * load * v;
+                ds.PowerW = def.PowerW * load * vc * vc;
+                ds.Current = def.PowerW * load * vc;
             }
             else
             {
                 ds.PowerW = def.PowerW * load;
-                ds.Current = ds.PowerW / v;
+                ds.Current = ds.PowerW / vc;
             }
             circuit.Current += ds.Current;
             circuit.PowerW += ds.PowerW;
@@ -162,6 +170,39 @@ static class Electrical
         // 풀린 셀 단자의 불꽃과 브러시 불꽃 일정 (M2 WP11).
         CellString.ArcOnLoadChange(w, loadBefore);
         BrushGear.Update(w);
+        w.Contacts?.Update(w); // 접점 발열, 타서 열림, 아크 (WP17)
+    }
+
+    /// <summary>
+    /// 회로마다 부하 쪽 전압 Vc (ELC-02, WP17). 강하는 그 회로 장비가 버스 전압에서 끌어갈 전류로 정한다(같은 틱 안에서
+    /// Vc로 다시 셈하지 않으므로 바늘이 틱마다 오르내리지 않는다). 강하는 접점 부품의 drop에 적어 둔다(측정과 단서가 읽는다).
+    /// </summary>
+    static void ContactVolts(SimWorld w, ContactRefs contacts, double v, Span<double> circuitV)
+    {
+        Span<double> demand = stackalloc double[w.Circuits.Length];
+        for (int d = 0; d < w.Devices.Length; d++)
+        {
+            var def = w.Data.Devices[d];
+            var ds = w.Devices[d];
+            int c = w.DeviceCircuit[d];
+            bool wants = def.Kind switch
+            {
+                DeviceKind.Pulse => ds.PulseTicks > 0,
+                DeviceKind.Throttle => ds.Enabled && ds.Throttle > 0,
+                _ => ds.Enabled,
+            };
+            if (!wants || !w.Circuits[c].Energized || v < def.MinVoltage || ds.CutOut || !DeviceRules.CanRun(w, d)) continue;
+            double load = DeviceRules.LoadFactor(w, d);
+            if (def.Kind == DeviceKind.Throttle) load *= ds.Throttle;
+            demand[c] += def.LoadType == LoadType.Resistive ? def.PowerW * load * v : def.PowerW * load / v;
+        }
+        for (int c = 0; c < circuitV.Length; c++)
+        {
+            if (!contacts.Corrosion[c].Exists) continue;
+            double f = w.Circuits[c].Energized ? contacts.Factor(w, c, demand[c]) : 1;
+            circuitV[c] = v * f;
+            contacts.Drop[c].Set(v - circuitV[c]);
+        }
     }
 
     /// <summary>
