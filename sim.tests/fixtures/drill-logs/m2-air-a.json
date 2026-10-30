@@ -1,5 +1,5 @@
 {
-  "mission": "m2-air-a", "seed": 9090, "dataStamp": "7a2f077cc95ac7f8", "handTicks": 12,
+  "mission": "m2-air-a", "seed": 9090, "dataStamp": "69d8a12538c0db30", "handTicks": 12,
   "finalTick": 3804, "finalHash": 7927461937697398052, "status": "succeeded",
   "findings": [
     {"tick":504,"pair":"co2.rising","verdict":"AIR-01","bind":"","outcome":"fixed"},

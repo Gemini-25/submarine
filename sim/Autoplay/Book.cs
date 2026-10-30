@@ -1,5 +1,4 @@
 using System.Text;
-using System.Text.Json;
 using DeepLine.Sim.Data;
 
 namespace DeepLine.Sim.Autoplay;
@@ -82,17 +81,64 @@ public sealed class Book
 
     static string StampOf(Book b)
     {
-        var o = new JsonSerializerOptions { NumberHandling = System.Text.Json.Serialization.JsonNumberHandling.AllowNamedFloatingPointLiterals };
         var sb = new StringBuilder();
-        sb.Append(JsonSerializer.Serialize(b.Diagnosis.Pace, o));
-        sb.Append(JsonSerializer.Serialize(b.Diagnosis.Margins, o));
-        foreach (var p in b.Diagnosis.Pairs) sb.Append(p.Id).Append(JsonSerializer.Serialize(p, o));
-        foreach (var (id, p) in b.Procedures) sb.Append(id).Append(JsonSerializer.Serialize(p, o));
-        sb.Append(b.TicksPerSecond).Append('|').Append(b.BeltSlots).Append('|').Append(string.Join(",", b.Tools));
-        sb.Append(JsonSerializer.Serialize(b.DeviationCard, o)).Append(b.AdvancePerRevM.ToString("R", System.Globalization.CultureInfo.InvariantCulture));
-        sb.Append(string.Join(",", b.Rounds));
+        Canon(sb, b.Diagnosis.Pace);
+        Canon(sb, b.Diagnosis.Margins);
+        Canon(sb, b.Diagnosis.Pairs);
+        Canon(sb, b.Procedures);
+        Canon(sb, new object[] { b.TicksPerSecond, b.BeltSlots, b.Tools, b.DeviationCard, b.AdvancePerRevM, b.TelegraphNotches, b.Rounds });
         ulong h = 14695981039346656037UL;
         foreach (byte x in Encoding.UTF8.GetBytes(sb.ToString())) { h ^= x; h *= 1099511628211UL; }
         return h.ToString("x16", System.Globalization.CultureInfo.InvariantCulture);
+    }
+
+    /// <summary>
+    /// 도장용 정규 글: 속성은 이름의 서수 순서, 사전은 키의 서수 순서, 수는 round-trip 글. 리플렉션 순서나 직렬화기 설정에 기대지 않는다
+    /// (Godot 호스트와 시험 호스트가 같은 값을 내야 한다).
+    /// </summary>
+    static void Canon(StringBuilder sb, object? o)
+    {
+        var inv = System.Globalization.CultureInfo.InvariantCulture;
+        switch (o)
+        {
+            case null: sb.Append("null"); return;
+            case string str: sb.Append('"').Append(str.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("\"", "\\\"", StringComparison.Ordinal)).Append('"'); return;
+            case bool v: sb.Append(v ? "true" : "false"); return;
+            case double d: sb.Append(d.ToString("R", inv)); return;
+            case int or long or Enum: sb.Append(Convert.ToString(o, inv)); return;
+            case System.Collections.IDictionary dict:
+            {
+                var keys = dict.Keys.Cast<object>().Select(k => Convert.ToString(k, inv)!).OrderBy(k => k, StringComparer.Ordinal).ToList();
+                sb.Append('{');
+                foreach (var k in keys)
+                {
+                    sb.Append(k).Append(':');
+                    object? v = null;
+                    foreach (System.Collections.DictionaryEntry e in dict)
+                        if (Convert.ToString(e.Key, inv) == k) v = e.Value;
+                    Canon(sb, v);
+                    sb.Append(',');
+                }
+                sb.Append('}');
+                return;
+            }
+            case System.Collections.IEnumerable list:
+                sb.Append('[');
+                foreach (var x in list) { Canon(sb, x); sb.Append(','); }
+                sb.Append(']');
+                return;
+        }
+        var t = o.GetType();
+        if (t.IsValueType && t.Namespace?.StartsWith("System", StringComparison.Ordinal) == true) { sb.Append(Convert.ToString(o, inv)); return; }
+        sb.Append(t.Name).Append('{');
+        foreach (var p in t.GetProperties(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public)
+                     .Where(p => p.GetIndexParameters().Length == 0 && p.GetCustomAttributes(typeof(System.Text.Json.Serialization.JsonIgnoreAttribute), true).Length == 0)
+                     .OrderBy(p => p.Name, StringComparer.Ordinal))
+        {
+            sb.Append(p.Name).Append(':');
+            Canon(sb, p.GetValue(o));
+            sb.Append(',');
+        }
+        sb.Append('}');
     }
 }

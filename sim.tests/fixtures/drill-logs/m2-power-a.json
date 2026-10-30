@@ -1,5 +1,5 @@
 {
-  "mission": "m2-power-a", "seed": 1111, "dataStamp": "7a2f077cc95ac7f8", "handTicks": 12,
+  "mission": "m2-power-a", "seed": 1111, "dataStamp": "69d8a12538c0db30", "handTicks": 12,
   "finalTick": 2820, "finalHash": 5319021875917552135, "status": "succeeded",
   "findings": [
     {"tick":804,"pair":"motor.sparks","verdict":"PWR-02","bind":"","outcome":"fixed"},

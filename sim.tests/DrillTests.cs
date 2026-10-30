@@ -130,7 +130,7 @@ public class DrillLogTests
             Assert.Equal(golden.Length, now.Length);
         }
         var back = DrillRunner.FromJson(text);
-        Assert.Equal(log.Lines.Count, back.Lines.Count);
+        Assert.Equal(text, DrillRunner.ToJson(back)); // Godot은 golden을 읽어 다시 써서 견준다
         var (final, hashes) = DrillRunner.Replay(TestData.Data, back);
         Assert.Equal(log.FinalHash, final);
         Assert.Equal(log.Hashes, hashes);
