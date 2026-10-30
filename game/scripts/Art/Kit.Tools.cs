@@ -783,7 +783,9 @@ public static class ToolModels
     static void Hydrometer(ModelCtx c)
     {
         var mb = c.Mb;
-        ModelCtx.Turn(mb, ArtMat.Glass, Vector3.Up, Vector3.Zero, new[]
+        // 유리관은 따로 둔다: 교범 그림의 먹선 렌더러는 메시의 첫 재질이 비치면 그 메시를 통째로 빼므로,
+        // 한 메시에 함께 두면 공구판 그림에서 뜨개와 고무 공까지 사라진다.
+        ModelCtx.Turn(c.Part("Glass", Transform3D.Identity), ArtMat.Glass, Vector3.Up, Vector3.Zero, new[]
         {
             new Vector2(0, -0.13f), new Vector2(0.006f, -0.13f), new Vector2(0.008f, -0.12f), new Vector2(0.017f, -0.105f), new Vector2(0.018f, 0.095f), new Vector2(0.012f, 0.108f), new Vector2(0, 0.108f),
         }, 16, 35);

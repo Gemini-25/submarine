@@ -1,5 +1,5 @@
 {
-  "mission": "m2-shakedown", "seed": 1905, "dataStamp": "a85a949b85464584", "handTicks": 12,
+  "mission": "m2-shakedown", "seed": 1905, "dataStamp": "02a105f139d23701", "handTicks": 12,
   "finalTick": 4684, "finalHash": 9552654907236591959, "status": "succeeded",
   "findings": [
     {"tick":896,"pair":"junction.dew","verdict":"PWR-03","bind":"","outcome":"fixed"},

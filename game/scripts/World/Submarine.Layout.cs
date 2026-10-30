@@ -104,12 +104,12 @@ public partial class Submarine
 
         Stations["motor"] = (new Vector3(1.9f, 0.95f, 0.2f), new Vector3(1.15f, 0.45f, 0.45f));
         Stations["shaft"] = (new Vector3(0.35f, 0.9f, -0.25f), new Vector3(0.3f, 0.45f, 0.45f));
-        Stations["accumulator"] = (new Vector3(1.9f, 1.3f, 0.1f), new Vector3(2.0f, 0.75f, 0.95f));
-        Stations["winch"] = (new Vector3(1.45f, 1.2f, 0.1f), new Vector3(1.42f, 0.45f, 0.95f));
+        Stations["accumulator"] = (new Vector3(1.9f, 1.3f, 0.1f), new Vector3(2.0f, 0.9f, 0.95f)); // 축압기 압력계까지 들어오게
+        Stations["winch"] = (new Vector3(1.45f, 1.2f, 0.1f), new Vector3(1.42f, 0.71f, 0.95f)); // 윈치 전동기 스위치까지 들어오게
         Stations["pump"] = (new Vector3(1.3f, 0.95f, 0.25f), new Vector3(0.93f, 0.9f, -0.9f));
-        Stations["locker.aft"] = (new Vector3(1.5f, 1.6f, -0.3f), new Vector3(1.5f, 1.7f, -1.05f));
-        Stations["toolboard"] = (new Vector3(3.45f, 1.5f, -0.5f), new Vector3(2.76f, 1.42f, -0.82f));
-        Stations["ballast"] = (new Vector3(3.65f, 1.35f, 0.75f), new Vector3(2.76f, 1.3f, 0.82f));
+        Stations["locker.aft"] = (new Vector3(1.5f, 1.9f, -0.3f), new Vector3(1.5f, 1.65f, -1.05f)); // 위에서 내려다봐 앞 턱 뒤가 보이게
+        Stations["toolboard"] = (new Vector3(3.7f, 1.5f, -0.4f), new Vector3(2.765f, 1.37f, -0.85f)); // 공구판이 이름판부터 아래 줄까지 다 들어오게
+        Stations["ballast"] = (new Vector3(4.0f, 1.18f, 0.75f), new Vector3(2.765f, 1.18f, 0.825f)); // 이름판부터 탱크 유리관 아래 이름표까지
         Stations["scrubber"] = (new Vector3(3.0f, 1.1f, -0.2f), new Vector3(3.0f, 0.45f, -1.0f));
         Stations["fan"] = (new Vector3(FanPos.X, 1.45f, 0.45f), FanPos);
         Stations["junctions"] = (new Vector3(3.65f, 0.9f, 0.35f), new Vector3(3.65f, 0.4f, 1.1f));
@@ -121,7 +121,7 @@ public partial class Submarine
         Stations["viewport.1"] = (new Vector3(7.5f, 1.5f, -0.45f), new Vector3(7.5f, 1.55f, -1.17f));
         Stations["viewport.2"] = (new Vector3(7.5f, 1.5f, 0.45f), new Vector3(7.5f, 1.55f, 1.17f));
         Stations["battery"] = (new Vector3(6.8f, 1.35f, -0.4f), new Vector3(6.7f, -0.25f, 0.1f));
-        Stations["navdesk"] = (new Vector3(6.0f, 1.45f, -0.2f), new Vector3(6.0f, 0.9f, -0.95f));
+        Stations["navdesk"] = (new Vector3(6.0f, 1.45f, -0.2f), new Vector3(6.0f, 1.05f, -0.95f)); // 벽의 자차표까지 들어오게
         Stations["nomogram"] = (new Vector3(6.65f, 1.5f, -0.5f), new Vector3(6.65f, 1.6f, -1.18f));
         Stations["gyro"] = (new Vector3(7.1f, 1.2f, -0.2f), new Vector3(7.1f, 0.55f, -0.95f));
         Stations["commdesk"] = (new Vector3(6.2f, 1.5f, 0.3f), new Vector3(6.42f, 0.9f, 0.95f));
@@ -320,7 +320,10 @@ public partial class Submarine
         var bleed = Kit.GlobeValve(n, 0.025f);
         bleed.Name = "BleedValve";
         bleed.Position = new Vector3(2.32f, 0.35f, vz);
-        Dial(n, new Vector3(vx, 1.35f, vz - r - 0.01f), Vector3.Forward, 0.06f, "kg/cm²", new[] { "0", "5", "10", "15", "20" }).SetFraction(0.6f);
+        // 단위는 끝 숫자(0, 20)와 겹치지 않게 그 아래에 따로 쓴다
+        var accGauge = Dial(n, new Vector3(vx, 1.35f, vz - r - 0.01f), Vector3.Forward, 0.06f, "", new[] { "0", "5", "10", "15", "20" });
+        accGauge.SetFraction(0.6f);
+        Kit.Text(accGauge, "kg/cm²", new Vector3(0, -0.04f, 0.003f), 0.011f, new Color(0.08f, 0.06f, 0.05f));
         Dial(n, new Vector3(1.45f, 0.82f, lz - 0.04f), Vector3.Forward, 0.035f, "관").SetFraction(0.55f);
         NamePlate(n, "증기 축압기", new Vector3(vx, 1.17f, vz - r - 0.002f), Vector3.Forward);
 
@@ -347,7 +350,7 @@ public partial class Submarine
         mb.Cylinder(ArtMat.BareSteel, Kit.AlongAxis(Vector3.Right, new Vector3(1.38f, 0.17f, f - 0.02f)), 0.01f, 0.13f, 8);
         mb.Box(ArtMat.Bronze, new Vector3(1.38f, 0.17f, f - 0.02f), new Vector3(0.05f, 0.025f, 0.025f), 0.006f);
         Lever(mb, new Vector3(1.3f, 0.7f, 0.82f), new Vector3(1.3f, 0.95f, 0.82f));
-        mb.Box(ArtMat.Brass, new Vector3(1.55f, 0.79f, 0.805f), new Vector3(0.12f, 0.08f, 0.006f), 0.002f);
+        mb.Box(ArtMat.Brass, new Vector3(1.55f, 0.645f, 0.797f), new Vector3(0.12f, 0.08f, 0.006f), 0.002f); // 구동부 앞면, 들여다보기 창 위
         mb.Box(ArtMat.BlackEnamel, new Vector3(1.425f, 0.78f, 0.84f), new Vector3(0.1f, 0.16f, 0.06f), 0.008f);
         mb.Cylinder(ArtMat.Brass, Kit.AlongAxis(Vector3.Forward, new Vector3(1.55f, 0.55f, f - 0.004f)), 0.032f, 0.008f, 16);
         mb.Instance(n, "Body");
@@ -357,7 +360,7 @@ public partial class Submarine
         Geo.Blocker(n, new Vector3(0.45f, 0.7f, 0.35f), c);
         Dial(n, new Vector3(1.425f, 0.82f, 0.808f), Vector3.Forward, 0.03f, "kg");
         Geo.Text(n, "0042", new Vector3(1.425f, 0.745f, 0.809f), 0.018f, Chalk, Vector3.Forward);
-        Geo.Text(n, "감기\n멈춤\n풀기", new Vector3(1.55f, 0.79f, 0.801f), 0.014f, PlateInk, Vector3.Forward);
+        Geo.Text(n, "감기\n멈춤\n풀기", new Vector3(1.55f, 0.645f, 0.7935f), 0.014f, PlateInk, Vector3.Forward);
         NamePlate(n, "케이블 윈치 구동부", new Vector3(1.4f, 0.48f, f - 0.002f), Vector3.Forward, 0.014f);
 
         Marker(n, "winch.brake", "윈치 브레이크 레버", new Vector3(1.3f, 0.85f, 0.82f), new Vector3(0.05f, 0.22f, 0.05f), "winch");
@@ -417,7 +420,7 @@ public partial class Submarine
         var m = Mount(root, "AftLocker", new Vector3(1.5f, 1.3f, -HalfWidth), Vector3.Back);
         float w = 0.7f, h = AftLockerHeight, d = 0.15f;
         var shelves = new[] { 0.03f, 0.27f, 0.51f };
-        Kit.Locker(m, w, h, d, shelves, false, "후방 예비품");
+        Kit.Locker(m, w, h, d, shelves, false, "후방 예비품", lip: 0.015f); // 작은 예비품이 앞 턱 뒤에 숨지 않게 (전기 예비품 벽장과 같다)
         Geo.Blocker(m, new Vector3(w, h, d), new Vector3(0, h / 2, d / 2));
         for (int i = 0; i < shelves.Length; i++)
             Marker(m, $"locker.aft.shelf.{i + 1}", $"후방 사물함 {i + 1}칸", new Vector3(0, shelves[i] + 0.1f, d + 0.02f), new Vector3(w - 0.1f, 0.18f, 0.03f), "locker.aft");
@@ -678,17 +681,17 @@ public partial class Submarine
             Marker(hinge, $"chamber.hatch.dog.{k + 1}", $"챔버 해치 도그 {k + 1}", new Vector3(half + dogs[k].X, 0.015f, dogs[k].Y), new Vector3(0.06f, 0.03f, 0.06f), "chamber");
         NamePlate(n, "케이블 챔버", new Vector3(cx, 0.003f, cz + half + 0.1f), Vector3.Up);
 
-        // 바닥에 묻힌 압착 바퀴와 수위 유리
+        // 바닥에 묻힌 압착 바퀴와 수위 유리 (바닥판 줄눈 x 4.5를 비켜 ChamberFitX에)
         var sq = new MeshBuilder();
-        sq.Cylinder(ArtMat.Machinery, new Transform3D(Basis.Identity, new Vector3(4.52f, -0.004f, -0.25f)), 0.1f, 0.01f, 20);
-        sq.Cylinder(ArtMat.Brass, new Transform3D(Basis.Identity, new Vector3(4.52f, 0.001f, 0.28f)), 0.06f, 0.006f, 18);
+        sq.Cylinder(ArtMat.Machinery, new Transform3D(Basis.Identity, new Vector3(ChamberFitX, -0.004f, -0.25f)), 0.1f, 0.01f, 20);
+        sq.Cylinder(ArtMat.Brass, new Transform3D(Basis.Identity, new Vector3(ChamberFitX, 0.001f, 0.28f)), 0.06f, 0.006f, 18);
         sq.Instance(n, "Squeeze");
         var lg = new MeshBuilder();
-        lg.Cylinder(ArtMat.Glass, new Transform3D(Basis.Identity, new Vector3(4.52f, 0.004f, 0.28f)), 0.045f, 0.004f, 18);
+        lg.Cylinder(ArtMat.Glass, new Transform3D(Basis.Identity, new Vector3(ChamberFitX, 0.004f, 0.28f)), 0.045f, 0.004f, 18);
         lg.Instance(n, "LevelGlass", NoShadow);
-        Wheel(n, new Vector3(4.52f, 0.012f, -0.25f), Vector3.Up, 0.07f).Name = "SqueezeWheel"; // WP19가 이름으로 찾는다
-        NamePlate(n, "챔버 수위", new Vector3(4.52f, 0.003f, 0.37f), Vector3.Up, 0.014f);
-        Marker(n, "chamber.squeeze", "챔버 압착 바퀴", new Vector3(4.52f, 0.02f, -0.25f), new Vector3(0.15f, 0.03f, 0.15f), "chamber");
+        Wheel(n, new Vector3(ChamberFitX, 0.012f, -0.25f), Vector3.Up, 0.07f).Name = "SqueezeWheel"; // WP19가 이름으로 찾는다
+        NamePlate(n, "챔버 수위", new Vector3(ChamberFitX, 0.003f, 0.37f), Vector3.Up, 0.014f);
+        Marker(n, "chamber.squeeze", "챔버 압착 바퀴", new Vector3(ChamberFitX, 0.02f, -0.25f), new Vector3(0.15f, 0.03f, 0.15f), "chamber");
 
         Marker(n, "chamber.seal", "챔버 패킹 고리", new Vector3(cx, -depth + 0.015f, cz), new Vector3(0.12f, 0.02f, 0.12f), "chamber.in");
         for (int k = 0; k < 4; k++)
@@ -776,7 +779,7 @@ public partial class Submarine
         foreach (var s in screws) Bolt(mb, new Vector3(s.X, s.Y, 0.086f), Vector3.Back, 0.013f);
         mb.Tube(ArtMat.Rubber, Transform3D.Identity, new[] { new Vector3(0.1f, 0.12f, 0.04f), new Vector3(0.1f, 0.37f, 0.04f) }, 0.014f, 8);
         mb.Instance(m, "Box");
-        NamePlate(m, "상황판 배선함", new Vector3(0, -0.15f, 0.001f), Vector3.Back, 0.014f);
+        NamePlate(m, "상황판 배선함", new Vector3(0, 0.16f, 0.001f), Vector3.Back, 0.014f); // 상자 위: 아래에 두면 상자가 제 이름판을 가린다
         for (int i = 0; i < 4; i++)
             Marker(m, $"panel.wiring.screw.{i + 1}", $"배선함 나사 {i + 1}", new Vector3(screws[i].X, screws[i].Y, 0.093f), new Vector3(0.025f, 0.025f, 0.02f), "panelbox");
         Marker(m, "panel.wiring.cover", "배선함 덮개", new Vector3(0, 0, 0.09f), new Vector3(0.14f, 0.1f, 0.01f), "panelbox");
@@ -949,7 +952,7 @@ public partial class Submarine
         foreach (var (y, unit) in new[] { (1.7f, "시"), (1.5f, "노트"), (1.3f, "rpm") })
             Dial(n, new Vector3(6.25f, y, -HalfWidth + 0.01f), Vector3.Back, 0.05f, unit);
         NamePlate(n, "수심 기준계", new Vector3(5.6f, 1.49f, -HalfWidth + 0.002f), Vector3.Back, 0.013f);
-        NamePlate(n, "계산 도표", new Vector3(6.65f, 1.95f, -HalfWidth + 0.002f), Vector3.Back, 0.016f);
+        NamePlate(n, "계산 도표", new Vector3(6.65f, 1.95f, -HalfWidth + 0.018f), Vector3.Back, 0.016f); // 리벳 띠 앞면 위
         NamePlate(n, "항법 계산기", new Vector3(5.8f, 1.055f, -0.874f), Vector3.Back, 0.012f);
         NamePlate(n, "나침반", new Vector3(6.35f, top - 0.02f, -0.698f), Vector3.Back, 0.014f);
         NamePlate(n, "계산기", new Vector3(6.0f, top - 0.02f, -0.698f), Vector3.Back, 0.014f);
@@ -1032,8 +1035,8 @@ public partial class Submarine
         glass.Instance(n, "Glass", NoShadow);
         Dial(n, new Vector3(6.6f, 0.887f, 0.9f), Vector3.Up, 0.035f, "검류계").SetFraction(0.5f);
         NamePlate(n, "사이펀 기록기", new Vector3(6.25f, 0.96f, 0.923f), Vector3.Forward, 0.014f);
-        NamePlate(n, "저항 측정 브리지", new Vector3(6.6f, 0.81f, 0.823f), Vector3.Forward, 0.012f);
-        NamePlate(n, "청음기", new Vector3(6.35f, 1.69f, 1.17f), Vector3.Forward, 0.016f);
+        NamePlate(n, "저항 측정 브리지", new Vector3(6.64f, 0.8f, 0.823f), Vector3.Forward, 0.012f); // 리드 선택기 손잡이를 피해
+        NamePlate(n, "청음기", new Vector3(6.35f, 1.69f, HalfWidth - 0.062f), Vector3.Forward, 0.016f); // 늑골 앞면 위
         NamePlate(n, "소나", new Vector3(6.72f, 1.69f, 1.17f), Vector3.Forward, 0.016f);
 
         const string st = "commdesk";

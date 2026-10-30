@@ -243,7 +243,7 @@ public partial class Submarine
         }
         var label = Geo.Text(root, "", new Vector3(0, 0.08f, 0.145f), 0.02f);
         var bin = Add(Interactable.Create(root, "locker.canister", $"바닥 받침: {ItemName("canister")}", new Vector3(0.52f, 0.45f, 0.26f), new Vector3(0, 0.245f, 0)));
-        bin.CommandFor = (_, m) => m == Motion.Click ? "locker.take.canister" : null;
+        bin.CommandFor = (h, m) => m != Motion.Click ? null : h.Hand == "canister" ? "locker.return.canister" : "locker.take.canister";
         OnUpdate((s, _) =>
         {
             int left = s.Crew.Locker.TryGetValue("canister", out var n) ? n : 0;

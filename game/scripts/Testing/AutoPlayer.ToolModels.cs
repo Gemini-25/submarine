@@ -258,8 +258,11 @@ public partial class AutoPlayer
         if (node != null) CheckOnScreen("손에 든 물건 'fuse'", node, 0.5, 1500);
         Check(_main.Hud.HeldIcons == 2, $"렌치와 퓨즈를 쥐었는데 쥔 것 옆 그림이 {_main.Hud.HeldIcons}장");
         Check(_main.Hud.Icons.HasItem("fuse"), "쥔 퓨즈의 그림을 찍지 않았다");
-        _main.Runner.Send("locker.return.fuse");
+        // 같은 칸을 다시 누르면 되돌려 넣는다(손동작으로, 교범 07쪽 '쓰지 않은 예비품은 같은 칸에 되돌려 넣는다')
+        int before = Snap.Crew.Locker["fuse"];
+        await Perform("locker.return.fuse");
         Step(HandSeconds);
+        Check(Snap.Crew.Locker["fuse"] == before + 1, $"퓨즈 칸을 눌렀는데 재고가 {before}에서 {Snap.Crew.Locker["fuse"]}로");
         await Key(Godot.Key.Key1);
         Step(0.1);
         await Frame(2);

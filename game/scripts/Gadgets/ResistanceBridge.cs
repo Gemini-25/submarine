@@ -94,7 +94,7 @@ public partial class ResistanceBridge : Node3D
         var body = _host.Add(Interactable.Create(this, "gadget.bridge", "저항 측정 브리지", new Vector3(0.22f, 0.01f, 0.22f), new Vector3(0, -0.004f, 0), "commdesk"));
         // 비어 있는 오른쪽 뒤 모서리를 겨냥한다(다이얼과 키가 덮지 않는 곳).
         body.AimPoint = new Vector3(0.09f, 0.002f, 0.0f);
-        GadgetDraw.Flat(this, "Ω = 다이얼 × 범위", new Vector3(0.0f, 0.0015f, -0.095f), 0.009f, GadgetDraw.Ivory);
+        GadgetDraw.Flat(this, "Ω = 다이얼 × 범위", new Vector3(0.0f, 0.0015f, 0.104f), 0.009f, GadgetDraw.Ivory); // 앞 가장자리: 다이얼 손잡이 뒤에 숨지 않게
 
         // 10배 단위 다이얼 넷. 0번이 맨 윗자리이고 왼쪽에 있다.
         for (int i = 0; i < 4; i++)

@@ -132,16 +132,29 @@ public partial class Submarine : Node3D
         Geo.Solid(hull, new Vector3(t, Height, HalfWidth * 2), new Vector3(Length + t / 2, Height / 2, 0), Geo.Steel, "ForeEnd");
 
         // 늑골(프레임). 둥근 선체 느낌을 내는 띠. 배전반(우현)과 사물함(좌현) 뒤, 누수 지점 자리는 비운다.
+        // 현창 둘레(볼트 번호와 걸쇠를 가리지 않게)와 후방 예비품 사물함 뒤(칸 안으로 비치지 않게)도 비운다.
         for (float x = 0.95f; x < Length; x += 0.9f)
         {
             if (Mathf.Abs(x - HatchX) < 0.2f || Mathf.Abs(x - ForeX) < 0.2f) continue;
-            if (x < 3.1f || x > 4.4f) Geo.Box(hull, new Vector3(0.08f, Height, 0.06f), new Vector3(x, Height / 2, -HalfWidth + 0.03f), Geo.Steel);
-            if (x < 3.0f || x > 5.2f) Geo.Box(hull, new Vector3(0.08f, Height, 0.06f), new Vector3(x, Height / 2, HalfWidth - 0.03f), Geo.Steel);
+            bool clearOfViewports = Mathf.Abs(x - 7.5f) > 0.4f;
+            if ((x < 3.1f || x > 4.4f) && clearOfViewports && Mathf.Abs(x - 1.5f) > 0.4f)
+                Geo.Box(hull, new Vector3(0.08f, Height, 0.06f), new Vector3(x, Height / 2, -HalfWidth + 0.03f), Geo.Steel);
+            if ((x < 3.0f || x > 5.2f) && clearOfViewports)
+                Geo.Box(hull, new Vector3(0.08f, Height, 0.06f), new Vector3(x, Height / 2, HalfWidth - 0.03f), Geo.Steel);
             Geo.Box(hull, new Vector3(0.08f, 0.06f, HalfWidth * 2), new Vector3(x, Height - 0.03f, 0), Geo.Steel);
         }
         // 바닥판 줄눈과 리벳 이음 띠(누수 지점이 있는 높이)
         for (float x = 0.5f; x < Length; x += 1f)
+        {
+            // 축전지 우물 위로는 줄눈을 끊는다(열린 우물 위에 떠 보이지 않게)
+            if (x > WellX0 && x < WellX1)
+            {
+                foreach (float s in new[] { -1f, 1f })
+                    Geo.Box(hull, new Vector3(0.02f, 0.005f, HalfWidth - WellHalfZ), new Vector3(x, 0.003f, s * (HalfWidth + WellHalfZ) / 2), Geo.Steel);
+                continue;
+            }
             Geo.Box(hull, new Vector3(0.02f, 0.005f, HalfWidth * 2), new Vector3(x, 0.003f, 0), Geo.Steel);
+        }
         foreach (float y in new[] { 1.1f, 1.95f })
         {
             Geo.Box(hull, new Vector3(Length, 0.07f, 0.015f), new Vector3(Length / 2, y, -HalfWidth + 0.008f), Geo.Steel);
@@ -170,8 +183,11 @@ public partial class Submarine : Node3D
         {
             float x = ZoneMidX(z);
             var bulbMat = Geo.Glow(warm, 2);
-            Geo.Cyl(this, 0.09f, 0.04f, new Vector3(x, Height - 0.03f, 0), Geo.Brass);
+            // 등갓과 전구는 제 등의 그림자를 천장에 드리우지 않는다(등 둘레의 검은 무리가 천장 이름판을 가렸다)
+            var cup = Geo.Cyl(this, 0.09f, 0.04f, new Vector3(x, Height - 0.03f, 0), Geo.Brass);
+            cup.CastShadow = GeometryInstance3D.ShadowCastingSetting.Off;
             var bulb = Geo.Sphere(this, 0.06f, new Vector3(x, Height - 0.1f, 0), bulbMat);
+            bulb.CastShadow = GeometryInstance3D.ShadowCastingSetting.Off;
             var light = new OmniLight3D
             {
                 Position = new Vector3(x, Height - 0.18f, 0),
@@ -273,7 +289,7 @@ public partial class Submarine : Node3D
                 Geo.Cyl(well, 0.025f, 0.05f, new Vector3(cx + 0.1f, -0.07f, cz), Geo.Mat(new Color(0.1f, 0.1f, 0.1f))),
                 Geo.Text(well, $"{i + 1}", new Vector3(cx, -0.095f, cz + 0.12f), 0.05f, facing: Vector3.Up),
             };
-            _cellTops[i][2].RotationDegrees = new Vector3(-90, 0, 0);
+            _cellTops[i][2].RotationDegrees = new Vector3(-90, 180, 0); // 통로(조종석 반대편)에서 바로 읽히게
         }
 
         var water = new StandardMaterial3D { AlbedoColor = new Color(0.10f, 0.20f, 0.20f, 0.8f), Transparency = BaseMaterial3D.TransparencyEnum.Alpha, Roughness = 0.05f };
@@ -351,7 +367,7 @@ public partial class Submarine : Node3D
         var motor = Geo.Cyl(this, 0.35f, motorLen, new Vector3(motorMid, 0.45f, 0.45f), Geo.Paint, 20);
         motor.RotationDegrees = new Vector3(0, 0, 90);
         Geo.Blocker(this, new Vector3(motorLen, 0.9f, 0.75f), new Vector3(motorMid, 0.45f, 0.45f));
-        Geo.Text(this, "주 전동기", new Vector3(motorMid, 0.86f, 0.45f), 0.03f, Geo.Cream, Vector3.Up).RotationDegrees = new Vector3(-90, 90, 0);
+        Geo.Text(this, "주 전동기", new Vector3(motorMid, 0.805f, 0.45f), 0.03f, Geo.Cream, Vector3.Up).RotationDegrees = new Vector3(-90, 90, 0);
         var shaft = Geo.Cyl(this, 0.06f, MotorX0, new Vector3(MotorX0 / 2, 0.45f, 0.45f), Geo.Steel);
         shaft.RotationDegrees = new Vector3(0, 0, 90);
     }

@@ -53,7 +53,7 @@ public partial class Submarine
             // 테: 둥근 쇠테. 잡히는 곳은 위쪽 손잡이 턱이라 테 가운데로 전구가 겨냥된다.
             RemoveMarker($"panel.bezel.{lamps[i]}");
             var bezel = Add(Binder.Bind(m, $"panel.bezel.{lamps[i]}", new Vector3(0.07f, 0.025f, 0.02f), new Vector3(x, 1.765f, 0.112f), "panel"));
-            var ring = new Node3D { Name = $"Bezel_{lamps[i]}", Position = new Vector3(x, 1.73f, 0.086f) };
+            var ring = new Node3D { Name = $"Bezel_{lamps[i]}", Position = new Vector3(x, 1.73f, 0.066f) }; // M1 등갓 앞면에 붙는다
             m.AddChild(ring);
             var mb = new MeshBuilder();
             mb.Torus(ArtMat.Brass, Kit.AlongAxis(Vector3.Back, Vector3.Zero), 0.042f, 0.007f, 20, 6);

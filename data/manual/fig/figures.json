@@ -888,7 +888,7 @@
     "scene": {
       "camera": {
         "station": "locker",
-        "dolly": -0.35
+        "dolly": -0.2
       },
       "callouts": [
         "locker.fuse",
@@ -907,12 +907,12 @@
       "camera": {
         "eye": [
           3.75,
-          1.9,
+          1.865,
           -0.4
         ],
         "target": [
           3.75,
-          1.9,
+          1.865,
           -1.2
         ],
         "fov": 40
@@ -1238,10 +1238,10 @@
       "highlight": [],
       "callouts": [
         "switch.C4|junction.C3.box|junction.C8.box|junction.C5.box",
-        "strainer.basket|pump.cap|fan.hub|motor.cover@-0.5,0,0",
+        "strainer.basket|pump.cap|fan.hub|motor.cover@-0.5,0,0|shaft.follower",
         "pump.body|hydrophone|device.soldering_iron|o2.furnace",
-        "leak.rivet.09|shaft.follower",
-        "steam.joint|steam.bleed"
+        "viewport.1.ring|ballast.fore.gland|checkvalve.bonnet",
+        "steam.joint|steam.gasket"
       ]
     }
   },
@@ -2241,8 +2241,16 @@
     ],
     "scene": {
       "camera": {
-        "station": "accumulator",
-        "dolly": 0.25
+        "eye": [
+          1.925,
+          1.165,
+          0.309
+        ],
+        "target": [
+          2.0,
+          0.75,
+          0.95
+        ]
       },
       "prep": [
         {

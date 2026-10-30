@@ -257,8 +257,8 @@ public partial class Submarine
         Geo.Solid(root, new Vector3(0.04f, 1.6f, d), new Vector3(w / 2, 0.8f, d / 2), Geo.Paint);
         Geo.Box(root, new Vector3(w, 1.6f, 0.02f), new Vector3(0, 0.8f, 0.01f), Geo.DarkSteel);
         Geo.Blocker(root, new Vector3(w, 1.6f, d - 0.08f), new Vector3(0, 0.8f, (d - 0.08f) / 2));
-        Geo.Text(root, "예비품 사물함", new Vector3(0, 1.7f, d), 0.04f);
-        Stations["locker"] = (GlobalOf(root, new Vector3(0, 1.3f, 1.05f)), GlobalOf(root, new Vector3(0, 0.95f, 0.2f)));
+        Geo.Text(root, "예비품 사물함", new Vector3(0, 1.62f, d + 0.005f), 0.04f); // 지붕 앞면: 위 벽장 앞에 떠 보이지 않게
+        Stations["locker"] = (GlobalOf(root, new Vector3(0, 1.5f, 1.25f)), GlobalOf(root, new Vector3(0, 0.85f, 0.2f))); // 위 칸 이름표부터 아래 칸까지, 폐기함 겨냥은 흡수제 통 위로
 
         var shelves = new (string Item, float Y)[] { ("fuse", 1.25f), ("wood_wedge", 0.8f), ("timber_shore", 0.3f) };
         foreach (var (item, y) in shelves)
@@ -285,7 +285,7 @@ public partial class Submarine
                 pieces.Add(m);
             }
             var bin = Add(Interactable.Create(root, $"locker.{item}", $"사물함: {ItemName(item)}", new Vector3(w - 0.08f, 0.32f, 0.06f), new Vector3(0, y, d + 0.03f), "locker"));
-            bin.CommandFor = (_, m) => m == Motion.Click ? $"locker.take.{item}" : null;
+            bin.CommandFor = (h, m) => m != Motion.Click ? null : h.Hand == item ? $"locker.return.{item}" : $"locker.take.{item}";
             OnUpdate((s, _) =>
             {
                 int left = s.Crew.Locker.TryGetValue(item, out var n) ? n : 0;
@@ -408,7 +408,7 @@ public partial class Submarine
 
         // 세척통
         Geo.Cyl(aft, 0.17f, 0.32f, new Vector3(2.15f, 0.16f, -0.92f), Geo.Mat(new Color(0.35f, 0.3f, 0.22f)), 18);
-        Geo.Cyl(aft, 0.155f, 0.01f, new Vector3(2.15f, 0.27f, -0.92f), Geo.Mat(new Color(0.18f, 0.2f, 0.16f), 0.1f, 0), 18);
+        Geo.Cyl(aft, 0.155f, 0.01f, new Vector3(2.15f, 0.322f, -0.92f), Geo.Mat(new Color(0.18f, 0.2f, 0.16f), 0.1f, 0), 18); // 물 면은 통 테 바로 위
         Geo.Blocker(aft, new Vector3(0.3f, 0.32f, 0.3f), new Vector3(2.15f, 0.16f, -0.92f));
         Geo.Text(aft, "세척통", new Vector3(2.15f, 0.2f, -0.745f), 0.03f, Geo.Cream, Vector3.Back);
         var bucket = Add(Interactable.Create(aft, "wash_bucket", "세척통", new Vector3(0.38f, 0.4f, 0.38f), new Vector3(2.15f, 0.2f, -0.92f), "strainer"));
@@ -464,7 +464,7 @@ public partial class Submarine
         ["leak.rivet.12"] = (new(0.5f, 1.95f, HalfWidth), Vector3.Forward),
         ["leak.viewport.1"] = (new(7.5f, 1.55f, -HalfWidth + 0.04f), Vector3.Back),
         ["leak.viewport.2"] = (new(7.5f, 1.55f, HalfWidth - 0.04f), Vector3.Forward),
-        ["leak.hull_valve.1"] = (new(6.4f, 0.05f, -HalfWidth + 0.08f), Vector3.Up),
+        ["leak.hull_valve.1"] = (new(6.55f, 0.05f, -HalfWidth + 0.1f), Vector3.Up), // 늑골과 벽에 묻히지 않게
         ["leak.hull_valve.2"] = (new(3.0f, 0.05f, HalfWidth - 0.1f), Vector3.Up),
         ["leak.hull_valve.3"] = (new(5.15f, 0.05f, HalfWidth - 0.1f), Vector3.Up),
         ["leak.hull_valve.4"] = (new(2.4f, 0.05f, 0.9f), Vector3.Up),
@@ -503,7 +503,8 @@ public partial class Submarine
                 Geo.Box(node, new Vector3(0.22f, 0.1f, 0.012f), new Vector3(0, 0, 0.01f), Geo.Steel);
                 for (int k = -1; k <= 1; k++)
                     Geo.Sphere(node, 0.012f, new Vector3(k * 0.07f, 0, 0.018f), Geo.Mat(Geo.Steel, 0.5f, 0.6f));
-                Geo.Text(node, lp.Id["leak.rivet.".Length..], new Vector3(0.14f, 0.04f, 0.018f), 0.02f, Geo.Cream);
+                // 08번은 오른쪽이 배전반 가장자리에 가리므로 번호를 가운데 리벳 위에 쓴다
+                Geo.Text(node, lp.Id["leak.rivet.".Length..], lp.Id == "leak.rivet.08" ? new Vector3(0, 0.065f, 0.018f) : new Vector3(0.14f, 0.04f, 0.018f), 0.02f, Geo.Cream);
                 wedge = Geo.Box(node, new Vector3(0.05f, 0.06f, 0.12f), new Vector3(0.035f, -0.01f, 0.06f), Geo.Wood);
                 caulkLine = Geo.Box(node, new Vector3(0.2f, 0.008f, 0.004f), new Vector3(0, -0.035f, 0.018f), Geo.Mat(new Color(0.3f, 0.3f, 0.32f), 0.9f, 0.4f));
                 // 버팀목: 쐐기에서 바닥 쪽으로 비스듬히

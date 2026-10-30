@@ -12,6 +12,9 @@ namespace DeepLine.Game.World;
 /// </summary>
 public partial class Submarine
 {
+    /// <summary>바닥에 묻힌 압착 바퀴와 챔버 수위 유리의 x (Submarine.Layout.cs). 바닥판 줄눈(x 4.5)에 걸치지 않게 비켜 둔다.</summary>
+    public const float ChamberFitX = 4.65f;
+
     void BuildChamberFixtures()
     {
         if (!Binder.Has("chamber.hatch") || !Interactables.ContainsKey("chamber.hatch")) return;
@@ -99,7 +102,7 @@ public partial class Submarine
         n.AddChild(water);
         // 바닥의 수위 유리: 물이 차는 만큼 푸른 원이 커진다 (200L에서 유리를 다 채운다).
         var glassMat = new StandardMaterial3D { AlbedoColor = new Color(0.25f, 0.45f, 0.55f), ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded };
-        var level = new MeshInstance3D { Name = "LevelFill", Mesh = new CylinderMesh { TopRadius = 0.04f, BottomRadius = 0.04f, Height = 0.002f, Material = glassMat }, Position = new Vector3(4.52f, 0.0065f, 0.28f) };
+        var level = new MeshInstance3D { Name = "LevelFill", Mesh = new CylinderMesh { TopRadius = 0.04f, BottomRadius = 0.04f, Height = 0.002f, Material = glassMat }, Position = new Vector3(ChamberFitX, 0.0065f, 0.28f) };
         n.AddChild(level);
         OnUpdate((s, _) =>
         {

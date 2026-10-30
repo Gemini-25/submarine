@@ -36,13 +36,13 @@ public partial class Submarine
 
     void BuildSpareCompartments()
     {
-        // 중앙 사물함 위 벽장. M1 사물함(x 3.75, 지붕 y 1.62) 바로 위 좌현 벽.
-        var top = new Node3D { Name = "SpareCabinet", Position = new Vector3(3.75f, 1.68f, -HalfWidth + 0.01f) };
+        // 중앙 사물함 위 벽장. M1 사물함(x 3.75) 지붕(윗면 y 1.645) 위에 얹는다. 천장 늑골(y 2.14부터) 아래에 들게 높이 0.49.
+        var top = new Node3D { Name = "SpareCabinet", Position = new Vector3(3.75f, 1.645f, -HalfWidth + 0.01f) };
         AddChild(top);
         Geo.Face(top, Vector3.Back);
         // 맨 아래는 걸레받이(0.1)가 가리므로 칸은 그 위부터. 머리 위 벽장이라 선 눈높이(1.6)에서 올려다보므로
         // 앞 턱을 1.5cm로 낮추고, 작업 시점은 위 칸 높이에서 내려다본다(턱 뒤의 퓨즈 철사, 탄소봉이 숨지 않게).
-        float w = 1.0f, h = 0.5f, d = 0.2f;
+        float w = 1.0f, h = 0.49f, d = 0.2f;
         Art.Kit.Locker(top, w, h, d, new[] { 0.1f, 0.29f }, false, "전기 예비품", lip: 0.015f);
         Geo.Blocker(top, new Vector3(w, h, d), new Vector3(0, h / 2, d / 2));
         Stations["locker.top"] = (new Vector3(3.75f, 2.0f, -0.35f), new Vector3(3.75f, 1.86f, -1.1f));
@@ -96,7 +96,8 @@ public partial class Submarine
             var pieces = Stack(parent, item, Math.Min(stock, 6), x, cell, shelfY, labelUp, depth, k);
             var bin = Add(Interactable.Create(parent, $"locker.{item}", $"{cabinet}: {Texts.Item(item)}",
                 new Vector3(cell - 0.01f, 0.17f, 0.03f), new Vector3(x, shelfY + 0.09f, depth + 0.02f), station));
-            bin.CommandFor = (_, m) => m == Motion.Click ? $"locker.take.{item}" : null;
+            // 같은 물건을 들고 누르면 되돌려 넣는다(쓰지 않은 예비품, 교범 07쪽). 헌 부품은 시뮬레이션이 거절한다.
+            bin.CommandFor = (h, m) => m != Motion.Click ? null : h.Hand == item ? $"locker.return.{item}" : $"locker.take.{item}";
             OnUpdate((s, _) =>
             {
                 int left = s.Crew.Locker.TryGetValue(item, out var n) ? n : 0;
@@ -120,6 +121,11 @@ public partial class Submarine
     static readonly HashSet<string> LeanedBack = new(StringComparer.Ordinal) { "gasket", "packing_cord", "fuse_wire" };
     /// <summary>낮은 둥근 것(절연 테이프): 펼쳐 늘어놓지 않고 두 무더기로 쌓아 올린다. 머리 위 칸에서도 보이게.</summary>
     static readonly HashSet<string> Piled = new(StringComparer.Ordinal) { "insulating_tape" };
+    /// <summary>
+    /// 납작한 고리와 톱니(베어링, 항법 계산기 톱니): 눕히면 앞 턱보다 낮아 숨으므로, 고리 면이 앞을 보게 세워 옆으로 늘어놓는다.
+    /// 칸 폭에 다 들어가지 않으면 뒤 줄에 선다.
+    /// </summary>
+    static readonly HashSet<string> OnEdge = new(StringComparer.Ordinal) { "pump_bearing", "fan_bearing", "gyro_bearing", "nav_gear" };
 
     /// <summary>
     /// 칸에 물건 모형(ItemModels)을 count개 늘어놓는다 (WP25). 칸은 가운데 x, 폭 cell, 선반 높이 shelfY, 재고 이름표는 선반 위 labelUp, 깊이 depth.
@@ -160,6 +166,21 @@ public partial class Submarine
             {
                 var pos = new Vector3(x - hb.GetCenter().X, topY - hb.End.Y, zBase + n * 0.006f - hb.Position.Z);
                 Place(Art.ItemModels.Build(parent, item), new Transform3D(upright, pos), hang);
+            }
+            return list;
+        }
+        if (OnEdge.Contains(item))
+        {
+            var face = new Basis(Vector3.Right, Vector3.Back, Vector3.Down); // 모형의 축(Y)이 앞(+Z)을 본다
+            var eb = new Transform3D(face, Vector3.Zero) * box;
+            float ex = eb.Size.X + 0.006f, ez = eb.Size.Z + 0.004f;
+            int across = Math.Max(1, Math.Min(count, (int)(room.Size.X / ex)));
+            for (int n = 0; n < count; n++)
+            {
+                int c = n % across, r = n / across;
+                var pos = new Vector3(x + (c - (Math.Min(count, across) - 1) / 2f) * ex - eb.GetCenter().X, shelfY - eb.Position.Y,
+                    depth - lip - 0.004f - eb.End.Z - r * ez);
+                Place(Art.ItemModels.Build(parent, item), new Transform3D(face, pos), room);
             }
             return list;
         }

@@ -114,6 +114,7 @@ public partial class Submarine
         var lensMat = Geo.Glow(new Color(1f, 0.97f, 0.9f), 0);
         var lens = Geo.Cyl(n, 0.075f, 0.002f, new Vector3(7.812f, 2.05f, 0), lensMat, 20);
         lens.RotationDegrees = new Vector3(0, 0, 90);
+        lens.CastShadow = NoShadow; // 상황판 제목에 그림자를 드리우지 않게 (탐조등 몸통과 같다)
 
         // 장전 문: 왼쪽(상황판에서 먼) 가장자리 경첩으로 아래로 연다. 손잡이는 자유 끝의 한쪽 귀퉁이만 잡힌다.
         var hinge = new Node3D { Name = "DoorHinge", Position = new Vector3(7.525f, 1.945f, 0) };
@@ -134,7 +135,7 @@ public partial class Submarine
             var mount = Mount(n, $"Latch{k}", new Vector3(x, 1.94f, 0), Vector3.Down);
             var head = new Node3D { Name = "Head" };
             mount.AddChild(head);
-            Geo.Box(head, new Vector3(0.03f, 0.05f, 0.012f), Vector3.Zero, Geo.Mat(new Color(0.5f, 0.5f, 0.52f), 0.4f, 0.8f));
+            Geo.Box(head, new Vector3(0.03f, 0.05f, 0.012f), Vector3.Zero, Geo.Mat(new Color(0.5f, 0.5f, 0.52f), 0.4f, 0.8f)).CastShadow = NoShadow;
             BoltVisual(it, head, 0.01f);
         }
 
@@ -145,6 +146,7 @@ public partial class Submarine
         var rodA = Geo.Cyl(rods, 0.006f, 0.12f, new Vector3(-0.07f, 0, 0), rodMat, 8);
         var rodB = Geo.Cyl(rods, 0.006f, 0.12f, new Vector3(0.07f, 0, 0), rodMat, 8);
         rodA.RotationDegrees = rodB.RotationDegrees = new Vector3(0, 0, 90);
+        rodA.CastShadow = rodB.CastShadow = NoShadow;
         var rodsIt = Add(Binder.Bind(n, part, new Vector3(0.1f, 0.012f, 0.05f), new Vector3(7.62f, 1.935f, -0.02f), "searchlight"));
         SocketVisual(rodsIt, rods, p => p("doorOpen") >= 0.5);
 
