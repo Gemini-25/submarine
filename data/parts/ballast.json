@@ -1,17 +1,205 @@
 {
   "pump.suction": {
     "kind": "suction_selector",
-    "visible": [ "pos" ],
-    "props": { "pos": 0 }
+    "visible": [
+      "pos"
+    ],
+    "props": {
+      "pos": 0
+    }
   },
   "ballast.tank.fore": {
     "kind": "trim_tank",
-    "visible": [ "water" ],
-    "props": { "water": 150 }
+    "visible": [
+      "water"
+    ],
+    "props": {
+      "water": 150
+    }
   },
   "ballast.tank.aft": {
     "kind": "trim_tank",
-    "visible": [ "water" ],
-    "props": { "water": 150 }
+    "visible": [
+      "water"
+    ],
+    "props": {
+      "water": 150
+    }
+  },
+  "attitude": {
+    "kind": "attitude",
+    "visible": [
+      "trimDeg"
+    ],
+    "props": {
+      "trimDeg": 0,
+      "rollClock": 0
+    }
+  },
+  "ballast.fore.valve": {
+    "kind": "flood_valve",
+    "visible": [
+      "open",
+      "gland",
+      "oil",
+      "packingOut",
+      "wrap"
+    ],
+    "props": {
+      "open": 0,
+      "stuck": 0,
+      "corroded": 0,
+      "oil": 0,
+      "soakLife": 0,
+      "soakArmed": 0,
+      "freeLife": 0,
+      "freeArmed": 0,
+      "freePatch": 0,
+      "strikes": 0,
+      "gland": 3,
+      "packingOut": 0,
+      "wrap": 0
+    },
+    "timers": [
+      {
+        "prop": "soakLife",
+        "perSecond": 1,
+        "armed": "soakArmed",
+        "onExpire": [
+          {
+            "set": "stuck",
+            "to": 0
+          },
+          {
+            "set": "oil",
+            "to": 0
+          },
+          {
+            "set": "freePatch",
+            "to": 0
+          },
+          {
+            "if": "self.corroded >= 0.5",
+            "arm": "freeLife",
+            "to": 600
+          }
+        ]
+      },
+      {
+        "prop": "freeLife",
+        "perSecond": 1,
+        "armed": "freeArmed",
+        "onExpire": [
+          {
+            "if": "self.corroded >= 0.5",
+            "set": "stuck",
+            "to": 1
+          },
+          {
+            "if": "self.freePatch >= 0.5",
+            "event": "TempRepairFailed"
+          },
+          {
+            "set": "freePatch",
+            "to": 0
+          }
+        ]
+      }
+    ],
+    "seaPaths": [
+      {
+        "zone": "mid",
+        "areaCm2": 0.3,
+        "when": "self.gland <= 0"
+      },
+      {
+        "zone": "mid",
+        "areaCm2": 0.25,
+        "when": "self.gland >= 1 && self.gland <= 2"
+      }
+    ]
+  },
+  "ballast.aft.valve": {
+    "kind": "flood_valve",
+    "visible": [
+      "open",
+      "gland",
+      "oil",
+      "packingOut",
+      "wrap"
+    ],
+    "props": {
+      "open": 0,
+      "stuck": 0,
+      "corroded": 0,
+      "oil": 0,
+      "soakLife": 0,
+      "soakArmed": 0,
+      "freeLife": 0,
+      "freeArmed": 0,
+      "freePatch": 0,
+      "strikes": 0,
+      "gland": 3,
+      "packingOut": 0,
+      "wrap": 0
+    },
+    "timers": [
+      {
+        "prop": "soakLife",
+        "perSecond": 1,
+        "armed": "soakArmed",
+        "onExpire": [
+          {
+            "set": "stuck",
+            "to": 0
+          },
+          {
+            "set": "oil",
+            "to": 0
+          },
+          {
+            "set": "freePatch",
+            "to": 0
+          },
+          {
+            "if": "self.corroded >= 0.5",
+            "arm": "freeLife",
+            "to": 600
+          }
+        ]
+      },
+      {
+        "prop": "freeLife",
+        "perSecond": 1,
+        "armed": "freeArmed",
+        "onExpire": [
+          {
+            "if": "self.corroded >= 0.5",
+            "set": "stuck",
+            "to": 1
+          },
+          {
+            "if": "self.freePatch >= 0.5",
+            "event": "TempRepairFailed"
+          },
+          {
+            "set": "freePatch",
+            "to": 0
+          }
+        ]
+      }
+    ],
+    "seaPaths": [
+      {
+        "zone": "mid",
+        "areaCm2": 0.3,
+        "when": "self.gland <= 0"
+      },
+      {
+        "zone": "mid",
+        "areaCm2": 0.25,
+        "when": "self.gland >= 1 && self.gland <= 2"
+      }
+    ]
   }
 }

@@ -125,3 +125,46 @@ public class SuctionSelectorTests
         Assert.True(sim.Q("pump.backflow") > 1);
     }
 }
+
+/// <summary>기울기 모듈과 M0·M1 회귀 (M2 WP18). 명세: docs/plans/M2-design.md 9절 'M0/M1 regressions'.</summary>
+public class AttitudeRegressionTests
+{
+    readonly ITestOutputHelper _out;
+    public AttitudeRegressionTests(ITestOutputHelper output) => _out = output;
+
+    [Fact]
+    public void The_m1_crisis_stays_inside_the_trim_dead_zone_and_the_player_still_wins()
+    {
+        var sim = new Simulation();
+        sim.StartMission(TestData.Data, "m1-crisis");
+        double max = 0, floor = 0, bilge = 0;
+        CrisisPlayer.Run(sim, TestData.Data, s =>
+        {
+            max = Math.Max(max, Math.Abs(s.Q("attitude.trim")));
+            floor = Math.Max(floor, s.Q("floor.total"));
+            bilge = Math.Max(bilge, s.Q("bilge.aft.water"));
+        });
+        _out.WriteLine($"최대 기울기 {max:F2}도, 바닥 물 최대 {floor:F0}L, 후방 빌지 최대 {bilge:F0}L");
+        Assert.Equal("succeeded", sim.QS("mission.status"));
+        Assert.True(max < TestData.T.Attitude!.FloorDriftFromDeg, $"위기 한 판의 기울기 {max:F2}도가 데드존을 넘었다");
+        Assert.True(max < 2, $"I7: M1 트림은 2도 아래 ({max:F2})");
+    }
+
+    /// <summary>
+    /// M0 시나리오 16개를 실제 데이터(기울기 모듈 켜짐)로 다시 돌린다. 기대는 ScenarioTests가 본다. 여기서는 기울기가
+    /// 바닥 물이 흐르기 시작하는 문턱을 넘는 시나리오를 적어 두고(보고서), 도구가 구를 만큼 기울지는 않는지 본다.
+    /// </summary>
+    [Fact]
+    public void M0_scenarios_on_real_data_never_tilt_enough_to_roll_tools()
+    {
+        foreach (var file in Directory.GetFiles(TestData.ScenarioDir, "*.json").OrderBy(f => f, StringComparer.Ordinal))
+        {
+            var scenario = Faults.ScenarioFile.Load(file);
+            double max = 0;
+            var result = Faults.ScenarioRunner.Run(TestData.Data, scenario, s => max = Math.Max(max, Math.Abs(s.Q("attitude.trim"))));
+            _out.WriteLine($"{Path.GetFileName(file)}: 최대 기울기 {max:F2}도, {(result.Passed ? "통과" : "실패")}");
+            Assert.True(result.Passed, result.Describe());
+            Assert.True(max <= TestData.T.ToolBoard!.RollTiltDeg, $"{Path.GetFileName(file)}: {max:F2}도");
+        }
+    }
+}
