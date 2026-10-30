@@ -1,0 +1,291 @@
+{
+  "air.humidity": {
+    "kind": "humidity",
+    "visible": [
+      "rh"
+    ],
+    "props": {
+      "rh": 0.35
+    }
+  },
+  "contact.C1": {
+    "kind": "contact",
+    "visible": [
+      "clamp"
+    ],
+    "props": {
+      "arc": 0,
+      "burnt": 0,
+      "clamp": 0,
+      "clampArmed": 0,
+      "clampLife": 0,
+      "corrosion": 0,
+      "drop": 0,
+      "tempC": 12
+    },
+    "timers": [
+      {
+        "prop": "clampLife",
+        "perSecond": 1,
+        "while": "circuit.C1.current > 0",
+        "armed": "clampArmed",
+        "onExpire": [
+          {
+            "set": "clamp",
+            "to": 0
+          },
+          {
+            "if": "self.corrosion >= 0.25",
+            "event": "TempRepairFailed",
+            "detail": "ELC-02"
+          }
+        ]
+      }
+    ]
+  },
+  "contact.C2": {
+    "kind": "contact",
+    "visible": [
+      "clamp"
+    ],
+    "props": {
+      "arc": 0,
+      "burnt": 0,
+      "clamp": 0,
+      "clampArmed": 0,
+      "clampLife": 0,
+      "corrosion": 0,
+      "drop": 0,
+      "tempC": 12
+    },
+    "timers": [
+      {
+        "prop": "clampLife",
+        "perSecond": 1,
+        "while": "circuit.C2.current > 0",
+        "armed": "clampArmed",
+        "onExpire": [
+          {
+            "set": "clamp",
+            "to": 0
+          },
+          {
+            "if": "self.corrosion >= 0.25",
+            "event": "TempRepairFailed",
+            "detail": "ELC-02"
+          }
+        ]
+      }
+    ]
+  },
+  "contact.C3": {
+    "kind": "contact",
+    "visible": [
+      "clamp"
+    ],
+    "props": {
+      "arc": 0,
+      "burnt": 0,
+      "clamp": 0,
+      "clampArmed": 0,
+      "clampLife": 0,
+      "corrosion": 0,
+      "drop": 0,
+      "tempC": 12
+    },
+    "timers": [
+      {
+        "prop": "clampLife",
+        "perSecond": 1,
+        "while": "circuit.C3.current > 0",
+        "armed": "clampArmed",
+        "onExpire": [
+          {
+            "set": "clamp",
+            "to": 0
+          },
+          {
+            "if": "self.corrosion >= 0.25",
+            "event": "TempRepairFailed",
+            "detail": "ELC-02"
+          }
+        ]
+      }
+    ]
+  },
+  "contact.C4": {
+    "kind": "contact",
+    "visible": [
+      "clamp"
+    ],
+    "props": {
+      "arc": 0,
+      "burnt": 0,
+      "clamp": 0,
+      "clampArmed": 0,
+      "clampLife": 0,
+      "corrosion": 0,
+      "drop": 0,
+      "tempC": 12
+    },
+    "timers": [
+      {
+        "prop": "clampLife",
+        "perSecond": 1,
+        "while": "circuit.C4.current > 0",
+        "armed": "clampArmed",
+        "onExpire": [
+          {
+            "set": "clamp",
+            "to": 0
+          },
+          {
+            "if": "self.corrosion >= 0.25",
+            "event": "TempRepairFailed",
+            "detail": "ELC-02"
+          }
+        ]
+      }
+    ]
+  },
+  "contact.C5": {
+    "kind": "contact",
+    "visible": [
+      "clamp"
+    ],
+    "props": {
+      "arc": 0,
+      "burnt": 0,
+      "clamp": 0,
+      "clampArmed": 0,
+      "clampLife": 0,
+      "corrosion": 0,
+      "drop": 0,
+      "tempC": 12
+    },
+    "timers": [
+      {
+        "prop": "clampLife",
+        "perSecond": 1,
+        "while": "circuit.C5.current > 0",
+        "armed": "clampArmed",
+        "onExpire": [
+          {
+            "set": "clamp",
+            "to": 0
+          },
+          {
+            "if": "self.corrosion >= 0.25",
+            "event": "TempRepairFailed",
+            "detail": "ELC-02"
+          }
+        ]
+      }
+    ]
+  },
+  "contact.C6": {
+    "kind": "contact",
+    "visible": [
+      "clamp"
+    ],
+    "props": {
+      "arc": 0,
+      "burnt": 0,
+      "clamp": 0,
+      "clampArmed": 0,
+      "clampLife": 0,
+      "corrosion": 0,
+      "drop": 0,
+      "tempC": 12
+    },
+    "timers": [
+      {
+        "prop": "clampLife",
+        "perSecond": 1,
+        "while": "circuit.C6.current > 0",
+        "armed": "clampArmed",
+        "onExpire": [
+          {
+            "set": "clamp",
+            "to": 0
+          },
+          {
+            "if": "self.corrosion >= 0.25",
+            "event": "TempRepairFailed",
+            "detail": "ELC-02"
+          }
+        ]
+      }
+    ]
+  },
+  "contact.C7": {
+    "kind": "contact",
+    "visible": [
+      "clamp"
+    ],
+    "props": {
+      "arc": 0,
+      "burnt": 0,
+      "clamp": 0,
+      "clampArmed": 0,
+      "clampLife": 0,
+      "corrosion": 0,
+      "drop": 0,
+      "tempC": 12
+    },
+    "timers": [
+      {
+        "prop": "clampLife",
+        "perSecond": 1,
+        "while": "circuit.C7.current > 0",
+        "armed": "clampArmed",
+        "onExpire": [
+          {
+            "set": "clamp",
+            "to": 0
+          },
+          {
+            "if": "self.corrosion >= 0.25",
+            "event": "TempRepairFailed",
+            "detail": "ELC-02"
+          }
+        ]
+      }
+    ]
+  },
+  "contact.C8": {
+    "kind": "contact",
+    "visible": [
+      "clamp"
+    ],
+    "props": {
+      "arc": 0,
+      "burnt": 0,
+      "clamp": 0,
+      "clampArmed": 0,
+      "clampLife": 0,
+      "corrosion": 0,
+      "drop": 0,
+      "tempC": 12
+    },
+    "timers": [
+      {
+        "prop": "clampLife",
+        "perSecond": 1,
+        "while": "circuit.C8.current > 0",
+        "armed": "clampArmed",
+        "onExpire": [
+          {
+            "set": "clamp",
+            "to": 0
+          },
+          {
+            "if": "self.corrosion >= 0.25",
+            "event": "TempRepairFailed",
+            "detail": "ELC-02"
+          }
+        ]
+      }
+    ]
+  }
+}

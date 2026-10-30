@@ -1,0 +1,7 @@
+{
+  "cues": {
+    "viewport.{v}.beads": { "bind": { "v": "1..2" }, "sense": "Sight", "anchor": "viewport.{v}.ring", "q": "leak.viewport.{v}.totalInflow", "map": [[0, 0], [0.005, 0.2], [0.17, 0.7], [1, 1]], "caption": "cue.viewport.beads" },
+    "viewport.{v}.trickle": { "bind": { "v": "1..2" }, "sense": "Sound", "anchor": "viewport.{v}.ring", "q": "leak.viewport.{v}.totalInflow", "map": [[0, 0], [0.02, 0.15], [0.17, 0.6], [1, 1]], "caption": "cue.viewport.trickle" },
+    "viewport.{v}.crack": { "bind": { "v": "1..2" }, "sense": "Sight", "anchor": "viewport.{v}.ring", "q": "part.leak.viewport.{v}.prop.crack", "map": [[0, 0], [1, 1]], "caption": "cue.viewport.crack" }
+  }
+}

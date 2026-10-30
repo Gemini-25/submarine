@@ -1,0 +1,79 @@
+// 케이블 (교범 44쪽 '가르기', 45쪽 '테이프 읽는 법').
+{
+  "pairs": {
+    "winch.weak": {
+      "no": 14,
+      "priority": 5,
+      "urgent": true,
+      "page": "44-윈치-브레이크.md",
+      "section": "가르기",
+      "sees": [
+        [ { "q": "panel.lamp.cable", "is": "fault" } ],
+        [ { "q": "cue.winch.creep", "unit": "cue", "above": 0.3 } ]
+      ],
+      "checks": [
+        {
+          "all": [ { "q": "cue.winch.lining.thin", "unit": "cue", "above": 0.3 }, { "q": "cue.winch.creep", "unit": "cue", "above": 0.3 } ],
+          "verdict": "CBL-01"
+        },
+        {
+          "all": [ { "q": "cue.winch.lining.thin", "unit": "cue", "below": 0.2 }, { "q": "cue.winch.creep", "unit": "cue", "above": 0.3 } ],
+          "verdict": "turnbuckle_loose"
+        }
+      ],
+      "verdicts": {
+        "CBL-01": {
+          "fault": "CBL-01",
+          "says": "라이닝 마모",
+          "do": [ { "procedure": "proc.winch.reline" } ],
+          "verify": {
+            "all": [ { "q": "reading.winch.line", "unit": "m", "trend": 30, "below": 0.1 }, { "q": "panel.lamp.cable", "is": "off" } ],
+            "within": 120, "hold": 60
+          }
+        },
+        "turnbuckle_loose": { "says": "턴버클이 너무 풀림", "do": [] }
+      },
+      "exposure": {
+        "setup": { "depthM": 300, "parts": [ { "part": "winch.drum", "prop": "load", "value": 180 }, { "part": "winch.drum", "prop": "lineOut", "value": 30 } ] },
+        "seconds": 5
+      },
+      "cases": [
+        { "expect": "CBL-01", "inject": [ { "fault": "CBL-01" } ] },
+        { "expect": "turnbuckle_loose", "setup": { "parts": [ { "part": "winch.brake", "prop": "adjust", "value": 0 } ] } },
+        { "expect": "none", "inject": [ { "fault": "PWR-03" } ] },
+        { "expect": "none" }
+      ]
+    },
+    "siphon.trace": {
+      "no": 15,
+      "priority": 60,
+      "page": "45-사이펀-기록기.md",
+      "section": "테이프 읽는 법",
+      "sees": [],
+      "round": { "every": 600, "says": "기록기는 시험 키로 시험한다" },
+      "checks": [
+        { "all": [ { "press": "siphon.testkey.press", "read": "cue.siphon.tape", "after": 2, "unit": "cue", "below": 0.5 } ], "verdict": "c6_dead" },
+        { "all": [ { "press": "siphon.testkey.press", "read": "cue.siphon.wave", "after": 2, "unit": "cue", "below": 0.5 } ], "verdict": "amplifier_tube" },
+        { "all": [ { "press": "siphon.testkey.press", "read": "cue.siphon.ink.line", "after": 2, "unit": "cue", "below": 0.7 } ], "verdict": "CBL-02" }
+      ],
+      "verdicts": {
+        "c6_dead": { "says": "기록기에 전기가 없음", "section": "05-진단-표-공기-감각-항법-케이블.md#윈치 브레이크와 사이펀 기록기", "do": [] },
+        "amplifier_tube": { "says": "증폭관이 빠졌거나 필라멘트가 꺼짐", "section": "05-진단-표-공기-감각-항법-케이블.md#윈치 브레이크와 사이펀 기록기", "do": [] },
+        "CBL-02": {
+          "fault": "CBL-02",
+          "says": "사이펀 막힘",
+          "section": "05-진단-표-공기-감각-항법-케이블.md#윈치 브레이크와 사이펀 기록기",
+          "do": [ { "procedure": "proc.siphon.clear" } ],
+          "verify": { "all": [ { "q": "cue.siphon.ink.line", "unit": "cue", "above": 0.9 }, { "q": "cue.siphon.wave", "unit": "cue", "above": 0.5 } ], "within": 8 }
+        }
+      },
+      "exposure": { "setup": { "depthM": 300 }, "seconds": 5 },
+      "cases": [
+        { "expect": "CBL-02", "inject": [ { "fault": "CBL-02" } ] },
+        { "expect": "c6_dead", "setup": { "switches": { "C6": false } } },
+        { "expect": "amplifier_tube", "setup": { "parts": [ { "part": "siphon.tube.1", "prop": "present", "value": 0 } ] } },
+        { "expect": "none" }
+      ]
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "cues": {
+    "steam.hiss": { "sense": "Sound", "anchor": "steam.joint", "q": "steam.leak", "map": [[0, 0], [0.01, 0.1], [0.36, 0.8], [1, 1]], "caption": "cue.steam.hiss" },
+    "steam.plume": { "sense": "Sight", "anchor": "steam.joint", "q": "steam.leak", "map": [[0, 0], [0.01, 0.1], [0.36, 0.8], [1, 1]], "caption": "cue.steam.plume" },
+    "steam.vent": { "sense": "Sound", "anchor": "steam.bleed", "q": "steam.venting", "map": [[0, 0], [0.02, 0.2], [1, 1]], "caption": "cue.steam.vent" }
+  },
+  "instruments": {
+    "steam.pressure": { "anchor": "steam.accumulator", "q": "part.steam.accumulator.prop.pressure", "unit": "kgcm2", "label": "reading.steam.pressure" },
+    "steam.line": { "anchor": "steam.bleed", "q": "part.steam.accumulator.prop.linePressure", "unit": "kgcm2", "label": "reading.steam.line" }
+  }
+}

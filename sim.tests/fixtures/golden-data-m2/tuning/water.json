@@ -1,0 +1,9 @@
+{
+  "pumpBearing": {
+    "lubeDragCut": 0.5,
+    "looseCapWearMultiplier": 3
+  },
+  "checkValve": {
+    "deadHeadLoadDrop": 0.52
+  }
+}

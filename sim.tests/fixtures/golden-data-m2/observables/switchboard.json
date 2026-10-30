@@ -1,0 +1,13 @@
+{
+  "cues": {
+    "fuse.{c}.wire": { "bind": { "c": "circuits" }, "sense": "Sight", "anchor": "fuse.{c}", "q": "part.fuse.{c}.prop.wire", "map": [[0, 0], [1, 1]], "caption": "cue.fuse.wire" },
+    "junction.{c}.burning": { "bind": { "c": "circuits" }, "sense": "Smell", "anchor": "junction.{c}", "q": "part.junction.{c}.prop.burnt", "map": [[0, 0], [1, 1]], "caption": "cue.junction.burning" },
+    "junction.{c}.sizzle": { "bind": { "c": "circuits" }, "sense": "Sound", "anchor": "junction.{c}", "q": "circuit.{c}.leak", "map": [[0, 0], [1, 0.15], [30, 0.5], [300, 1]], "caption": "cue.junction.sizzle" },
+    "junction.{c}.smoke": { "bind": { "c": "circuits" }, "sense": "Sight", "anchor": "junction.{c}", "q": "part.junction.{c}.prop.burnt", "map": [[0, 0], [1, 1]], "caption": "cue.junction.smoke" },
+    "knife.{c}.crackle": { "bind": { "c": "circuits" }, "sense": "Sound", "anchor": "knife.{c}.blade", "q": "part.contact.{c}.prop.drop", "map": [[0.0167, 0], [0.1, 0.3], [0.33, 1]], "caption": "cue.knife.crackle" },
+    "knife.{c}.arc": { "bind": { "c": "circuits" }, "sense": "Sight", "anchor": "knife.{c}.blade", "q": "part.contact.{c}.prop.arc", "map": [[0, 0], [0.5, 1]], "caption": "cue.knife.arc" },
+    "knife.{c}.green": { "bind": { "c": "circuits" }, "sense": "Sight", "anchor": "knife.{c}.blade", "q": "part.contact.{c}.prop.corrosion", "map": [[0.1, 0], [0.7, 1]], "caption": "cue.knife.green" },
+    "knife.{c}.burning": { "bind": { "c": "circuits" }, "sense": "Smell", "anchor": "knife.{c}.blade", "q": "part.contact.{c}.prop.tempC", "map": [[80, 0], [85, 0.5], [100, 1]], "caption": "cue.knife.burning" },
+    "knife.{c}.burnt": { "bind": { "c": "circuits" }, "sense": "Sight", "anchor": "knife.{c}.blade", "q": "part.contact.{c}.prop.burnt", "map": [[0, 0], [1, 1]], "caption": "cue.knife.burnt" }
+  }
+}

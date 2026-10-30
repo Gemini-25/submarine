@@ -1,0 +1,42 @@
+{
+  "C1": {
+    "name": "조명",
+    "fuseRating": 50,
+    "defaultOn": true
+  },
+  "C2": {
+    "name": "생명유지",
+    "fuseRating": 150,
+    "defaultOn": true
+  },
+  "C3": {
+    "name": "배수",
+    "fuseRating": 560,
+    "defaultOn": false
+  },
+  "C4": {
+    "name": "감각",
+    "fuseRating": 680,
+    "defaultOn": true
+  },
+  "C5": {
+    "name": "항법",
+    "fuseRating": 100,
+    "defaultOn": true
+  },
+  "C6": {
+    "name": "케이블 장비",
+    "fuseRating": 920,
+    "defaultOn": true
+  },
+  "C7": {
+    "name": "공구",
+    "fuseRating": 100,
+    "defaultOn": false
+  },
+  "C8": {
+    "name": "추진",
+    "fuseRating": 1300,
+    "defaultOn": true
+  }
+}

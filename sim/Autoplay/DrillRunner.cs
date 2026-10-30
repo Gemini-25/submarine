@@ -99,8 +99,11 @@ public static class DrillRunner
         return Run(sim, new DrillSolver(book, new ObservableQuery(sim), o), book, hooks);
     }
 
-    /// <summary>솔버 없이 기록의 Do만 그 틱에 Apply하고 마지막 틱까지 나아간다. 마지막 해시와 1200틱 해시를 돌려준다.</summary>
-    public static (ulong Final, IReadOnlyList<DrillHash> Hashes) Replay(GameData data, DrillLog log)
+    /// <summary>
+    /// 솔버 없이 기록의 Do만 그 틱에 Apply하고 마지막 틱까지 나아간다. 마지막 해시와 1200틱 해시를 돌려준다.
+    /// atEnd는 마지막 틱의 세계를 본다(기준 해시 시험이 임무가 끝났는지 확인한다).
+    /// </summary>
+    public static (ulong Final, IReadOnlyList<DrillHash> Hashes) Replay(GameData data, DrillLog log, Action<Simulation>? atEnd = null)
     {
         var sim = new Simulation();
         sim.StartMission(data, log.Mission);
@@ -121,6 +124,7 @@ public static class DrillRunner
             sim.Apply(new Command(line.Step.Cmd, line.Step.Value, line.Step.Value2));
         }
         To(log.FinalTick);
+        atEnd?.Invoke(sim);
         return (sim.StateHash(), hashes);
     }
 

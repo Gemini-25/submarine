@@ -1,0 +1,32 @@
+{
+  "suction": {
+    "tankFactor": 0.8,
+    "chamberLineLps": 0.8,
+    "dryL": 0.5
+  },
+  "attitude": {
+    "degPerLm": 0.015,
+    "tankNominalL": 150,
+    "tankCapacityL": 300,
+    "tankArmM": {
+      "ballast.tank.fore": 4.0,
+      "ballast.tank.aft": -4.0
+    },
+    "bilgeArmM": {
+      "bilge.aft": -2.7,
+      "bilge.fwd": 1.4
+    },
+    "zoneArmM": {
+      "fore": 2.7,
+      "mid": 0,
+      "aft": -2.7
+    },
+    "interiorFactor": 0.25,
+    "floodAreaCm2PerTurn": 3,
+    "floorDriftFromDeg": 5,
+    "floorDriftPerDegSecond": 0.02,
+    "lampWarnDeg": 5,
+    "lampFaultDeg": 12,
+    "neutralWaterL": 310
+  }
+}

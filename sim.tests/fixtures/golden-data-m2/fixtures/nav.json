@@ -1,0 +1,197 @@
+{
+  "params": {
+    "stillSpin": 0.05,
+    "wornDrag": 0.3,
+    "wornSlip": 0.3,
+    "wornGearSlip": 0.6
+  },
+  "fixtures": [
+    {
+      "id": "gyro.switch",
+      "part": "gyro.unit",
+      "kind": "lever",
+      "zone": "fore",
+      "prop": "power",
+      "positions": ["off", "on"],
+      "verbs": {
+        "off": { "noise": "switch" },
+        "on": { "noise": "switch" }
+      }
+    },
+    {
+      "id": "gyro.case.screw.{n}",
+      "bind": { "n": "1..4" },
+      "part": "gyro.case",
+      "kind": "fastener",
+      "zone": "fore",
+      "prop": "screw{n}",
+      "group": "lid",
+      "verbs": {
+        "loosen": {
+          "tool": "screwdriver",
+          "noise": "screwdriver",
+          "rejectIf": [ { "if": "self.capOff >= 0.5", "reason": "screw_cover_open" } ]
+        },
+        "tighten": {
+          "tool": "screwdriver",
+          "noise": "screwdriver",
+          "rejectIf": [ { "if": "self.capOff >= 0.5", "reason": "screw_cover_open" } ]
+        }
+      }
+    },
+    {
+      "id": "gyro.lid",
+      "part": "gyro.case",
+      "kind": "cover",
+      "zone": "fore",
+      "prop": "capOff",
+      "heldBy": "lid",
+      "verbs": {
+        "open": {
+          "tool": "hand",
+          "noise": "cover",
+          "hazards": [ { "if": "part.gyro.unit.prop.spin > $stillSpin", "hazard": "pinch" } ]
+        },
+        "close": { "tool": "hand", "noise": "cover" }
+      }
+    },
+    {
+      "id": "gyro.bearing",
+      "part": "gyro.bearing",
+      "kind": "socket",
+      "zone": "fore",
+      "needReason": "need_bearing",
+      "verbs": {
+        "pull": {
+          "tool": "hand",
+          "noise": "cover",
+          "rejectIf": [ { "if": "part.gyro.case.prop.capOff < 0.5", "reason": "cover_closed" } ],
+          "hazards": [ { "if": "part.gyro.unit.prop.spin > $stillSpin", "hazard": "pinch" } ],
+          "gives": [
+            { "if": "self.drag >= $wornDrag", "item": "gyro_bearing_worn" },
+            { "item": "gyro_bearing" }
+          ]
+        },
+        "insert": {
+          "noise": "cover",
+          "rejectIf": [ { "if": "part.gyro.case.prop.capOff < 0.5", "reason": "cover_closed" } ],
+          "hazards": [ { "if": "part.gyro.unit.prop.spin > $stillSpin", "hazard": "pinch" } ],
+          "accepts": {
+            "gyro_bearing": { "renew": true },
+            "gyro_bearing_worn": {}
+          }
+        }
+      }
+    },
+    {
+      "id": "gyro.align",
+      "part": "gyro.unit",
+      "kind": "adjuster",
+      "zone": "fore",
+      "prop": "error",
+      "min": -180,
+      "max": 180,
+      "step": 0.5,
+      "verbs": {
+        "up": { "rejectIf": [ { "if": "self.settle < 1", "reason": "not_settled" } ] },
+        "down": { "rejectIf": [ { "if": "self.settle < 1", "reason": "not_settled" } ] }
+      }
+    },
+    {
+      "id": "gyro.case",
+      "part": "gyro.case",
+      "kind": "work",
+      "zone": "fore",
+      "touch": {
+        "vibrating": "part.gyro.bearing.prop.drag >= $wornDrag && part.gyro.unit.prop.spin >= 0.5"
+      }
+    },
+    {
+      "id": "navcomp.power",
+      "part": "navcomp.unit",
+      "kind": "lever",
+      "zone": "fore",
+      "prop": "power",
+      "positions": ["off", "on"],
+      "verbs": {
+        "off": { "noise": "lever" },
+        "on": { "noise": "lever" }
+      }
+    },
+    {
+      "id": "navcomp.cover.screw.{n}",
+      "bind": { "n": "1..2" },
+      "part": "navcomp.case",
+      "kind": "fastener",
+      "zone": "fore",
+      "prop": "screw{n}",
+      "group": "cover",
+      "verbs": {
+        "loosen": {
+          "tool": "screwdriver",
+          "noise": "screwdriver",
+          "rejectIf": [ { "if": "self.coverOpen >= 0.5", "reason": "screw_cover_open" } ]
+        },
+        "tighten": {
+          "tool": "screwdriver",
+          "noise": "screwdriver",
+          "rejectIf": [ { "if": "self.coverOpen >= 0.5", "reason": "screw_cover_open" } ]
+        }
+      }
+    },
+    {
+      "id": "navcomp.cover",
+      "part": "navcomp.case",
+      "kind": "cover",
+      "zone": "fore",
+      "prop": "coverOpen",
+      "heldBy": "cover",
+      "verbs": {
+        "open": { "tool": "hand", "noise": "cover" },
+        "close": { "tool": "hand", "noise": "cover" }
+      }
+    },
+    {
+      "id": "navcomp.gear",
+      "part": "navcomp.gear",
+      "kind": "socket",
+      "zone": "fore",
+      "needReason": "need_gear",
+      "verbs": {
+        "pull": {
+          "tool": "hand",
+          "noise": "cover",
+          "rejectIf": [ { "if": "part.navcomp.case.prop.coverOpen < 0.5", "reason": "cover_closed" } ],
+          "hazards": [ { "if": "device.nav_computer.running == 1", "hazard": "pinch" } ],
+          "gives": [
+            { "if": "self.slip >= $wornSlip", "item": "nav_gear_worn" },
+            { "item": "nav_gear" }
+          ]
+        },
+        "insert": {
+          "noise": "cover",
+          "rejectIf": [ { "if": "part.navcomp.case.prop.coverOpen < 0.5", "reason": "cover_closed" } ],
+          "hazards": [ { "if": "device.nav_computer.running == 1", "hazard": "pinch" } ],
+          "accepts": {
+            "nav_gear": { "set": { "slip": 0 }, "renew": true },
+            "nav_gear_worn": { "set": { "slip": "$wornGearSlip" } }
+          }
+        }
+      }
+    },
+    {
+      "id": "navcomp.reset",
+      "part": "navcomp.unit",
+      "kind": "adjuster",
+      "zone": "fore",
+      "prop": "counterKm",
+      "min": 0,
+      "max": 9999,
+      "step": 0.05,
+      "verbs": {
+        "up": {},
+        "down": {}
+      }
+    }
+  ]
+}

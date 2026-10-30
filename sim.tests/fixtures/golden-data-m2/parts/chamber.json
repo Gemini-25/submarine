@@ -1,0 +1,14 @@
+{
+  "chamber.state": {
+    "kind": "chamber",
+    "visible": ["squeeze", "innerOpen", "dog1", "dog2", "dog3", "dog4"],
+    "props": {
+      "dog1": 1,
+      "dog2": 1,
+      "dog3": 1,
+      "dog4": 1,
+      "innerOpen": 0,
+      "squeeze": 0
+    }
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "mission": "m2-switchboard-b", "seed": 1702, "dataStamp": "a85a949b85464584", "handTicks": 12,
+  "finalTick": 1556, "finalHash": 2664573629552828709, "status": "succeeded",
+  "findings": [
+    {"tick":308,"pair":"switch.drop","verdict":"ELC-02","bind":"c=C1","outcome":"fixed"},
+    {"tick":476,"pair":"switch.drop","verdict":"ELC-02","bind":"c=C5","outcome":"fixed"}
+  ],
+  "hashes": [
+    {"tick":1200,"hash":17072757450466355736}
+  ],
+  "lines": [
+    {"tick":0,"step":{"seq":1,"kind":"Wait","ticks":20,"value":0,"value2":0,"jobStep":-1,"note":"look"}},
+    {"tick":20,"step":{"seq":2,"kind":"Do","ticks":12,"cmd":"tool.voltmeter","value":0,"value2":0,"jobStep":0,"note":"switch.drop#0"}},
+    {"tick":32,"step":{"seq":3,"kind":"Measure","ticks":12,"value":0,"value2":0,"tool":"voltmeter","target":"switch.C1","reading":40.319500509708256,"pair":"switch.drop","jobStep":-1}},
+    {"tick":44,"step":{"seq":4,"kind":"Do","ticks":12,"cmd":"tool.hand","value":0,"value2":0,"jobStep":0,"note":"switch.drop#0"}},
+    {"tick":56,"step":{"seq":5,"kind":"Decide","ticks":0,"value":0,"value2":0,"pair":"switch.drop","verdict":"ELC-02","bind":"c=C1","jobStep":-1,"note":"ELC-02|c=C1"}},
+    {"tick":56,"step":{"seq":6,"kind":"Do","ticks":12,"cmd":"tool.hand","value":0,"value2":0,"job":"switch.drop/ELC-02","jobStep":1,"note":"proc.contact.file"}},
+    {"tick":68,"step":{"seq":7,"kind":"Do","ticks":12,"cmd":"switch.C1.off","value":0,"value2":0,"job":"switch.drop/ELC-02","jobStep":1,"note":"proc.contact.file"}},
+    {"tick":80,"step":{"seq":8,"kind":"Do","ticks":12,"cmd":"toolboard.return.wrench","value":0,"value2":0,"job":"switch.drop/ELC-02","jobStep":2,"note":"proc.contact.file"}},
+    {"tick":92,"step":{"seq":9,"kind":"Do","ticks":12,"cmd":"toolboard.take.file","value":0,"value2":0,"job":"switch.drop/ELC-02","jobStep":2,"note":"proc.contact.file"}},
+    {"tick":104,"step":{"seq":10,"kind":"Do","ticks":12,"cmd":"tool.file","value":0,"value2":0,"job":"switch.drop/ELC-02","jobStep":2,"note":"proc.contact.file"}},
+    {"tick":116,"step":{"seq":11,"kind":"Do","ticks":12,"cmd":"knife.C1.blade.file","value":0,"value2":0,"job":"switch.drop/ELC-02","jobStep":2,"note":"proc.contact.file"}},
+    {"tick":128,"step":{"seq":12,"kind":"Do","ticks":12,"cmd":"knife.C1.blade.file","value":0,"value2":0,"job":"switch.drop/ELC-02","jobStep":2,"note":"proc.contact.file"}},
+    {"tick":140,"step":{"seq":13,"kind":"Do","ticks":12,"cmd":"knife.C1.blade.file","value":0,"value2":0,"job":"switch.drop/ELC-02","jobStep":2,"note":"proc.contact.file"}},
+    {"tick":152,"step":{"seq":14,"kind":"Do","ticks":12,"cmd":"knife.C1.blade.file","value":0,"value2":0,"job":"switch.drop/ELC-02","jobStep":2,"note":"proc.contact.file"}},
+    {"tick":164,"step":{"seq":15,"kind":"Do","ticks":12,"cmd":"tool.hand","value":0,"value2":0,"job":"switch.drop/ELC-02","jobStep":3,"note":"proc.contact.file"}},
+    {"tick":176,"step":{"seq":16,"kind":"Do","ticks":12,"cmd":"switch.C1.on","value":0,"value2":0,"job":"switch.drop/ELC-02","jobStep":3,"note":"proc.contact.file"}},
+    {"tick":188,"step":{"seq":17,"kind":"Do","ticks":12,"cmd":"tool.voltmeter","value":0,"value2":0,"jobStep":0,"note":"switch.drop#0"}},
+    {"tick":200,"step":{"seq":18,"kind":"Measure","ticks":12,"value":0,"value2":0,"tool":"voltmeter","target":"switch.C2","reading":0,"pair":"switch.drop","jobStep":-1}},
+    {"tick":212,"step":{"seq":19,"kind":"Measure","ticks":12,"value":0,"value2":0,"tool":"voltmeter","target":"switch.C4","reading":0,"pair":"switch.drop","jobStep":-1}},
+    {"tick":224,"step":{"seq":20,"kind":"Measure","ticks":12,"value":0,"value2":0,"tool":"voltmeter","target":"switch.C5","reading":35.279999999999994,"pair":"switch.drop","jobStep":-1}},
+    {"tick":236,"step":{"seq":21,"kind":"Do","ticks":12,"cmd":"tool.hand","value":0,"value2":0,"jobStep":0,"note":"switch.drop#0"}},
+    {"tick":248,"step":{"seq":22,"kind":"Decide","ticks":0,"value":0,"value2":0,"pair":"switch.drop","verdict":"ELC-02","bind":"c=C5","jobStep":-1,"note":"ELC-02|c=C5"}},
+    {"tick":248,"step":{"seq":23,"kind":"Do","ticks":12,"cmd":"tool.hand","value":0,"value2":0,"job":"switch.drop/ELC-02","jobStep":1,"note":"proc.contact.file"}},
+    {"tick":260,"step":{"seq":24,"kind":"Do","ticks":12,"cmd":"switch.C5.off","value":0,"value2":0,"job":"switch.drop/ELC-02","jobStep":1,"note":"proc.contact.file"}},
+    {"tick":272,"step":{"seq":25,"kind":"Do","ticks":12,"cmd":"tool.file","value":0,"value2":0,"job":"switch.drop/ELC-02","jobStep":2,"note":"proc.contact.file"}},
+    {"tick":284,"step":{"seq":26,"kind":"Do","ticks":12,"cmd":"knife.C5.blade.file","value":0,"value2":0,"job":"switch.drop/ELC-02","jobStep":2,"note":"proc.contact.file"}},
+    {"tick":296,"step":{"seq":27,"kind":"Do","ticks":12,"cmd":"knife.C5.blade.file","value":0,"value2":0,"job":"switch.drop/ELC-02","jobStep":2,"note":"proc.contact.file"}},
+    {"tick":308,"step":{"seq":28,"kind":"Verify","ticks":0,"value":0,"value2":0,"pair":"switch.drop","verdict":"ELC-02","bind":"c=C1","jobStep":-1,"ok":true}},
+    {"tick":308,"step":{"seq":29,"kind":"Do","ticks":12,"cmd":"knife.C5.blade.file","value":0,"value2":0,"job":"switch.drop/ELC-02","jobStep":2,"note":"proc.contact.file"}},
+    {"tick":320,"step":{"seq":30,"kind":"Do","ticks":12,"cmd":"knife.C5.blade.file","value":0,"value2":0,"job":"switch.drop/ELC-02","jobStep":2,"note":"proc.contact.file"}},
+    {"tick":332,"step":{"seq":31,"kind":"Do","ticks":12,"cmd":"tool.hand","value":0,"value2":0,"job":"switch.drop/ELC-02","jobStep":3,"note":"proc.contact.file"}},
+    {"tick":344,"step":{"seq":32,"kind":"Do","ticks":12,"cmd":"switch.C5.on","value":0,"value2":0,"job":"switch.drop/ELC-02","jobStep":3,"note":"proc.contact.file"}},
+    {"tick":356,"step":{"seq":33,"kind":"Wait","ticks":120,"value":0,"value2":0,"jobStep":-1,"note":"idle"}},
+    {"tick":476,"step":{"seq":39,"kind":"Verify","ticks":0,"value":0,"value2":0,"pair":"switch.drop","verdict":"ELC-02","bind":"c=C5","jobStep":-1,"ok":true}},
+    {"tick":476,"step":{"seq":40,"kind":"Wait","ticks":1080,"value":0,"value2":0,"jobStep":-1,"note":"idle"}},
+    {"tick":1556,"step":{"seq":94,"kind":"Done","ticks":0,"value":0,"value2":0,"jobStep":-1,"note":"succeeded"}}
+  ]
+}

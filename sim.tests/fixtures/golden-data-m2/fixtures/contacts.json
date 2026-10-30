@@ -1,0 +1,94 @@
+{
+  "params": {
+    "clampLife": 1200,
+    "filePerStroke": 0.25
+  },
+  "fixtures": [
+    {
+      "id": "knife.{c}.clamp",
+      "bind": { "c": "circuits" },
+      "part": "contact.{c}",
+      "kind": "adjuster",
+      "zone": "mid",
+      "prop": "clamp",
+      "min": 0,
+      "max": 1,
+      "step": 1,
+      "verbs": {
+        "up": {
+          "tool": "screwdriver",
+          "noise": "screwdriver",
+          "hazards": [
+            { "if": "circuit.{c}.on == 1 && battery.voltage > 0 && circuit.{c}.current > 0", "hazard": "spark" },
+            { "if": "circuit.{c}.on == 1 && battery.voltage > 0", "hazard": "shock" }
+          ],
+          "effects": [
+            { "arm": "clampLife", "to": "$clampLife" },
+            { "if": "self.corrosion >= 0.25", "quality": "temporary" }
+          ]
+        },
+        "down": {
+          "tool": "screwdriver",
+          "noise": "screwdriver",
+          "hazards": [
+            { "if": "circuit.{c}.on == 1 && battery.voltage > 0 && circuit.{c}.current > 0", "hazard": "spark" },
+            { "if": "circuit.{c}.on == 1 && battery.voltage > 0", "hazard": "shock" }
+          ],
+          "effects": [
+            { "set": "clampArmed", "to": 0 },
+            { "set": "clampLife", "to": 0 }
+          ]
+        }
+      }
+    },
+    {
+      "id": "knife.{c}.blade",
+      "bind": { "c": "circuits" },
+      "part": "contact.{c}",
+      "kind": "work",
+      "zone": "mid",
+      "verbs": {
+        "file": {
+          "tool": "file",
+          "gesture": "scrub",
+          "noise": "file",
+          "hazards": [
+            { "if": "circuit.{c}.on == 1 && battery.voltage > 0 && circuit.{c}.current > 0", "hazard": "spark" },
+            { "if": "circuit.{c}.on == 1 && battery.voltage > 0", "hazard": "shock" }
+          ],
+          "effects": [
+            { "add": "corrosion", "by": "-$filePerStroke", "min": 0, "max": 1 },
+            { "if": "self.corrosion < 0.25", "set": "burnt", "to": 0 }
+          ]
+        }
+      }
+    },
+    {
+      "id": "knife.{c}.jaw",
+      "bind": { "c": "circuits" },
+      "part": "contact.{c}",
+      "kind": "work",
+      "zone": "mid",
+      "verbs": {
+        "file": {
+          "tool": "file",
+          "gesture": "scrub",
+          "noise": "file",
+          "hazards": [
+            { "if": "battery.voltage > 0", "hazard": "shock" }
+          ]
+        }
+      }
+    },
+    {
+      "id": "knife.{c}.base",
+      "bind": { "c": "circuits" },
+      "part": "contact.{c}",
+      "kind": "work",
+      "zone": "mid",
+      "touch": {
+        "temp": "self.tempC"
+      }
+    }
+  ]
+}

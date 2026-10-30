@@ -1,0 +1,198 @@
+// 배전반 (교범 03쪽 '퓨즈 단선과 누전 가르기', '분기함, 퓨즈 철사, 탄 배선'). fuse.blown의 'C3 퓨즈와 높던 펌프 전류 → WTR-02'는 WP23 (오래 둔 베어링이 C3 퓨즈를 끊는 경우).
+{
+  "pairs": {
+    "fuse.blown": {
+      "no": 1,
+      "priority": 20,
+      "page": "03-진단-표-전기와-동력.md",
+      "section": "퓨즈 단선과 누전 가르기",
+      "sees": [
+        [ { "q": "panel.lamp.switchboard", "is": "fault" } ]
+      ],
+      "checks": [
+        {
+          "each": { "c": "circuits" },
+          "all": [
+            { "q": "cue.fuse.{c}.blackened", "unit": "cue", "above": 0.5 },
+            { "q": "cue.junction.{c}.dew", "unit": "cue", "above": 0.5, "says": "젖어 이슬이 맺혀 있다" }
+          ],
+          "verdict": "ELC-03"
+        },
+        {
+          "each": { "c": "C3" },
+          "all": [
+            { "q": "cue.fuse.{c}.blackened", "unit": "cue", "above": 0.5 },
+            { "q": "panel.gauge.pumpCurrent", "unit": "A", "peak": 300, "above": 3.5, "says": "펌프 전류 자체가 높다" },
+            { "q": "cue.junction.{c}.dew", "unit": "cue", "below": 0.3, "says": "말라 있다" }
+          ],
+          "verdict": "WTR-02"
+        },
+        {
+          "each": { "c": "circuits" },
+          "prep": [ { "cmd": "tool.voltmeter" } ],
+          "undo": [ { "cmd": "tool.hand" } ],
+          "all": [
+            { "q": "cue.fuse.{c}.blackened", "unit": "cue", "above": 0.5 },
+            { "measure": "voltmeter", "target": "fuse.{c}", "unit": "V", "above": 100, "typical": 120, "says": "전압계로 퓨즈 소켓에 약 120V", "section": "배전반" }
+          ],
+          "verdict": "ELC-01"
+        }
+      ],
+      "verdicts": {
+        "WTR-02": {
+          "fault": "WTR-02",
+          "says": "장비 과부하",
+          "do": [
+            { "procedure": "proc.bearing.replace", "if": [ { "q": "inventory.pump_bearing", "unit": "none", "above": 0.5 } ] },
+            { "procedure": "proc.bearing.oil", "if": [ { "q": "inventory.pump_bearing", "unit": "none", "below": 0.5 }, { "q": "cue.pump.oilcup", "unit": "cue", "below": 0.5 } ] },
+            { "procedure": "proc.fuse.replace", "bind": { "circuit": "{c}" } },
+            { "restore": "switches" }
+          ],
+          "verify": { "all": [ { "q": "cue.fuse.{c}.blackened", "unit": "cue", "below": 0.5 }, { "q": "cue.pump.hum", "unit": "cue", "above": 0.5 }, { "q": "cue.pump.grind", "unit": "cue", "below": 0.3 } ], "within": 120, "hold": 10 }
+        },
+        "ELC-03": {
+          "fault": "ELC-03",
+          "says": "누전",
+          "do": [
+            { "procedure": "proc.junction.dry", "bind": { "circuit": "{c}" } },
+            { "procedure": "proc.fuse.replace", "bind": { "circuit": "{c}" },
+              "if": [ { "q": "cue.fuse.{c}.blackened", "unit": "cue", "above": 0.5 }, { "q": "inventory.fuse", "unit": "none", "above": 0.5 } ] }
+          ],
+          "verify": {
+            "all": [
+              { "q": "cue.junction.{c}.dew", "unit": "cue", "below": 0.3 },
+              { "q": "cue.fuse.{c}.blackened", "unit": "cue", "below": 0.5 },
+              { "q": "cue.circuit.{c}.lamp", "unit": "cue", "above": 0.5 }
+            ],
+            "within": 60, "hold": 5
+          }
+        },
+        "ELC-01": {
+          "fault": "ELC-01",
+          "says": "그 회로 퓨즈 단선",
+          "section": "배전반",
+          "do": [
+            { "procedure": "proc.fuse.replace", "bind": { "circuit": "{c}" }, "if": [ { "q": "inventory.fuse", "unit": "none", "above": 0.5 } ] },
+            { "procedure": "proc.fuse.wire", "bind": { "circuit": "{c}" }, "if": [ { "q": "inventory.fuse", "unit": "none", "below": 0.5 } ] }
+          ],
+          "verify": {
+            "all": [
+              { "q": "cue.fuse.{c}.blackened", "unit": "cue", "below": 0.5 },
+              { "q": "cue.circuit.{c}.lamp", "unit": "cue", "above": 0.5 }
+            ],
+            "within": 30, "hold": 5
+          }
+        }
+      },
+      "exposure": { "setup": { "depthM": 200, "switches": { "C3": true }, "bilges": { "bilge.aft": 150 } }, "seconds": 60 },
+      "cases": [
+        { "expect": "ELC-03", "bind": { "c": "C1" }, "inject": [ { "fault": "ELC-03", "part": "junction.C1" } ] },
+        { "expect": "ELC-01", "bind": { "c": "C2" }, "inject": [ { "fault": "ELC-01", "part": "fuse.C2" } ] },
+        { "expect": "WTR-02", "bind": { "c": "C3" }, "inject": [ { "fault": "WTR-02" } ], "seconds": 1800 },
+        { "expect": "ELC-01", "bind": { "c": "C3" }, "inject": [ { "fault": "ELC-01", "part": "fuse.C3" } ] },
+        { "expect": "none" }
+      ]
+    },
+    "junction.burnt": {
+      "no": 2,
+      "priority": 10,
+      "page": "03-진단-표-전기와-동력.md",
+      "section": "분기함, 퓨즈 철사, 탄 배선",
+      "sees": [
+        [ { "q": "panel.lamp.switchboard", "is": "fault" } ]
+      ],
+      "checks": [
+        {
+          "each": { "c": "C7" },
+          "all": [
+            { "q": "cue.junction.{c}.smoke", "unit": "cue", "above": 0.5, "says": "분기함에서 연기와 타는 냄새" },
+            { "q": "cue.fuse.{c}.wire", "unit": "cue", "above": 0.5, "says": "퓨즈 몸통의 철사" }
+          ],
+          "verdict": "burnt_twist"
+        },
+        {
+          "each": { "c": "circuits" },
+          "all": [
+            { "q": "cue.junction.{c}.smoke", "unit": "cue", "above": 0.5, "says": "분기함에서 연기와 타는 냄새" },
+            { "q": "cue.fuse.{c}.wire", "unit": "cue", "above": 0.5, "says": "퓨즈 몸통의 철사" }
+          ],
+          "verdict": "burnt_wiring"
+        }
+      ],
+      "verdicts": {
+        "burnt_wiring": {
+          "says": "철사를 감은 회로의 배선이 탔다",
+          "do": [
+            { "procedure": "proc.junction.rewire", "bind": { "circuit": "{c}" },
+              "if": [ { "q": "panel.lamp.air", "is": "off" }, { "q": "inventory.fuse", "unit": "none", "above": 0.5 } ] }
+          ],
+          "verify": {
+            "all": [
+              { "q": "cue.junction.{c}.smoke", "unit": "cue", "below": 0.5 },
+              { "q": "cue.fuse.{c}.wire", "unit": "cue", "below": 0.5 }
+            ],
+            "within": 60, "hold": 5
+          }
+        },
+        "burnt_twist": {
+          "says": "철사를 감은 회로의 배선이 탔다",
+          "do": [
+            { "procedure": "proc.junction.twist", "bind": { "circuit": "{c}" },
+              "if": [ { "q": "panel.lamp.air", "is": "off" }, { "q": "inventory.fuse", "unit": "none", "above": 0.5 } ] }
+          ],
+          "verify": {
+            "all": [
+              { "q": "cue.junction.{c}.smoke", "unit": "cue", "below": 0.5 },
+              { "q": "cue.fuse.{c}.wire", "unit": "cue", "below": 0.5 }
+            ],
+            "within": 60, "hold": 5
+          }
+        }
+      },
+      "exposure": { "setup": { "depthM": 200 }, "seconds": 30 },
+      "cases": [
+        { "expect": "burnt_wiring", "bind": { "c": "C6" },
+          "setup": { "parts": [ { "part": "fuse.C6", "prop": "wire", "value": 1 }, { "part": "junction.C6", "prop": "burnt", "value": 1 } ] } },
+        { "expect": "burnt_twist", "bind": { "c": "C7" },
+          "setup": { "switches": { "C7": true }, "parts": [ { "part": "fuse.C7", "prop": "wire", "value": 1 }, { "part": "junction.C7", "prop": "burnt", "value": 1 } ] } },
+        { "expect": "none" }
+      ]
+    },
+    "switch.drop": {
+      "no": 20,
+      "priority": 35,
+      "page": "03-진단-표-전기와-동력.md",
+      "section": "배전반",
+      "sees": [
+        [ { "q": "panel.lamp.switchboard", "is": "warning" },
+          { "q": "panel.gauge.voltage", "unit": "V", "above": 115, "says": "상황판 전압계는 정상" } ],
+        [ { "q": "cue.knife.C1.crackle", "unit": "cue", "above": 0.3 } ]
+      ],
+      "checks": [
+        {
+          "each": { "c": "circuits" },
+          "prep": [ { "cmd": "tool.voltmeter" } ],
+          "undo": [ { "cmd": "tool.hand" } ],
+          "all": [ { "q": "cue.circuit.{c}.lamp", "unit": "cue", "above": 0.5 },
+                   { "measure": "voltmeter", "target": "switch.{c}", "unit": "V", "above": 10, "says": "10V 넘음" } ],
+          "verdict": "ELC-02"
+        }
+      ],
+      "verdicts": {
+        "ELC-02": {
+          "fault": "ELC-02",
+          "says": "칼날 스위치 접점 부식",
+          "do": [ { "procedure": "proc.contact.file", "bind": { "circuit": "{c}" } }, { "restore": "switches" } ],
+          "verify": { "all": [ { "q": "cue.knife.{c}.crackle", "unit": "cue", "below": 0.3 } ], "within": 30, "hold": 5 }
+        }
+      },
+      "exposure": { "setup": { "depthM": 300, "switches": { "C3": true }, "bilges": { "bilge.aft": 150 } }, "seconds": 60 },
+      "cases": [
+        { "expect": "ELC-02", "bind": { "c": "C1" }, "inject": [ { "fault": "ELC-02", "part": "contact.C1" } ] },
+        { "expect": "ELC-02", "bind": { "c": "C3" }, "inject": [ { "fault": "ELC-02", "part": "contact.C3" } ] },
+        { "expect": "ELC-02", "bind": { "c": "C5" }, "inject": [ { "fault": "ELC-02", "part": "contact.C5" } ] },
+        { "expect": "none" }
+      ]
+    }
+  }
+}

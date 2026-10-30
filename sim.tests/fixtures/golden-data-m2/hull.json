@@ -1,0 +1,198 @@
+{
+  "partTemplate": {
+    "wearPerSecond": 0,
+    "props": {
+      "caulk": 0,
+      "integrity": 1.0,
+      "patchDurability": 0,
+      "patchFactor": 1.0,
+      "shore": 0,
+      "wedge": 0
+    }
+  },
+  "kindTemplates": {
+    "shaft_packing": {
+      "props": {
+        "cocked": 0,
+        "followerBack": 0,
+        "glandArmed": 0,
+        "glandLife": 0,
+        "goodRings": 3,
+        "heat": 12,
+        "nutA": 2,
+        "nutB": 2,
+        "ringsOut": 0
+      },
+      "visible": ["nutA", "nutB", "followerBack", "ringsOut"],
+      "timers": [
+        {
+          "prop": "glandLife",
+          "perSecond": 1,
+          "armed": "glandArmed",
+          "onExpire": [
+            { "add": "integrity", "by": -0.15, "min": 0 },
+            { "event": "TempRepairFailed" }
+          ]
+        }
+      ],
+      "seaPaths": [
+        { "areaCm2": 0.58, "times": "self.ringsOut" }
+      ]
+    },
+    "viewport": {
+      "props": {
+        "crack": 0,
+        "deadlight": 1,
+        "dog1": 0,
+        "dog2": 0,
+        "present": 1,
+        "ringBolt1": 1,
+        "ringBolt2": 1,
+        "ringBolt3": 1,
+        "ringBolt4": 1,
+        "ringBolt5": 1,
+        "ringBolt6": 1,
+        "ringOff": 0,
+        "seatQ": 1
+      },
+      "visible": ["deadlight", "dog1", "dog2", "ringBolt1", "ringBolt2", "ringBolt3", "ringBolt4", "ringBolt5", "ringBolt6", "ringOff", "present", "crack"],
+      "seaPaths": [
+        { "areaCm2": 0.4, "times": "looseCount(ring)", "when": "self.deadlight >= 0.5 || self.dog1 < 0.5 || self.dog2 < 0.5" },
+        { "areaCm2": 1, "times": "self.ringOff", "when": "self.deadlight >= 0.5 || self.dog1 < 0.5 || self.dog2 < 0.5" }
+      ]
+    },
+    "chamber_door": {
+      "props": {
+        "present": 1,
+        "retainer1": 1,
+        "retainer2": 1,
+        "retainer3": 1,
+        "retainer4": 1,
+        "seatQ": 1
+      },
+      "visible": ["present", "retainer1", "retainer2", "retainer3", "retainer4"]
+    }
+  },
+  "points": {
+    "leak.rivet.01": {
+      "kind": "rivet",
+      "zone": "fore",
+      "maxAreaCm2": 3,
+      "designDepthM": 600
+    },
+    "leak.rivet.02": {
+      "kind": "rivet",
+      "zone": "fore",
+      "maxAreaCm2": 3,
+      "designDepthM": 600
+    },
+    "leak.rivet.03": {
+      "kind": "rivet",
+      "zone": "fore",
+      "maxAreaCm2": 3,
+      "designDepthM": 600
+    },
+    "leak.rivet.04": {
+      "kind": "rivet",
+      "zone": "fore",
+      "maxAreaCm2": 3,
+      "designDepthM": 600
+    },
+    "leak.rivet.05": {
+      "kind": "rivet",
+      "zone": "mid",
+      "maxAreaCm2": 3,
+      "designDepthM": 600
+    },
+    "leak.rivet.06": {
+      "kind": "rivet",
+      "zone": "mid",
+      "maxAreaCm2": 3,
+      "designDepthM": 600
+    },
+    "leak.rivet.07": {
+      "kind": "rivet",
+      "zone": "mid",
+      "maxAreaCm2": 3,
+      "designDepthM": 600
+    },
+    "leak.rivet.08": {
+      "kind": "rivet",
+      "zone": "mid",
+      "maxAreaCm2": 3,
+      "designDepthM": 600
+    },
+    "leak.rivet.09": {
+      "kind": "rivet",
+      "zone": "aft",
+      "maxAreaCm2": 3,
+      "designDepthM": 600
+    },
+    "leak.rivet.10": {
+      "kind": "rivet",
+      "zone": "aft",
+      "maxAreaCm2": 3,
+      "designDepthM": 600
+    },
+    "leak.rivet.11": {
+      "kind": "rivet",
+      "zone": "aft",
+      "maxAreaCm2": 3,
+      "designDepthM": 600
+    },
+    "leak.rivet.12": {
+      "kind": "rivet",
+      "zone": "aft",
+      "maxAreaCm2": 3,
+      "designDepthM": 600
+    },
+    "leak.viewport.1": {
+      "kind": "viewport",
+      "zone": "fore",
+      "maxAreaCm2": 2,
+      "designDepthM": 600
+    },
+    "leak.viewport.2": {
+      "kind": "viewport",
+      "zone": "fore",
+      "maxAreaCm2": 2,
+      "designDepthM": 600
+    },
+    "leak.shaft_packing": {
+      "kind": "shaft_packing",
+      "zone": "aft",
+      "maxAreaCm2": 4,
+      "designDepthM": 600
+    },
+    "leak.hull_valve.1": {
+      "kind": "hull_valve",
+      "zone": "fore",
+      "maxAreaCm2": 5,
+      "designDepthM": 600
+    },
+    "leak.hull_valve.2": {
+      "kind": "hull_valve",
+      "zone": "mid",
+      "maxAreaCm2": 5,
+      "designDepthM": 600
+    },
+    "leak.hull_valve.3": {
+      "kind": "hull_valve",
+      "zone": "mid",
+      "maxAreaCm2": 5,
+      "designDepthM": 600
+    },
+    "leak.hull_valve.4": {
+      "kind": "hull_valve",
+      "zone": "aft",
+      "maxAreaCm2": 5,
+      "designDepthM": 600
+    },
+    "leak.chamber_door": {
+      "kind": "chamber_door",
+      "zone": "chamber",
+      "maxAreaCm2": 6,
+      "designDepthM": 600
+    }
+  }
+}

@@ -1,0 +1,103 @@
+{
+  "brake_lining": {},
+  "brush_set": {},
+  "brush_set_worn": {
+    "scrap": true
+  },
+  "bulb_burnt": {
+    "scrap": true
+  },
+  "canister": {
+    "heavy": true
+  },
+  "canister_spent": {
+    "scrap": true,
+    "heavy": true
+  },
+  "carbon_rods": {
+    "limited": true
+  },
+  "carbon_stubs": {
+    "scrap": true
+  },
+  "cell_dead": {
+    "scrap": true,
+    "heavy": true
+  },
+  "cell_flat": {
+    "scrap": true,
+    "heavy": true
+  },
+  "cell_used": {
+    "scrap": true,
+    "heavy": true
+  },
+  "chamber_seal": {},
+  "check_flapper": {
+    "discard": false,
+    "component": true
+  },
+  "fan_bearing": {},
+  "fan_bearing_worn": {
+    "scrap": true
+  },
+  "fuse": {},
+  "fuse_blown": {
+    "scrap": true
+  },
+  "fuse_wire": {},
+  "fuse_wire_used": {
+    "scrap": true
+  },
+  "gasket": {},
+  "gasket_old": {
+    "scrap": true
+  },
+  "gyro_bearing": {
+    "limited": true
+  },
+  "gyro_bearing_worn": {
+    "scrap": true
+  },
+  "ink_bottle": {},
+  "insulating_tape": {},
+  "jumper_bar": {},
+  "lining_worn": {
+    "scrap": true
+  },
+  "nav_gear": {},
+  "nav_gear_worn": {
+    "scrap": true
+  },
+  "packing_cord": {},
+  "packing_old": {
+    "scrap": true
+  },
+  "packing_tape": {},
+  "panel_bulb": {},
+  "penetrating_oil": {},
+  "pump_bearing": {},
+  "pump_bearing_worn": {
+    "scrap": true
+  },
+  "seal_old": {
+    "scrap": true
+  },
+  "spare_cell": {
+    "heavy": true,
+    "limited": true
+  },
+  "strainer_basket": {
+    "discard": false,
+    "component": true
+  },
+  "timber_shore": {},
+  "tube_dead": {
+    "scrap": true
+  },
+  "vacuum_tube": {
+    "limited": true
+  },
+  "viewport_seal": {},
+  "wood_wedge": {}
+}

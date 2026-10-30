@@ -1,0 +1,36 @@
+{
+  "name": "WTR-03 역류 방지 밸브가 고착되면 펌프는 정상인데 수위가 줄지 않는다",
+  "seed": 112,
+  "depth": 300,
+  "inject": [
+    {
+      "tick": 0,
+      "fault": "HUL-01",
+      "part": "leak.rivet.10"
+    },
+    {
+      "tick": 0,
+      "fault": "WTR-03"
+    }
+  ],
+  "commands": [
+    {
+      "tick": 200,
+      "cmd": "switch.C3.on"
+    }
+  ],
+  "expect": [
+    {
+      "byTick": 201,
+      "assert": "device.bilge_pump.current > 250 && device.bilge_pump.current < 350"
+    },
+    {
+      "byTick": 201,
+      "assert": "pump.grossFlow > 1.9 && pump.netFlow == 0"
+    },
+    {
+      "byTick": 7200,
+      "assert": "bilge.total > 100"
+    }
+  ]
+}

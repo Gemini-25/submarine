@@ -1,0 +1,35 @@
+{
+  "name": "시운전: 겹친 고장",
+  "briefing": [
+    "모선 아르고스호 → 모스호 기관사. 수심 300m, 반속 시운전.",
+    "출항 뒤 여러 곳이 동시에 말썽이다. 실내가 눅눅하고, 상황판 표시등 하나가 미덥지 않다는 말이 있다. 상황판만 믿지 말고 램프 시험과 현장의 소리, 계기로 원인을 하나씩 찾아 교범(Tab)대로 고칠 것.",
+    "모든 고장을 고치고 추진과 배수 펌프가 돌며 후방 경고등이 꺼진 채 1분을 버티면 시운전을 마친다."
+  ],
+  "seed": 1905,
+  "setup": {
+    "depthM": 300,
+    "throttle": 0.75,
+    "switches": { "C3": true },
+    "parts": [
+      { "part": "air.humidity", "prop": "rh", "value": 0.7 },
+      { "part": "junction.C3", "prop": "moisture", "value": 0.62 },
+      { "part": "junction.C8", "prop": "moisture", "value": 0.5 }
+    ]
+  },
+  "events": [
+    { "atSeconds": 0, "fault": "PWR-03" },
+    { "atSeconds": 0, "fault": "SNS-01", "part": "panel.bulb.hull" },
+    { "atSeconds": 90, "fault": "HUL-03" }
+  ],
+  "success": {
+    "assert": "part.steam.joint.prop.integrity >= 0.95 && part.steam.accumulator.prop.stop >= 4 && part.steam.accumulator.prop.bleed <= 0 && circuit.C3.moisture < 0.6 && circuit.C3.fuse == 'ok' && device.bilge_pump.running == 1 && leak.shaft_packing.totalInflow < 0.05 && zone.aft.alarm == 0 && device.propulsion.running == 1 && part.panel.bulb.hull.prop.burnt == 0 && part.panel.bulb.hull.prop.present == 1 && part.panel.bulb.hull.prop.bezel == 1",
+    "holdSeconds": 60,
+    "objectives": [
+      "축압기 이음과 젖은 분기함을 고친다",
+      "축 패킹을 고친다",
+      "상황판의 꺼진 전구를 간다",
+      "추진과 배수 펌프가 돌고 후방 경고등이 꺼진 채 1분을 버틴다"
+    ]
+  },
+  "timeLimitSeconds": 2700
+}

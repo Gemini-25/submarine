@@ -1,0 +1,20 @@
+{
+  "scrubber": {
+    "bypassAbsorption": 0.5
+  },
+  "fan": {
+    "stallHeatW": 30
+  },
+  "furnace": {
+    "ashPerCandle": 0.2,
+    "ventPerCandle": 0.05,
+    "ashO2Weight": 0.7,
+    "smokeVentAbove": 0.3,
+    "smokeCo2PerMin": 0.05,
+    "leakSmoke": 0.3,
+    "leakO2Factor": 0.7,
+    "hotC": 120,
+    "heatTauSeconds": 15,
+    "coolTauSeconds": 60
+  }
+}

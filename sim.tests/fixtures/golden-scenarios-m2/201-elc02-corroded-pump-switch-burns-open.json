@@ -1,0 +1,41 @@
+{
+  "name": "ELC-02 배수 회로(C3) 칼날 접점 부식: 강하와 배전반 노랑, 펌프 전류 상승, 아크, 타는 냄새, 끝내 타서 열려 회로가 죽는다",
+  "seed": 201,
+  "depth": 300,
+  "inject": [
+    {
+      "tick": 0,
+      "fault": "ELC-02",
+      "part": "contact.C3"
+    }
+  ],
+  "commands": [
+    {
+      "tick": 0,
+      "cmd": "switch.C3.on"
+    }
+  ],
+  "expect": [
+    {
+      "byTick": 40,
+      "assert": "measure.voltmeter.switch.C3 > 0.083 && panel.lamp.switchboard == 'warning' && device.bilge_pump.current > 360"
+    },
+    {
+      "byTick": 200,
+      "assert": "cue.knife.C3.crackle > 0.5 && events.Spark >= 1"
+    },
+    {
+      "byTick": 6000,
+      "assert": "cue.knife.C3.burning > 0.3"
+    },
+    {
+      "byTick": 18000,
+      "assert": "part.contact.C3.prop.burnt == 1 && circuit.C3.energized == 0 && panel.lamp.switchboard == 'fault' && events.WiringBurnt >= 1"
+    },
+    {
+      "never": "events.Explosion >= 1",
+      "toTick": 18000
+    }
+  ],
+  "ordered": true
+}

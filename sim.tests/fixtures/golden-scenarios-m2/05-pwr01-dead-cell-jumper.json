@@ -1,0 +1,44 @@
+{
+  "name": "죽은 셀은 버스 전체를 끌어내리고, 점퍼로 건너뛰면 낮은 전압으로 살아난다",
+  "seed": 105,
+  "depth": 200,
+  "inject": [
+    {
+      "tick": 0,
+      "fault": "PWR-01",
+      "part": "cell.3",
+      "set": {
+        "health": 0
+      },
+      "state": "Broken"
+    }
+  ],
+  "commands": [
+    {
+      "tick": 600,
+      "cmd": "cell.3.jumper"
+    }
+  ],
+  "expect": [
+    {
+      "atTick": 1,
+      "assert": "battery.voltage < 0.35"
+    },
+    {
+      "atTick": 1,
+      "assert": "panel.on == 0 && device.gyrocompass.running == 0"
+    },
+    {
+      "atTick": 1,
+      "assert": "lights.brightness < 0.35 && lights.brightness > 0"
+    },
+    {
+      "atTick": 601,
+      "assert": "battery.voltage > 0.8 && battery.voltage < 0.85"
+    },
+    {
+      "atTick": 601,
+      "assert": "panel.on == 1 && device.gyrocompass.running == 1 && device.searchlight.running == 0"
+    }
+  ]
+}

@@ -1,0 +1,85 @@
+{
+  "cues": {
+    "panel.bulb.{l}.black": {
+      "bind": { "l": "power,switchboard,air,water,hull,senses,nav,cable" },
+      "sense": "Sight",
+      "anchor": "panel.bulb.{l}",
+      "q": "part.panel.bulb.{l}.prop.burnt",
+      "while": "part.panel.bulb.{l}.prop.present",
+      "map": [[0, 0], [1, 1]],
+      "caption": "cue.bulb.black"
+    },
+    "hydrophone.tube.{n}.glow": {
+      "bind": { "n": "1..2" },
+      "sense": "Sight",
+      "anchor": "hydrophone.tube.{n}",
+      "q": "tubes.glow.hydrophone.tube.{n}",
+      "map": [[0, 0], [0.02, 0.25], [1, 1]],
+      "caption": "cue.tube.glow"
+    },
+    "sonarset.tube.1.glow": {
+      "sense": "Sight",
+      "anchor": "sonarset.tube.1",
+      "q": "tubes.glow.sonar.tube.1",
+      "map": [[0, 0], [0.02, 0.25], [1, 1]],
+      "caption": "cue.tube.glow"
+    },
+    "siphon.tube.1.glow": {
+      "sense": "Sight",
+      "anchor": "siphon.tube.1",
+      "q": "tubes.glow.siphon.tube.1",
+      "map": [[0, 0], [0.02, 0.25], [1, 1]],
+      "caption": "cue.tube.glow"
+    },
+    "hydrophone.hiss": {
+      "sense": "Sound",
+      "anchor": "hydrophone",
+      "q": "tubes.health.hydrophone",
+      "while": "device.hydrophone.running",
+      "map": [[0, 1], [0.3, 0.8], [0.5, 0.3], [1, 0]],
+      "caption": "cue.hydrophone.hiss"
+    },
+    "hydrophone.listen": {
+      "sense": "Sound",
+      "anchor": "hydrophone",
+      "q": "device.hydrophone.running",
+      "map": [[0, 0], [1, 1]],
+      "caption": "cue.hydrophone.listen"
+    },
+    "panel.wiring.dew": {
+      "sense": "Sight",
+      "anchor": "panel.wiring.cover",
+      "q": "part.panel.wiring.prop.moisture",
+      "map": [[0.4, 0], [0.6, 0.5], [0.9, 1]],
+      "caption": "cue.panelwiring.dew"
+    },
+    "searchlight.glow": {
+      "sense": "Sight",
+      "anchor": "searchlight.housing",
+      "q": "searchlight.brightness",
+      "map": [[0, 0], [1, 1]],
+      "caption": "cue.searchlight.glow"
+    },
+    "searchlight.yellow": {
+      "sense": "Sight",
+      "anchor": "searchlight.housing",
+      "q": "searchlight.warmth",
+      "map": [[0, 0], [1, 1]],
+      "caption": "cue.searchlight.yellow"
+    },
+    "searchlight.arc": {
+      "sense": "Sound",
+      "anchor": "searchlight.housing",
+      "q": "device.searchlight.running",
+      "map": [[0, 0], [1, 1]],
+      "caption": "cue.searchlight.arc"
+    },
+    "searchlight.sputter": {
+      "sense": "Sound",
+      "anchor": "searchlight.housing",
+      "q": "searchlight.flicker",
+      "map": [[0, 0], [0.05, 0.2], [1, 1]],
+      "caption": "cue.searchlight.sputter"
+    }
+  }
+}

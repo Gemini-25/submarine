@@ -1,0 +1,22 @@
+{
+  "cue.checkvalve.drip": "역류 방지 밸브 보닛 가장자리에서 물방울이 떨어진다",
+  "cue.checkvalve.spill": "역류 방지 밸브 보닛에서 물이 쏟아지는 소리",
+  "cue.pump.oilweep": "베어링 뚜껑 둘레로 기름이 배어 나온다",
+  "fixture.checkvalve.bolt.{n}": "보닛 볼트 {n}",
+  "fixture.checkvalve.bonnet": "역류 방지 밸브 보닛",
+  "fixture.checkvalve.flap": "역지 밸브 판",
+  "cue.pump.oilcup": "유리 기름 잔에 기름이 차 있다",
+  "fixture.pump.bearing": "펌프 베어링",
+  "fixture.pump.body": "펌프 몸체",
+  "fixture.pump.cap": "베어링 뚜껑",
+  "fixture.pump.cap.bolt.{n}": "베어링 뚜껑 볼트 {n}",
+  "fixture.pump.discharge": "펌프 배출 밸브",
+  "fixture.pump.oilcup": "기름 잔",
+  "fixture.wash_bucket": "세척통",
+  "reason.cup_full": "기름 잔이 가득 차 있다.",
+  "reason.flapper_clean": "판이 이미 깨끗하다.",
+  "reason.need_check_flapper": "손에 판이 없다.",
+  "reason.need_flapper": "끼울 역지 밸브 판을 쥐고 있지 않다.",
+  "reason.need_oil_can": "손에 기름통이 없다.",
+  "reason.no_bearing": "기름 잔 밑에 베어링이 없다."
+}

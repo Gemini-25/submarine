@@ -1,0 +1,36 @@
+{
+  "name": "수소가 폭발 농도일 때 퓨즈가 끊기며 튄 불꽃은 폭발로 이어진다",
+  "seed": 116,
+  "depth": 200,
+  "setup": {
+    "air": {
+      "h2": 5.0
+    },
+    "devices": {
+      "vent_fan": false
+    }
+  },
+  "inject": [
+    {
+      "tick": 0,
+      "fault": "ELC-03",
+      "part": "junction.C3"
+    }
+  ],
+  "commands": [
+    {
+      "tick": 20,
+      "cmd": "switch.C3.on"
+    }
+  ],
+  "expect": [
+    {
+      "atTick": 40,
+      "assert": "mission.status == 'running'"
+    },
+    {
+      "byTick": 70,
+      "assert": "events.Explosion == 1 && mission.status == 'failed' && mission.reason == 'explosion'"
+    }
+  ]
+}

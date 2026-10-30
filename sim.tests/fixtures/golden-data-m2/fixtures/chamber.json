@@ -1,0 +1,162 @@
+{
+  "params": {
+    "resealQ": 0.95,
+    "misorderCap": 0.8,
+    "noSealQ": 0.3
+  },
+  "fixtures": [
+    {
+      "id": "chamber.squeeze",
+      "part": "chamber.state",
+      "kind": "adjuster",
+      "zone": "mid",
+      "prop": "squeeze",
+      "min": 0,
+      "max": 3,
+      "step": 1,
+      "verbs": {
+        "up": {
+          "tool": "hand",
+          "noise": "valve"
+        },
+        "down": {
+          "tool": "hand",
+          "noise": "valve"
+        }
+      }
+    },
+    {
+      "id": "chamber.hatch.dog.{n}",
+      "bind": {
+        "n": "1..4"
+      },
+      "part": "chamber.state",
+      "kind": "fastener",
+      "zone": "mid",
+      "prop": "dog{n}",
+      "group": "dogs",
+      "verbs": {
+        "loosen": {
+          "tool": "hand",
+          "noise": "latch"
+        },
+        "tighten": {
+          "tool": "hand",
+          "noise": "latch",
+          "rejectIf": [
+            {
+              "if": "self.innerOpen >= 0.5",
+              "reason": "hatch_open"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "chamber.hatch",
+      "part": "chamber.state",
+      "kind": "cover",
+      "zone": "mid",
+      "prop": "innerOpen",
+      "heldBy": "dogs",
+      "verbs": {
+        "open": {
+          "tool": "hand",
+          "noise": "hatch",
+          "rejectIf": [
+            {
+              "if": "chamber.water > 20",
+              "reason": "hatch_pressed"
+            }
+          ]
+        },
+        "close": {
+          "tool": "hand",
+          "noise": "hatch"
+        }
+      }
+    },
+    {
+      "id": "chamber.seal.screw.{n}",
+      "bind": {
+        "n": "1..4"
+      },
+      "part": "leak.chamber_door",
+      "kind": "fastener",
+      "zone": "mid",
+      "prop": "retainer{n}",
+      "group": "retainer",
+      "sequenceFrom": "proc.chamber.reseal",
+      "verbs": {
+        "loosen": {
+          "tool": "screwdriver",
+          "noise": "screwdriver",
+          "rejectIf": [
+            {
+              "if": "part.chamber.state.prop.innerOpen < 0.5",
+              "reason": "hatch_closed"
+            }
+          ]
+        },
+        "tighten": {
+          "tool": "screwdriver",
+          "noise": "screwdriver",
+          "rejectIf": [
+            {
+              "if": "part.chamber.state.prop.innerOpen < 0.5",
+              "reason": "hatch_closed"
+            }
+          ],
+          "hook": "seat"
+        }
+      }
+    },
+    {
+      "id": "chamber.seal",
+      "part": "leak.chamber_door",
+      "kind": "socket",
+      "zone": "mid",
+      "needReason": "need_chamber_seal",
+      "verbs": {
+        "pull": {
+          "tool": "hand",
+          "noise": "cover",
+          "rejectIf": [
+            {
+              "if": "part.chamber.state.prop.innerOpen < 0.5",
+              "reason": "hatch_closed"
+            },
+            {
+              "if": "self.retainer1 >= 0.5 || self.retainer2 >= 0.5 || self.retainer3 >= 0.5 || self.retainer4 >= 0.5",
+              "reason": "retainer_tight"
+            }
+          ],
+          "gives": [
+            {
+              "item": "seal_old"
+            }
+          ],
+          "set": {
+            "seatQ": "$noSealQ"
+          }
+        },
+        "insert": {
+          "noise": "cover",
+          "rejectIf": [
+            {
+              "if": "part.chamber.state.prop.innerOpen < 0.5",
+              "reason": "hatch_closed"
+            }
+          ],
+          "accepts": {
+            "chamber_seal": {
+              "set": {
+                "seatQ": "$resealQ"
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

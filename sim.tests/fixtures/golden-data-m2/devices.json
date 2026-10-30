@@ -1,0 +1,207 @@
+{
+  "cabin_lights": {
+    "name": "실내 조명",
+    "circuit": "C1",
+    "powerW": 40,
+    "minVoltage": 0.1,
+    "noise": 0,
+    "loadType": "Resistive",
+    "kind": "Continuous",
+    "defaultOn": true,
+    "zone": "mid",
+    "parts": []
+  },
+  "vent_fan": {
+    "name": "송풍 팬",
+    "circuit": "C2",
+    "powerW": 60,
+    "minVoltage": 0.5,
+    "noise": 5,
+    "loadType": "Motor",
+    "kind": "Continuous",
+    "defaultOn": true,
+    "zone": "mid",
+    "parts": [
+      "fan.motor"
+    ],
+    "heatFactor": 0.1,
+    "coolingWPerC": 1,
+    "heatCapacityJPerC": 400,
+    "overheatC": 80
+  },
+  "o2_igniter": {
+    "name": "산소 화로 점화기",
+    "circuit": "C2",
+    "powerW": 10,
+    "minVoltage": 0.5,
+    "noise": 2,
+    "loadType": "Resistive",
+    "kind": "Continuous",
+    "defaultOn": true,
+    "zone": "mid",
+    "parts": []
+  },
+  "bilge_pump": {
+    "name": "전동 배수 펌프",
+    "circuit": "C3",
+    "powerW": 300,
+    "minVoltage": 0.6,
+    "noise": 15,
+    "loadType": "Motor",
+    "kind": "Continuous",
+    "defaultOn": true,
+    "zone": "aft",
+    "parts": [
+      "pump.motor",
+      "pump.bearing",
+      "pump.seal",
+      "pump.intake",
+      "pump.check_valve"
+    ],
+    "heatFactor": 0.2,
+    "coolingWPerC": 2,
+    "heatCapacityJPerC": 600,
+    "overheatC": 70,
+    "cutoutC": 95,
+    "cutoutResetC": 50
+  },
+  "status_panel": {
+    "name": "계통 상황판",
+    "circuit": "C4",
+    "powerW": 30,
+    "minVoltage": 0.4,
+    "noise": 0,
+    "loadType": "Resistive",
+    "kind": "Continuous",
+    "defaultOn": true,
+    "zone": "fore",
+    "parts": []
+  },
+  "hydrophone": {
+    "name": "청음기",
+    "circuit": "C4",
+    "powerW": 20,
+    "minVoltage": 0.6,
+    "noise": 0,
+    "loadType": "Resistive",
+    "kind": "Continuous",
+    "defaultOn": true,
+    "zone": "fore",
+    "parts": [
+      "hydrophone.tube.1",
+      "hydrophone.tube.2"
+    ],
+    "heatFactor": 0.81,
+    "coolingWPerC": 0.3,
+    "heatCapacityJPerC": 24
+  },
+  "searchlight": {
+    "name": "탄소 아크 탐조등",
+    "circuit": "C4",
+    "powerW": 400,
+    "minVoltage": 0.85,
+    "noise": 8,
+    "loadType": "Resistive",
+    "kind": "Continuous",
+    "defaultOn": false,
+    "zone": "fore",
+    "parts": [],
+    "heatFactor": 0.7,
+    "coolingWPerC": 2,
+    "heatCapacityJPerC": 240
+  },
+  "sonar": {
+    "name": "소나 발신",
+    "circuit": "C4",
+    "powerW": 150,
+    "minVoltage": 0.7,
+    "noise": 30,
+    "loadType": "Motor",
+    "kind": "Pulse",
+    "defaultOn": false,
+    "zone": "fore",
+    "parts": [
+      "sonar.tube.1"
+    ],
+    "pulseSeconds": 1
+  },
+  "gyrocompass": {
+    "name": "자이로컴퍼스",
+    "circuit": "C5",
+    "powerW": 50,
+    "minVoltage": 0.8,
+    "noise": 3,
+    "loadType": "Motor",
+    "kind": "Continuous",
+    "defaultOn": true,
+    "zone": "fore",
+    "parts": [
+      "gyro.bearing"
+    ]
+  },
+  "nav_computer": {
+    "name": "기계식 항법 계산기",
+    "circuit": "C5",
+    "powerW": 20,
+    "minVoltage": 0.7,
+    "noise": 4,
+    "loadType": "Motor",
+    "kind": "Continuous",
+    "defaultOn": true,
+    "zone": "fore",
+    "parts": []
+  },
+  "hook_winch": {
+    "name": "갈고리 윈치",
+    "circuit": "C6",
+    "powerW": 600,
+    "minVoltage": 0.75,
+    "noise": 30,
+    "loadType": "Motor",
+    "kind": "Continuous",
+    "defaultOn": false,
+    "zone": "aft",
+    "parts": []
+  },
+  "siphon_recorder": {
+    "name": "사이펀 기록기",
+    "circuit": "C6",
+    "powerW": 15,
+    "minVoltage": 0.6,
+    "noise": 1,
+    "loadType": "Motor",
+    "kind": "Continuous",
+    "defaultOn": true,
+    "zone": "fore",
+    "parts": [
+      "siphon.tube.1"
+    ]
+  },
+  "soldering_iron": {
+    "name": "납땜인두",
+    "circuit": "C7",
+    "powerW": 80,
+    "minVoltage": 0.6,
+    "noise": 0,
+    "loadType": "Resistive",
+    "kind": "Continuous",
+    "defaultOn": false,
+    "zone": "mid",
+    "parts": []
+  },
+  "propulsion": {
+    "name": "추진 전동기",
+    "circuit": "C8",
+    "powerW": 800,
+    "minVoltage": 0.7,
+    "noise": 20,
+    "loadType": "Motor",
+    "kind": "Throttle",
+    "defaultOn": false,
+    "zone": "aft",
+    "parts": [
+      "motor.brushes",
+      "motor.commutator"
+    ]
+  }
+}
