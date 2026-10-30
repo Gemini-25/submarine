@@ -139,7 +139,6 @@ public class ObservationTests
     [InlineData("hydrometer", "bus")]
     [InlineData("stethoscope", "pump.nope")]
     [InlineData("bridge", "insulation.C0")]
-    [InlineData("bridge", "panel.wiring")]   // 상황판 배선함 부품이 아직 없다 (WP20)
     [InlineData("bridge", "tube.hydrophone.tube.9")]  // 그런 진공관이 없다
     [InlineData("bridge", "tube.hydrophone.case")]    // 진공관이 아니다
     [InlineData("lamptest", "bus")]

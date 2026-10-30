@@ -1,7 +1,14 @@
 {
   "params": {
     "burnC": 50,
-    "goodTube": 0.5
+    "goodTube": 0.5,
+    "wiringWet": 0.5,
+    "lampHotC": 60,
+    "gapMark": 0.15,
+    "feedGap": 0.15,
+    "feedLength": 0.03,
+    "shortLength": 0.35,
+    "zeroStep": 0.005
   },
   "fixtures": [
     {
@@ -165,6 +172,141 @@
             "tube_dead": { "set": { "filament": 0 } }
           }
         }
+      }
+    },
+    {
+      "id": "panel.wiring.screw.{n}",
+      "bind": { "n": "1..4" },
+      "part": "panel.wiring",
+      "kind": "fastener",
+      "zone": "fore",
+      "prop": "screw{n}",
+      "group": "screws",
+      "verbs": {
+        "loosen": { "tool": "screwdriver", "noise": "screwdriver" },
+        "tighten": { "tool": "screwdriver", "noise": "screwdriver", "rejectIf": [ { "if": "self.coverOpen >= 0.5", "reason": "screw_cover_open" } ] }
+      }
+    },
+    {
+      "id": "panel.wiring.cover",
+      "part": "panel.wiring",
+      "kind": "cover",
+      "zone": "fore",
+      "prop": "coverOpen",
+      "heldBy": "screws",
+      "verbs": {
+        "open": { "tool": "hand", "noise": "cover", "hazards": [ { "if": "circuit.C4.energized == 1 && self.moisture > $wiringWet", "hazard": "shock" } ] },
+        "close": { "tool": "hand", "noise": "cover" }
+      }
+    },
+    {
+      "id": "panel.wiring.strip",
+      "part": "panel.wiring",
+      "kind": "work",
+      "zone": "fore",
+      "verbs": {
+        "dry": { "gesture": "scrub", "tool": "rag", "noise": "rag", "hook": "ragDry", "rejectIf": [ { "if": "self.coverOpen < 0.5", "reason": "cover_closed" } ], "hazards": [ { "if": "circuit.C4.energized == 1", "hazard": "shock" } ] }
+      },
+      "touch": { "wet": "self.moisture > 0.4", "hazards": [ { "if": "circuit.C4.energized == 1 && self.moisture > $wiringWet", "hazard": "shock" } ] }
+    },
+    {
+      "id": "panel.wiring.terminals",
+      "part": "panel.wiring",
+      "kind": "work",
+      "zone": "fore",
+      "verbs": {
+        "reseat": { "gesture": "rotate", "tool": "screwdriver", "noise": "screwdriver", "rejectIf": [ { "if": "self.coverOpen < 0.5", "reason": "cover_closed" }, { "if": "self.seated >= 1", "reason": "terminals_seated" } ], "hazards": [ { "if": "circuit.C4.energized == 1", "hazard": "shock" } ], "effects": [ { "add": "seated", "by": 0.5, "min": 0, "max": 1 } ] }
+      }
+    },
+    {
+      "id": "searchlight.latch.{n}",
+      "bind": { "n": "1..2" },
+      "part": "searchlight.rods",
+      "kind": "fastener",
+      "zone": "fore",
+      "prop": "latch{n}",
+      "group": "latches",
+      "verbs": {
+        "loosen": { "tool": "hand", "noise": "latch", "rejectIf": [ { "if": "self.latch{n} < 0.5", "reason": "latch_open" } ], "hazards": [ { "if": "device.searchlight.temp >= $lampHotC", "hazard": "burn" } ] },
+        "tighten": { "tool": "hand", "noise": "latch", "rejectIf": [ { "if": "self.latch{n} >= 0.5", "reason": "latch_shut" } ] }
+      }
+    },
+    {
+      "id": "searchlight.door",
+      "part": "searchlight.rods",
+      "kind": "cover",
+      "zone": "fore",
+      "prop": "doorOpen",
+      "heldBy": "latches",
+      "gesture": "down",
+      "verbs": {
+        "open": { "tool": "hand", "noise": "cover", "hazards": [ { "if": "device.searchlight.temp >= $lampHotC", "hazard": "burn" } ] },
+        "close": { "tool": "hand", "noise": "cover" }
+      }
+    },
+    {
+      "id": "searchlight.rods",
+      "part": "searchlight.rods",
+      "kind": "socket",
+      "zone": "fore",
+      "needReason": "need_carbon_rods",
+      "verbs": {
+        "pull": { "tool": "hand", "noise": "tap", "rejectIf": [ { "if": "self.doorOpen < 0.5", "reason": "door_closed" } ], "hazards": [ { "if": "device.searchlight.temp >= $lampHotC", "hazard": "burn" } ], "gives": [ { "if": "self.length >= 0.95", "item": "carbon_rods" }, { "item": "carbon_stubs" } ] },
+        "insert": { "noise": "tap", "rejectIf": [ { "if": "self.doorOpen < 0.5", "reason": "door_closed" } ], "accepts": { "carbon_rods": { "set": { "length": 1, "gap": 0.9 }, "renew": true }, "carbon_stubs": { "set": { "length": 0.04, "gap": 0.9 } } } }
+      }
+    },
+    {
+      "id": "searchlight.feed",
+      "part": "searchlight.rods",
+      "kind": "work",
+      "zone": "fore",
+      "verbs": {
+        "turn": { "gesture": "rotate", "tool": "hand", "rejectIf": [ { "if": "self.present < 0.5", "reason": "rods_missing" }, { "if": "self.gap <= $gapMark", "reason": "rods_at_mark" } ], "effects": [ { "add": "gap", "by": "-$feedGap", "min": 0.15 }, { "add": "length", "by": "-$feedLength", "min": 0 }, { "if": "self.length < $shortLength", "quality": "temporary" } ] }
+      }
+    },
+    {
+      "id": "searchlight.housing",
+      "part": "searchlight.rods",
+      "kind": "work",
+      "zone": "fore",
+      "touch": { "temp": "device.searchlight.temp" }
+    },
+    {
+      "id": "gauge.{g}",
+      "bind": { "g": "voltage,current,bilge,depth,pumpCurrent" },
+      "part": "gauge.{g}",
+      "kind": "work",
+      "zone": "fore",
+      "verbs": {
+        "tap": { "tool": "hand", "noise": "tap", "hook": "gaugeTap" },
+        "wipe": { "gesture": "scrub", "tool": "rag", "noise": "rag", "rejectIf": [ { "if": "self.bezelOpen < 0.5", "reason": "glass_closed" } ], "set": { "stick": 0 } }
+      }
+    },
+    {
+      "id": "gauge.{g}.glass",
+      "bind": { "g": "voltage,current,bilge,depth,pumpCurrent" },
+      "part": "gauge.{g}",
+      "kind": "cover",
+      "zone": "fore",
+      "prop": "bezelOpen",
+      "verbs": {
+        "open": { "tool": "hand", "noise": "tap" },
+        "close": { "tool": "hand", "noise": "tap" }
+      }
+    },
+    {
+      "id": "gauge.{g}.zero",
+      "bind": { "g": "voltage,current,bilge,depth,pumpCurrent" },
+      "part": "gauge.{g}",
+      "kind": "adjuster",
+      "zone": "fore",
+      "prop": "zero",
+      "min": -40,
+      "max": 40,
+      "step": 1,
+      "verbs": {
+        "up": { "tool": "screwdriver", "noise": "screwdriver", "effects": [ { "add": "offset", "by": "$zeroStep", "min": -1, "max": 1 } ] },
+        "down": { "tool": "screwdriver", "noise": "screwdriver", "effects": [ { "add": "offset", "by": "-$zeroStep", "min": -1, "max": 1 } ] }
       }
     }
   ]
