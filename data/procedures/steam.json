@@ -9,6 +9,12 @@
         "text": "축압기 압력계가 처지고, 관 이음에서 김이 오르며 쉿 소리가 나면 이음이 샌다. 이음과 플랜지에 맨손을 대지 않는다."
       },
       {
+        "type": "Open",
+        "text": "격벽 해치를 닫는다. 해치를 열어 두면 열린 문이 축압기 앞을 가려 밸브와 플랜지에 손이 닿지 않는다.",
+        "cmd": "hatch.close",
+        "tool": "hand"
+      },
+      {
         "type": "Isolate",
         "text": "정지 밸브 핸들을 시계 방향으로 끝까지 네 바퀴 돌려 닫는다.",
         "cmd": "steam.stop.close",
@@ -58,6 +64,12 @@
         "cmd": "steam.stop.open",
         "tool": "hand",
         "repeat": 4
+      },
+      {
+        "type": "Close",
+        "text": "격벽 해치를 다시 연다.",
+        "cmd": "hatch.open",
+        "tool": "hand"
       }
     ]
   },
@@ -69,6 +81,12 @@
       {
         "type": "Inspect",
         "text": "이음에서 김이 오르는지, 감은 테이프가 터졌는지 본다. 축압기 압력계를 읽어 둔다. 증기를 빼면 그만큼 윈치 보조 동력을 잃고, 임무 중에는 다시 채울 수 없다."
+      },
+      {
+        "type": "Open",
+        "text": "격벽 해치를 닫는다. 해치를 열어 두면 열린 문이 축압기 앞을 가려 밸브와 플랜지에 손이 닿지 않는다.",
+        "cmd": "hatch.close",
+        "tool": "hand"
       },
       {
         "type": "Isolate",
@@ -158,6 +176,12 @@
         "cmd": "steam.stop.open",
         "tool": "hand",
         "repeat": 4
+      },
+      {
+        "type": "Close",
+        "text": "격벽 해치를 다시 연다.",
+        "cmd": "hatch.open",
+        "tool": "hand"
       }
     ]
   }

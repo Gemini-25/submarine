@@ -54,6 +54,9 @@ public sealed partial class DrillSolver
             _s.Agenda.RemoveAt(0);
             return Emit(PlanKind.Skip, 0, cmd: cmd, text: "already", job: JobName(op.Job), jobStep: op.Step, note: op.Origin);
         }
+        // 여러 칸 레버(흡입 선택 레버): 손잡이는 한 칸씩 움직인다. 이웃하지 않은 자리로 가는 명령은 가운데 자리를 차례로 낸다 (WP23).
+        if (LeverNotch(cmd) is { } notch)
+            return Emit(PlanKind.Do, Hand, cmd: notch, text: "notch", job: JobName(op.Job), jobStep: op.Step, note: op.Note ?? op.Origin);
         // 바닥에서 줍기: 공구판으로 가지러 갈 도구가 바닥에 있으면 줍는다.
         if (cmd.StartsWith("toolboard.take.", StringComparison.Ordinal))
         {
@@ -109,8 +112,28 @@ public sealed partial class DrillSolver
         return Emit(PlanKind.Do, Hand, cmd: "propulsion.set", value: next, job: JobName(op.Job), jobStep: op.Step, note: op.Note ?? op.Origin);
     }
 
+    /// <summary>레버 명령의 목표 자리가 지금 자리와 이웃하지 않으면 목표 쪽 이웃 자리의 명령. 아니면 null.</summary>
+    string? LeverNotch(string cmd)
+    {
+        int dot = cmd.LastIndexOf('.');
+        if (dot <= 0 || !_book.Fixtures.TryGetValue(cmd[..dot], out var f) || f.Kind != FixtureKind.Lever || f.Prop == null) return null;
+        string path = $"part.{f.PartId}.prop.{f.Prop}";
+        if (!_book.HandPositions.Contains(path)) return null;
+        int now = (int)Math.Round(_q.Number(path)), goal = IndexOf(f.Positions, cmd[(dot + 1)..]);
+        if (goal < 0 || now < 0 || now >= f.Positions.Count || Math.Abs(goal - now) <= 1) return null;
+        return $"{f.Id}.{f.Positions[now + Math.Sign(goal - now)]}";
+    }
+
+    static int IndexOf(IReadOnlyList<string> list, string x)
+    {
+        for (int i = 0; i < list.Count; i++) if (list[i] == x) return i;
+        return -1;
+    }
+
     bool AlreadyThere(string cmd)
     {
+        // 격벽 해치: 문이 보인다. 이미 그 자리면 내지 않는다 (Godot의 해치 손동작은 열림과 닫힘을 맞바꾼다).
+        if (cmd is "hatch.close" or "hatch.open") return (_q.Number("hatch.closed") >= 0.5) == (cmd == "hatch.close");
         int dot = cmd.LastIndexOf('.');
         if (dot <= 0 || !_book.Fixtures.TryGetValue(cmd[..dot], out var f) || f.Prop == null) return false;
         string verb = cmd[(dot + 1)..];

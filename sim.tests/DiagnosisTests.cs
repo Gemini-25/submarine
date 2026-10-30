@@ -21,10 +21,18 @@ public class DiagnosisTests
     public static readonly string[] TierA =
         { "PWR-01", "PWR-02", "ELC-01", "ELC-03", "AIR-01", "AIR-02", "WTR-01", "WTR-02", "HUL-01", "HUL-03", "SNS-01", "SNS-03", "NAV-01", "NAV-02", "CBL-01", "CBL-02" };
 
+    /// <summary>2차 고장 열 (WP17~WP20).</summary>
+    public static readonly string[] TierB =
+        { "PWR-03", "ELC-02", "AIR-03", "WTR-03", "WTR-04", "HUL-02", "HUL-04", "SNS-02", "SNS-04", "SNS-05" };
+
+    /// <summary>M2 고장 26개 (Tier A 16 + 2차 10).</summary>
+    public static readonly string[] All = TierA.Concat(TierB).ToArray();
+
     [Fact]
-    public void Tier_A_faults_each_have_a_repairing_verdict()
+    public void Every_fault_has_a_repairing_verdict()
     {
-        foreach (var fault in TierA)
+        Assert.Equal(TestData.Data.Faults.Select(f => f.Id).OrderBy(x => x, StringComparer.Ordinal), All.OrderBy(x => x, StringComparer.Ordinal));
+        foreach (var fault in All)
         {
             var found = Dx.Pairs.SelectMany(p => p.Verdicts.Values).Where(v => v.Fault == fault).ToList();
             Assert.True(found.Count > 0, $"{fault}를 판정하는 쌍이 없다");
@@ -151,7 +159,7 @@ public class DiagnosisTests
         TestData.Data.Diagnosis!.Pairs.SelectMany(p => p.Cases.Select((c, i) => new object[] { p.Id, i }));
 
     /// <summary>노출 설정 위에 사례 설정을 덮는다: 단일 값은 바꾸고, 사전은 합치고, parts는 뒤에 붙인다.</summary>
-    static MissionSetup Merge(MissionSetup a, MissionSetup? b)
+    internal static MissionSetup Merge(MissionSetup a, MissionSetup? b)
     {
         var s = JsonSerializer.Deserialize<MissionSetup>(JsonSerializer.Serialize(a))!;
         if (b == null) return s;

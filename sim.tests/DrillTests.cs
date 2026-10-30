@@ -191,7 +191,7 @@ public class DrillLogTests
     [InlineData("m2-water-b", "prop:pump.check_valve.bonnetOpen")]
     [InlineData("m2-ballast", "phase:wait:proc.ballast.repack#13")]
     [InlineData("m2-senses-b", "prop:searchlight.rods.doorOpen")]
-    [InlineData("m2-power-b", "phase:wait:proc.steam.gasket#3")]
+    [InlineData("m2-power-b", "phase:wait:proc.steam.gasket#4")]
     [InlineData("m2-hull-b", "phase:wait:proc.chamber.reseal#4")]
     [InlineData("m2-hull-b", "prop:chamber.state.innerOpen")]
     [InlineData("m2-shakedown", "rings")]
@@ -350,7 +350,8 @@ public class DrillLogTests
 
     /// <summary>
     /// 일마다 낸 명령은 ProcedureRunner.ExpandSteps(절차, 묶음, 시작 때 공구띠, 그때의 손 자리 값)의 명령과 같다 (= ExpandWithBelt, repeatFrom을 읽음).
-    /// 되접는 것은 문서에 적은 다듬기뿐이다: 전령기 눈금 명령 여럿은 하나로, 바닥에서 줍기는 공구판에서 가져오기로. 맨손 다듬기는 메모가 달라 따로 빠진다.
+    /// 되접는 것은 문서에 적은 다듬기뿐이다: 전령기 눈금 명령 여럿은 하나로, 여러 칸 레버의 가운데 자리는 빼고, 바닥에서 줍기는 공구판에서 가져오기로.
+    /// 맨손 다듬기는 메모가 달라 따로 빠진다.
     /// </summary>
     [Theory]
     [MemberData(nameof(Drills))]
@@ -380,6 +381,7 @@ public class DrillLogTests
                     expected[key] = ProcedureRunner.ExpandSteps(proc, bind, belt, new ObservableQuery(s).Read).Where(i => i.Command != null).Select(i => i.Command!.Cmd).ToList();
                     got[key] = new List<string>();
                 }
+                if (step.Text == "notch") return; // 여러 칸 레버의 가운데 자리
                 string cmd = step.Cmd!.StartsWith("tool.pickup.", StringComparison.Ordinal) ? "toolboard.take." + step.Cmd[12..] : step.Cmd;
                 if (!(cmd == "propulsion.set" && got[key].Count > 0 && got[key][^1] == "propulsion.set")) got[key].Add(cmd);
             },
@@ -462,7 +464,7 @@ public class DrillLogTests
         Assert.Equal("succeeded", log.Status);
         Assert.True(seen >= (mission == "m2-ballast" ? 2 : 1), $"본 명령 {seen}개");
         // 기다림은 절차 자료에서 온다: 손으로 쓴 기다림 걸음이 아니라 until 기다림으로 기록된다.
-        string wref = mission switch { "m2-power-b" => "proc.steam.gasket#3", "m2-hull-b" => "proc.chamber.reseal#4", _ => "proc.ballast.repack#13" };
+        string wref = mission switch { "m2-power-b" => "proc.steam.gasket#4", "m2-hull-b" => "proc.chamber.reseal#4", _ => "proc.ballast.repack#13" };
         Assert.Contains(log.Lines, l => l.Step.Kind == PlanKind.Wait && l.Step.Note == "until " + wref);
     }
 
