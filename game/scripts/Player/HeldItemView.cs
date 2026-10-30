@@ -1,3 +1,4 @@
+using DeepLine.Game.Art;
 using DeepLine.Game.Interaction;
 using DeepLine.Game.Sim;
 using DeepLine.Game.World;
@@ -21,7 +22,7 @@ public partial class HeldItemView : Node3D
     InteractionController _hands = null!;
     Node3D _toolRoot = null!, _itemRoot = null!;
     Node3D _needle = null!;
-    StandardMaterial3D _basketMat = null!;
+    Node3D _muck = null!;
     float _needleAngle, _swing, _bob;
 
     public void Setup(SimRunner runner, InteractionController hands)
@@ -45,88 +46,50 @@ public partial class HeldItemView : Node3D
         return n;
     }
 
+    /// <summary>도구 17종 모두 공구판과 같은 모형(ToolModels)을 쥔다. 자세는 도구마다 표(ToolModels.HandPose).</summary>
     void BuildTools()
     {
-        var w = Holder(_toolRoot, _tools, "wrench");
-        Geo.Box(w, new Vector3(0.025f, 0.24f, 0.012f), new Vector3(0, 0.02f, 0), Geo.Mat(Geo.Steel, 0.4f, 0.8f));
-        Geo.Box(w, new Vector3(0.07f, 0.035f, 0.014f), new Vector3(0, 0.15f, 0), Geo.Mat(Geo.Steel, 0.4f, 0.8f));
-        w.RotationDegrees = new Vector3(-20, 0, 25);
-
-        var m = Holder(_toolRoot, _tools, "mallet");
-        Geo.Cyl(m, 0.012f, 0.28f, new Vector3(0, 0, 0), Geo.Wood);
-        Geo.Cyl(m, 0.045f, 0.13f, new Vector3(0, 0.15f, 0), Geo.Mat(new Color(0.55f, 0.4f, 0.25f))).RotationDegrees = new Vector3(0, 0, 90);
-        m.RotationDegrees = new Vector3(-10, 0, 20);
-
-        var c = Holder(_toolRoot, _tools, "caulking_set");
-        Geo.Box(c, new Vector3(0.016f, 0.2f, 0.016f), new Vector3(-0.03f, 0.04f, 0), Geo.Mat(Geo.Steel, 0.4f, 0.8f));
-        Geo.Cyl(c, 0.01f, 0.2f, new Vector3(0.05f, 0, 0), Geo.Wood);
-        Geo.Box(c, new Vector3(0.08f, 0.035f, 0.035f), new Vector3(0.05f, 0.11f, 0), Geo.Mat(Geo.DarkSteel, 0.4f, 0.8f));
-        c.RotationDegrees = new Vector3(-15, 0, 15);
-
-        var b = Holder(_toolRoot, _tools, "scrub_brush");
-        Geo.Box(b, new Vector3(0.12f, 0.03f, 0.05f), new Vector3(0, 0.02f, 0), Geo.Wood);
-        Geo.Box(b, new Vector3(0.11f, 0.03f, 0.045f), new Vector3(0, -0.01f, 0), Geo.Mat(new Color(0.75f, 0.65f, 0.4f), 0.9f, 0));
-        b.RotationDegrees = new Vector3(-30, 0, 10);
-
-        // 전압계: 다이얼에 0~150V 눈금. 탐침을 대고 있는 동안 바늘이 움직인다.
-        var v = Holder(_toolRoot, _tools, "voltmeter");
-        Geo.Box(v, new Vector3(0.14f, 0.12f, 0.05f), Vector3.Zero, Geo.Mat(Geo.Bakelite, 0.5f, 0));
-        Geo.Box(v, new Vector3(0.12f, 0.08f, 0.002f), new Vector3(0, 0.01f, 0.026f), Geo.Mat(Geo.Cream, 0.8f, 0));
-        for (int k = 0; k <= 6; k++)
+        foreach (var id in ToolModels.Ids)
         {
-            float a = Mathf.DegToRad(50 - 100 * k / 6f);
-            var tick = Geo.Box(v, new Vector3(0.002f, 0.01f, 0.001f), new Vector3(-Mathf.Sin(a) * 0.055f, -0.025f + Mathf.Cos(a) * 0.055f, 0.028f), Geo.Bakelite);
-            tick.Rotation = new Vector3(0, 0, a);
-            if (k % 2 == 0)
-                Geo.Text(v, $"{k * 25}", new Vector3(-Mathf.Sin(a) * 0.068f, -0.025f + Mathf.Cos(a) * 0.068f, 0.028f), 0.011f, Geo.Bakelite);
+            var model = ToolModels.Build(Holder(_toolRoot, _tools, id), id);
+            var (pos, rot) = ToolModels.HandPose[id];
+            model.Position = pos;
+            model.RotationDegrees = rot;
+            // 뱃밥 다발은 허리에 차고 정만 손에 든다.
+            if (model.FindChild("Oakum", false, false) is Node3D oakum) oakum.Visible = false;
+            Shadowless(model);
         }
-        // 안쪽 둘째 눈금 0~30V (붉은 글씨): 축전지 셀 하나를 잴 때 쓴다 (M2 WP11).
-        var red = Geo.Mat(new Color(0.55f, 0.08f, 0.05f), 0.8f, 0);
-        for (int k = 0; k <= 3; k++)
-        {
-            float a = Mathf.DegToRad(50 - 100 * k / 3f);
-            var tick = Geo.Box(v, new Vector3(0.0015f, 0.006f, 0.001f), new Vector3(-Mathf.Sin(a) * 0.044f, -0.025f + Mathf.Cos(a) * 0.044f, 0.028f), red);
-            tick.Rotation = new Vector3(0, 0, a);
-            Geo.Text(v, $"{k * 10}", new Vector3(-Mathf.Sin(a) * 0.035f, -0.025f + Mathf.Cos(a) * 0.035f, 0.028f), 0.008f, new Color(0.55f, 0.08f, 0.05f));
-        }
-        Geo.Text(v, "V", new Vector3(0, -0.012f, 0.028f), 0.012f, Geo.Bakelite);
-        _needle = new Node3D { Position = new Vector3(0, -0.025f, 0.029f) };
-        v.AddChild(_needle);
-        Geo.Box(_needle, new Vector3(0.0015f, 0.058f, 0.001f), new Vector3(0, 0.029f, 0), Geo.Mat(new Color(0.1f, 0.05f, 0.03f)));
-        // 탐침 두 개
-        Geo.Cyl(v, 0.004f, 0.12f, new Vector3(-0.05f, -0.1f, 0.02f), Geo.Mat(new Color(0.6f, 0.1f, 0.08f)));
-        Geo.Cyl(v, 0.004f, 0.12f, new Vector3(-0.02f, -0.1f, 0.02f), Geo.Bakelite);
-        v.RotationDegrees = new Vector3(15, -20, 0);
-        v.Position = new Vector3(-0.04f, 0.04f, 0.05f);
+        _needle = (Node3D)_tools["voltmeter"].FindChild("Needle", true, false);
     }
 
+    /// <summary>물건 44가지 모두 ItemModels로 쥔다.</summary>
     void BuildItems()
     {
-        var glass = new StandardMaterial3D { AlbedoColor = new Color(0.85f, 0.9f, 0.85f, 0.5f), Transparency = BaseMaterial3D.TransparencyEnum.Alpha };
-        foreach (var id in new[] { "fuse", "fuse_blown" })
+        foreach (var id in ItemModels.Ids)
         {
-            var f = Holder(_itemRoot, _items, id);
-            Geo.Cyl(f, 0.016f, 0.1f, Vector3.Zero, glass).RotationDegrees = new Vector3(0, 0, 90);
-            Geo.Cyl(f, 0.018f, 0.018f, new Vector3(-0.055f, 0, 0), Geo.Brass).RotationDegrees = new Vector3(0, 0, 90);
-            Geo.Cyl(f, 0.018f, 0.018f, new Vector3(0.055f, 0, 0), Geo.Brass).RotationDegrees = new Vector3(0, 0, 90);
-            if (id == "fuse_blown")
-                Geo.Cyl(f, 0.017f, 0.045f, Vector3.Zero, Geo.Mat(new Color(0.05f, 0.04f, 0.03f), 0.9f, 0)).RotationDegrees = new Vector3(0, 0, 90);
-            else
-                Geo.Box(f, new Vector3(0.09f, 0.003f, 0.003f), Vector3.Zero, Geo.Mat(new Color(0.8f, 0.8f, 0.8f)));
-            f.RotationDegrees = new Vector3(0, 30, 15);
+            var model = ItemModels.Build(Holder(_itemRoot, _items, id), id);
+            var (pos, rot) = ItemModels.HandPose(id);
+            model.Position = pos;
+            model.RotationDegrees = rot;
+            Shadowless(model);
         }
-        var wedge = Holder(_itemRoot, _items, "wood_wedge");
-        Geo.Box(wedge, new Vector3(0.05f, 0.06f, 0.14f), Vector3.Zero, Geo.Wood);
-        wedge.RotationDegrees = new Vector3(20, 30, 0);
-        var shore = Holder(_itemRoot, _items, "timber_shore");
-        Geo.Box(shore, new Vector3(0.07f, 0.9f, 0.07f), new Vector3(0, 0.2f, 0), Geo.Wood);
-        shore.RotationDegrees = new Vector3(-30, 0, 35);
-        var basket = Holder(_itemRoot, _items, "strainer_basket");
-        _basketMat = new StandardMaterial3D { AlbedoColor = new Color(0.7f, 0.7f, 0.66f), Metallic = 0.6f, Roughness = 0.5f };
-        Geo.Cyl(basket, 0.11f, 0.28f, Vector3.Zero, _basketMat);
-        basket.RotationDegrees = new Vector3(25, 0, 10);
-        basket.Position = new Vector3(0.02f, 0.02f, -0.1f);
+        _muck = (Node3D)_items["strainer_basket"].FindChild("Muck", true, false);
     }
+
+    /// <summary>손에 든 것은 카메라 바로 앞이라 그림자를 드리우면 화면이 지저분해진다.</summary>
+    static void Shadowless(Node n)
+    {
+        if (n is GeometryInstance3D g) g.CastShadow = GeometryInstance3D.ShadowCastingSetting.Off;
+        foreach (var ch in n.GetChildren()) Shadowless(ch);
+    }
+
+    /// <summary>지금 손에 보이는 도구 모형(없으면 null). 확인 묶음이 화면 안에 있는지 본다.</summary>
+    public Node3D? HeldToolNode => _runner?.Snapshot == null ? null : _tools.GetValueOrDefault(_runner.Snapshot.Crew.Tool);
+    public Node3D? HeldItemNode => _runner?.Snapshot == null ? null : _items.GetValueOrDefault(_runner.Snapshot.Crew.Hand);
+    /// <summary>물건마다 손에 든 거치대(시험용). 손에 쥔 것과 상관없이 모형의 자리를 잴 수 있다.</summary>
+    public Node3D ItemHolder(string id) => _items[id];
+    /// <summary>도구마다 손에 든 거치대(시험용).</summary>
+    public Node3D ToolHolder(string id) => _tools[id];
 
     public override void _Process(double delta)
     {
@@ -135,7 +98,10 @@ public partial class HeldItemView : Node3D
         var crew = _runner.Snapshot.Crew;
         foreach (var (id, n) in _tools) n.Visible = id == crew.Tool;
         foreach (var (id, n) in _items) n.Visible = id == crew.Hand;
-        _basketMat.AlbedoColor = new Color(0.7f, 0.7f, 0.66f).Lerp(new Color(0.25f, 0.2f, 0.12f), (float)Math.Clamp(_runner.Snapshot.Strainer.Clog, 0, 1));
+        // 거름망 바구니의 찌꺼기는 막힌 만큼 차오른다.
+        float clog = (float)Math.Clamp(_runner.Snapshot.Strainer.Clog, 0, 1);
+        _muck.Visible = clog > 0.02f;
+        _muck.Scale = new Vector3(1, Math.Max(0.02f, clog), 1);
 
         // 바늘: 0V가 왼쪽 끝(+50도), 눈금 끝이 오른쪽 끝(-50도). 계기 바늘의 관성.
         // 셀 하나를 잴 때는 안쪽 30V 눈금으로 읽는다(셀 단자의 낮은 전압용 단자).

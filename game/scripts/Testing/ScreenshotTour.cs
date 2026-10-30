@@ -92,7 +92,10 @@ public partial class ScreenshotTour : Node
         _main.OpenManual("퓨즈 교체");
         for (int i = 0; i < 10; i++) await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
         await Capture("07-manual");
-        GetTree().Quit(0);
+        _main.Manual.Close();
+        _main.Resume();
+        await ToolShots();
+        GetTree().Quit(_toolShotErrors.Count > 0 ? 1 : 0); // 도구 그림이 비었거나 도구를 쥐지 못하면 실패
     }
 
     /// <summary>m2-ballast에서 명령으로 배를 기울이고, 중앙 바닥에 솔을 내려놓아 구르게 한 뒤 조절반을 비스듬히 찍는다.</summary>

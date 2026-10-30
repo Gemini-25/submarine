@@ -16,6 +16,9 @@ public sealed class MeshBuilder
 
     public int Triangles { get; private set; }
 
+    /// <summary>주면 삼각형마다 세 꼭짓점의 위치를 여기에도 적는다. 공구판 윤곽처럼 메시를 CPU에서 다시 읽어야 할 때 쓴다(WP25).</summary>
+    public List<Vector3>? Capture { get; set; }
+
     SurfaceTool For(Material mat)
     {
         foreach (var (m, st) in _surfaces)
@@ -44,6 +47,12 @@ public sealed class MeshBuilder
         Put(st, b);
         Put(st, c);
         Triangles++;
+        if (Capture != null)
+        {
+            Capture.Add(a.P);
+            Capture.Add(b.P);
+            Capture.Add(c.P);
+        }
     }
 
     public void Quad(Material mat, in Vx a, in Vx b, in Vx c, in Vx d)

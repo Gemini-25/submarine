@@ -23,10 +23,12 @@ void fragment() {
 	vec3 ax = normalize(grain_axis);
 	float along = dot(lpos, ax);
 	vec3 across = lpos - ax * along;
-	float warp = art_fbm(vec3(along * 1.5, across.yz * 3.0) + 4.0);
+	// 결에 수직인 두 성분: 결이 X면 (y, z), 아니면 (x, z). 도구 자루처럼 결이 Y인 나무에도 잔결이 산다.
+	vec2 ac = abs(ax.x) > 0.5 ? across.yz : across.xz;
+	float warp = art_fbm(vec3(along * 1.5, ac * 3.0) + 4.0);
 	float rings = fract(length(across + 0.3) * ring_density + warp * 4.0);
 	float grain = smoothstep(0.0, 0.25, rings) * (1.0 - smoothstep(0.55, 1.0, rings));
-	float fine = art_noise(vec3(along * 3.0, across.yz * 160.0));
+	float fine = art_noise(vec3(along * 3.0, ac * 160.0));
 	vec3 col = mix(dark_color, light_color, grain * 0.7 + fine * 0.3);
 	col = mix(col, light_color * 1.25, clamp(edge * 0.6, 0.0, 1.0));
 	float rough = mix(0.78, 0.4, varnish) + (fine - 0.5) * 0.1;
