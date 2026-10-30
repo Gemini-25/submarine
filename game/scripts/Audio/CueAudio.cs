@@ -76,6 +76,10 @@ public static class CueAudio
             v.SafetyValve = 0.15f * c.V;
         }, spot: "scrubber", db: -12, range: 3),
 
+        // 산소 화로 (AIR-03, WP17): 양초가 타는 치익 소리와, 재와 그을음에 막혀 콜록이듯 끊기는 소리가 한 목소리다.
+        R("furnace.burn", s => new OxygenCandleVoice(s), (v, c) => v.Burning = c.V >= 0.5f, shared: "furnace", spot: "furnace", db: -6, range: 6),
+        R("furnace.choke", s => new OxygenCandleVoice(s), (v, c) => v.Choke = c.V, shared: "furnace", spot: "furnace", db: -6, range: 6),
+
         // 누수 지점마다 3D 쉿 소리 (HUL-01). 세기는 0.3L/s에서 다 차므로 크기는 실제 유입량으로 낸다.
         R("{p}.hiss", s => new LeakHissVoice(s), (v, c) =>
         {
@@ -86,6 +90,8 @@ public static class CueAudio
         // 축 패킹 (HUL-03). 물이 튀는 소리는 전용 목소리가 없어 역류 목소리의 물방울과 출렁임으로,
         // 과조임의 끽끽 소리는 전동기 목소리의 베어링 고음(3.1kHz)으로 자리를 채운다. 회전음은 추진 스로틀을 따른다.
         R("shaft.spray", s => new BackflowVoice(s), (v, c) => v.Amount = Math.Min(1f, 0.85f * c.V), range: 4),
+        // 열린 역류 밸브 보닛으로 쏟아지는 바닷물 (WTR-03 위험 건너뛰기, WP17). 축 패킹처럼 전용 목소리가 없어 역류 목소리로 자리를 채운다.
+        R("checkvalve.spill", s => new BackflowVoice(s), (v, c) => v.Amount = c.V, range: 4),
         R("shaft.squeal", s => new MotorVoice(s), (v, c) =>
         {
             var d = Device(c.S, DeepLine.Sim.Data.Bindings.Propulsion);
@@ -196,6 +202,14 @@ public static class CueAudio
             v.Corrosion = 0.35f * c.V;
             v.Current = c.V > 0 ? 0.3f : 0;
         }, db: -14, range: 2),
+        // 칼날 스위치 접점 부식 (ELC-02, WP17): 강하가 클수록 지지직거리고, 회로 전류(정격에 대한 비율)가 클수록 세다.
+        R("knife.{c}.crackle", s => new KnifeSwitchCrackleVoice(s), (v, c) =>
+        {
+            v.Corrosion = c.V;
+            string id = c.Cue.Id.Split('.')[1];
+            var cv = c.S.Circuits.FirstOrDefault(x => x.Id == id);
+            v.Current = c.V > 0 && cv.FuseRating > 0 ? Math.Clamp((float)(cv.Current / cv.FuseRating), 0.2f, 1f) : 0;
+        }, db: -6, range: 4),
     };
 
     /// <summary>청음기 진공관 건강 (SNS-03): 두 관 가운데 약한 쪽의 필라멘트. 빠진 관은 0. 보이는 부품 값에서 읽는다.</summary>

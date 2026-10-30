@@ -1,0 +1,51 @@
+{
+  "name": "WTR-03 역류 밸브 고착은 정상 전류에 꾸르륵 소리, 잠긴 배출 밸브는 낮은 전류에 흐름 0 (교범 04 배수 펌프 가르기)",
+  "seed": 231,
+  "depth": 300,
+  "inject": [
+    {
+      "tick": 0,
+      "fault": "WTR-03"
+    }
+  ],
+  "commands": [
+    {
+      "tick": 0,
+      "cmd": "switch.C3.on"
+    },
+    {
+      "tick": 400,
+      "cmd": "switch.C3.off"
+    },
+    {
+      "tick": 420,
+      "cmd": "pump.discharge.close"
+    },
+    {
+      "tick": 440,
+      "cmd": "pump.discharge.close"
+    },
+    {
+      "tick": 460,
+      "cmd": "pump.discharge.close"
+    },
+    {
+      "tick": 480,
+      "cmd": "switch.C3.on"
+    }
+  ],
+  "expect": [
+    {
+      "byTick": 200,
+      "assert": "device.bilge_pump.current > 280 && device.bilge_pump.current < 320 && pump.grossFlow > 1.9 && pump.netFlow == 0"
+    },
+    {
+      "byTick": 200,
+      "assert": "cue.pump.backflow > 0.9 && cue.pump.gravel == 0 && cue.checkvalve.drip == 0"
+    },
+    {
+      "byTick": 600,
+      "assert": "device.bilge_pump.current > 132 && device.bilge_pump.current < 156 && pump.grossFlow == 0 && cue.pump.backflow == 0 && pump.discharge == 0"
+    }
+  ]
+}

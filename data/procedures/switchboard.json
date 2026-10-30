@@ -397,5 +397,80 @@
         "tool": "hand"
       }
     ]
+  },
+  "proc.contact.clamp": {
+    "title": "접점 조이기",
+    "fault": "ELC-02",
+    "grade": "temporary",
+    "bind": [
+      "circuit"
+    ],
+    "steps": [
+      {
+        "type": "Inspect",
+        "text": "배전반 노랑인데 상황판 전압계는 정상이다. 그 회로의 장비가 어둡거나 힘이 없다. 스위치를 올린 채 전압계를 칼날 위아래에 대면 2V보다 훨씬 크게 읽힌다.",
+        "tool": "voltmeter"
+      },
+      {
+        "type": "Isolate",
+        "text": "그 회로의 칼날 스위치를 내린다.",
+        "cmd": "switch.{circuit}.off",
+        "tool": "hand",
+        "requires": "없음",
+        "hazard": "스위치를 올린 채 집게 나사를 돌리면 감전되고 불꽃이 튄다. 수소가 차 있으면 폭발한다."
+      },
+      {
+        "type": "Work",
+        "text": "드라이버로 칼날 집게 나사를 시계 방향으로 한 눈금 조인다.",
+        "cmd": "knife.{circuit}.clamp.up",
+        "tool": "screwdriver",
+        "requires": "회로 스위치가 내려가 있을 것",
+        "hazard": "감전과 불꽃"
+      },
+      {
+        "type": "Test",
+        "text": "스위치를 올리고 전압계로 칼날 위아래를 다시 잰다. 강하가 절반쯤으로 준다. 녹은 그대로라 부하가 걸린 채 20분쯤 지나면 집게가 풀려 강하가 돌아온다. 배수 회로처럼 부하가 큰 회로는 집게가 풀리면 몇 분 안에 칼날이 타서 끊어진다. 그 전에 접점을 다듬는다.",
+        "cmd": "switch.{circuit}.on",
+        "tool": "hand"
+      }
+    ]
+  },
+  "proc.contact.file": {
+    "title": "접점 다듬기",
+    "fault": "ELC-02",
+    "grade": "proper",
+    "bind": [
+      "circuit"
+    ],
+    "steps": [
+      {
+        "type": "Inspect",
+        "text": "스위치를 올린 채 전압계를 칼날 위아래에 대어 강하를 잰다. 2V보다 크면 접점이 상했다. 칼날이 푸르게 녹슬어 있고, 받침을 만지면 뜨겁다.",
+        "tool": "voltmeter"
+      },
+      {
+        "type": "Isolate",
+        "text": "그 회로의 칼날 스위치를 내린다. 위 집게는 버스 쪽이라 스위치를 내려도 살아 있다.",
+        "cmd": "switch.{circuit}.off",
+        "tool": "hand",
+        "requires": "없음",
+        "hazard": "스위치를 올린 채 칼날을 줄질하면 감전되고 불꽃이 튄다. 수소가 차 있으면 폭발한다."
+      },
+      {
+        "type": "Work",
+        "text": "줄로 칼날 양면의 녹을 네 번 갈아 낸다. 칼날만 갈고 위 집게에는 줄을 대지 않는다.",
+        "cmd": "knife.{circuit}.blade.file",
+        "tool": "file",
+        "repeat": 4,
+        "requires": "회로 스위치가 내려가 있을 것",
+        "hazard": "감전과 불꽃. 위 집게는 늘 살아 있어 스위치를 내려도 만지면 감전된다."
+      },
+      {
+        "type": "Test",
+        "text": "스위치를 올리고 전압계로 칼날 위아래를 다시 잰다. 2V 아래면 끝났다. 그보다 크면 덜 갈았다.",
+        "cmd": "switch.{circuit}.on",
+        "tool": "hand"
+      }
+    ]
   }
 }

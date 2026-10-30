@@ -130,19 +130,19 @@ static class WaterSystem
         }
         if (w.Mechanics.HasSeaPaths) SeaPaths.Flow(w);
 
-        // 2. 전동 펌프. 배출량 = 정격 × (1 − 흡입구 막힘), 역류 방지 밸브가 열린 채 고착되면 되돌아온다.
-        //    흡입 선택기(M2 WP18)가 탱크나 챔버 줄에 있으면 그쪽에서 빤다(Suction.Pump).
+        // 2. 전동 펌프. 배출량 = 정격 × (1 − 흡입구 막힘) × 배출 밸브 열림, 역류 방지 밸브가 열린 채 고착되면(판이 빠지거나 보닛이 열려도) 되돌아온다.
+        //    흡입 선택기(M2 WP18)가 탱크나 챔버 줄에 있으면 그쪽에서 빤다(Suction.Pump). 역류 밸브와 배출 밸브는 배출 쪽에 있어 흡입 자리와 상관없이 같다.
         var pump = w.Devices[w.Pump];
         int suction = Suction.Position(w);
         if (pump.Running && suction != Suction.Bilge)
         {
-            double stuck = w.Part("pump.check_valve").Get("stuck");
-            Suction.Pump(w, suction, wt.PumpRatedLps * Curve.Clamp01(1 - PumpStarvation(w)), Curve.Clamp01(1 - stuck));
+            double stuck = CheckValve.Blocked(w);
+            Suction.Pump(w, suction, wt.PumpRatedLps * Curve.Clamp01(1 - PumpStarvation(w)) * CheckValve.DischargeOpen(w), Curve.Clamp01(1 - stuck));
         }
         else if (pump.Running)
         {
-            double stuck = w.Part("pump.check_valve").Get("stuck");
-            water.PumpGrossLps = wt.PumpRatedLps * Curve.Clamp01(1 - PumpStarvation(w));
+            double stuck = CheckValve.Blocked(w);
+            water.PumpGrossLps = wt.PumpRatedLps * Curve.Clamp01(1 - PumpStarvation(w)) * CheckValve.DischargeOpen(w);
             double net = water.PumpGrossLps * Curve.Clamp01(1 - stuck);
             double removed = Math.Min(water.Bilge[w.PumpBilge], net * dt);
             water.Bilge[w.PumpBilge] -= removed;

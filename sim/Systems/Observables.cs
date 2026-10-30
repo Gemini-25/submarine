@@ -210,7 +210,8 @@ static class Measurement
                 return p[0] switch
                 {
                     // 부하 단자: 회로가 살아 있으면 버스 전압
-                    "circuit" => x => x.Circuits[c].Energized ? x.BusVoltage : 0,
+                    // (칼날 스위치 접점이 상했으면 그 강하만큼 낮다, ELC-02)
+                    "circuit" => x => x.Circuits[c].Energized ? x.BusVoltage - ContactDrop(x, c) : 0,
                     // 퓨즈 양단: 스위치가 올라가 있고 퓨즈가 끊겼거나 빠졌으면 전원 전압이 걸린다
                     // (분기함 배선이 탔으면 퓨즈는 멀쩡하므로 0. M0에서는 '살아 있지 않음'과 같다.)
                     "fuse" => x => x.Circuits[c].SwitchOn && x.BusVoltage > 0 && (x.Fuses[c].Get("blown") >= 0.5 || x.Fuses[c].Get("present") < 0.5) ? x.BusVoltage : 0,
@@ -286,9 +287,14 @@ static class Measurement
     }
 
     /// <summary>
-    /// 닫힌 칼날 스위치 접점의 전압 강하 (정규화). 접점 모듈(WP17, contact.Cx 부품)이 들어오기 전에는 0이다.
+    /// 닫힌 칼날 스위치 접점의 전압 강하 (정규화). 접점 모듈(WP17, contact.Cx 부품)이 없으면 0이다.
+    /// 타서 열린 접점에는 버스 전압이 그대로 걸린다.
     /// </summary>
-    static double ContactDrop(SimWorld w, int c) => 0;
+    static double ContactDrop(SimWorld w, int c)
+    {
+        if (w.Contacts is not { } k) return 0;
+        return k.IsBurnt(c) ? w.BusVoltage : k.Drop[c].Get();
+    }
 
     /// <summary>축전지 덮개 판(battery.deck, WP11)이 있으면 열려 있어야 비중계를 꽂을 수 있다. 없으면 바닥 격자 너머로 늘 닿는다.</summary>
     static bool DeckOpen(SimWorld w) =>
