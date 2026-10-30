@@ -13,6 +13,8 @@ namespace DeepLine.Game.Player;
 /// </summary>
 public partial class HeldItemView : Node3D
 {
+    /// <summary>전압계 문자판의 두 눈금(Kit.Tools의 전압계 모형과 같다): 바깥 0~150V(버스, 회로), 안쪽 붉은 0~30V(셀 하나). 바늘은 ±50° 사이를 돈다.</summary>
+    public const float VoltOuterMax = 150, VoltInnerMax = 30, VoltSweepDeg = 100;
     static readonly Vector3 ToolRest = new(0.27f, -0.21f, -0.48f);
     static readonly Vector3 ItemRest = new(-0.27f, -0.23f, -0.5f);
 
@@ -24,6 +26,9 @@ public partial class HeldItemView : Node3D
     Node3D _needle = null!;
     Node3D _muck = null!;
     float _needleAngle, _swing, _bob;
+
+    /// <summary>지금 그려진 오른손 도구. 교범 그림이 손에 든 도구가 칸 안에 보이는지 본다 (왼손 물건은 화면 아래 끝에 걸쳐 있어 보지 않는다).</summary>
+    public IEnumerable<Node3D> ShownTools => _tools.Values.Where(n => n.Visible);
 
     public void Setup(SimRunner runner, InteractionController hands)
     {
@@ -105,10 +110,10 @@ public partial class HeldItemView : Node3D
 
         // 바늘: 0V가 왼쪽 끝(+50도), 눈금 끝이 오른쪽 끝(-50도). 계기 바늘의 관성.
         // 셀 하나를 잴 때는 안쪽 30V 눈금으로 읽는다(셀 단자의 낮은 전압용 단자).
-        double scale = _hands.Probing.StartsWith("cell.", StringComparison.Ordinal) ? 30.0 : 150.0;
+        double scale = _hands.Probing.StartsWith("cell.", StringComparison.Ordinal) ? VoltInnerMax : VoltOuterMax;
         float f = (float)Math.Clamp(_hands.ProbeVolts / scale, 0, 1);
         _needleAngle += (f - _needleAngle) * Math.Min(1, dt * 6);
-        _needle.Rotation = new Vector3(0, 0, Mathf.DegToRad(50 - 100 * _needleAngle));
+        _needle.Rotation = new Vector3(0, 0, Mathf.DegToRad(VoltSweepDeg / 2 - VoltSweepDeg * _needleAngle));
 
         // 망치질: 한 번 내려쳤다가 돌아온다. 문지르기와 돌리기는 잡은 동안 손이 흔들린다.
         _swing = Math.Max(0, _swing - dt / (float)InteractionController.SwingSeconds);

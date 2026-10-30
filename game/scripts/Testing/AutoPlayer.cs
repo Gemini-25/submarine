@@ -78,6 +78,7 @@ public partial class AutoPlayer : Node
         ["drills"] = AllDrillsSuite,
         ["instruments"] = InstrumentsSuite,
         ["drill-switchboard-b"] = DrillSwitchboardBSuite,
+        ["figures"] = FiguresSuite,
     };
 
     async Task Run()
@@ -87,6 +88,8 @@ public partial class AutoPlayer : Node
             await Frame(3);
             var all = Suites();
             var args = DeepLine.Game.Sim.DataPaths.UserArgs();
+            // --figures=폴더: 교범 그림을 만든다 (WP26, AutoPlayer.Figures.cs). 확인 묶음은 돌지 않는다.
+            if (FigureOut.Length > 0) all = new() { ["make-figures"] = () => Figures(render: true) };
             var names = args.TryGetValue("autotest", out var list) && list.Length > 0
                 ? list.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
                 : all.Keys.ToArray();
@@ -205,6 +208,7 @@ public partial class AutoPlayer : Node
         Check(_main.Manual.TitlesInTab(Tab("물")).Contains("펌프 흡입 거름망 청소"), "물 탭에 '펌프 흡입 거름망 청소'가 없다");
         foreach (var body in _main.Manual.PageBodies)
             Check(!body.Contains("{{"), "교범에 채우지 않은 자리표시자가 보인다");
+        await CheckManualFigures(); // 그림이 든 쪽 (WP26, AutoPlayer.Figures.cs)
         await Key(Godot.Key.Tab);
         Check(_main.Manual.IsOpen, "Tab으로 교범이 펴지지 않았다");
         Check(_main.Hands.Blocked, "교범을 펴 둔 동안 손이 막히지 않았다");

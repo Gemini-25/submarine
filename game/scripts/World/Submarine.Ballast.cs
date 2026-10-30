@@ -156,15 +156,18 @@ public partial class Submarine
         var suction = BindAtMarker(root, "pump.suction");
         LeverVisual(suction, pivot, Vector3.Back, new[] { 40f, 13f, -13f, -40f });
 
-        // 경사계 (배치의 바늘 계기): 가운데가 수평, ±15°가 끝.
+        // 경사계 (배치의 바늘 계기): 가운데가 수평, ±InclinometerRangeDeg가 끝.
         var gauge = m.GetNode("Dial").GetChild<KitGauge>(0);
         float shown = 0;
         OnUpdate((s, dt) =>
         {
             shown = Mathf.Lerp(shown, (float)ReadingOf(s, "inclinometer"), Math.Min(1, dt * 2));
-            gauge.SetFraction(0.5f + shown / 30f);
+            gauge.SetFraction(0.5f + shown / (2 * InclinometerRangeDeg));
         });
     }
+
+    /// <summary>경사계 바늘의 끝: 가운데가 수평이고 이 각도에서 바늘이 끝에 닿는다 (교범 그림 13의 경사계 도식도 이 값을 쓴다).</summary>
+    public const float InclinometerRangeDeg = 15;
 
     /// <summary>노드 로컬 좌표 → 잠수함 좌표 (짓는 중이라 장면 나무의 전역 변환을 쓸 수 없다).</summary>
     Vector3 ToSub(Node3D node, Vector3 local)

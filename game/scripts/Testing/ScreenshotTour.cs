@@ -97,6 +97,24 @@ public partial class ScreenshotTour : Node
         _main.OpenManual("퓨즈 교체");
         for (int i = 0; i < 10; i++) await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
         await Capture("07-manual");
+        // 그림이 든 교범 쪽 (WP26)
+        foreach (var (name, title, heading) in new[]
+        {
+            ("09-manual-fig-pump", "펌프 베어링", "무엇이 있나"),
+            ("10-manual-fig-strip", "펌프 베어링", "펌프 베어링 교체"),
+            ("11-manual-fig-plan", "모스호 정비 교범", "구역 배치"),
+            ("12-manual-fig-circuit", "모스호 정비 교범", "계통도: 전기"),
+            ("13-manual-fig-tools", "손과 도구", "손동작"),
+        })
+        {
+            _main.Manual.ShowSection(title, heading);
+            for (int i = 0; i < 10; i++) await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+            await Capture(name);
+        }
+        _main.Manual.Zoom("fig/30-parts.png");
+        for (int i = 0; i < 5; i++) await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+        await Capture("14-manual-fig-zoom");
+        _main.Manual.CloseZoom();
         _main.Manual.Close();
         _main.Resume();
         await ToolShots();

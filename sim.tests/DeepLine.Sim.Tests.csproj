@@ -23,6 +23,7 @@
   <ItemGroup>
     <None Include="..\data\**\*.json" LinkBase="data" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\data\**\*.md" LinkBase="data" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\data\manual\fig\*.png" LinkBase="data\manual\fig" CopyToOutputDirectory="PreserveNewest" />
     <None Include="scenarios\**\*.json" LinkBase="scenarios" CopyToOutputDirectory="PreserveNewest" />
     <None Include="fixtures\**\*" LinkBase="fixtures" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>

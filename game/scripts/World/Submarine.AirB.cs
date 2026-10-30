@@ -64,6 +64,7 @@ public partial class Submarine
         root.AddChild(inside);
         Geo.Box(inside, new Vector3(0.2f, 0.16f, 0.002f), new Vector3(4.58f, 0.38f, f - 0.002f), Geo.Mat(new Color(0.02f, 0.02f, 0.02f), 1, 0));
         var ash = Geo.Box(inside, new Vector3(0.18f, 1, 0.03f), new Vector3(4.58f, 0.3f, f - 0.016f), Geo.Mat(new Color(0.55f, 0.53f, 0.5f), 1, 0));
+        ash.Name = "FurnaceAsh"; // 교범 그림이 막힌 재받이를 칠할 때 부른다
         var flameMat = ArtMat.Glow(new Color(1f, 0.6f, 0.25f), 0, new Color(0.1f, 0.05f, 0.02f));
         var flame = Geo.Sphere(inside, 0.025f, new Vector3(4.58f, 0.36f, f - 0.006f), flameMat);
 

@@ -1,0 +1,6558 @@
+{
+  "01-plan": {
+    "kind": "plan",
+    "size": [
+      960,
+      380
+    ],
+    "scene": {
+      "camera": {
+        "planX": [
+          -0.1,
+          8.1
+        ]
+      },
+      "highlight": [],
+      "bands": [
+        "0,2.7=fig.zone.aft",
+        "2.7,5.4=fig.zone.mid",
+        "5.4,8=fig.zone.fore"
+      ],
+      "callouts": [
+        "panel@-0.12,0,0",
+        "hydrophone",
+        "gyro.case",
+        "navcomp.cover",
+        "gadget.bridge@0.1,0,0",
+        "battery.deck",
+        "switch.C4",
+        "locker.fuse@0,0,-0.12",
+        "handpump",
+        "o2.furnace",
+        "fan.motor",
+        "scrubber.canister",
+        "chamber.hatch",
+        "toolboard.rag",
+        "hatch",
+        "motor.cover@-0.5,0,0",
+        "pump.body",
+        "strainer.cover",
+        "shaft.follower",
+        "winch.brake",
+        "node:SteamAccumulator",
+        "locker.brush_set"
+      ]
+    }
+  },
+  "01-below": {
+    "kind": "plan",
+    "size": [
+      960,
+      330
+    ],
+    "scene": {
+      "camera": {
+        "planX": [
+          -0.1,
+          8.1
+        ],
+        "cut": -0.03
+      },
+      "names": [
+        "battery.cell.2=fig.battery_well",
+        "chamber.seal=fig.chamber"
+      ]
+    }
+  },
+  "01-leaks": {
+    "kind": "plan",
+    "size": [
+      960,
+      330
+    ],
+    "scene": {
+      "camera": {
+        "planX": [
+          -0.1,
+          8.1
+        ]
+      },
+      "highlight": [],
+      "names": [
+        "viewport.1.ring=fig.viewport.1",
+        "viewport.2.ring=fig.viewport.2"
+      ],
+      "callouts": [
+        "leak.rivet.01",
+        "leak.rivet.02",
+        "leak.rivet.03",
+        "leak.rivet.04",
+        "leak.rivet.05",
+        "leak.rivet.06",
+        "leak.rivet.07",
+        "leak.rivet.08",
+        "leak.rivet.09",
+        "leak.rivet.10",
+        "leak.rivet.11",
+        "leak.rivet.12"
+      ]
+    }
+  },
+  "01-circuits": {
+    "kind": "circuit",
+    "size": [
+      960,
+      500
+    ],
+    "highlight": []
+  },
+  "01-water": {
+    "kind": "piping",
+    "system": "water",
+    "size": [
+      960,
+      400
+    ]
+  },
+  "01-air": {
+    "kind": "piping",
+    "system": "air",
+    "size": [
+      960,
+      220
+    ]
+  },
+  "01-steam": {
+    "kind": "piping",
+    "system": "steam",
+    "size": [
+      960,
+      250
+    ]
+  },
+  "02-front": {
+    "kind": "view",
+    "size": [
+      960,
+      540
+    ],
+    "scene": {
+      "camera": {
+        "at": "panel",
+        "offset": [
+          -1.3,
+          0.0,
+          -0.3
+        ],
+        "shift": [
+          0,
+          -0.15,
+          -0.3
+        ],
+        "fov": 58
+      },
+      "callouts": [
+        "panel.bezel.power|panel.bezel.switchboard|panel.bezel.air|panel.bezel.water|panel.bezel.hull|panel.bezel.senses|panel.bezel.nav|panel.bezel.cable",
+        "gauge.voltage.glass",
+        "gauge.current.glass",
+        "gauge.current.glass@0,0,0.22",
+        "gauge.current.glass@0,0,0.44",
+        "gauge.bilge.glass",
+        "gauge.depth.glass",
+        "gauge.pumpCurrent.glass",
+        "gauge.pumpCurrent.glass@0,0,0.22",
+        "gauge.voltage.zero|gauge.current.zero|gauge.bilge.zero|gauge.depth.zero|gauge.pumpCurrent.zero",
+        "panel.lamptest",
+        "propulsion.telegraph",
+        "searchlight.switch"
+      ]
+    }
+  },
+  "02-legend": {
+    "kind": "dial",
+    "dial": "lamps",
+    "size": [
+      960,
+      170
+    ]
+  },
+  "02-lamps": {
+    "kind": "panels",
+    "size": [
+      960,
+      300
+    ],
+    "scenes": [
+      {
+        "camera": {
+          "at": "panel.bulb.water",
+          "offset": [
+            -1.1,
+            -0.02,
+            0.11
+          ],
+          "shift": [
+            0,
+            0.03,
+            0.11
+          ],
+          "fov": 54
+        },
+        "tag": "A",
+        "lit": []
+      },
+      {
+        "camera": {
+          "at": "panel.bulb.water",
+          "offset": [
+            -1.1,
+            -0.02,
+            0.11
+          ],
+          "shift": [
+            0,
+            0.03,
+            0.11
+          ],
+          "fov": 54
+        },
+        "callouts": [
+          "panel.bulb.switchboard",
+          "panel.bulb.hull"
+        ],
+        "prep": [
+          {
+            "advance": 70
+          }
+        ],
+        "tag": "B",
+        "lit": [
+          "switchboard",
+          "hull"
+        ],
+        "avoid": [
+          "panel.bulb.power",
+          "panel.bulb.switchboard",
+          "panel.bulb.air",
+          "panel.bulb.water",
+          "panel.bulb.hull",
+          "panel.bulb.senses",
+          "panel.bulb.nav",
+          "panel.bulb.cable"
+        ]
+      }
+    ]
+  },
+  "02-gauges": {
+    "kind": "view",
+    "size": [
+      960,
+      380
+    ],
+    "scene": {
+      "camera": {
+        "at": "gauge.bilge.glass",
+        "offset": [
+          -1.05,
+          0.12,
+          -0.15
+        ],
+        "shift": [
+          0,
+          0,
+          -0.15
+        ],
+        "fov": 42
+      },
+      "callouts": [
+        "gauge.voltage.glass",
+        "gauge.current.glass",
+        "gauge.current.glass@0,0,0.22",
+        "gauge.current.glass@0,0,0.44",
+        "gauge.bilge.glass",
+        "gauge.depth.glass",
+        "gauge.pumpCurrent.glass",
+        "gauge.pumpCurrent.glass@0,0,0.22"
+      ],
+      "prep": [
+        {
+          "advance": 30
+        }
+      ],
+      "first": 2
+    }
+  },
+  "03-switchboard": {
+    "kind": "view",
+    "size": [
+      960,
+      460
+    ],
+    "scene": {
+      "camera": {
+        "at": "fuse.C3",
+        "offset": [
+          -0.25,
+          0.25,
+          -1.05
+        ],
+        "shift": [
+          -0.25,
+          0.12,
+          0
+        ],
+        "fov": 55
+      },
+      "callouts": [
+        "switch.C3",
+        "fuse.C3",
+        "terminal.C3",
+        "bus"
+      ],
+      "prep": [
+        {
+          "advance": 70
+        }
+      ]
+    }
+  },
+  "03-fuse": {
+    "kind": "compare",
+    "size": [
+      960,
+      320
+    ],
+    "scenes": [
+      {
+        "camera": {
+          "at": "fuse.C3",
+          "offset": [
+            0,
+            0.02,
+            -0.3
+          ],
+          "fov": 40
+        },
+        "callouts": [
+          "fuse.C3"
+        ],
+        "first": 2
+      },
+      {
+        "camera": {
+          "at": "fuse.C3",
+          "offset": [
+            0,
+            0.02,
+            -0.3
+          ],
+          "fov": 40
+        },
+        "callouts": [
+          "fuse.C3"
+        ],
+        "highlight": [
+          "fuse.C3"
+        ],
+        "prep": [
+          {
+            "advance": 70
+          }
+        ],
+        "first": 2
+      }
+    ]
+  },
+  "03-ammeters": {
+    "kind": "view",
+    "size": [
+      960,
+      360
+    ],
+    "scene": {
+      "camera": {
+        "at": "ammeter.C5",
+        "offset": [
+          0,
+          0.25,
+          -0.75
+        ],
+        "shift": [
+          0.0,
+          -0.02,
+          0
+        ],
+        "fov": 55
+      },
+      "callouts": [
+        "ammeter.C1",
+        "ammeter.C2",
+        "ammeter.C3",
+        "ammeter.C4",
+        "ammeter.C5",
+        "ammeter.C6",
+        "ammeter.C7",
+        "ammeter.C8"
+      ],
+      "prep": [
+        {
+          "advance": 30
+        }
+      ]
+    }
+  },
+  "04-pump": {
+    "kind": "panels",
+    "size": [
+      960,
+      260
+    ],
+    "scenes": [
+      {
+        "camera": {
+          "at": "gauge.depth.glass",
+          "offset": [
+            -0.6,
+            0.02,
+            0.0
+          ],
+          "fov": 45
+        },
+        "callouts": [
+          "gauge.bilge.glass",
+          "gauge.pumpCurrent.glass"
+        ],
+        "prep": [
+          {
+            "procedure": "proc.strainer.clean"
+          },
+          {
+            "advance": 20
+          }
+        ],
+        "tag": "A"
+      },
+      {
+        "camera": {
+          "at": "gauge.depth.glass",
+          "offset": [
+            -0.6,
+            0.02,
+            0.0
+          ],
+          "fov": 45
+        },
+        "callouts": [
+          "gauge.bilge.glass",
+          "gauge.pumpCurrent.glass"
+        ],
+        "prep": [
+          {
+            "advance": 20
+          }
+        ],
+        "tag": "B"
+      },
+      {
+        "camera": {
+          "at": "gauge.depth.glass",
+          "offset": [
+            -0.6,
+            0.02,
+            0.0
+          ],
+          "fov": 45
+        },
+        "callouts": [
+          "gauge.bilge.glass",
+          "gauge.pumpCurrent.glass"
+        ],
+        "mission": "m2-water-a",
+        "prep": [
+          {
+            "procedure": "proc.strainer.clean"
+          },
+          {
+            "advance": 150
+          }
+        ],
+        "tag": "C"
+      }
+    ]
+  },
+  "04-checkvalve": {
+    "kind": "view",
+    "size": [
+      960,
+      420
+    ],
+    "scene": {
+      "camera": {
+        "at": "checkvalve.bonnet",
+        "offset": [
+          0.35,
+          0.35,
+          0.75
+        ],
+        "shift": [
+          0,
+          0.32,
+          0
+        ],
+        "fov": 58
+      },
+      "callouts": [
+        "checkvalve.bonnet",
+        "checkvalve.bolt.1|checkvalve.bolt.2|checkvalve.bolt.3|checkvalve.bolt.4",
+        "pump.discharge"
+      ]
+    }
+  },
+  "04-hull": {
+    "kind": "view",
+    "size": [
+      960,
+      420
+    ],
+    "scene": {
+      "camera": {
+        "station": "shaft",
+        "fov": 60
+      },
+      "callouts": [
+        "shaft.follower"
+      ],
+      "mission": "m2-hull-a",
+      "prep": [
+        {
+          "advance": 60
+        }
+      ]
+    }
+  },
+  "05-scrubber": {
+    "kind": "panels",
+    "size": [
+      960,
+      300
+    ],
+    "scenes": [
+      {
+        "camera": {
+          "at": "scrubber.canister",
+          "offset": [
+            0.0,
+            0.0,
+            0.5
+          ],
+          "shift": [
+            0,
+            -0.15,
+            0.2
+          ],
+          "fov": 32
+        },
+        "callouts": [
+          "scrubber.canister@0,-0.16,0.22"
+        ],
+        "tag": "A"
+      },
+      {
+        "camera": {
+          "at": "scrubber.canister",
+          "offset": [
+            0.0,
+            0.0,
+            0.5
+          ],
+          "shift": [
+            0,
+            -0.15,
+            0.2
+          ],
+          "fov": 32
+        },
+        "callouts": [
+          "scrubber.canister@0,-0.16,0.22"
+        ],
+        "mission": "m2-air-a",
+        "prep": [
+          {
+            "advance": 400
+          }
+        ],
+        "tag": "B"
+      }
+    ]
+  },
+  "05-nav": {
+    "kind": "view",
+    "size": [
+      960,
+      420
+    ],
+    "scene": {
+      "camera": {
+        "at": "navcomp.cover",
+        "offset": [
+          0.4,
+          0.55,
+          0.95
+        ],
+        "shift": [
+          0.4,
+          0,
+          0
+        ],
+        "fov": 60
+      },
+      "callouts": [
+        "gyro.case",
+        "gyro.align",
+        "navcomp.cover",
+        "gadget.compass"
+      ],
+      "mission": "m2-nav"
+    }
+  },
+  "05-cable": {
+    "kind": "view",
+    "size": [
+      960,
+      420
+    ],
+    "scene": {
+      "camera": {
+        "at": "winch.cover",
+        "offset": [
+          0.15,
+          0.9,
+          -1.05
+        ],
+        "shift": [
+          0,
+          0.3,
+          0
+        ],
+        "fov": 60
+      },
+      "callouts": [
+        "winch.control",
+        "winch.lining",
+        "device.hook_winch"
+      ],
+      "mission": "m2-cable"
+    }
+  },
+  "06-toolboard": {
+    "kind": "view",
+    "size": [
+      960,
+      540
+    ],
+    "scene": {
+      "camera": {
+        "eye": [
+          3.4,
+          1.38,
+          -0.25
+        ],
+        "target": [
+          2.8,
+          1.38,
+          -0.85
+        ],
+        "fov": 64
+      },
+      "callouts": [
+        "toolboard.wrench",
+        "toolboard.mallet",
+        "toolboard.caulking_set",
+        "toolboard.voltmeter",
+        "toolboard.scrub_brush",
+        "toolboard.screwdriver",
+        "toolboard.engineer_hammer",
+        "toolboard.file",
+        "toolboard.scraper",
+        "toolboard.knife",
+        "toolboard.rag",
+        "toolboard.oil_can",
+        "toolboard.packing_hook",
+        "toolboard.pricker",
+        "toolboard.stethoscope",
+        "toolboard.hydrometer",
+        "toolboard.soldering_iron"
+      ]
+    }
+  },
+  "06-gestures": {
+    "kind": "panels",
+    "size": [
+      960,
+      380
+    ],
+    "scenes": [
+      {
+        "camera": {
+          "at": "switch.C3",
+          "offset": [
+            0,
+            0.05,
+            -0.45
+          ],
+          "fov": 55
+        },
+        "marks": [
+          "switch.C3=down"
+        ],
+        "tag": "A"
+      },
+      {
+        "camera": {
+          "at": "strainer.bolt.1",
+          "offset": [
+            0.05,
+            0.3,
+            0.45
+          ],
+          "fov": 55
+        },
+        "marks": [
+          "strainer.bolt.1=ccw"
+        ],
+        "tag": "B"
+      },
+      {
+        "camera": {
+          "at": "strainer.cover",
+          "offset": [
+            0.0,
+            0.4,
+            0.55
+          ],
+          "fov": 55
+        },
+        "marks": [
+          "strainer.cover=down"
+        ],
+        "tag": "C"
+      },
+      {
+        "camera": {
+          "at": "handpump",
+          "offset": [
+            0.0,
+            0.35,
+            0.8
+          ],
+          "fov": 55
+        },
+        "marks": [
+          "handpump=stroke"
+        ],
+        "tag": "D"
+      },
+      {
+        "camera": {
+          "at": "wash_bucket",
+          "offset": [
+            0.0,
+            0.8,
+            0.45
+          ],
+          "fov": 55
+        },
+        "marks": [
+          "wash_bucket=scrub"
+        ],
+        "tag": "E"
+      },
+      {
+        "camera": {
+          "at": "leak.rivet.09",
+          "offset": [
+            0.25,
+            0.1,
+            0.65
+          ],
+          "fov": 55
+        },
+        "marks": [
+          "leak.rivet.09=strike"
+        ],
+        "tag": "F"
+      }
+    ],
+    "columns": 3
+  },
+  "06-floor": {
+    "kind": "view",
+    "size": [
+      960,
+      400
+    ],
+    "scene": {
+      "camera": {
+        "at": "floortool.wrench",
+        "offset": [
+          0.55,
+          0.95,
+          0.6
+        ],
+        "fov": 55
+      },
+      "callouts": [
+        "floortool.wrench"
+      ],
+      "prep": [
+        {
+          "cmd": "tool.wrench"
+        },
+        {
+          "cmd": "tool.drop.mid"
+        }
+      ]
+    }
+  },
+  "06-touch": {
+    "kind": "compare",
+    "size": [
+      960,
+      320
+    ],
+    "scenes": [
+      {
+        "camera": {
+          "at": "pump.body",
+          "offset": [
+            0.3,
+            0.3,
+            0.55
+          ],
+          "fov": 55
+        },
+        "marks": [
+          "pump.body=click"
+        ],
+        "mission": "m2-water-a"
+      },
+      {
+        "camera": {
+          "at": "fan.motor",
+          "offset": [
+            0.3,
+            -0.45,
+            0.4
+          ],
+          "fov": 55
+        },
+        "marks": [
+          "fan.motor=click"
+        ],
+        "mission": "m2-air-a"
+      }
+    ]
+  },
+  "07-where": {
+    "kind": "plan",
+    "size": [
+      960,
+      330
+    ],
+    "scene": {
+      "camera": {
+        "planX": [
+          -0.1,
+          8.1
+        ]
+      },
+      "highlight": [],
+      "names": [
+        "locker.fuse=fig.locker.mid",
+        "locker.vacuum_tube=fig.locker.electric",
+        "locker.pump_bearing=fig.locker.aft",
+        "locker.canister=fig.canister_stand",
+        "locker.spare_cell=fig.cell_box",
+        "locker.jumper_bar=fig.jumper_hook",
+        "discard=fig.discard",
+        "discard.aft=fig.discard"
+      ]
+    }
+  },
+  "07-locker": {
+    "kind": "view",
+    "size": [
+      960,
+      480
+    ],
+    "scene": {
+      "camera": {
+        "station": "locker",
+        "dolly": -0.35
+      },
+      "callouts": [
+        "locker.fuse",
+        "locker.wood_wedge",
+        "locker.timber_shore"
+      ]
+    }
+  },
+  "07-top": {
+    "kind": "view",
+    "size": [
+      960,
+      420
+    ],
+    "scene": {
+      "camera": {
+        "eye": [
+          3.75,
+          1.9,
+          -0.4
+        ],
+        "target": [
+          3.75,
+          1.9,
+          -1.2
+        ],
+        "fov": 40
+      },
+      "callouts": [
+        "locker.vacuum_tube@0,-0.03,-0.08",
+        "locker.carbon_rods@0,-0.03,-0.08",
+        "locker.chamber_seal@0,-0.03,-0.08",
+        "locker.fuse_wire@0,-0.03,-0.08",
+        "locker.insulating_tape@0,-0.03,-0.08",
+        "locker.panel_bulb@0,-0.03,-0.08",
+        "locker.ink_bottle@0,-0.03,-0.08",
+        "locker.viewport_seal@0,-0.03,-0.08"
+      ]
+    }
+  },
+  "07-aft": {
+    "kind": "view",
+    "size": [
+      960,
+      420
+    ],
+    "scene": {
+      "camera": {
+        "eye": [
+          1.5,
+          1.66,
+          -0.3
+        ],
+        "target": [
+          1.5,
+          1.66,
+          -1.1
+        ],
+        "fov": 48
+      },
+      "callouts": [
+        "locker.brush_set@0,-0.03,-0.08",
+        "locker.fan_bearing@0,-0.03,-0.08",
+        "locker.pump_bearing@0,-0.03,-0.08",
+        "locker.gyro_bearing@0,-0.03,-0.08",
+        "locker.nav_gear@0,-0.03,-0.08",
+        "locker.brake_lining@0,-0.03,-0.08",
+        "locker.gasket@0,-0.03,-0.08",
+        "locker.packing_tape@0,-0.03,-0.08",
+        "locker.packing_cord@0,-0.03,-0.08",
+        "locker.penetrating_oil@0,-0.03,-0.08"
+      ]
+    }
+  },
+  "08-voltmeter": {
+    "kind": "view",
+    "size": [
+      960,
+      460
+    ],
+    "scene": {
+      "camera": {
+        "at": "fuse.C3",
+        "offset": [
+          -0.15,
+          0.2,
+          -0.75
+        ],
+        "shift": [
+          -0.1,
+          0.12,
+          0
+        ],
+        "fov": 55
+      },
+      "callouts": [
+        "bus",
+        "fuse.C3",
+        "terminal.C3"
+      ],
+      "prep": [
+        {
+          "advance": 70
+        }
+      ]
+    }
+  },
+  "08-probe": {
+    "kind": "view",
+    "size": [
+      960,
+      420
+    ],
+    "scene": {
+      "camera": {
+        "at": "fuse.C3",
+        "offset": [
+          0,
+          0.12,
+          -0.5
+        ],
+        "shift": [
+          0,
+          0.05,
+          0
+        ],
+        "fov": 55
+      },
+      "marks": [
+        "fuse.C3=click"
+      ],
+      "prep": [
+        {
+          "advance": 70
+        }
+      ]
+    }
+  },
+  "08-dial": {
+    "kind": "dial",
+    "dial": "voltmeter",
+    "size": [
+      960,
+      360
+    ]
+  },
+  "08-float": {
+    "kind": "dial",
+    "dial": "hydrometer",
+    "size": [
+      960,
+      380
+    ]
+  },
+  "08-hydrometer": {
+    "kind": "view",
+    "size": [
+      960,
+      420
+    ],
+    "scene": {
+      "camera": {
+        "at": "battery.cell.2",
+        "offset": [
+          0.05,
+          0.8,
+          -0.45
+        ],
+        "fov": 55
+      },
+      "hide": [
+        "battery.deck"
+      ],
+      "callouts": [
+        "battery.cell.1|battery.cell.2|battery.cell.3"
+      ],
+      "mission": "m2-power-a",
+      "prep": [
+        {
+          "procedure": "proc.cell.replace",
+          "through": 1,
+          "bind": {
+            "cell": "3"
+          }
+        }
+      ]
+    }
+  },
+  "08-stethoscope": {
+    "kind": "view",
+    "size": [
+      960,
+      420
+    ],
+    "scene": {
+      "camera": {
+        "at": "pump.body",
+        "offset": [
+          0.3,
+          0.3,
+          0.6
+        ],
+        "fov": 55
+      },
+      "marks": [
+        "pump.body=click"
+      ],
+      "callouts": [
+        "pump.body"
+      ],
+      "mission": "m2-water-a"
+    }
+  },
+  "08-bridge": {
+    "kind": "view",
+    "size": [
+      960,
+      480
+    ],
+    "scene": {
+      "camera": {
+        "station": "bridge",
+        "dolly": -0.22
+      },
+      "callouts": [
+        "bridge.lead",
+        "gadget.bridge.range.1|gadget.bridge.range.2|gadget.bridge.range.3",
+        "gadget.bridge.dial.1|gadget.bridge.dial.2|gadget.bridge.dial.3|gadget.bridge.dial.4",
+        "gadget.bridge.key",
+        "gadget.bridge@0,0.007,-0.05"
+      ]
+    }
+  },
+  "09-calculator": {
+    "kind": "view",
+    "size": [
+      960,
+      540
+    ],
+    "scene": {
+      "camera": {
+        "station": "calculator",
+        "dolly": -0.12
+      },
+      "callouts": [
+        "gadget.calculator.lever.1|gadget.calculator.lever.4|gadget.calculator.lever.8",
+        "gadget.calculator.crank",
+        "gadget.calculator.shift.left|gadget.calculator.shift.right",
+        "gadget.calculator.clear.setting",
+        "gadget.calculator.clear.result",
+        "gadget.calculator.clear.counter"
+      ]
+    }
+  },
+  "09-sliderule": {
+    "kind": "view",
+    "size": [
+      960,
+      400
+    ],
+    "scene": {
+      "camera": {
+        "station": "sliderule",
+        "dolly": -0.2
+      },
+      "callouts": [
+        "gadget.sliderule.slide",
+        "gadget.sliderule.cursor",
+        "gadget.sliderule@0.12,-0.01,0.02"
+      ]
+    }
+  },
+  "09-nomogram": {
+    "kind": "view",
+    "size": [
+      960,
+      480
+    ],
+    "scene": {
+      "camera": {
+        "station": "nomogram",
+        "dolly": -0.2
+      },
+      "callouts": [
+        "gadget.nomogram",
+        "gadget.nomogram.end.a|gadget.nomogram.end.b"
+      ]
+    }
+  },
+  "09-bridge": {
+    "kind": "view",
+    "size": [
+      960,
+      480
+    ],
+    "scene": {
+      "camera": {
+        "station": "bridge",
+        "dolly": -0.15
+      },
+      "callouts": [
+        "bridge.lead",
+        "gadget.bridge.range.1|gadget.bridge.range.2|gadget.bridge.range.3",
+        "gadget.bridge.dial.1|gadget.bridge.dial.2|gadget.bridge.dial.3|gadget.bridge.dial.4",
+        "gadget.bridge.key",
+        "gadget.bridge@0,0.007,-0.05"
+      ]
+    }
+  },
+  "09-multiply": {
+    "kind": "dial",
+    "dial": "sliderule",
+    "size": [
+      960,
+      330
+    ],
+    "values": [
+      2.4,
+      3.7
+    ]
+  },
+  "09-chart": {
+    "kind": "dial",
+    "dial": "nomogram",
+    "size": [
+      960,
+      460
+    ],
+    "values": [
+      300,
+      2
+    ]
+  },
+  "10-hazards": {
+    "kind": "plan",
+    "size": [
+      960,
+      380
+    ],
+    "scene": {
+      "camera": {
+        "planX": [
+          -0.1,
+          8.1
+        ]
+      },
+      "highlight": [],
+      "callouts": [
+        "switch.C4|junction.C3.box|junction.C8.box|junction.C5.box",
+        "strainer.basket|pump.cap|fan.hub|motor.cover@-0.5,0,0",
+        "pump.body|hydrophone|device.soldering_iron|o2.furnace",
+        "leak.rivet.09|shaft.follower",
+        "steam.joint|steam.bleed"
+      ]
+    }
+  },
+  "10-furnace": {
+    "kind": "view",
+    "size": [
+      960,
+      460
+    ],
+    "scene": {
+      "camera": {
+        "at": "o2.furnace.door",
+        "offset": [
+          -0.1,
+          0.55,
+          -0.7
+        ],
+        "shift": [
+          0,
+          0.15,
+          0
+        ],
+        "fov": 55
+      },
+      "callouts": [
+        "o2.furnace",
+        "o2.furnace.door",
+        "o2.furnace.latch",
+        "o2.furnace.vent",
+        "candle"
+      ]
+    }
+  },
+  "10-fan": {
+    "kind": "view",
+    "size": [
+      960,
+      460
+    ],
+    "scene": {
+      "camera": {
+        "eye": [
+          4.4,
+          1.35,
+          0.7
+        ],
+        "target": [
+          3.5,
+          1.5,
+          -0.4
+        ],
+        "fov": 80
+      },
+      "callouts": [
+        "fan.motor",
+        "scrubber.lid"
+      ]
+    }
+  },
+  "11-sources": {
+    "kind": "plan",
+    "size": [
+      960,
+      330
+    ],
+    "scene": {
+      "camera": {
+        "planX": [
+          -0.1,
+          8.1
+        ]
+      },
+      "highlight": [],
+      "callouts": [
+        "pump.body",
+        "motor.cover@-0.5,0,0",
+        "fan.motor",
+        "winch.brake",
+        "sonarset.tube.1",
+        "searchlight.housing"
+      ]
+    }
+  },
+  "11-machines": {
+    "kind": "panels",
+    "size": [
+      960,
+      210
+    ],
+    "scenes": [
+      {
+        "camera": {
+          "at": "pump.body",
+          "offset": [
+            0.75,
+            1.05,
+            1.0
+          ],
+          "shift": [
+            0,
+            -0.1,
+            0
+          ],
+          "fov": 55
+        },
+        "tag": "A"
+      },
+      {
+        "camera": {
+          "at": "motor.cover",
+          "offset": [
+            0.95,
+            1.15,
+            -0.55
+          ],
+          "fov": 60
+        },
+        "tag": "B"
+      },
+      {
+        "camera": {
+          "at": "fan.hub",
+          "offset": [
+            0.9,
+            -0.55,
+            0.9
+          ],
+          "fov": 60
+        },
+        "tag": "C"
+      }
+    ]
+  },
+  "11-hands": {
+    "kind": "panels",
+    "size": [
+      960,
+      210
+    ],
+    "scenes": [
+      {
+        "camera": {
+          "at": "leak.rivet.09",
+          "offset": [
+            0.25,
+            0.1,
+            0.65
+          ],
+          "fov": 55
+        },
+        "marks": [
+          "leak.rivet.09=strike"
+        ],
+        "tag": "A"
+      },
+      {
+        "camera": {
+          "at": "strainer.bolt.1",
+          "offset": [
+            0.05,
+            0.3,
+            0.45
+          ],
+          "fov": 55
+        },
+        "marks": [
+          "strainer.bolt.1=ccw"
+        ],
+        "tag": "B"
+      },
+      {
+        "camera": {
+          "at": "switch.C3",
+          "offset": [
+            0,
+            0.05,
+            -0.45
+          ],
+          "fov": 55
+        },
+        "marks": [
+          "switch.C3=down"
+        ],
+        "tag": "C"
+      }
+    ]
+  },
+  "12-inflow": {
+    "kind": "plan",
+    "size": [
+      960,
+      380
+    ],
+    "scene": {
+      "camera": {
+        "planX": [
+          -0.1,
+          8.1
+        ]
+      },
+      "highlight": [],
+      "bands": [
+        "0,2.7=fig.zone.aft",
+        "2.7,5.4=fig.zone.mid",
+        "5.4,8=fig.zone.fore"
+      ],
+      "callouts": [
+        "leak.rivet.01|leak.rivet.02|leak.rivet.03|leak.rivet.04|leak.rivet.05|leak.rivet.06|leak.rivet.07|leak.rivet.08|leak.rivet.09|leak.rivet.10|leak.rivet.11|leak.rivet.12",
+        "viewport.1.ring|viewport.2.ring",
+        "shaft.follower",
+        "chamber.hatch"
+      ]
+    }
+  },
+  "12-bilges": {
+    "kind": "plan",
+    "size": [
+      960,
+      330
+    ],
+    "scene": {
+      "camera": {
+        "planX": [
+          -0.1,
+          8.1
+        ],
+        "cut": -0.03
+      },
+      "bands": [
+        "0,2.7=fig.bilge.aft",
+        "2.7,8=fig.bilge.mid"
+      ],
+      "names": [
+        "battery.cell.2=fig.battery_well",
+        "chamber.seal=fig.chamber",
+        "strainer.basket=fig.strainer"
+      ]
+    }
+  },
+  "12-hatch": {
+    "kind": "view",
+    "size": [
+      960,
+      460
+    ],
+    "scene": {
+      "camera": {
+        "at": "hatch",
+        "offset": [
+          1.3,
+          0.6,
+          -0.5
+        ],
+        "shift": [
+          0,
+          0.1,
+          0
+        ],
+        "fov": 60
+      },
+      "callouts": [
+        "hatch"
+      ]
+    }
+  },
+  "12-handpump": {
+    "kind": "view",
+    "size": [
+      960,
+      420
+    ],
+    "scene": {
+      "camera": {
+        "at": "handpump",
+        "offset": [
+          0.15,
+          0.6,
+          1.0
+        ],
+        "fov": 55
+      },
+      "marks": [
+        "handpump=stroke"
+      ],
+      "callouts": [
+        "handpump"
+      ]
+    }
+  },
+  "13-where": {
+    "kind": "plan",
+    "size": [
+      960,
+      330
+    ],
+    "scene": {
+      "camera": {
+        "planX": [
+          -0.1,
+          8.1
+        ]
+      },
+      "highlight": [
+        "pump.suction"
+      ],
+      "names": [
+        "pump.suction=fig.ballast_panel",
+        "battery.deck=fig.battery_well",
+        "strainer.cover=fig.strainer_box"
+      ]
+    }
+  },
+  "13-panel": {
+    "kind": "view",
+    "size": [
+      960,
+      540
+    ],
+    "scene": {
+      "camera": {
+        "station": "ballast",
+        "fov": 60,
+        "dolly": -0.2
+      },
+      "callouts": [
+        "pump.suction",
+        "ballast.fore.flood",
+        "ballast.aft.flood"
+      ]
+    }
+  },
+  "13-tilt": {
+    "kind": "compare",
+    "size": [
+      960,
+      320
+    ],
+    "scenes": [
+      {
+        "camera": {
+          "station": "ballast",
+          "fov": 60,
+          "dolly": -0.2
+        },
+        "prep": [
+          {
+            "advance": 3
+          }
+        ]
+      },
+      {
+        "camera": {
+          "station": "ballast",
+          "fov": 60,
+          "dolly": -0.2
+        },
+        "mission": "m2-ballast",
+        "prep": [
+          {
+            "advance": 600
+          }
+        ]
+      }
+    ]
+  },
+  "13-incline": {
+    "kind": "dial",
+    "dial": "inclinometer",
+    "size": [
+      960,
+      330
+    ]
+  },
+  "13-suction": {
+    "kind": "piping",
+    "system": "water",
+    "size": [
+      960,
+      400
+    ],
+    "highlight": [
+      "selector",
+      "strainer",
+      "tank.fore",
+      "tank.aft",
+      "flood.fore",
+      "flood.aft",
+      "sea.fore",
+      "sea.aft",
+      "pump"
+    ]
+  },
+  "20-where": {
+    "kind": "plan",
+    "size": [
+      960,
+      330
+    ],
+    "scene": {
+      "camera": {
+        "planX": [
+          -0.1,
+          8.1
+        ]
+      },
+      "highlight": [
+        "battery.deck"
+      ],
+      "names": [
+        "battery.deck=fig.battery_well",
+        "locker.jumper_bar=fig.jumper_hook",
+        "locker.spare_cell=fig.cell_box"
+      ]
+    }
+  },
+  "20-stand": {
+    "kind": "view",
+    "size": [
+      960,
+      540
+    ],
+    "scene": {
+      "camera": {
+        "at": "battery.deck",
+        "offset": [
+          -1.15,
+          1.55,
+          -0.55
+        ],
+        "fov": 60
+      }
+    }
+  },
+  "20-parts": {
+    "kind": "view",
+    "size": [
+      960,
+      540
+    ],
+    "scene": {
+      "camera": {
+        "at": "battery.cell.3",
+        "offset": [
+          -0.35,
+          1.0,
+          0.45
+        ],
+        "shift": [
+          -0.25,
+          0.15,
+          0
+        ],
+        "fov": 62
+      },
+      "callouts": [
+        "battery.deck@0,-0.35,0",
+        "battery.cell.1@0.06,-0.06,0",
+        "battery.cell.3.nut.1|battery.cell.3.nut.2",
+        "battery.cell.2",
+        "battery.link.2|battery.link.5"
+      ],
+      "mission": "m2-power-a",
+      "prep": [
+        {
+          "procedure": "proc.cell.replace",
+          "through": 1,
+          "bind": {
+            "cell": "3"
+          }
+        }
+      ]
+    }
+  },
+  "20-store": {
+    "kind": "view",
+    "size": [
+      960,
+      540
+    ],
+    "scene": {
+      "camera": {
+        "at": "locker.spare_cell",
+        "offset": [
+          0.55,
+          1.0,
+          -0.85
+        ],
+        "shift": [
+          0.3,
+          -0.1,
+          -0.2
+        ],
+        "fov": 60
+      },
+      "callouts": [
+        "locker.jumper_bar",
+        "locker.spare_cell|discard.crate"
+      ],
+      "mission": "m2-power-a",
+      "prep": [
+        {
+          "procedure": "proc.cell.replace",
+          "through": 1,
+          "bind": {
+            "cell": "3"
+          }
+        }
+      ],
+      "first": 6
+    }
+  },
+  "20-jumper": {
+    "kind": "strip",
+    "strip": {
+      "procedure": "proc.cell.jumper",
+      "steps": [
+        1,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "camera": {
+        "at": "battery.cell.3",
+        "offset": [
+          -0.35,
+          1.0,
+          0.45
+        ],
+        "fov": 60
+      },
+      "columns": 3,
+      "mission": "m2-power-a",
+      "bind": {
+        "cell": "3"
+      },
+      "views": {
+        "1": {
+          "at": "battery.cell.3",
+          "offset": [
+            -0.35,
+            1.3,
+            0.7
+          ],
+          "shift": [
+            -0.25,
+            0.3,
+            0
+          ],
+          "fov": 62
+        },
+        "6": {
+          "at": "battery.deck",
+          "offset": [
+            -0.9,
+            1.2,
+            0.6
+          ],
+          "fov": 60
+        },
+        "3": {
+          "station": "switchboard"
+        },
+        "4": {
+          "at": "locker.jumper_bar",
+          "offset": [
+            -0.3,
+            0.7,
+            -0.6
+          ],
+          "fov": 60
+        },
+        "7": {
+          "station": "switchboard"
+        }
+      },
+      "marks": {
+        "1": "battery.deck@0,-0.35,0=up",
+        "5": "battery.link.3=cw"
+      }
+    }
+  },
+  "20-replace": {
+    "kind": "strip",
+    "strip": {
+      "procedure": "proc.cell.replace",
+      "steps": [
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        14
+      ],
+      "camera": {
+        "at": "battery.cell.3",
+        "offset": [
+          -0.35,
+          1.0,
+          0.45
+        ],
+        "fov": 60
+      },
+      "columns": 3,
+      "mission": "m2-power-a",
+      "bind": {
+        "cell": "3"
+      },
+      "views": {
+        "14": {
+          "at": "battery.deck",
+          "offset": [
+            -0.9,
+            1.2,
+            0.6
+          ],
+          "fov": 60
+        },
+        "8": {
+          "at": "discard.crate",
+          "offset": [
+            -0.5,
+            0.8,
+            -0.6
+          ],
+          "fov": 60
+        },
+        "9": {
+          "at": "locker.spare_cell",
+          "offset": [
+            -0.5,
+            0.8,
+            -0.6
+          ],
+          "fov": 60
+        }
+      },
+      "marks": {
+        "5": "battery.link.3=cw",
+        "8": "discard.crate"
+      }
+    }
+  },
+  "20-compare": {
+    "kind": "compare",
+    "size": [
+      960,
+      320
+    ],
+    "scenes": [
+      {
+        "camera": {
+          "at": "gauge.voltage.glass",
+          "offset": [
+            -0.35,
+            0.02,
+            0
+          ],
+          "fov": 40
+        },
+        "marks": [
+          "gauge.voltage.glass=click"
+        ],
+        "mission": "m2-power-a",
+        "prep": [
+          {
+            "procedure": "proc.cell.replace",
+            "bind": {
+              "cell": "3"
+            }
+          },
+          {
+            "advance": 10
+          }
+        ]
+      },
+      {
+        "camera": {
+          "at": "gauge.voltage.glass",
+          "offset": [
+            -0.35,
+            0.02,
+            0
+          ],
+          "fov": 40
+        },
+        "marks": [
+          "gauge.voltage.glass=click"
+        ],
+        "mission": "m2-power-a",
+        "prep": [
+          {
+            "advance": 10
+          }
+        ]
+      }
+    ]
+  },
+  "21-where": {
+    "kind": "plan",
+    "size": [
+      960,
+      330
+    ],
+    "scene": {
+      "camera": {
+        "planX": [
+          -0.1,
+          8.1
+        ]
+      },
+      "highlight": [
+        "motor.cover"
+      ],
+      "names": [
+        "motor.cover=fig.motor",
+        "propulsion.telegraph=fig.telegraph",
+        "locker.brush_set=fig.locker.aft"
+      ]
+    }
+  },
+  "21-stand": {
+    "kind": "view",
+    "size": [
+      960,
+      540
+    ],
+    "scene": {
+      "camera": {
+        "at": "motor.cover",
+        "offset": [
+          1.15,
+          1.0,
+          -0.35
+        ],
+        "shift": [
+          -0.45,
+          0,
+          0
+        ],
+        "fov": 60
+      }
+    }
+  },
+  "21-parts": {
+    "kind": "view",
+    "size": [
+      960,
+      540
+    ],
+    "scene": {
+      "camera": {
+        "at": "motor.cover",
+        "offset": [
+          0.5,
+          0.35,
+          -0.3
+        ],
+        "shift": [
+          0,
+          0.05,
+          0
+        ],
+        "fov": 55
+      },
+      "callouts": [
+        "motor.cover|motor.cover.bolt.1|motor.cover.bolt.2",
+        "motor.brush.spring"
+      ]
+    }
+  },
+  "21-open": {
+    "kind": "view",
+    "size": [
+      960,
+      540
+    ],
+    "scene": {
+      "camera": {
+        "at": "motor.cover",
+        "offset": [
+          0.4,
+          0.22,
+          -0.6
+        ],
+        "shift": [
+          -0.03,
+          0,
+          0.02
+        ],
+        "fov": 50
+      },
+      "hide": [
+        "motor.cover"
+      ],
+      "callouts": [
+        "motor.brushes",
+        "motor.commutator"
+      ],
+      "mission": "m2-power-a",
+      "prep": [
+        {
+          "procedure": "proc.brush.replace",
+          "through": 5
+        }
+      ],
+      "first": 3
+    }
+  },
+  "21-telegraph": {
+    "kind": "view",
+    "size": [
+      960,
+      400
+    ],
+    "scene": {
+      "camera": {
+        "at": "propulsion.telegraph",
+        "offset": [
+          -0.45,
+          0.15,
+          0.35
+        ],
+        "fov": 50
+      },
+      "callouts": [
+        "propulsion.telegraph"
+      ],
+      "first": 5
+    }
+  },
+  "21-spring": {
+    "kind": "strip",
+    "strip": {
+      "procedure": "proc.brush.spring",
+      "steps": [
+        2,
+        3
+      ],
+      "camera": {
+        "at": "motor.cover",
+        "offset": [
+          0.5,
+          0.35,
+          -0.3
+        ],
+        "shift": [
+          0,
+          0.05,
+          0
+        ],
+        "fov": 55
+      },
+      "columns": 2,
+      "mission": "m2-power-a",
+      "views": {
+        "2": {
+          "at": "propulsion.telegraph",
+          "offset": [
+            -0.5,
+            0.2,
+            0.4
+          ],
+          "fov": 55
+        }
+      },
+      "marks": {
+        "2": "propulsion.telegraph=down"
+      }
+    }
+  },
+  "21-replace": {
+    "kind": "strip",
+    "strip": {
+      "procedure": "proc.brush.replace",
+      "steps": [
+        3,
+        4,
+        5,
+        6,
+        8,
+        10,
+        11,
+        13
+      ],
+      "camera": {
+        "at": "motor.cover",
+        "offset": [
+          0.5,
+          0.35,
+          -0.3
+        ],
+        "shift": [
+          0,
+          0.05,
+          0
+        ],
+        "fov": 55
+      },
+      "columns": 3,
+      "hide": {
+        "6": [
+          "motor.cover"
+        ],
+        "8": [
+          "motor.cover"
+        ],
+        "10": [
+          "motor.cover"
+        ]
+      },
+      "mission": "m2-power-a",
+      "views": {
+        "2": {
+          "at": "propulsion.telegraph",
+          "offset": [
+            -0.5,
+            0.2,
+            0.4
+          ],
+          "fov": 55
+        },
+        "3": {
+          "station": "switchboard"
+        },
+        "4": {
+          "at": "motor.cover.bolt.2",
+          "offset": [
+            0.5,
+            0.35,
+            -0.3
+          ],
+          "fov": 55
+        },
+        "5": {
+          "at": "motor.cover",
+          "offset": [
+            0.5,
+            0.35,
+            -0.3
+          ],
+          "fov": 60
+        },
+        "11": {
+          "at": "motor.brush.spring",
+          "offset": [
+            0.5,
+            0.35,
+            -0.3
+          ],
+          "fov": 55
+        },
+        "13": {
+          "at": "motor.cover.bolt.2",
+          "offset": [
+            0.5,
+            0.35,
+            -0.3
+          ],
+          "fov": 55
+        }
+      }
+    }
+  },
+  "22-where": {
+    "kind": "plan",
+    "size": [
+      960,
+      330
+    ],
+    "scene": {
+      "camera": {
+        "planX": [
+          -0.1,
+          8.1
+        ]
+      },
+      "highlight": [
+        "node:SteamAccumulator"
+      ],
+      "names": [
+        "steam.stop=fig.accumulator",
+        "hatch=fig.hatch",
+        "locker.gasket=fig.locker.aft"
+      ]
+    }
+  },
+  "22-stand": {
+    "kind": "view",
+    "size": [
+      960,
+      540
+    ],
+    "scene": {
+      "camera": {
+        "station": "accumulator",
+        "dolly": 0.25
+      },
+      "prep": [
+        {
+          "cmd": "hatch.close"
+        }
+      ]
+    }
+  },
+  "22-parts": {
+    "kind": "view",
+    "size": [
+      960,
+      540
+    ],
+    "scene": {
+      "camera": {
+        "eye": [
+          1.85,
+          1.0,
+          -0.2
+        ],
+        "target": [
+          1.85,
+          0.9,
+          0.9
+        ],
+        "fov": 65
+      },
+      "callouts": [
+        "steam.flange.face@0,0.84,0.01",
+        "steam.stop",
+        "steam.bleed|steam.stop@-0.27,-0.13,0.145",
+        "steam.joint",
+        "steam.flange.bolt.1|steam.flange.bolt.2|steam.flange.bolt.3|steam.flange.bolt.4"
+      ],
+      "prep": [
+        {
+          "cmd": "hatch.close"
+        }
+      ]
+    }
+  },
+  "22-bolts": {
+    "kind": "sequence",
+    "size": [
+      960,
+      420
+    ],
+    "scene": {
+      "camera": {
+        "at": "steam.flange.face",
+        "offset": [
+          0.0,
+          0.1,
+          -0.35
+        ],
+        "fov": 50
+      },
+      "prep": [
+        {
+          "cmd": "hatch.close"
+        }
+      ]
+    },
+    "procedure": "proc.steam.gasket",
+    "fastenStep": 11
+  },
+  "23-where": {
+    "kind": "plan",
+    "size": [
+      960,
+      330
+    ],
+    "scene": {
+      "camera": {
+        "planX": [
+          -0.1,
+          8.1
+        ]
+      },
+      "highlight": [
+        "fuse.C3"
+      ],
+      "names": [
+        "fuse.C3=fig.switchboard",
+        "locker.fuse=fig.locker.mid",
+        "discard=fig.discard",
+        "locker.fuse_wire=fig.locker.electric"
+      ]
+    }
+  },
+  "23-parts": {
+    "kind": "view",
+    "size": [
+      960,
+      540
+    ],
+    "scene": {
+      "camera": {
+        "at": "fuse.C3",
+        "offset": [
+          -0.25,
+          0.25,
+          -1.05
+        ],
+        "shift": [
+          -0.25,
+          0.12,
+          0
+        ],
+        "fov": 55
+      },
+      "callouts": [
+        "switch.C1|switch.C2|switch.C3|switch.C4|switch.C5|switch.C6|switch.C7|switch.C8",
+        "fuse.C3",
+        "terminal.C3",
+        "bus",
+        "ammeter.C3"
+      ],
+      "prep": [
+        {
+          "advance": 70
+        }
+      ]
+    }
+  },
+  "23-replace": {
+    "kind": "strip",
+    "strip": {
+      "procedure": "proc.fuse.replace",
+      "steps": [
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "camera": {
+        "at": "fuse.C3",
+        "offset": [
+          0,
+          0.08,
+          -0.42
+        ],
+        "shift": [
+          0,
+          0.1,
+          0
+        ],
+        "fov": 55
+      },
+      "columns": 3,
+      "prep": [
+        {
+          "advance": 70
+        }
+      ],
+      "bind": {
+        "circuit": "C3"
+      },
+      "views": {
+        "2": {
+          "station": "switchboard"
+        },
+        "3": {
+          "at": "fuse.C3",
+          "offset": [
+            0,
+            0.1,
+            -0.8
+          ],
+          "shift": [
+            0,
+            0.05,
+            0
+          ],
+          "fov": 55
+        },
+        "4": {
+          "at": "discard",
+          "offset": [
+            0.25,
+            0.95,
+            0.75
+          ],
+          "fov": 55
+        },
+        "5": {
+          "station": "locker"
+        },
+        "7": {
+          "station": "switchboard"
+        }
+      }
+    }
+  },
+  "23-wire": {
+    "kind": "strip",
+    "strip": {
+      "procedure": "proc.fuse.wire",
+      "steps": [
+        3,
+        5,
+        6,
+        7
+      ],
+      "camera": {
+        "at": "fuse.C3",
+        "offset": [
+          0,
+          0.08,
+          -0.42
+        ],
+        "shift": [
+          0,
+          0.1,
+          0
+        ],
+        "fov": 55
+      },
+      "columns": 2,
+      "prep": [
+        {
+          "advance": 70
+        }
+      ],
+      "bind": {
+        "circuit": "C3"
+      },
+      "views": {
+        "3": {
+          "at": "fuse.C3",
+          "offset": [
+            0,
+            0.1,
+            -0.8
+          ],
+          "shift": [
+            0,
+            0.05,
+            0
+          ],
+          "fov": 55
+        },
+        "5": {
+          "station": "locker.top"
+        },
+        "7": {
+          "station": "switchboard"
+        }
+      }
+    }
+  },
+  "23-rewire": {
+    "kind": "strip",
+    "strip": {
+      "procedure": "proc.junction.rewire",
+      "steps": [
+        3,
+        4,
+        5,
+        7,
+        8,
+        11,
+        13,
+        17
+      ],
+      "camera": {
+        "at": "junction.C6.box",
+        "offset": [
+          -0.05,
+          0.38,
+          -0.62
+        ],
+        "fov": 55
+      },
+      "columns": 3,
+      "mission": "m2-switchboard-a",
+      "bind": {
+        "circuit": "C6"
+      },
+      "views": {
+        "7": {
+          "at": "device.soldering_iron",
+          "offset": [
+            -0.3,
+            0.45,
+            -0.7
+          ],
+          "fov": 55
+        },
+        "17": {
+          "at": "fuse.C6",
+          "offset": [
+            0,
+            0.08,
+            -0.42
+          ],
+          "shift": [
+            0,
+            0.1,
+            0
+          ],
+          "fov": 55
+        }
+      },
+      "marks": {
+        "7": "device.soldering_iron"
+      }
+    }
+  },
+  "23-twist": {
+    "kind": "strip",
+    "strip": {
+      "procedure": "proc.junction.twist",
+      "steps": [
+        4,
+        5,
+        6,
+        7,
+        8,
+        10,
+        16
+      ],
+      "camera": {
+        "at": "junction.C6.box",
+        "offset": [
+          -0.05,
+          0.38,
+          -0.62
+        ],
+        "fov": 55
+      },
+      "columns": 3,
+      "mission": "m2-switchboard-a",
+      "bind": {
+        "circuit": "C6"
+      },
+      "views": {
+        "6": {
+          "at": "junction.C6.box",
+          "offset": [
+            -0.05,
+            0.3,
+            -0.45
+          ],
+          "fov": 55
+        },
+        "7": {
+          "at": "junction.C6.box",
+          "offset": [
+            -0.05,
+            0.3,
+            -0.45
+          ],
+          "fov": 55
+        },
+        "8": {
+          "at": "junction.C6.box",
+          "offset": [
+            -0.05,
+            0.3,
+            -0.45
+          ],
+          "fov": 55
+        },
+        "10": {
+          "at": "junction.C6.box",
+          "offset": [
+            -0.05,
+            0.3,
+            -0.45
+          ],
+          "fov": 55
+        },
+        "16": {
+          "at": "fuse.C6",
+          "offset": [
+            0,
+            0.08,
+            -0.42
+          ],
+          "shift": [
+            0,
+            0.1,
+            0
+          ],
+          "fov": 55
+        }
+      }
+    }
+  },
+  "23-compare": {
+    "kind": "compare",
+    "size": [
+      960,
+      320
+    ],
+    "scenes": [
+      {
+        "camera": {
+          "at": "fuse.C3",
+          "offset": [
+            0.06,
+            0.04,
+            -0.26
+          ],
+          "fov": 32
+        },
+        "callouts": [
+          "fuse.C3"
+        ],
+        "first": 2
+      },
+      {
+        "camera": {
+          "at": "fuse.C3",
+          "offset": [
+            0.06,
+            0.04,
+            -0.26
+          ],
+          "fov": 32
+        },
+        "callouts": [
+          "fuse.C3"
+        ],
+        "highlight": [
+          "fuse.C3"
+        ],
+        "prep": [
+          {
+            "advance": 70
+          }
+        ],
+        "first": 2
+      }
+    ]
+  },
+  "24-where": {
+    "kind": "plan",
+    "size": [
+      960,
+      330
+    ],
+    "scene": {
+      "camera": {
+        "planX": [
+          -0.1,
+          8.1
+        ]
+      },
+      "highlight": [
+        "switch.C1"
+      ],
+      "names": [
+        "switch.C1=fig.switchboard",
+        "toolboard.file=fig.toolboard"
+      ]
+    }
+  },
+  "24-parts": {
+    "kind": "view",
+    "size": [
+      960,
+      540
+    ],
+    "scene": {
+      "camera": {
+        "at": "knife.C1.blade",
+        "offset": [
+          -0.1,
+          0.32,
+          -0.5
+        ],
+        "shift": [
+          0,
+          0.12,
+          0
+        ],
+        "fov": 50
+      },
+      "callouts": [
+        "node:BladeC1",
+        "knife.C1.jaw",
+        "node:ClampC1",
+        "knife.C1.base"
+      ],
+      "mission": "m2-switchboard-b"
+    }
+  },
+  "24-clamp": {
+    "kind": "strip",
+    "strip": {
+      "procedure": "proc.contact.clamp",
+      "steps": [
+        2,
+        3,
+        4
+      ],
+      "camera": {
+        "at": "knife.C1.blade",
+        "offset": [
+          -0.1,
+          0.32,
+          -0.5
+        ],
+        "shift": [
+          0,
+          0.12,
+          0
+        ],
+        "fov": 50
+      },
+      "columns": 3,
+      "mission": "m2-switchboard-b",
+      "bind": {
+        "circuit": "C1"
+      },
+      "views": {
+        "3": {
+          "at": "knife.C1.clamp",
+          "offset": [
+            -0.1,
+            0.2,
+            -0.45
+          ],
+          "fov": 50
+        }
+      }
+    }
+  },
+  "24-file": {
+    "kind": "strip",
+    "strip": {
+      "procedure": "proc.contact.file",
+      "steps": [
+        2,
+        3,
+        4
+      ],
+      "camera": {
+        "at": "knife.C1.blade",
+        "offset": [
+          -0.1,
+          0.32,
+          -0.5
+        ],
+        "shift": [
+          0,
+          0.12,
+          0
+        ],
+        "fov": 50
+      },
+      "columns": 3,
+      "mission": "m2-switchboard-b",
+      "bind": {
+        "circuit": "C1"
+      }
+    }
+  },
+  "25-where": {
+    "kind": "plan",
+    "size": [
+      960,
+      330
+    ],
+    "scene": {
+      "camera": {
+        "planX": [
+          -0.1,
+          8.1
+        ]
+      },
+      "highlight": [],
+      "names": [
+        "junction.C1.box=",
+        "junction.C2.box=",
+        "junction.C6.box=",
+        "junction.C7.box=",
+        "junction.C3.box=",
+        "junction.C8.box=",
+        "junction.C4.box=",
+        "junction.C5.box="
+      ]
+    }
+  },
+  "25-stand": {
+    "kind": "view",
+    "size": [
+      960,
+      540
+    ],
+    "scene": {
+      "camera": {
+        "at": "junction.C2.box",
+        "offset": [
+          0.1,
+          0.95,
+          -1.05
+        ],
+        "fov": 60
+      }
+    }
+  },
+  "25-parts": {
+    "kind": "view",
+    "size": [
+      960,
+      540
+    ],
+    "scene": {
+      "camera": {
+        "at": "junction.C1.box",
+        "offset": [
+          -0.05,
+          0.3,
+          -0.45
+        ],
+        "shift": [
+          0,
+          -0.06,
+          0
+        ],
+        "fov": 55
+      },
+      "callouts": [
+        "junction.C1.screw.1|junction.C1.screw.2",
+        "junction.C1.cover@0.09,-0.02,-0.04",
+        "junction.C1.box",
+        "junction.C1.cable"
+      ],
+      "mission": "m2-switchboard-a",
+      "prep": [
+        {
+          "procedure": "proc.junction.dry",
+          "through": 4,
+          "bind": {
+            "circuit": "C1"
+          }
+        }
+      ]
+    }
+  },
+  "25-isolate": {
+    "kind": "strip",
+    "strip": {
+      "procedure": "proc.junction.isolate",
+      "steps": [
+        2,
+        3
+      ],
+      "camera": {
+        "at": "switch.C1",
+        "offset": [
+          0,
+          0.1,
+          -0.5
+        ],
+        "fov": 55
+      },
+      "columns": 2,
+      "mission": "m2-switchboard-a",
+      "bind": {
+        "circuit": "C1"
+      },
+      "views": {
+        "3": {
+          "at": "panel.bulb.switchboard",
+          "offset": [
+            -0.6,
+            -0.02,
+            0.0
+          ],
+          "fov": 50
+        }
+      },
+      "marks": {
+        "3": "panel.bezel.switchboard"
+      }
+    }
+  },
+  "25-dry": {
+    "kind": "strip",
+    "strip": {
+      "procedure": "proc.junction.dry",
+      "steps": [
+        3,
+        4,
+        5,
+        8,
+        9,
+        10
+      ],
+      "camera": {
+        "at": "junction.C1.box",
+        "offset": [
+          -0.05,
+          0.3,
+          -0.45
+        ],
+        "shift": [
+          0,
+          -0.06,
+          0
+        ],
+        "fov": 55
+      },
+      "columns": 3,
+      "mission": "m2-switchboard-a",
+      "bind": {
+        "circuit": "C1"
+      }
+    }
+  },
+  "25-compare": {
+    "kind": "compare",
+    "size": [
+      960,
+      320
+    ],
+    "scenes": [
+      {
+        "camera": {
+          "at": "ammeter.C1",
+          "offset": [
+            0,
+            0.06,
+            -0.35
+          ],
+          "fov": 40
+        },
+        "marks": [
+          "ammeter.C1=click"
+        ],
+        "prep": [
+          {
+            "advance": 20
+          }
+        ]
+      },
+      {
+        "camera": {
+          "at": "ammeter.C1",
+          "offset": [
+            0,
+            0.06,
+            -0.35
+          ],
+          "fov": 40
+        },
+        "marks": [
+          "ammeter.C1=click"
+        ],
+        "mission": "m2-switchboard-a",
+        "prep": [
+          {
+            "advance": 20
+          }
+        ]
+      }
+    ]
+  },
+  "26-where": {
+    "kind": "plan",
+    "size": [
+      960,
+      330
+    ],
+    "scene": {
+      "camera": {
+        "planX": [
+          -0.1,
+          8.1
+        ]
+      },
+      "highlight": [
+        "fan.motor"
+      ],
+      "names": [
+        "fan.motor=fig.fan",
+        "locker.fan_bearing=fig.locker.aft",
+        "switch.C2=fig.switchboard"
+      ]
+    }
+  },
+  "26-stand": {
+    "kind": "view",
+    "size": [
+      960,
+      540
+    ],
+    "scene": {
+      "camera": {
+        "at": "fan.hub",
+        "offset": [
+          0.9,
+          -0.55,
+          0.9
+        ],
+        "fov": 60
+      }
+    }
+  },
+  "26-parts": {
+    "kind": "view",
+    "size": [
+      960,
+      540
+    ],
+    "scene": {
+      "camera": {
+        "at": "fan.hub",
+        "offset": [
+          0.22,
+          -0.48,
+          0.3
+        ],
+        "fov": 60
+      },
+      "callouts": [
+        "fan.guard",
+        "fan.guard.nut.1|fan.guard.nut.2",
+        "fan.blades",
+        "fan.hub",
+        "fan.bearing@0,-0.03,0",
+        "fan.motor@0,-0.05,0"
+      ],
+      "mission": "m2-air-a"
+    }
+  },
+  "26-spin": {
+    "kind": "strip",
+    "strip": {
+      "procedure": "proc.fan.spin",
+      "steps": [
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "camera": {
+        "at": "fan.hub",
+        "offset": [
+          0.22,
+          -0.48,
+          0.3
+        ],
+        "fov": 60
+      },
+      "columns": 3,
+      "mission": "m2-air-a",
+      "marks": {
+        "3": "fan.guard.nut.1",
+        "5": "fan.guard.nut.1"
+      }
+    }
+  },
+  "26-bearing": {
+    "kind": "strip",
+    "strip": {
+      "procedure": "proc.fan.bearing",
+      "steps": [
+        3,
+        4,
+        5,
+        6,
+        9,
+        10,
+        11,
+        12
+      ],
+      "camera": {
+        "at": "fan.hub",
+        "offset": [
+          0.22,
+          -0.48,
+          0.3
+        ],
+        "fov": 60
+      },
+      "columns": 3,
+      "mission": "m2-air-a",
+      "marks": {
+        "4": "fan.guard.nut.1",
+        "11": "fan.guard.nut.1"
+      }
+    }
+  },
+  "26-compare": {
+    "kind": "compare",
+    "size": [
+      960,
+      320
+    ],
+    "scenes": [
+      {
+        "camera": {
+          "at": "fan.hub",
+          "offset": [
+            0.75,
+            -0.3,
+            0.1
+          ],
+          "fov": 50
+        },
+        "callouts": [
+          "node:FanRibbon"
+        ],
+        "prep": [
+          {
+            "advance": 20
+          }
+        ],
+        "first": 7
+      },
+      {
+        "camera": {
+          "at": "fan.hub",
+          "offset": [
+            0.75,
+            -0.3,
+            0.1
+          ],
+          "fov": 50
+        },
+        "callouts": [
+          "node:FanRibbon"
+        ],
+        "mission": "m2-air-a",
+        "prep": [
+          {
+            "advance": 20
+          }
+        ],
+        "first": 7
+      }
+    ]
+  },
+  "27-where": {
+    "kind": "plan",
+    "size": [
+      960,
+      330
+    ],
+    "scene": {
+      "camera": {
+        "planX": [
+          -0.1,
+          8.1
+        ]
+      },
+      "highlight": [
+        "scrubber.canister"
+      ],
+      "names": [
+        "scrubber.canister=fig.scrubber",
+        "locker.canister=fig.canister_stand",
+        "discard=fig.discard"
+      ]
+    }
+  },
+  "27-stand": {
+    "kind": "view",
+    "size": [
+      960,
+      540
+    ],
+    "scene": {
+      "camera": {
+        "at": "scrubber.canister",
+        "offset": [
+          0.15,
+          1.2,
+          1.1
+        ],
+        "fov": 60
+      }
+    }
+  },
+  "27-parts": {
+    "kind": "view",
+    "size": [
+      960,
+      540
+    ],
+    "scene": {
+      "camera": {
+        "at": "scrubber.canister",
+        "offset": [
+          0.0,
+          0.6,
+          0.7
+        ],
+        "fov": 55
+      },
+      "callouts": [
+        "scrubber.lid",
+        "scrubber.clamp.1|scrubber.clamp.2",
+        "scrubber.canister",
+        "scrubber.canister@0,-0.16,0.22"
+      ],
+      "mission": "m2-air-a",
+      "prep": [
+        {
+          "procedure": "proc.canister.replace",
+          "through": 3
+        }
+      ]
+    }
+  },
+  "27-replace": {
+    "kind": "strip",
+    "strip": {
+      "procedure": "proc.canister.replace",
+      "steps": [
+        2,
+        3,
+        4,
+        6,
+        7,
+        9
+      ],
+      "camera": {
+        "at": "scrubber.lid",
+        "offset": [
+          -0.4,
+          0.55,
+          0.6
+        ],
+        "shift": [
+          -0.12,
+          -0.05,
+          -0.1
+        ],
+        "fov": 55
+      },
+      "columns": 3,
+      "mission": "m2-air-a",
+      "views": {
+        "3": {
+          "at": "scrubber.canister",
+          "offset": [
+            0.0,
+            1.1,
+            0.9
+          ],
+          "fov": 55
+        },
+        "4": {
+          "at": "scrubber.canister",
+          "offset": [
+            0.0,
+            1.1,
+            0.9
+          ],
+          "fov": 55
+        },
+        "6": {
+          "at": "locker.canister",
+          "offset": [
+            0.1,
+            0.9,
+            0.75
+          ],
+          "fov": 55
+        },
+        "7": {
+          "at": "scrubber.canister",
+          "offset": [
+            0.0,
+            1.1,
+            0.9
+          ],
+          "fov": 55
+        }
+      }
+    }
+  },
+  "27-compare": {
+    "kind": "compare",
+    "size": [
+      960,
+      320
+    ],
+    "scenes": [
+      {
+        "camera": {
+          "at": "scrubber.canister",
+          "offset": [
+            0.0,
+            0.0,
+            0.5
+          ],
+          "shift": [
+            0,
+            -0.15,
+            0.2
+          ],
+          "fov": 32
+        },
+        "callouts": [
+          "scrubber.canister@0,-0.16,0.22"
+        ],
+        "first": 4
+      },
+      {
+        "camera": {
+          "at": "scrubber.canister",
+          "offset": [
+            0.0,
+            0.0,
+            0.5
+          ],
+          "shift": [
+            0,
+            -0.15,
+            0.2
+          ],
+          "fov": 32
+        },
+        "callouts": [
+          "scrubber.canister@0,-0.16,0.22"
+        ],
+        "mission": "m2-air-a",
+        "prep": [
+          {
+            "advance": 400
+          }
+        ],
+        "first": 4
+      }
+    ]
+  },
+  "28-where": {
+    "kind": "plan",
+    "size": [
+      960,
+      330
+    ],
+    "scene": {
+      "camera": {
+        "planX": [
+          -0.1,
+          8.1
+        ]
+      },
+      "highlight": [
+        "o2.furnace"
+      ],
+      "names": [
+        "o2.furnace=fig.furnace",
+        "switch.C2=fig.switchboard",
+        "toolboard.scraper=fig.toolboard"
+      ]
+    }
+  },
+  "28-stand": {
+    "kind": "view",
+    "size": [
+      960,
+      540
+    ],
+    "scene": {
+      "camera": {
+        "at": "o2.furnace.door",
+        "offset": [
+          -0.25,
+          1.0,
+          -0.9
+        ],
+        "shift": [
+          0,
+          0.15,
+          0
+        ],
+        "fov": 60
+      }
+    }
+  },
+  "28-parts": {
+    "kind": "view",
+    "size": [
+      960,
+      540
+    ],
+    "scene": {
+      "camera": {
+        "at": "o2.furnace.door",
+        "offset": [
+          -0.1,
+          0.4,
+          -0.6
+        ],
+        "shift": [
+          0.05,
+          0.12,
+          0
+        ],
+        "fov": 55
+      },
+      "callouts": [
+        "o2.furnace.door",
+        "o2.furnace.latch",
+        "o2.furnace.grate",
+        "o2.furnace.vent",
+        "candle",
+        "o2.furnace"
+      ],
+      "prep": [
+        {
+          "advance": 200
+        },
+        {
+          "from": 3,
+          "procedure": "proc.furnace.clean",
+          "through": 4
+        }
+      ]
+    }
+  },
+  "28-compare": {
+    "kind": "compare",
+    "size": [
+      960,
+      320
+    ],
+    "scenes": [
+      {
+        "camera": {
+          "at": "o2.furnace.door",
+          "offset": [
+            -0.1,
+            0.4,
+            -0.6
+          ],
+          "shift": [
+            0.05,
+            0.12,
+            0
+          ],
+          "fov": 55
+        },
+        "callouts": [
+          "o2.furnace.grate",
+          "o2.furnace.vent"
+        ],
+        "prep": [
+          {
+            "advance": 200
+          },
+          {
+            "from": 3,
+            "procedure": "proc.furnace.clean",
+            "through": 4
+          }
+        ],
+        "first": 3
+      },
+      {
+        "camera": {
+          "at": "o2.furnace.door",
+          "offset": [
+            -0.1,
+            0.4,
+            -0.6
+          ],
+          "shift": [
+            0.05,
+            0.12,
+            0
+          ],
+          "fov": 55
+        },
+        "callouts": [
+          "o2.furnace.grate",
+          "o2.furnace.vent"
+        ],
+        "highlight": [
+          "node:FurnaceAsh",
+          "o2.furnace.vent"
+        ],
+        "mission": "m2-air-b",
+        "prep": [
+          {
+            "advance": 200
+          },
+          {
+            "from": 3,
+            "procedure": "proc.furnace.clean",
+            "through": 4
+          }
+        ],
+        "first": 3
+      }
+    ]
+  },
+  "28-clean": {
+    "kind": "strip",
+    "strip": {
+      "procedure": "proc.furnace.clean",
+      "steps": [
+        3,
+        4,
+        5,
+        6,
+        7,
+        9
+      ],
+      "camera": {
+        "at": "o2.furnace.door",
+        "offset": [
+          -0.1,
+          0.4,
+          -0.6
+        ],
+        "shift": [
+          0.05,
+          0.12,
+          0
+        ],
+        "fov": 55
+      },
+      "columns": 3,
+      "mission": "m2-air-b",
+      "prep": [
+        {
+          "advance": 200
+        }
+      ]
+    }
+  },
+  "29-where": {
+    "kind": "plan",
+    "size": [
+      960,
+      330
+    ],
+    "scene": {
+      "camera": {
+        "planX": [
+          -0.1,
+          8.1
+        ]
+      },
+      "highlight": [
+        "strainer.cover"
+      ],
+      "names": [
+        "strainer.cover=fig.strainer_box",
+        "wash_bucket=fig.wash_bucket",
+        "switch.C3=fig.switchboard"
+      ]
+    }
+  },
+  "29-stand": {
+    "kind": "view",
+    "size": [
+      960,
+      540
+    ],
+    "scene": {
+      "camera": {
+        "at": "strainer.cover",
+        "offset": [
+          0.1,
+          1.2,
+          1.0
+        ],
+        "shift": [
+          0,
+          -0.05,
+          0
+        ],
+        "fov": 55
+      }
+    }
+  },
+  "29-parts": {
+    "kind": "view",
+    "size": [
+      960,
+      540
+    ],
+    "scene": {
+      "camera": {
+        "at": "strainer.cover",
+        "offset": [
+          0.25,
+          0.55,
+          0.75
+        ],
+        "shift": [
+          0.2,
+          -0.1,
+          0
+        ],
+        "fov": 60
+      },
+      "callouts": [
+        "strainer.bolt.1|strainer.bolt.2|strainer.bolt.3|strainer.bolt.4",
+        "strainer.cover",
+        "wash_bucket"
+      ]
+    }
+  },
+  "29-clean": {
+    "kind": "strip",
+    "strip": {
+      "procedure": "proc.strainer.clean",
+      "steps": [
+        2,
+        3,
+        4,
+        5,
+        6,
+        9
+      ],
+      "camera": {
+        "at": "strainer.cover",
+        "offset": [
+          0.0,
+          0.42,
+          0.62
+        ],
+        "shift": [
+          0,
+          -0.04,
+          0
+        ],
+        "fov": 55
+      },
+      "columns": 3,
+      "prep": [
+        {
+          "advance": 5
+        }
+      ],
+      "views": {
+        "2": {
+          "station": "switchboard"
+        },
+        "4": {
+          "at": "strainer.cover",
+          "offset": [
+            0.0,
+            0.6,
+            0.9
+          ],
+          "fov": 55
+        },
+        "5": {
+          "at": "strainer.basket",
+          "offset": [
+            0.0,
+            0.62,
+            0.3
+          ],
+          "fov": 55
+        },
+        "6": {
+          "at": "wash_bucket",
+          "offset": [
+            0.0,
+            0.8,
+            0.45
+          ],
+          "fov": 55
+        }
+      }
+    }
+  },
+  "29-compare": {
+    "kind": "compare",
+    "size": [
+      960,
+      320
+    ],
+    "scenes": [
+      {
+        "camera": {
+          "at": "gauge.depth.glass",
+          "offset": [
+            -0.6,
+            0.02,
+            0.0
+          ],
+          "fov": 45
+        },
+        "marks": [
+          "gauge.bilge.glass=click",
+          "gauge.pumpCurrent.glass=click"
+        ],
+        "prep": [
+          {
+            "procedure": "proc.strainer.clean"
+          },
+          {
+            "advance": 150
+          }
+        ]
+      },
+      {
+        "camera": {
+          "at": "gauge.depth.glass",
+          "offset": [
+            -0.6,
+            0.02,
+            0.0
+          ],
+          "fov": 45
+        },
+        "marks": [
+          "gauge.bilge.glass=click",
+          "gauge.pumpCurrent.glass=click"
+        ],
+        "prep": [
+          {
+            "advance": 150
+          }
+        ]
+      }
+    ]
+  },
+  "29-bolts": {
+    "kind": "sequence",
+    "size": [
+      960,
+      420
+    ],
+    "scene": {
+      "camera": {
+        "at": "strainer.cover",
+        "offset": [
+          0.0,
+          0.3,
+          0.45
+        ],
+        "fov": 50
+      }
+    },
+    "procedure": "proc.strainer.clean",
+    "fastenStep": 9
+  },
+  "30-where": {
+    "kind": "plan",
+    "size": [
+      960,
+      330
+    ],
+    "scene": {
+      "camera": {
+        "planX": [
+          -0.1,
+          8.1
+        ]
+      },
+      "highlight": [
+        "pump.body"
+      ],
+      "names": [
+        "pump.body=fig.pump",
+        "locker.pump_bearing=fig.locker.aft",
+        "switch.C3=fig.switchboard"
+      ]
+    }
+  },
+  "30-stand": {
+    "kind": "view",
+    "size": [
+      960,
+      540
+    ],
+    "scene": {
+      "camera": {
+        "at": "pump.body",
+        "offset": [
+          0.75,
+          1.05,
+          1.0
+        ],
+        "shift": [
+          0,
+          -0.1,
+          0
+        ],
+        "fov": 55
+      }
+    }
+  },
+  "30-parts": {
+    "kind": "view",
+    "size": [
+      960,
+      540
+    ],
+    "scene": {
+      "camera": {
+        "at": "pump.cap",
+        "offset": [
+          0.32,
+          0.3,
+          0.55
+        ],
+        "shift": [
+          0.05,
+          0.08,
+          -0.08
+        ],
+        "fov": 50
+      },
+      "callouts": [
+        "pump.body@-0.02,-0.13,0.1",
+        "pump.oilcup",
+        "pump.cap.bolt.1|pump.cap.bolt.2|pump.cap.bolt.3|pump.cap.bolt.4",
+        "pump.cap"
+      ],
+      "showGlass": true
+    }
+  },
+  "30-open": {
+    "kind": "view",
+    "size": [
+      960,
+      540
+    ],
+    "scene": {
+      "camera": {
+        "at": "pump.cap",
+        "offset": [
+          0.25,
+          0.18,
+          0.45
+        ],
+        "fov": 45
+      },
+      "callouts": [
+        "pump.cap",
+        "pump.bearing"
+      ],
+      "mission": "m2-water-a",
+      "prep": [
+        {
+          "procedure": "proc.bearing.replace",
+          "through": 5
+        }
+      ],
+      "first": 4
+    }
+  },
+  "30-oil": {
+    "kind": "strip",
+    "strip": {
+      "procedure": "proc.bearing.oil",
+      "steps": [
+        2,
+        3
+      ],
+      "camera": {
+        "at": "pump.cap",
+        "offset": [
+          0.28,
+          0.28,
+          0.5
+        ],
+        "shift": [
+          0.03,
+          0.06,
+          -0.05
+        ],
+        "fov": 55
+      },
+      "columns": 2,
+      "mission": "m2-water-a",
+      "views": {
+        "3": {
+          "at": "gauge.pumpCurrent.glass",
+          "offset": [
+            -0.35,
+            0.02,
+            0
+          ],
+          "fov": 40
+        }
+      },
+      "marks": {
+        "3": "gauge.pumpCurrent.glass"
+      }
+    }
+  },
+  "30-replace": {
+    "kind": "strip",
+    "strip": {
+      "procedure": "proc.bearing.replace",
+      "steps": [
+        2,
+        4,
+        5,
+        6,
+        9,
+        11
+      ],
+      "camera": {
+        "at": "pump.cap",
+        "offset": [
+          0.28,
+          0.28,
+          0.5
+        ],
+        "shift": [
+          0.03,
+          0.06,
+          -0.05
+        ],
+        "fov": 55
+      },
+      "columns": 3,
+      "mission": "m2-water-a",
+      "prep": [
+        {
+          "advance": 30
+        }
+      ],
+      "views": {
+        "2": {
+          "station": "switchboard"
+        },
+        "12": {
+          "station": "switchboard"
+        }
+      }
+    }
+  },
+  "30-compare": {
+    "kind": "compare",
+    "size": [
+      960,
+      320
+    ],
+    "scenes": [
+      {
+        "camera": {
+          "at": "gauge.pumpCurrent.glass",
+          "offset": [
+            -0.35,
+            0.02,
+            0
+          ],
+          "fov": 40
+        },
+        "marks": [
+          "gauge.pumpCurrent.glass=click"
+        ],
+        "mission": "m2-water-a",
+        "prep": [
+          {
+            "procedure": "proc.strainer.clean"
+          },
+          {
+            "procedure": "proc.bearing.replace"
+          },
+          {
+            "advance": 20
+          }
+        ]
+      },
+      {
+        "camera": {
+          "at": "gauge.pumpCurrent.glass",
+          "offset": [
+            -0.35,
+            0.02,
+            0
+          ],
+          "fov": 40
+        },
+        "marks": [
+          "gauge.pumpCurrent.glass=click"
+        ],
+        "mission": "m2-water-a",
+        "prep": [
+          {
+            "procedure": "proc.strainer.clean"
+          },
+          {
+            "advance": 120
+          }
+        ]
+      }
+    ]
+  },
+  "30-bolts": {
+    "kind": "sequence",
+    "size": [
+      960,
+      420
+    ],
+    "scene": {
+      "camera": {
+        "at": "pump.cap",
+        "offset": [
+          0.18,
+          0.12,
+          0.35
+        ],
+        "fov": 45
+      }
+    },
+    "procedure": "proc.bearing.replace",
+    "fastenStep": 11
+  },
+  "31-where": {
+    "kind": "plan",
+    "size": [
+      960,
+      330
+    ],
+    "scene": {
+      "camera": {
+        "planX": [
+          -0.1,
+          8.1
+        ]
+      },
+      "highlight": [
+        "checkvalve.bonnet"
+      ],
+      "names": [
+        "checkvalve.bonnet=fig.checkvalve",
+        "pump.discharge=fig.discharge",
+        "wash_bucket=fig.wash_bucket"
+      ]
+    }
+  },
+  "31-stand": {
+    "kind": "view",
+    "size": [
+      960,
+      540
+    ],
+    "scene": {
+      "camera": {
+        "at": "checkvalve.bonnet",
+        "offset": [
+          0.55,
+          0.45,
+          0.95
+        ],
+        "shift": [
+          0,
+          0.32,
+          0
+        ],
+        "fov": 60
+      }
+    }
+  },
+  "31-parts": {
+    "kind": "view",
+    "size": [
+      960,
+      540
+    ],
+    "scene": {
+      "camera": {
+        "at": "checkvalve.bonnet",
+        "offset": [
+          0.55,
+          0.45,
+          0.95
+        ],
+        "shift": [
+          0,
+          0.32,
+          0
+        ],
+        "fov": 60
+      },
+      "callouts": [
+        "pump.discharge",
+        "checkvalve.bolt.1|checkvalve.bolt.2|checkvalve.bolt.3|checkvalve.bolt.4",
+        "checkvalve.bonnet"
+      ]
+    }
+  },
+  "31-open": {
+    "kind": "view",
+    "size": [
+      960,
+      420
+    ],
+    "scene": {
+      "camera": {
+        "at": "checkvalve.bonnet",
+        "offset": [
+          0.25,
+          0.1,
+          0.5
+        ],
+        "shift": [
+          0,
+          0.02,
+          0
+        ],
+        "fov": 55
+      },
+      "callouts": [
+        "checkvalve.flap"
+      ],
+      "mission": "m2-water-b",
+      "prep": [
+        {
+          "procedure": "proc.checkvalve.clean",
+          "through": 5
+        }
+      ],
+      "first": 4
+    }
+  },
+  "31-compare": {
+    "kind": "compare",
+    "size": [
+      960,
+      320
+    ],
+    "scenes": [
+      {
+        "camera": {
+          "at": "checkvalve.bonnet",
+          "offset": [
+            0.25,
+            0.1,
+            0.5
+          ],
+          "shift": [
+            0,
+            0.02,
+            0
+          ],
+          "fov": 55
+        },
+        "callouts": [
+          "checkvalve.flap"
+        ],
+        "prep": [
+          {
+            "procedure": "proc.checkvalve.clean",
+            "through": 5
+          }
+        ],
+        "first": 4
+      },
+      {
+        "camera": {
+          "at": "checkvalve.bonnet",
+          "offset": [
+            0.25,
+            0.1,
+            0.5
+          ],
+          "shift": [
+            0,
+            0.02,
+            0
+          ],
+          "fov": 55
+        },
+        "callouts": [
+          "checkvalve.flap"
+        ],
+        "highlight": [
+          "checkvalve.flap"
+        ],
+        "mission": "m2-water-b",
+        "prep": [
+          {
+            "procedure": "proc.checkvalve.clean",
+            "through": 5
+          }
+        ],
+        "first": 4
+      }
+    ]
+  },
+  "31-clean": {
+    "kind": "strip",
+    "strip": {
+      "procedure": "proc.checkvalve.clean",
+      "steps": [
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        10,
+        11
+      ],
+      "camera": {
+        "at": "checkvalve.bonnet",
+        "offset": [
+          0.25,
+          0.1,
+          0.5
+        ],
+        "shift": [
+          0,
+          0.02,
+          0
+        ],
+        "fov": 55
+      },
+      "columns": 3,
+      "mission": "m2-water-b",
+      "views": {
+        "3": {
+          "at": "pump.discharge",
+          "offset": [
+            0.4,
+            0.0,
+            0.6
+          ],
+          "fov": 55
+        },
+        "11": {
+          "at": "pump.discharge",
+          "offset": [
+            0.4,
+            0.0,
+            0.6
+          ],
+          "fov": 55
+        },
+        "7": {
+          "at": "wash_bucket",
+          "offset": [
+            0.0,
+            0.8,
+            0.45
+          ],
+          "fov": 55
+        }
+      }
+    }
+  },
+  "32-where": {
+    "kind": "plan",
+    "size": [
+      960,
+      330
+    ],
+    "scene": {
+      "camera": {
+        "planX": [
+          -0.1,
+          8.1
+        ]
+      },
+      "highlight": [
+        "ballast.fore.body"
+      ],
+      "names": [
+        "ballast.fore.flood=fig.ballast_panel",
+        "locker.penetrating_oil=fig.locker.aft"
+      ]
+    }
+  },
+  "32-stand": {
+    "kind": "view",
+    "size": [
+      960,
+      540
+    ],
+    "scene": {
+      "camera": {
+        "station": "ballast",
+        "fov": 62,
+        "dolly": -0.35
+      }
+    }
+  },
+  "32-parts": {
+    "kind": "view",
+    "size": [
+      960,
+      540
+    ],
+    "scene": {
+      "camera": {
+        "at": "ballast.fore.gland",
+        "offset": [
+          0.6,
+          0.15,
+          -0.3
+        ],
+        "shift": [
+          0,
+          0.05,
+          -0.1
+        ],
+        "fov": 55
+      },
+      "callouts": [
+        "ballast.fore.flood|ballast.aft.flood",
+        "ballast.fore.stem|ballast.aft.stem",
+        "ballast.fore.gland|ballast.aft.gland",
+        "ballast.fore.gland@0,-0.025,0|ballast.aft.gland@0,-0.025,0",
+        "ballast.fore.body|ballast.aft.body"
+      ]
+    }
+  },
+  "32-hammer": {
+    "kind": "strip",
+    "strip": {
+      "procedure": "proc.ballast.hammer",
+      "steps": [
+        2,
+        3,
+        5,
+        7
+      ],
+      "camera": {
+        "at": "ballast.fore.gland",
+        "offset": [
+          0.6,
+          0.15,
+          -0.3
+        ],
+        "shift": [
+          0,
+          0.05,
+          -0.1
+        ],
+        "fov": 55
+      },
+      "columns": 2,
+      "mission": "m2-ballast",
+      "prep": [
+        {
+          "advance": 60
+        }
+      ],
+      "bind": {
+        "t": "fore"
+      },
+      "views": {
+        "4": {
+          "station": "switchboard"
+        },
+        "5": {
+          "at": "pump.suction",
+          "offset": [
+            0.6,
+            -0.1,
+            0.0
+          ],
+          "fov": 55
+        },
+        "7": {
+          "at": "pump.suction",
+          "offset": [
+            0.6,
+            -0.1,
+            0.0
+          ],
+          "fov": 55
+        }
+      }
+    }
+  },
+  "32-repack": {
+    "kind": "strip",
+    "strip": {
+      "procedure": "proc.ballast.repack",
+      "steps": [
+        3,
+        6,
+        7,
+        10,
+        11,
+        13
+      ],
+      "camera": {
+        "at": "ballast.fore.gland",
+        "offset": [
+          0.6,
+          0.15,
+          -0.3
+        ],
+        "shift": [
+          0,
+          0.05,
+          -0.1
+        ],
+        "fov": 55
+      },
+      "columns": 3,
+      "mission": "m2-ballast",
+      "prep": [
+        {
+          "advance": 60
+        }
+      ],
+      "bind": {
+        "t": "fore"
+      },
+      "views": {
+        "2": {
+          "station": "locker.aft"
+        },
+        "9": {
+          "station": "locker.aft"
+        },
+        "12": {
+          "station": "switchboard"
+        },
+        "13": {
+          "at": "pump.suction",
+          "offset": [
+            0.6,
+            -0.1,
+            0.0
+          ],
+          "fov": 55
+        },
+        "15": {
+          "at": "pump.suction",
+          "offset": [
+            0.6,
+            -0.1,
+            0.0
+          ],
+          "fov": 55
+        }
+      },
+      "marks": {
+        "7": "ballast.fore.stem",
+        "10": "ballast.fore.stem"
+      }
+    }
+  },
+  "33-where": {
+    "kind": "plan",
+    "size": [
+      960,
+      330
+    ],
+    "scene": {
+      "camera": {
+        "planX": [
+          -0.1,
+          8.1
+        ]
+      },
+      "highlight": [],
+      "names": [
+        "locker.wood_wedge=fig.locker.mid"
+      ],
+      "callouts": [
+        "leak.rivet.01|leak.rivet.02|leak.rivet.03|leak.rivet.04",
+        "leak.rivet.05|leak.rivet.06|leak.rivet.07|leak.rivet.08",
+        "leak.rivet.09|leak.rivet.10|leak.rivet.11|leak.rivet.12"
+      ]
+    }
+  },
+  "33-leak": {
+    "kind": "view",
+    "size": [
+      960,
+      540
+    ],
+    "scene": {
+      "camera": {
+        "at": "leak.rivet.09",
+        "offset": [
+          0.35,
+          0.15,
+          1.05
+        ],
+        "fov": 55
+      },
+      "callouts": [
+        "leak.rivet.09"
+      ],
+      "prep": [
+        {
+          "advance": 40
+        }
+      ],
+      "showGlass": true
+    }
+  },
+  "33-wedge": {
+    "kind": "strip",
+    "strip": {
+      "procedure": "proc.rivet.wedge",
+      "steps": [
+        2,
+        3,
+        4,
+        5
+      ],
+      "camera": {
+        "at": "leak.rivet.09",
+        "offset": [
+          0.35,
+          0.15,
+          1.05
+        ],
+        "fov": 55
+      },
+      "columns": 2,
+      "prep": [
+        {
+          "advance": 40
+        }
+      ],
+      "bind": {
+        "point": "leak.rivet.09"
+      },
+      "views": {
+        "2": {
+          "station": "locker",
+          "dolly": 0.2
+        },
+        "4": {
+          "at": "locker.timber_shore",
+          "offset": [
+            0.0,
+            0.3,
+            0.9
+          ],
+          "fov": 55
+        }
+      },
+      "marks": {
+        "2": "locker.wood_wedge@0,-0.125,-0.05"
+      }
+    }
+  },
+  "33-compare": {
+    "kind": "compare",
+    "size": [
+      960,
+      320
+    ],
+    "scenes": [
+      {
+        "camera": {
+          "at": "leak.rivet.09",
+          "offset": [
+            0.35,
+            0.15,
+            1.05
+          ],
+          "fov": 55
+        },
+        "callouts": [
+          "leak.rivet.09"
+        ],
+        "prep": [
+          {
+            "advance": 40
+          },
+          {
+            "procedure": "proc.rivet.wedge",
+            "through": 3,
+            "bind": {
+              "point": "leak.rivet.09"
+            }
+          }
+        ]
+      },
+      {
+        "camera": {
+          "at": "leak.rivet.09",
+          "offset": [
+            0.35,
+            0.15,
+            1.05
+          ],
+          "fov": 55
+        },
+        "callouts": [
+          "leak.rivet.09"
+        ],
+        "prep": [
+          {
+            "advance": 40
+          },
+          {
+            "procedure": "proc.rivet.wedge",
+            "bind": {
+              "point": "leak.rivet.09"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "34-where": {
+    "kind": "plan",
+    "size": [
+      960,
+      330
+    ],
+    "scene": {
+      "camera": {
+        "planX": [
+          -0.1,
+          8.1
+        ]
+      },
+      "highlight": [],
+      "callouts": [
+        "leak.rivet.09",
+        "toolboard.caulking_set"
+      ]
+    }
+  },
+  "34-seam": {
+    "kind": "view",
+    "size": [
+      960,
+      540
+    ],
+    "scene": {
+      "camera": {
+        "at": "leak.rivet.09",
+        "offset": [
+          0.15,
+          0.05,
+          0.55
+        ],
+        "fov": 45
+      },
+      "callouts": [
+        "leak.rivet.09"
+      ],
+      "prep": [
+        {
+          "advance": 40
+        }
+      ]
+    }
+  },
+  "34-caulk": {
+    "kind": "strip",
+    "strip": {
+      "procedure": "proc.rivet.caulk",
+      "steps": [
+        2
+      ],
+      "camera": {
+        "at": "leak.rivet.09",
+        "offset": [
+          0.35,
+          0.15,
+          1.05
+        ],
+        "fov": 55
+      },
+      "columns": 2,
+      "prep": [
+        {
+          "advance": 40
+        }
+      ],
+      "bind": {
+        "point": "leak.rivet.09"
+      }
+    }
+  },
+  "34-compare": {
+    "kind": "compare",
+    "size": [
+      960,
+      320
+    ],
+    "scenes": [
+      {
+        "camera": {
+          "at": "leak.rivet.09",
+          "offset": [
+            0.35,
+            0.15,
+            1.05
+          ],
+          "fov": 55
+        },
+        "callouts": [
+          "leak.rivet.09"
+        ],
+        "prep": [
+          {
+            "advance": 40
+          },
+          {
+            "procedure": "proc.rivet.wedge",
+            "bind": {
+              "point": "leak.rivet.09"
+            }
+          }
+        ]
+      },
+      {
+        "camera": {
+          "at": "leak.rivet.09",
+          "offset": [
+            0.35,
+            0.15,
+            1.05
+          ],
+          "fov": 55
+        },
+        "callouts": [
+          "leak.rivet.09"
+        ],
+        "prep": [
+          {
+            "advance": 40
+          },
+          {
+            "procedure": "proc.rivet.caulk",
+            "bind": {
+              "point": "leak.rivet.09"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "35-where": {
+    "kind": "plan",
+    "size": [
+      960,
+      330
+    ],
+    "scene": {
+      "camera": {
+        "planX": [
+          -0.1,
+          8.1
+        ]
+      },
+      "highlight": [
+        "viewport.1.ring",
+        "viewport.2.ring"
+      ],
+      "names": [
+        "viewport.1.ring=fig.viewport.1",
+        "viewport.2.ring=fig.viewport.2",
+        "locker.viewport_seal=fig.locker.electric"
+      ]
+    }
+  },
+  "35-parts": {
+    "kind": "view",
+    "size": [
+      960,
+      540
+    ],
+    "scene": {
+      "camera": {
+        "at": "viewport.1.ring",
+        "offset": [
+          0.0,
+          0.25,
+          0.85
+        ],
+        "shift": [
+          0,
+          0.2,
+          0
+        ],
+        "fov": 60
+      },
+      "callouts": [
+        "viewport.1.deadlight",
+        "viewport.1.dog.1|viewport.1.dog.2",
+        "viewport.1.ring",
+        "viewport.1.ring.bolt.1|viewport.1.ring.bolt.2|viewport.1.ring.bolt.3|viewport.1.ring.bolt.4|viewport.1.ring.bolt.5|viewport.1.ring.bolt.6",
+        "viewport.1.seal"
+      ]
+    }
+  },
+  "35-reseal": {
+    "kind": "strip",
+    "strip": {
+      "procedure": "proc.viewport.reseal",
+      "steps": [
+        2,
+        3,
+        4,
+        5,
+        6,
+        9,
+        11,
+        13
+      ],
+      "camera": {
+        "at": "viewport.1.ring",
+        "offset": [
+          0.0,
+          0.25,
+          0.85
+        ],
+        "shift": [
+          0,
+          0.2,
+          0
+        ],
+        "fov": 60
+      },
+      "columns": 3,
+      "mission": "m2-hull-b",
+      "bind": {
+        "viewport": "1"
+      },
+      "views": {
+        "2": {
+          "at": "viewport.1.deadlight",
+          "offset": [
+            0.0,
+            -0.1,
+            0.8
+          ],
+          "fov": 60
+        },
+        "13": {
+          "at": "viewport.1.deadlight",
+          "offset": [
+            0.0,
+            -0.1,
+            0.8
+          ],
+          "fov": 60
+        }
+      }
+    }
+  },
+  "35-bolts": {
+    "kind": "sequence",
+    "size": [
+      960,
+      420
+    ],
+    "scene": {
+      "camera": {
+        "at": "viewport.1.ring",
+        "offset": [
+          0.0,
+          0.0,
+          0.75
+        ],
+        "fov": 55
+      }
+    },
+    "procedure": "proc.viewport.reseal",
+    "fastenStep": 11,
+    "bind": {
+      "viewport": "1"
+    }
+  },
+  "36-where": {
+    "kind": "plan",
+    "size": [
+      960,
+      330
+    ],
+    "scene": {
+      "camera": {
+        "planX": [
+          -0.1,
+          8.1
+        ]
+      },
+      "highlight": [
+        "shaft.follower"
+      ],
+      "names": [
+        "shaft.follower=fig.stuffing_box",
+        "locker.packing_cord=fig.locker.aft",
+        "switch.C8=fig.switchboard"
+      ]
+    }
+  },
+  "36-stand": {
+    "kind": "view",
+    "size": [
+      960,
+      540
+    ],
+    "scene": {
+      "camera": {
+        "at": "shaft.follower",
+        "offset": [
+          0.35,
+          1.0,
+          0.6
+        ],
+        "fov": 60
+      }
+    }
+  },
+  "36-parts": {
+    "kind": "view",
+    "size": [
+      960,
+      540
+    ],
+    "scene": {
+      "camera": {
+        "station": "shaft",
+        "fov": 60,
+        "dolly": 0.15
+      },
+      "callouts": [
+        "shaft.packing",
+        "shaft.follower",
+        "shaft.follower@-0.05,0.1,0|shaft.follower@-0.05,-0.1,0",
+        "shaft.collar"
+      ],
+      "mission": "m2-hull-a"
+    }
+  },
+  "36-gland": {
+    "kind": "strip",
+    "strip": {
+      "procedure": "proc.shaft.gland",
+      "steps": [
+        2,
+        3
+      ],
+      "camera": {
+        "station": "shaft",
+        "fov": 60,
+        "dolly": 0.15
+      },
+      "columns": 2,
+      "mission": "m2-hull-a",
+      "prep": [
+        {
+          "advance": 30
+        }
+      ]
+    }
+  },
+  "36-repack": {
+    "kind": "strip",
+    "strip": {
+      "procedure": "proc.shaft.repack",
+      "steps": [
+        3,
+        4,
+        5,
+        6,
+        9,
+        10,
+        11,
+        12
+      ],
+      "camera": {
+        "station": "shaft",
+        "fov": 60,
+        "dolly": 0.15
+      },
+      "columns": 3,
+      "mission": "m2-hull-a",
+      "prep": [
+        {
+          "advance": 30
+        }
+      ],
+      "views": {
+        "2": {
+          "station": "switchboard"
+        },
+        "6": {
+          "station": "shaft",
+          "fov": 60,
+          "dolly": 0.45
+        }
+      }
+    }
+  },
+  "36-compare": {
+    "kind": "compare",
+    "size": [
+      960,
+      320
+    ],
+    "scenes": [
+      {
+        "camera": {
+          "station": "shaft",
+          "fov": 60,
+          "dolly": 0.15
+        },
+        "callouts": [
+          "shaft.follower"
+        ],
+        "showGlass": true,
+        "first": 2
+      },
+      {
+        "camera": {
+          "station": "shaft",
+          "fov": 60,
+          "dolly": 0.15
+        },
+        "callouts": [
+          "shaft.follower"
+        ],
+        "mission": "m2-hull-a",
+        "prep": [
+          {
+            "advance": 60
+          }
+        ],
+        "showGlass": true,
+        "first": 2
+      }
+    ]
+  },
+  "37-where": {
+    "kind": "plan",
+    "size": [
+      960,
+      330
+    ],
+    "scene": {
+      "camera": {
+        "planX": [
+          -0.1,
+          8.1
+        ]
+      },
+      "highlight": [
+        "chamber.hatch"
+      ],
+      "names": [
+        "chamber.hatch=fig.chamber",
+        "pump.suction=fig.ballast_panel",
+        "locker.chamber_seal=fig.locker.electric"
+      ]
+    }
+  },
+  "37-parts": {
+    "kind": "view",
+    "size": [
+      960,
+      540
+    ],
+    "scene": {
+      "camera": {
+        "station": "chamber",
+        "dolly": 0.1
+      },
+      "callouts": [
+        "node:LevelFill",
+        "chamber.squeeze",
+        "chamber.hatch|chamber.hatch.dog.1|chamber.hatch.dog.2|chamber.hatch.dog.3|chamber.hatch.dog.4"
+      ]
+    }
+  },
+  "37-inside": {
+    "kind": "view",
+    "size": [
+      960,
+      420
+    ],
+    "scene": {
+      "camera": {
+        "station": "chamber.in",
+        "dolly": 0.1
+      },
+      "callouts": [
+        "chamber.seal.screw.1|chamber.seal.screw.2|chamber.seal.screw.3|chamber.seal.screw.4",
+        "chamber.seal"
+      ],
+      "prep": [
+        {
+          "procedure": "proc.chamber.reseal",
+          "through": 7
+        }
+      ],
+      "first": 4
+    }
+  },
+  "37-reseal": {
+    "kind": "strip",
+    "strip": {
+      "procedure": "proc.chamber.reseal",
+      "steps": [
+        2,
+        3,
+        6,
+        7,
+        8,
+        9,
+        12,
+        13,
+        15,
+        17
+      ],
+      "camera": {
+        "station": "chamber",
+        "dolly": 0.1
+      },
+      "columns": 3,
+      "mission": "m2-hull-b",
+      "prep": [
+        {
+          "advance": 30
+        }
+      ],
+      "views": {
+        "8": {
+          "station": "chamber.in",
+          "dolly": 0.1
+        },
+        "9": {
+          "station": "chamber.in",
+          "dolly": 0.1
+        },
+        "12": {
+          "station": "chamber.in",
+          "dolly": 0.1
+        },
+        "13": {
+          "station": "chamber.in",
+          "dolly": 0.1
+        },
+        "3": {
+          "at": "pump.suction",
+          "offset": [
+            0.6,
+            -0.1,
+            0.0
+          ],
+          "fov": 55
+        },
+        "17": {
+          "at": "pump.suction",
+          "offset": [
+            0.6,
+            -0.1,
+            0.0
+          ],
+          "fov": 55
+        }
+      },
+      "wait": {
+        "6": 600
+      }
+    }
+  },
+  "37-bolts": {
+    "kind": "sequence",
+    "size": [
+      960,
+      420
+    ],
+    "scene": {
+      "camera": {
+        "station": "chamber.in",
+        "dolly": 0.1
+      },
+      "prep": [
+        {
+          "procedure": "proc.chamber.reseal",
+          "through": 7
+        }
+      ]
+    },
+    "procedure": "proc.chamber.reseal",
+    "fastenStep": 13
+  },
+  "38-where": {
+    "kind": "plan",
+    "size": [
+      960,
+      330
+    ],
+    "scene": {
+      "camera": {
+        "planX": [
+          -0.1,
+          8.1
+        ]
+      },
+      "highlight": [
+        "panel"
+      ],
+      "names": [
+        "panel=fig.panel",
+        "locker.panel_bulb=fig.locker.electric",
+        "panel.wiring.cover=fig.panel_wiring"
+      ]
+    }
+  },
+  "38-parts": {
+    "kind": "view",
+    "size": [
+      960,
+      540
+    ],
+    "scene": {
+      "camera": {
+        "at": "panel.bulb.water",
+        "offset": [
+          -1.05,
+          -0.1,
+          0.1
+        ],
+        "shift": [
+          0,
+          -0.25,
+          0.1
+        ],
+        "fov": 60
+      },
+      "callouts": [
+        "panel.bezel.power|panel.bezel.switchboard|panel.bezel.air|panel.bezel.water|panel.bezel.hull|panel.bezel.senses|panel.bezel.nav|panel.bezel.cable",
+        "panel.bulb.water",
+        "panel.lamptest"
+      ]
+    }
+  },
+  "38-replace": {
+    "kind": "strip",
+    "strip": {
+      "procedure": "proc.bulb.replace",
+      "steps": [
+        2,
+        3,
+        5,
+        6,
+        7
+      ],
+      "camera": {
+        "at": "panel.bulb.water",
+        "offset": [
+          -0.4,
+          0.1,
+          0.15
+        ],
+        "fov": 45
+      },
+      "columns": 3,
+      "mission": "m2-senses-a",
+      "bind": {
+        "lamp": "water"
+      },
+      "views": {
+        "3": {
+          "at": "panel.bulb.water",
+          "offset": [
+            -0.8,
+            0.1,
+            0.15
+          ],
+          "fov": 72
+        },
+        "5": {
+          "station": "locker.top"
+        }
+      }
+    }
+  },
+  "38-wiring": {
+    "kind": "view",
+    "size": [
+      960,
+      420
+    ],
+    "scene": {
+      "camera": {
+        "at": "panel.wiring.cover",
+        "offset": [
+          -0.55,
+          0.25,
+          0.25
+        ],
+        "fov": 55
+      },
+      "callouts": [
+        "panel.wiring.screw.1|panel.wiring.screw.2|panel.wiring.screw.3|panel.wiring.screw.4",
+        "panel.wiring.cover",
+        "junction.C4.box"
+      ]
+    }
+  },
+  "38-wiring-dry": {
+    "kind": "strip",
+    "strip": {
+      "procedure": "proc.panelwiring.dry",
+      "steps": [
+        2,
+        3,
+        4,
+        5,
+        6,
+        8
+      ],
+      "camera": {
+        "at": "panel.wiring.cover",
+        "offset": [
+          -0.55,
+          0.25,
+          0.25
+        ],
+        "fov": 55
+      },
+      "columns": 3,
+      "mission": "m2-senses-b",
+      "views": {
+        "2": {
+          "station": "switchboard"
+        },
+        "9": {
+          "station": "switchboard"
+        }
+      }
+    }
+  },
+  "39-where": {
+    "kind": "plan",
+    "size": [
+      960,
+      330
+    ],
+    "scene": {
+      "camera": {
+        "planX": [
+          -0.1,
+          8.1
+        ]
+      },
+      "highlight": [
+        "hydrophone"
+      ],
+      "names": [
+        "hydrophone=fig.hydrophone",
+        "sonarset.tube.1=fig.sonar",
+        "siphon.tube.1=fig.siphon",
+        "locker.vacuum_tube=fig.locker.electric"
+      ]
+    }
+  },
+  "39-stand": {
+    "kind": "view",
+    "size": [
+      960,
+      540
+    ],
+    "scene": {
+      "camera": {
+        "at": "hydrophone",
+        "offset": [
+          -0.35,
+          -0.05,
+          -1.0
+        ],
+        "shift": [
+          0.05,
+          -0.15,
+          0
+        ],
+        "fov": 60
+      }
+    }
+  },
+  "39-parts": {
+    "kind": "view",
+    "size": [
+      960,
+      540
+    ],
+    "scene": {
+      "camera": {
+        "at": "hydrophone.door",
+        "offset": [
+          -0.1,
+          0.05,
+          -0.5
+        ],
+        "shift": [
+          0,
+          0.03,
+          0
+        ],
+        "fov": 55
+      },
+      "callouts": [
+        "hydrophone.door",
+        "hydrophone.tube.1|hydrophone.tube.2",
+        "hydrophone.switch",
+        "hydrophone",
+        "gadget.headphones",
+        "sonarset.tube.1"
+      ],
+      "mission": "m2-senses-a",
+      "prep": [
+        {
+          "procedure": "proc.tube.replace",
+          "through": 5,
+          "bind": {
+            "tube": "1"
+          }
+        }
+      ]
+    }
+  },
+  "39-replace": {
+    "kind": "strip",
+    "strip": {
+      "procedure": "proc.tube.replace",
+      "steps": [
+        2,
+        4,
+        5,
+        6,
+        9,
+        11
+      ],
+      "camera": {
+        "at": "hydrophone.door",
+        "offset": [
+          -0.1,
+          0.05,
+          -0.5
+        ],
+        "shift": [
+          0,
+          0.03,
+          0
+        ],
+        "fov": 55
+      },
+      "columns": 3,
+      "mission": "m2-senses-a",
+      "bind": {
+        "tube": "1"
+      },
+      "marks": {
+        "2": "hydrophone.switch=down"
+      }
+    }
+  },
+  "39-salvage": {
+    "kind": "strip",
+    "strip": {
+      "procedure": "proc.tube.salvage",
+      "steps": [
+        5,
+        6,
+        8,
+        9,
+        10,
+        12
+      ],
+      "camera": {
+        "at": "hydrophone.door",
+        "offset": [
+          -0.1,
+          0.05,
+          -0.5
+        ],
+        "shift": [
+          0,
+          0.03,
+          0
+        ],
+        "fov": 55
+      },
+      "columns": 3,
+      "mission": "m2-senses-a",
+      "bind": {
+        "tube": "1"
+      },
+      "views": {
+        "8": {
+          "at": "sonarset.tube.1",
+          "offset": [
+            -0.2,
+            0.05,
+            -0.45
+          ],
+          "fov": 55
+        }
+      },
+      "marks": {
+        "12": "hydrophone.switch=up"
+      }
+    }
+  },
+  "40-where": {
+    "kind": "plan",
+    "size": [
+      960,
+      330
+    ],
+    "scene": {
+      "camera": {
+        "planX": [
+          -0.1,
+          8.1
+        ]
+      },
+      "highlight": [
+        "searchlight.housing"
+      ],
+      "names": [
+        "searchlight.housing=fig.searchlight",
+        "searchlight.switch=fig.searchlight_lever",
+        "locker.carbon_rods=fig.locker.electric"
+      ]
+    }
+  },
+  "40-stand": {
+    "kind": "view",
+    "size": [
+      960,
+      540
+    ],
+    "scene": {
+      "camera": {
+        "at": "searchlight.housing",
+        "offset": [
+          -1.1,
+          -0.55,
+          0.35
+        ],
+        "shift": [
+          0,
+          -0.1,
+          0
+        ],
+        "fov": 60
+      }
+    }
+  },
+  "40-parts": {
+    "kind": "view",
+    "size": [
+      960,
+      540
+    ],
+    "scene": {
+      "camera": {
+        "at": "searchlight.door",
+        "offset": [
+          -0.45,
+          -0.5,
+          0.35
+        ],
+        "shift": [
+          -0.1,
+          0.05,
+          0
+        ],
+        "fov": 55
+      },
+      "callouts": [
+        "searchlight.door",
+        "searchlight.latch.1|searchlight.latch.2",
+        "searchlight.feed",
+        "searchlight.housing"
+      ]
+    }
+  },
+  "40-feed": {
+    "kind": "strip",
+    "strip": {
+      "procedure": "proc.arc.feed",
+      "steps": [
+        2,
+        3
+      ],
+      "camera": {
+        "at": "searchlight.door",
+        "offset": [
+          -0.45,
+          -0.5,
+          0.35
+        ],
+        "shift": [
+          -0.1,
+          0.05,
+          0
+        ],
+        "fov": 55
+      },
+      "columns": 2,
+      "mission": "m2-senses-b"
+    }
+  },
+  "40-rods": {
+    "kind": "strip",
+    "strip": {
+      "procedure": "proc.arc.rods",
+      "steps": [
+        1,
+        3,
+        4,
+        5,
+        8,
+        9,
+        10,
+        11
+      ],
+      "camera": {
+        "at": "searchlight.door",
+        "offset": [
+          -0.45,
+          -0.5,
+          0.35
+        ],
+        "shift": [
+          -0.1,
+          0.05,
+          0
+        ],
+        "fov": 55
+      },
+      "columns": 3,
+      "mission": "m2-senses-b",
+      "views": {
+        "1": {
+          "at": "searchlight.switch",
+          "offset": [
+            -0.45,
+            0.1,
+            0.35
+          ],
+          "fov": 55
+        },
+        "12": {
+          "at": "searchlight.switch",
+          "offset": [
+            -0.45,
+            0.1,
+            0.35
+          ],
+          "fov": 55
+        },
+        "7": {
+          "station": "locker.top"
+        }
+      },
+      "wait": {
+        "2": 150
+      },
+      "marks": {
+        "1": "searchlight.switch"
+      }
+    }
+  },
+  "41-where": {
+    "kind": "plan",
+    "size": [
+      960,
+      330
+    ],
+    "scene": {
+      "camera": {
+        "planX": [
+          -0.1,
+          8.1
+        ]
+      },
+      "highlight": [
+        "panel"
+      ],
+      "names": [
+        "panel=fig.panel",
+        "bus=fig.switchboard",
+        "battery.deck=fig.battery_well"
+      ]
+    }
+  },
+  "41-parts": {
+    "kind": "view",
+    "size": [
+      960,
+      400
+    ],
+    "scene": {
+      "camera": {
+        "at": "gauge.voltage.glass",
+        "offset": [
+          -0.35,
+          0.02,
+          0.06
+        ],
+        "shift": [
+          0,
+          -0.04,
+          0.04
+        ],
+        "fov": 45
+      },
+      "callouts": [
+        "gauge.voltage.glass",
+        "gauge.voltage.zero"
+      ]
+    }
+  },
+  "41-compare": {
+    "kind": "compare",
+    "size": [
+      960,
+      320
+    ],
+    "scenes": [
+      {
+        "camera": {
+          "at": "gauge.voltage.glass",
+          "offset": [
+            -0.35,
+            0.02,
+            0
+          ],
+          "fov": 40
+        },
+        "marks": [
+          "gauge.voltage.glass=click"
+        ]
+      },
+      {
+        "camera": {
+          "at": "gauge.voltage.glass",
+          "offset": [
+            -0.35,
+            0.02,
+            0
+          ],
+          "fov": 40
+        },
+        "marks": [
+          "gauge.voltage.glass=click"
+        ],
+        "mission": "m2-senses-b",
+        "prep": [
+          {
+            "advance": 30
+          }
+        ]
+      }
+    ]
+  },
+  "41-zero": {
+    "kind": "strip",
+    "strip": {
+      "procedure": "proc.gauge.zero",
+      "steps": [
+        2,
+        3,
+        5
+      ],
+      "camera": {
+        "at": "gauge.voltage.glass",
+        "offset": [
+          -0.4,
+          0.05,
+          0.05
+        ],
+        "fov": 50
+      },
+      "columns": 3,
+      "mission": "m2-senses-b",
+      "bind": {
+        "gauge": "voltage"
+      }
+    }
+  },
+  "42-where": {
+    "kind": "plan",
+    "size": [
+      960,
+      330
+    ],
+    "scene": {
+      "camera": {
+        "planX": [
+          -0.1,
+          8.1
+        ]
+      },
+      "highlight": [
+        "gyro.case"
+      ],
+      "names": [
+        "gyro.case=fig.gyro",
+        "locker.gyro_bearing=fig.locker.aft",
+        "navcomp.cover=fig.navcomp"
+      ]
+    }
+  },
+  "42-stand": {
+    "kind": "view",
+    "size": [
+      960,
+      540
+    ],
+    "scene": {
+      "camera": {
+        "at": "gyro.case",
+        "offset": [
+          -0.15,
+          0.75,
+          1.0
+        ],
+        "shift": [
+          0,
+          -0.2,
+          0
+        ],
+        "fov": 60
+      }
+    }
+  },
+  "42-parts": {
+    "kind": "view",
+    "size": [
+      960,
+      540
+    ],
+    "scene": {
+      "camera": {
+        "at": "gyro.lid",
+        "offset": [
+          0.0,
+          0.35,
+          0.6
+        ],
+        "shift": [
+          0,
+          0.15,
+          -0.05
+        ],
+        "fov": 60
+      },
+      "callouts": [
+        "gyro.switch",
+        "gyro.align",
+        "gyro.case.screw.1|gyro.case.screw.2|gyro.case.screw.3|gyro.case.screw.4",
+        "gyro.lid"
+      ],
+      "mission": "m2-nav"
+    }
+  },
+  "42-bearing": {
+    "kind": "strip",
+    "strip": {
+      "procedure": "proc.gyro.bearing",
+      "steps": [
+        2,
+        4,
+        5,
+        6,
+        9,
+        11
+      ],
+      "camera": {
+        "at": "gyro.lid",
+        "offset": [
+          0.0,
+          0.35,
+          0.6
+        ],
+        "shift": [
+          0,
+          0.15,
+          -0.05
+        ],
+        "fov": 60
+      },
+      "columns": 3,
+      "mission": "m2-nav",
+      "views": {
+        "2": {
+          "at": "gyro.switch",
+          "offset": [
+            0.0,
+            0.35,
+            0.6
+          ],
+          "fov": 60
+        },
+        "4": {
+          "at": "gyro.lid",
+          "offset": [
+            0.0,
+            0.5,
+            0.8
+          ],
+          "fov": 60
+        },
+        "11": {
+          "at": "gyro.lid",
+          "offset": [
+            0.0,
+            0.5,
+            0.8
+          ],
+          "fov": 60
+        }
+      }
+    }
+  },
+  "42-open": {
+    "kind": "view",
+    "size": [
+      960,
+      420
+    ],
+    "scene": {
+      "camera": {
+        "at": "gyro.lid",
+        "offset": [
+          0.0,
+          0.35,
+          0.6
+        ],
+        "shift": [
+          0,
+          0.15,
+          -0.05
+        ],
+        "fov": 60
+      },
+      "callouts": [
+        "gyro.bearing"
+      ],
+      "mission": "m2-nav",
+      "prep": [
+        {
+          "procedure": "proc.gyro.bearing",
+          "through": 2
+        },
+        {
+          "advance": 150
+        },
+        {
+          "from": 4,
+          "procedure": "proc.gyro.bearing",
+          "through": 5
+        }
+      ],
+      "first": 5
+    }
+  },
+  "43-where": {
+    "kind": "plan",
+    "size": [
+      960,
+      330
+    ],
+    "scene": {
+      "camera": {
+        "planX": [
+          -0.1,
+          8.1
+        ]
+      },
+      "highlight": [
+        "navcomp.cover"
+      ],
+      "names": [
+        "navcomp.cover=fig.navcomp",
+        "locker.nav_gear=fig.locker.aft",
+        "gyro.case=fig.gyro"
+      ]
+    }
+  },
+  "43-stand": {
+    "kind": "view",
+    "size": [
+      960,
+      540
+    ],
+    "scene": {
+      "camera": {
+        "at": "navcomp.cover",
+        "offset": [
+          0.1,
+          0.65,
+          0.95
+        ],
+        "shift": [
+          0,
+          -0.05,
+          0
+        ],
+        "fov": 60
+      }
+    }
+  },
+  "43-parts": {
+    "kind": "view",
+    "size": [
+      960,
+      540
+    ],
+    "scene": {
+      "camera": {
+        "at": "navcomp.cover",
+        "offset": [
+          0.3,
+          0.3,
+          0.45
+        ],
+        "fov": 55
+      },
+      "callouts": [
+        "navcomp.power",
+        "navcomp.reset",
+        "navcomp.cover.screw.1|navcomp.cover.screw.2",
+        "navcomp.cover"
+      ],
+      "mission": "m2-nav"
+    }
+  },
+  "43-gear": {
+    "kind": "strip",
+    "strip": {
+      "procedure": "proc.navcomp.gear",
+      "steps": [
+        2,
+        3,
+        4,
+        5,
+        8,
+        10
+      ],
+      "camera": {
+        "at": "navcomp.cover",
+        "offset": [
+          0.0,
+          0.3,
+          0.5
+        ],
+        "shift": [
+          0,
+          0.02,
+          -0.05
+        ],
+        "fov": 55
+      },
+      "columns": 3,
+      "mission": "m2-nav",
+      "views": {
+        "2": {
+          "at": "navcomp.power",
+          "offset": [
+            0.0,
+            0.3,
+            0.5
+          ],
+          "fov": 55
+        },
+        "10": {
+          "at": "navcomp.power",
+          "offset": [
+            0.0,
+            0.3,
+            0.5
+          ],
+          "fov": 55
+        }
+      }
+    }
+  },
+  "43-open": {
+    "kind": "view",
+    "size": [
+      960,
+      420
+    ],
+    "scene": {
+      "camera": {
+        "at": "navcomp.cover",
+        "offset": [
+          0.0,
+          0.3,
+          0.5
+        ],
+        "shift": [
+          0,
+          0.02,
+          -0.05
+        ],
+        "fov": 55
+      },
+      "callouts": [
+        "navcomp.gear"
+      ],
+      "mission": "m2-nav",
+      "prep": [
+        {
+          "procedure": "proc.navcomp.gear",
+          "through": 4
+        }
+      ],
+      "first": 5
+    }
+  },
+  "44-where": {
+    "kind": "plan",
+    "size": [
+      960,
+      330
+    ],
+    "scene": {
+      "camera": {
+        "planX": [
+          -0.1,
+          8.1
+        ]
+      },
+      "highlight": [
+        "winch.cover"
+      ],
+      "names": [
+        "winch.cover=fig.winch_brake",
+        "device.hook_winch=fig.winch_switch",
+        "locker.brake_lining=fig.locker.aft"
+      ]
+    }
+  },
+  "44-stand": {
+    "kind": "view",
+    "size": [
+      960,
+      540
+    ],
+    "scene": {
+      "camera": {
+        "at": "winch.cover",
+        "offset": [
+          0.25,
+          1.25,
+          -1.0
+        ],
+        "shift": [
+          0,
+          0.25,
+          0
+        ],
+        "fov": 60
+      }
+    }
+  },
+  "44-parts": {
+    "kind": "view",
+    "size": [
+      960,
+      540
+    ],
+    "scene": {
+      "camera": {
+        "at": "winch.cover",
+        "offset": [
+          0.05,
+          0.5,
+          -0.75
+        ],
+        "shift": [
+          0,
+          0.2,
+          0
+        ],
+        "fov": 60
+      },
+      "callouts": [
+        "winch.control",
+        "winch.pawl",
+        "winch.cover|winch.cover.bolt.1|winch.cover.bolt.2",
+        "winch.lining",
+        "winch.adjust",
+        "winch.brake"
+      ],
+      "mission": "m2-cable"
+    }
+  },
+  "44-reline": {
+    "kind": "strip",
+    "strip": {
+      "procedure": "proc.winch.reline",
+      "steps": [
+        2,
+        3,
+        5,
+        6,
+        7,
+        10,
+        12,
+        13,
+        16
+      ],
+      "camera": {
+        "at": "winch.cover",
+        "offset": [
+          0.05,
+          0.5,
+          -0.75
+        ],
+        "shift": [
+          0,
+          0.2,
+          0
+        ],
+        "fov": 60
+      },
+      "columns": 3,
+      "mission": "m2-cable",
+      "views": {
+        "5": {
+          "at": "winch.cover",
+          "offset": [
+            0.05,
+            0.6,
+            -1.0
+          ],
+          "shift": [
+            0,
+            0.2,
+            0
+          ],
+          "fov": 60
+        },
+        "12": {
+          "at": "winch.cover",
+          "offset": [
+            0.05,
+            0.6,
+            -1.0
+          ],
+          "shift": [
+            0,
+            0.2,
+            0
+          ],
+          "fov": 60
+        },
+        "13": {
+          "at": "winch.cover",
+          "offset": [
+            0.05,
+            0.6,
+            -1.0
+          ],
+          "shift": [
+            0,
+            0.2,
+            0
+          ],
+          "fov": 60
+        },
+        "4": {
+          "at": "device.hook_winch",
+          "offset": [
+            -0.1,
+            0.1,
+            -0.6
+          ],
+          "fov": 55
+        },
+        "15": {
+          "at": "device.hook_winch",
+          "offset": [
+            -0.1,
+            0.1,
+            -0.6
+          ],
+          "fov": 55
+        }
+      },
+      "marks": {
+        "2": "winch.control"
+      }
+    }
+  },
+  "44-compare": {
+    "kind": "compare",
+    "size": [
+      960,
+      320
+    ],
+    "scenes": [
+      {
+        "camera": {
+          "at": "winch.lining",
+          "offset": [
+            0.0,
+            0.15,
+            -0.4
+          ],
+          "fov": 45
+        },
+        "callouts": [
+          "winch.lining"
+        ],
+        "prep": [
+          {
+            "advance": 5
+          }
+        ],
+        "first": 4
+      },
+      {
+        "camera": {
+          "at": "winch.lining",
+          "offset": [
+            0.0,
+            0.15,
+            -0.4
+          ],
+          "fov": 45
+        },
+        "callouts": [
+          "winch.lining"
+        ],
+        "highlight": [
+          "winch.lining"
+        ],
+        "mission": "m2-cable",
+        "prep": [
+          {
+            "advance": 5
+          }
+        ],
+        "first": 4
+      }
+    ]
+  },
+  "45-where": {
+    "kind": "plan",
+    "size": [
+      960,
+      330
+    ],
+    "scene": {
+      "camera": {
+        "planX": [
+          -0.1,
+          8.1
+        ]
+      },
+      "highlight": [
+        "siphon.pen"
+      ],
+      "names": [
+        "siphon.pen=fig.siphon",
+        "locker.ink_bottle=fig.locker.electric",
+        "gadget.bridge=fig.bridge"
+      ]
+    }
+  },
+  "45-stand": {
+    "kind": "view",
+    "size": [
+      960,
+      540
+    ],
+    "scene": {
+      "camera": {
+        "at": "siphon.pen",
+        "offset": [
+          -0.15,
+          0.6,
+          -0.95
+        ],
+        "shift": [
+          0,
+          -0.1,
+          0
+        ],
+        "fov": 60
+      }
+    }
+  },
+  "45-parts": {
+    "kind": "view",
+    "size": [
+      960,
+      540
+    ],
+    "scene": {
+      "camera": {
+        "at": "siphon.pen",
+        "offset": [
+          -0.05,
+          0.35,
+          -0.55
+        ],
+        "shift": [
+          0,
+          -0.1,
+          -0.05
+        ],
+        "fov": 55
+      },
+      "callouts": [
+        "siphon.arm",
+        "siphon.pen",
+        "siphon.ink",
+        "siphon.bulb",
+        "siphon.testkey",
+        "siphon.tube.1"
+      ],
+      "mission": "m2-cable"
+    }
+  },
+  "45-clear": {
+    "kind": "strip",
+    "strip": {
+      "procedure": "proc.siphon.clear",
+      "steps": [
+        2,
+        3,
+        5,
+        6,
+        7,
+        8
+      ],
+      "camera": {
+        "at": "siphon.pen",
+        "offset": [
+          -0.05,
+          0.35,
+          -0.55
+        ],
+        "shift": [
+          0,
+          -0.1,
+          -0.05
+        ],
+        "fov": 55
+      },
+      "columns": 3,
+      "mission": "m2-cable",
+      "views": {
+        "4": {
+          "station": "locker.top"
+        }
+      }
+    }
+  },
+  "45-compare": {
+    "kind": "compare",
+    "size": [
+      960,
+      320
+    ],
+    "scenes": [
+      {
+        "camera": {
+          "at": "siphon.ink",
+          "offset": [
+            0.05,
+            0.35,
+            -0.5
+          ],
+          "shift": [
+            0.09,
+            0.09,
+            0.07
+          ],
+          "fov": 50
+        },
+        "callouts": [
+          "siphon.pen",
+          "siphon.ink"
+        ],
+        "first": 2
+      },
+      {
+        "camera": {
+          "at": "siphon.ink",
+          "offset": [
+            0.05,
+            0.35,
+            -0.5
+          ],
+          "shift": [
+            0.09,
+            0.09,
+            0.07
+          ],
+          "fov": 50
+        },
+        "callouts": [
+          "siphon.pen",
+          "siphon.ink"
+        ],
+        "mission": "m2-cable",
+        "prep": [
+          {
+            "advance": 60
+          }
+        ],
+        "first": 2
+      }
+    ]
+  }
+}

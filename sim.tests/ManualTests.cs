@@ -119,8 +119,10 @@ public class ManualTests
         foreach (var p in Pages)
         {
             Assert.False(string.IsNullOrEmpty(p.Title), $"{p.File}에 '# ' 제목이 없다");
+            // 그림 줄의 파일 이름(fig/…)은 날 ID가 아니다
+            string text = string.Join("\n", p.Markdown.Replace("\r", "").Split('\n').Select(l => FigureLine.Match(l.Trim()) is { Success: true } m ? m.Groups[1].Value : l));
             foreach (var raw in new[] { "leak.rivet", ".pull", ".insert", "proc.", "strainer.", "{{", "}}" })
-                Assert.DoesNotContain(raw, p.Markdown);
+                Assert.DoesNotContain(raw, text);
         }
     }
 
@@ -159,6 +161,216 @@ public class ManualTests
         var e = Assert.Throws<DataValidationException>(() => ObservationTests.LoadWith(dir =>
             File.WriteAllText(Path.Combine(dir, "text", "ko", "extra.json"), new JsonObject { ["tool.wrench"] = "스패너" }.ToJsonString())));
         Assert.Contains(e.Errors, x => x.Contains("tool.wrench") && x.Contains("ko.json") && x.Contains("extra.json"));
+    }
+
+    // ── 교범 그림 (WP26) ──────────────────────────────────
+
+    static readonly System.Text.RegularExpressions.Regex FigureLine = new(@"^!\[(.+)\]\((fig/[^)\s]+\.png)\)$");
+    static readonly System.Text.RegularExpressions.Regex FigureNumber = new(@"^그림 (\d+)-(\d+)\. \S");
+    static string FigDir => Path.Combine(ManualDir, "fig");
+
+    /// <summary>그림을 미룬 쪽 (다른 작업 묶음이 쓰는 중인 쪽). 그림을 넣으면 여기서 지운다. 지금은 없다.</summary>
+    static readonly HashSet<int> FiguresPending = new();
+
+    /// <summary>그림을 두지 않는 쪽: 00 차례.</summary>
+    static readonly HashSet<int> NoFigures = new() { 0 };
+
+    static int PageNumber(string file) => int.Parse(file[..2], System.Globalization.CultureInfo.InvariantCulture);
+
+    static IEnumerable<(string File, string Caption, string Path)> FigureLines() =>
+        Pages.SelectMany(p => p.Markdown.Replace("\r", "").Split('\n').Select(l => FigureLine.Match(l.Trim())).Where(m => m.Success)
+            .Select(m => (p.File, m.Groups[1].Value, m.Groups[2].Value)));
+
+    /// <summary>그림 줄을 뺀 본문 (줄마다 다듬어 본다).</summary>
+    static string WithoutFigures(string markdown) =>
+        string.Join("\n", markdown.Replace("\r", "").Split('\n').Where(l => !FigureLine.IsMatch(l.Trim())));
+
+    static Dictionary<string, JsonNode?> FigureDefs() =>
+        JsonNode.Parse(File.ReadAllText(Path.Combine(FigDir, "figures.json")))!.AsObject().ToDictionary(kv => kv.Key, kv => kv.Value);
+
+    [Fact]
+    public void Every_figure_line_points_to_a_file_and_a_definition()
+    {
+        var defs = FigureDefs();
+        foreach (var (file, caption, path) in FigureLines())
+        {
+            Assert.True(File.Exists(Path.Combine(ManualDir, path)), $"{file}: 그림 파일 {path}이 없다");
+            string name = Path.GetFileNameWithoutExtension(path);
+            Assert.True(defs.ContainsKey(name), $"{file}: 그림 {name}이 figures.json에 없다");
+            Assert.True(PageNumber(Path.GetFileName(path)) == PageNumber(file), $"{file}: 그림 {path}의 쪽 번호가 다르다");
+        }
+        // 그림 줄은 그 줄에 홀로 있어야 한다 (글 속의 그림은 그리지 않는다)
+        foreach (var p in Pages)
+            foreach (var line in p.Markdown.Split('\n'))
+                if (line.Contains("](fig/", StringComparison.Ordinal))
+                    Assert.Matches(FigureLine, line.Trim());
+    }
+
+    [Fact]
+    public void Every_defined_figure_is_used_on_exactly_one_page_once()
+    {
+        var used = FigureLines().GroupBy(f => Path.GetFileNameWithoutExtension(f.Path)).ToDictionary(g => g.Key, g => g.Count());
+        foreach (var name in FigureDefs().Keys)
+            Assert.True(used.GetValueOrDefault(name) == 1, $"그림 {name}이 교범에서 {used.GetValueOrDefault(name)}번 쓰였다");
+        foreach (var png in Directory.GetFiles(FigDir, "*.png"))
+            Assert.True(used.ContainsKey(Path.GetFileNameWithoutExtension(png)), $"쓰지 않는 그림 파일 {Path.GetFileName(png)}");
+    }
+
+    [Fact]
+    public void Figure_numbers_follow_the_page_without_gaps()
+    {
+        foreach (var page in FigureLines().GroupBy(f => f.File))
+        {
+            int expect = 1;
+            foreach (var (file, caption, _) in page)
+            {
+                var m = FigureNumber.Match(caption);
+                Assert.True(m.Success, $"{file}: 그림 설명이 '그림 <쪽>-<차례>. 설명' 꼴이 아니다: {caption}");
+                Assert.Equal(PageNumber(file), int.Parse(m.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture));
+                Assert.True(int.Parse(m.Groups[2].Value, System.Globalization.CultureInfo.InvariantCulture) == expect, $"{file}: '{caption}'의 차례가 {expect}이어야 한다");
+                expect++;
+            }
+        }
+        // 본문이 가리키는 (그림 n-k)는 그 쪽에 있다
+        foreach (var p in Pages)
+        {
+            var have = FigureLines().Where(f => f.File == p.File).Select(f => FigureNumber.Match(f.Caption).Groups[1].Value + "-" + FigureNumber.Match(f.Caption).Groups[2].Value).ToHashSet();
+            foreach (System.Text.RegularExpressions.Match m in System.Text.RegularExpressions.Regex.Matches(WithoutFigures(p.Markdown), @"그림 (\d+-\d+)"))
+                Assert.True(have.Contains(m.Groups[1].Value), $"{p.File}: 본문이 가리키는 그림 {m.Groups[1].Value}이 이 쪽에 없다");
+        }
+    }
+
+    [Fact]
+    public void Every_page_has_at_least_three_figures()
+    {
+        foreach (var p in Pages)
+        {
+            int n = FigureLines().Count(f => f.File == p.File);
+            if (FiguresPending.Contains(PageNumber(p.File)) || NoFigures.Contains(PageNumber(p.File)))
+            {
+                // 그림을 미룬 쪽에 그림이 생기면 미룬 목록에서 지우고 이 검사를 받게 한다
+                Assert.True(n == 0, $"{p.File}에 그림이 {n}장 있다. FiguresPending/NoFigures에서 지운다");
+                continue;
+            }
+            Assert.True(n >= 3, $"{p.File}에 그림이 {n}장뿐이다 (적어도 셋)");
+        }
+    }
+
+    /// <summary>그림 줄은 앞뒤가 빈 줄이다 (목록이나 문단 한가운데에 끼지 않는다).</summary>
+    [Fact]
+    public void Figure_lines_stand_between_blank_lines()
+    {
+        foreach (var f in Directory.GetFiles(ManualDir, "*.md"))
+        {
+            var lines = File.ReadAllText(f).Replace("\r", "").Split('\n');
+            for (int i = 0; i < lines.Length; i++)
+                if (FigureLine.IsMatch(lines[i].Trim()))
+                    Assert.True((i == 0 || lines[i - 1].Trim().Length == 0) && (i == lines.Length - 1 || lines[i + 1].Trim().Length == 0),
+                        $"{Path.GetFileName(f)} {i + 1}째 줄: 그림 줄 앞뒤에 빈 줄이 없다");
+        }
+    }
+
+    /// <summary>
+    /// 순서 띠 그림의 칸 번호는 절차의 단계 번호다. 그 그림 바로 앞에 손으로 쓴 번호 목록이 있으면
+    /// 목록의 항목 수가 절차의 단계 수와 같아야 한다 (그래야 칸 번호와 목록 번호가 맞는다).
+    /// </summary>
+    [Fact]
+    public void Hand_written_steps_before_a_strip_match_its_procedure()
+    {
+        var defs = FigureDefs();
+        var item = new System.Text.RegularExpressions.Regex(@"^(\d+)\. ");
+        foreach (var f in Directory.GetFiles(ManualDir, "*.md"))
+        {
+            var lines = File.ReadAllText(f).Replace("\r", "").Split('\n');
+            for (int i = 0; i < lines.Length; i++)
+            {
+                var m = FigureLine.Match(lines[i].Trim());
+                if (!m.Success) continue;
+                var def = defs[Path.GetFileNameWithoutExtension(m.Groups[2].Value)];
+                if ((string?)def?["kind"] != "strip") continue;
+                int j = i - 1;
+                while (j >= 0 && lines[j].Trim().Length == 0) j--;
+                if (j < 0 || !item.IsMatch(lines[j])) continue; // 앞이 {{procedure:…}}이거나 목록이 아니다
+                var numbers = new List<int>();
+                for (; j >= 0 && (item.IsMatch(lines[j]) || lines[j].StartsWith("   ", StringComparison.Ordinal)); j--)
+                    if (item.Match(lines[j]) is { Success: true } im) numbers.Insert(0, int.Parse(im.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture));
+                string proc = (string)def!["strip"]!["procedure"]!;
+                int steps = TestData.Data.Procedure(proc).Steps.Count;
+                Assert.True(numbers.SequenceEqual(Enumerable.Range(1, steps)),
+                    $"{Path.GetFileName(f)}: 그림 {m.Groups[2].Value} 앞 목록이 1~{numbers.LastOrDefault()}인데 절차 {proc}는 {steps}단계다");
+            }
+        }
+    }
+
+    /// <summary>그림마다 지문이 있다 (tools/make-figures.sh가 figures.lock.json에 남긴다. Godot figures 묶음이 낡았는지 견준다).</summary>
+    [Fact]
+    public void Every_figure_has_a_fingerprint_in_the_lock_file()
+    {
+        var locked = JsonNode.Parse(File.ReadAllText(Path.Combine(FigDir, "figures.lock.json")))!.AsObject().Select(kv => kv.Key).OrderBy(k => k, StringComparer.Ordinal);
+        Assert.Equal(FigureDefs().Keys.OrderBy(k => k, StringComparer.Ordinal), locked);
+    }
+
+    /// <summary>한 쪽 안에서 같은 부품은 모든 그림에서 같은 번호다 (그 쪽 '무엇이 있나' 표의 번호). figures.json의 callouts와 first로 셈한다.</summary>
+    [Fact]
+    public void A_part_keeps_its_callout_number_on_its_page()
+    {
+        var numbers = new Dictionary<(string Page, string Target), HashSet<int>>();
+        foreach (var (name, def) in FigureDefs())
+        {
+            if ((string?)def?["kind"] is "sequence" or "plan") continue; // 볼트 번호도는 볼트 번호, 배치도는 쪽 표의 차례를 따로 쓴다
+            var scenes = def?["scenes"]?.AsArray().Select(n => n!) ?? (def?["scene"] is { } one ? new[] { one } : Array.Empty<JsonNode>());
+            foreach (var scene in scenes)
+            {
+                int first = (int?)scene["first"] ?? 1;
+                var callouts = scene["callouts"]?.AsArray() ?? new JsonArray();
+                for (int i = 0; i < callouts.Count; i++)
+                    foreach (var target in ((string)callouts[i]!).Split('|'))
+                    {
+                        var key = (name[..2], target);
+                        if (!numbers.TryGetValue(key, out var set)) numbers[key] = set = new HashSet<int>();
+                        set.Add(first + i);
+                    }
+            }
+        }
+        foreach (var ((page, target), set) in numbers)
+            Assert.True(set.Count == 1, $"{page}쪽에서 '{target}'이 그림마다 다른 번호다: {string.Join(", ", set.Order())}");
+    }
+
+    /// <summary>서로 다른 그림이 같은 그림 파일이면 안 된다 (같은 자리, 같은 상태를 두 번 찍은 것).</summary>
+    [Fact]
+    public void No_two_figures_are_the_same_image()
+    {
+        var seen = new Dictionary<string, string>();
+        foreach (var png in Directory.GetFiles(FigDir, "*.png"))
+        {
+            string hash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(png)));
+            Assert.False(seen.TryGetValue(hash, out var other), $"그림 {Path.GetFileName(png)}과 {other}이 같다");
+            seen[hash] = Path.GetFileName(png);
+        }
+    }
+
+    /// <summary>폭 960 안팎, 16색 이하 팔레트 PNG, 한 장 평균 80KB 안, 모두 8MB 안.</summary>
+    [Fact]
+    public void Figures_keep_the_size_limits()
+    {
+        var files = Directory.GetFiles(FigDir, "*.png");
+        Assert.NotEmpty(files);
+        long total = 0;
+        foreach (var f in files)
+        {
+            var b = File.ReadAllBytes(f);
+            total += b.Length;
+            Assert.True(b.Length > 33 && b[12] == (byte)'I' && b[13] == (byte)'H', $"{Path.GetFileName(f)}: PNG가 아니다");
+            int w = (b[16] << 24) | (b[17] << 16) | (b[18] << 8) | b[19];
+            int colorType = b[25];
+            Assert.InRange(w, 400, 1000);
+            Assert.True(colorType == 3, $"{Path.GetFileName(f)}: 팔레트 PNG가 아니다 (색 형식 {colorType})");
+            int plte = Enumerable.Range(8, b.Length - 12).First(i => b[i] == (byte)'P' && b[i + 1] == (byte)'L' && b[i + 2] == (byte)'T' && b[i + 3] == (byte)'E');
+            int len = (b[plte - 4] << 24) | (b[plte - 3] << 16) | (b[plte - 2] << 8) | b[plte - 1];
+            Assert.True(len / 3 <= 16, $"{Path.GetFileName(f)}: 팔레트가 {len / 3}색");
+        }
+        Assert.True(total / files.Length <= 80 * 1024, $"그림 평균 {total / files.Length / 1024}KB");
+        Assert.True(total <= 8 * 1024 * 1024, $"그림 합계 {total / 1024 / 1024}MB");
     }
 
     /// <summary>
