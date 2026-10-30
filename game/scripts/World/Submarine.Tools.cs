@@ -191,17 +191,34 @@ public partial class Submarine
             it.CommandFor = (_, m) => m == Motion.Click ? $"tool.pickup.{tool}" : null;
             uint layer = it.CollisionLayer;
             it.CollisionLayer = 0;
-            OnUpdate((s, _) =>
+            int lastZone = -1;
+            OnUpdate((s, dt) =>
             {
                 int zone = GameData.ZoneIndex(s.Crew.ToolPlaces.GetValueOrDefault(tool, ""));
                 bool onFloor = zone >= 0 && FloorSlots[zone].ContainsKey(tool);
                 root.Visible = onFloor;
                 it.CollisionLayer = onFloor ? layer : 0;
-                if (onFloor)
+                if (!onFloor) { lastZone = -1; return; }
+                // 같은 바닥에서 이웃 구역으로 옮겨 갔으면(기울기로 구름, WP18) 미끄러져 간다. 처음 놓일 때는 바로 그 자리.
+                // 앞뒤로 길게 누운 도구는 기울기에서 구르지 않고 미끄러진다(WP25 검토 9번). 도착하면 그 자리의 방향으로 똑바로 눕는다.
+                var slot = FloorSlots[zone][tool];
+                var to = slot.Center;
+                var rest = new Transform3D(slot.AlongX ? Basis.Identity : across, to);
+                if (lastZone < 0) root.Transform = rest;
+                else if (root.Position.DistanceTo(to) > 0.01f)
                 {
-                    var slot = FloorSlots[zone][tool];
-                    root.Transform = new Transform3D(slot.AlongX ? Basis.Identity : across, slot.Center);
+                    // 해치 격벽을 건너면 열린 문(|z| ≤ 0.35)으로 문턱(높이 0.06)을 넘어 간다.
+                    var aim = to;
+                    if ((root.Position.X - HatchX) * (to.X - HatchX) < 0)
+                    {
+                        var door = new Vector3(HatchX, 0.08f, Math.Clamp(root.Position.Z, -0.35f, 0.35f));
+                        aim = root.Position.DistanceTo(door) > 0.01f ? door : to;
+                        if (aim == to) root.Position = door + new Vector3(Math.Sign(to.X - HatchX) * 0.02f, 0, 0);
+                    }
+                    root.Position = root.Position.MoveToward(aim, 2.5f * dt);
                 }
+                else root.Transform = rest;
+                lastZone = zone;
             });
         }
     }

@@ -259,6 +259,10 @@ public partial class ProceduralAudio : Node3D
                 _sparkSrc.Player.GlobalPosition = _sub.SoundSpots.TryGetValue(e.Subject, out var sp) ? sp : Spot(e.Subject, Vector3.Zero);
                 _spark.Blow();
                 break;
+            // 바닥의 도구가 기울기로 구른다 (WP18): 구르기 시작하는 자리에서 덜그럭.
+            case SimEventKind.ToolRolled:
+                Mallet(Spot($"floortool.{e.Subject}", Camera), 0.25f, -8);
+                break;
             case SimEventKind.Explosion:
                 _impactSrc.Player.GlobalPosition = Camera;
                 _impact.Strike(1);
@@ -280,7 +284,11 @@ public partial class ProceduralAudio : Node3D
         _breath.Co2Stage = s.Co2Level;
         _breath.O2Stage = s.O2Level;
         _breath.Exertion = s.Water.HandPumpBusy ? 1 : (float)Math.Clamp(1 - s.Crew.Vitality, 0, 1);
-        _cough.Cl2Stage = s.Cl2Level;
+        // 화로 문틈 연기(AIR-03)도 1단계 기침을 부른다 (가까이 있을 때만; 화로 자리 1.5m 안).
+        bool smoke = false;
+        foreach (var c in s.Cues)
+            if (c.Id == "furnace.smoke" && c.Value > 0.3) smoke = _sub.SoundSpots.TryGetValue("furnace", out var at) && at.DistanceTo(cam) < 1.5f;
+        _cough.Cl2Stage = Math.Max(s.Cl2Level, smoke ? 1 : 0);
 
         foreach (var src in _sources) Fill(src);
         foreach (var src in _shots) Fill(src);

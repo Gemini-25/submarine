@@ -2,5 +2,19 @@
   "junctions": {
     "bareJointMoisture": 0.75,
     "ragDry": 0.2
+  },
+  "contacts": {
+    "dropK": 0.6,
+    "floorFraction": 0.65,
+    "clampRelief": 0.5,
+    "heatCapacityJPerC": 60,
+    "coolingWPerC": 0.2,
+    "burnC": 90,
+    "corrosionGrowthPerSecond": 0.001,
+    "growFrom": 0.25,
+    "arcFromV": 12,
+    "arcSpanV": 30,
+    "arcsPerSecond": 0.5,
+    "panelWarnDropV": 12
   }
 }

@@ -60,7 +60,8 @@ public static class StandPoints
         // ── M1 네 곳 (대상은 M1 확인보다 넓다) ──
         new("switchboard", At(4.1f, 0.3f), false,
             [ "switch.C2", "bus", ..Circuits.Select(c => $"switch.{c}"), ..Circuits.Select(c => $"fuse.{c}"), ..Circuits.Select(c => $"terminal.{c}"),
-              ..Circuits.Select(c => $"switch.{c}.clamp"), ..Circuits.Select(c => $"ammeter.{c}") ], None),
+              ..Circuits.Select(c => $"knife.{c}.clamp"), ..Circuits.Select(c => $"ammeter.{c}"),
+              ..Circuits.SelectMany(c => new[] { $"knife.{c}.blade", $"knife.{c}.jaw", $"knife.{c}.base" }) ], None),
         new("strainer", At(1.55f, -0.3f), true,
             [ "strainer.cover", "strainer.bolt.1", "strainer.bolt.2", "strainer.bolt.3", "strainer.bolt.4", "wash_bucket" ], None),
         new("locker", At(3.75f, -0.25f), false, [ "locker.fuse", "locker.wood_wedge", "locker.timber_shore", "discard" ], None),
@@ -76,18 +77,18 @@ public static class StandPoints
         new("winch", At(1.45f, 0.25f), false,
             [ "winch.control", "winch.brake", "winch.pawl", "winch.cover", "winch.cover.bolt.1", "winch.cover.bolt.2", "winch.adjust", "winch.lining" ], None),
         new("pump", At(1.0f, -0.3f), false,
-            [ "pump.cap", ..Four("pump.cap.bolt"), "pump.bearing", "pump.oilcup", "pump.body", "checkvalve.bonnet", ..Four("checkvalve.bolt"), "pump.discharge" ], None),
+            [ "pump.cap", ..Four("pump.cap.bolt"), "pump.bearing", "pump.oilcup", "pump.body", "checkvalve.bonnet", ..Four("checkvalve.bolt"), "pump.discharge", "checkvalve.flap" ], None),
         new("locker.aft", At(1.5f, -0.35f), false, World.Submarine.AftShelves.SelectMany(s => s).Select(i => $"locker.{i}").ToArray(), None),
         new("locker.top", At(3.75f, -0.25f), false, World.Submarine.MidUpperShelves.SelectMany(s => s).Select(i => $"locker.{i}").ToArray(), None),
 
         // ── 중앙 ──
         new("toolboard", At(3.4f, -0.45f), false, Tools(), None),
         new("ballast", At(3.45f, 0.5f), false,
-            [ "ballast.fore.flood", "ballast.aft.flood", "ballast.fore.gland", "ballast.aft.gland", "ballast.fore.body", "ballast.aft.body", "pump.suction" ], None),
+            [ "ballast.fore.flood", "ballast.aft.flood", "ballast.fore.gland", "ballast.aft.gland", "ballast.fore.body", "ballast.aft.body", "pump.suction", "ballast.fore.stem", "ballast.aft.stem", "ballast.fore.packing", "ballast.aft.packing" ], None),
         new("scrubber", At(3.05f, -0.35f), false, [ "scrubber.lid", "scrubber.clamp.1", "scrubber.clamp.2", "scrubber.canister" ], None),
         new("fan", At(3.85f, 0.25f), false, [ "fan.guard", "fan.guard.nut.1", "fan.guard.nut.2", "fan.motor", "fan.hub", "fan.bearing", "fan.blades" ], None),
         new("junctions", At(3.65f, 0.5f), true, [ ..Junction("C1"), ..Junction("C2"), ..Junction("C6"), ..Junction("C7"), "device.soldering_iron" ], None),
-        new("furnace", At(4.6f, 0.3f), true, [ "o2.furnace.door", "o2.furnace.latch", "o2.furnace.vent", "candle", "o2.furnace" ], None),
+        new("furnace", At(4.6f, 0.3f), true, [ "o2.furnace.door", "o2.furnace.latch", "o2.furnace.vent", "candle", "o2.furnace", "o2.furnace.grate" ], None),
         new("chamber", At(4.0f, 0.65f), false, [ "chamber.hatch", ..Four("chamber.hatch.dog"), "chamber.squeeze" ], None),
         new("chamber.in", At(4.0f, 0.64f), true, [ "chamber.seal", ..Four("chamber.seal.screw") ], [ "chamber.hatch" ]),
 

@@ -282,8 +282,9 @@ public sealed record PanelView
 /// <summary>스냅숏과 관측값 경로가 함께 쓰는 표현용 계산. 같은 값을 두 곳에서 따로 계산하지 않는다.</summary>
 static class Presentation
 {
-    /// <summary>실내등 밝기 0~1. 등이 꺼져 있으면 0, 켜져 있으면 버스 전압에 비례한다.</summary>
-    public static double LightsBrightness(SimWorld w) => w.Devices[w.Lights].Running ? w.BusVoltage : 0;
+    /// <summary>실내등 밝기 0~1. 등이 꺼져 있으면 0, 켜져 있으면 조명 회로 부하 단자 전압(버스 전압 − 칼날 스위치 접점 강하)에 비례한다.</summary>
+    public static double LightsBrightness(SimWorld w) =>
+        w.Devices[w.Lights].Running ? w.BusVoltage - Systems.ContactRefs.DropOf(w, w.DeviceCircuit[w.Lights]) : 0;
 
     public static IReadOnlyList<string> BeltOf(SimWorld w)
     {

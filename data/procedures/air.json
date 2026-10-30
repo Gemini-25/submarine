@@ -1,4 +1,71 @@
 {
+  "proc.furnace.clean": {
+    "title": "산소 화로 재 긁기와 배기구 뚫기",
+    "fault": "AIR-03",
+    "grade": "proper",
+    "steps": [
+      {
+        "type": "Inspect",
+        "text": "양초를 켜도 산소 계기가 오르지 않는다. 화로 문틈으로 연기가 새고 매캐한 냄새가 난다. 점화기 창은 붉게 빛난다."
+      },
+      {
+        "type": "Isolate",
+        "text": "양초가 다 탈 때까지 기다린다. 타는 양초는 끌 수 없다. 치익 소리가 그치고 2분 뒤 빈손으로 화로 몸통을 만져 본다. '손을 댈 수 없다'나 '뜨겁다'면 더 기다린다.",
+        "cmd": "o2.furnace.touch",
+        "tool": "hand",
+        "requires": "양초가 다 타고 2분 기다렸을 것",
+        "hazard": "아주 뜨거운 몸통을 만지면 손을 덴다."
+      },
+      {
+        "type": "Open",
+        "text": "빈손으로 문 걸쇠를 젖혀 연다.",
+        "cmd": "o2.furnace.latch.open",
+        "tool": "hand"
+      },
+      {
+        "type": "Open",
+        "text": "화로 문을 연다.",
+        "cmd": "o2.furnace.door.open",
+        "tool": "hand",
+        "requires": "화로가 식었을 것",
+        "hazard": "양초가 타거나 화로가 뜨거울 때 문을 열면 손을 덴다."
+      },
+      {
+        "type": "Work",
+        "text": "긁개로 재받이의 재를 네 번 긁어낸다.",
+        "cmd": "o2.furnace.grate.scrape",
+        "tool": "scraper",
+        "repeat": 4,
+        "requires": "화로가 식었을 것",
+        "hazard": "뜨거운 재받이에 손을 넣으면 손을 덴다."
+      },
+      {
+        "type": "Work",
+        "text": "쑤시개 바늘로 문 위의 배기구 틈을 세 번 쑤셔 그을음을 뚫는다.",
+        "cmd": "o2.furnace.vent.prick",
+        "tool": "pricker",
+        "repeat": 3
+      },
+      {
+        "type": "Close",
+        "text": "화로 문을 닫는다.",
+        "cmd": "o2.furnace.door.close",
+        "tool": "hand"
+      },
+      {
+        "type": "Fasten",
+        "text": "걸쇠를 내려 문을 잠근다. 걸쇠가 열려 있으면 양초가 탈 때 문틈으로 연기가 새고 산소가 덜 나온다.",
+        "cmd": "o2.furnace.latch.close",
+        "tool": "hand"
+      },
+      {
+        "type": "Test",
+        "text": "양초 점화 단추를 눌러 새 양초에 불을 붙인다. 치익 소리가 고르게 나고 연기가 새지 않으며 산소 계기가 몇 분 안에 오르는지 본다.",
+        "cmd": "candle.light",
+        "tool": "hand"
+      }
+    ]
+  },
   "proc.fan.spin": {
     "title": "팬을 손으로 돌려 기동",
     "fault": "AIR-01",

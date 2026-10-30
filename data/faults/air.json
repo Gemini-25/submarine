@@ -1,0 +1,15 @@
+{
+  "AIR-03": {
+    "name": "산소 화로 막힘",
+    "system": "air",
+    "partKind": "furnace",
+    "defaultPart": "o2.furnace",
+    "state": "Fault",
+    "set": {
+      "ash": 0.8,
+      "vent": 0.8
+    },
+    "clearedWhen": "self.ash < 0.1 && self.vent < 0.1 && self.doorOpen == 0",
+    "baseRatePerHour": 0
+  }
+}

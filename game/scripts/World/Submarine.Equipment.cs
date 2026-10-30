@@ -182,7 +182,7 @@ public partial class Submarine
             // 칼날 스위치: 받침, 위쪽 집게(버스 바 쪽), 아래 축, 칼날과 손잡이
             Geo.Box(root, new Vector3(0.09f, 0.26f, 0.02f), new Vector3(x, 1.56f, 0.05f), Geo.Mat(new Color(0.75f, 0.72f, 0.65f), 0.5f, 0));
             Geo.Box(root, new Vector3(0.04f, 0.03f, 0.04f), new Vector3(x, 1.67f, 0.075f), Geo.Copper);
-            var pivot = new Node3D { Position = new Vector3(x, 1.46f, 0.075f) };
+            var pivot = new Node3D { Name = $"Blade{c.Id}", Position = new Vector3(x, 1.46f, 0.075f) }; // 접점 녹과 그을음을 덧입힌다 (WP17)
             root.AddChild(pivot);
             Geo.Box(pivot, new Vector3(0.012f, 0.2f, 0.008f), new Vector3(0, 0.1f, 0), Geo.Copper);
             Geo.Box(pivot, new Vector3(0.05f, 0.012f, 0.012f), new Vector3(0, 0.17f, 0.01f), Geo.Bakelite);

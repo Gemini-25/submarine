@@ -1,0 +1,31 @@
+{
+  "name": "공기 훈련: 산소 화로",
+  "briefing": [
+    "모선 아르고스호 → 모스호 기관사. 수심 300m 정박 훈련.",
+    "실내 산소가 떨어지고 있다. 산소 화로에 양초를 넣어 산소를 채울 것. 산소가 오르지 않으면 상황판 계기와 화로 앞의 연기, 냄새, 소리로 원인을 찾아 교범(Tab)대로 고칠 것.",
+    "화로를 정식으로 손보고 문과 걸쇠를 잠근 채 산소가 18.5% 위로 1분 동안 머물면 훈련을 마친다. 양초는 네 개뿐이다."
+  ],
+  "seed": 3303,
+  "setup": {
+    "depthM": 300,
+    "air": {
+      "o2": 17.6
+    }
+  },
+  "events": [
+    {
+      "atSeconds": 0,
+      "fault": "AIR-03"
+    }
+  ],
+  "success": {
+    "assert": "part.o2.furnace.prop.ash < 0.1 && part.o2.furnace.prop.vent < 0.1 && part.o2.furnace.prop.doorOpen == 0 && part.o2.furnace.prop.latchOpen == 0 && air.o2 > 18.5",
+    "holdSeconds": 60,
+    "objectives": [
+      "산소 화로의 재와 배기구를 손본다",
+      "문을 닫고 걸쇠를 건다",
+      "산소를 18.5% 위로 1분 동안 유지한다"
+    ]
+  },
+  "timeLimitSeconds": 1800
+}

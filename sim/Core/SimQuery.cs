@@ -119,6 +119,10 @@ static class SimQuery
                     "weep" => x => QueryValue.Of(PumpBearing.Weep(x)),
                     // 흡입 선택기 자리: 'bilge', 'fore', 'aft', 'chamber' (M2 WP18). 선택기가 없는 데이터에서는 늘 'bilge'.
                     "suction" => x => QueryValue.Of(Suction.Positions[Suction.Position(x)]),
+                    // 역류 방지 밸브 보닛으로 드는 바닷물 L/s (열린 보닛, 순서를 어겨 조인 보닛; WP17 WTR-03)
+                    "bonnetInflow" => x => QueryValue.Of(PartSeaInflow(x, CheckValve.PartId)),
+                    // 배출 밸브의 열림 0~1 (WP17)
+                    "discharge" => x => QueryValue.Of(CheckValve.DischargeOpen(x)),
                     _ => throw Unknown(),
                 };
 
@@ -171,6 +175,33 @@ static class SimQuery
                 End(2);
                 return At(1) == "total" ? x => QueryValue.Of(WaterSystem.FloorTotal(x)) : throw Unknown();
 
+            case "attitude":
+                // 기울기 모듈 (M2 WP18): 트림(도, 이물이 숙으면 양수)과 순부력(L, M3 훅). 모듈이 없으면 0.
+                End(2);
+                return At(1) switch
+                {
+                    "trim" => x => QueryValue.Of(Attitude.TrimDeg(x)),
+                    "netBuoyancyL" => x => QueryValue.Of(x.T.Attitude == null ? 0 : Attitude.NetBuoyancyL(x)),
+                    _ => throw Unknown(),
+                };
+
+            case "ballast":
+            {
+                // ballast.fore.water, ballast.fore.flood (탱크로 드는 L/s), ballast.fore.open (밸브의 열린 바퀴 수)
+                End(3);
+                string t = At(1);
+                if (t is not ("fore" or "aft") || !w.TryPart(Attitude.TankPart(t), out _)) throw Unknown();
+                return At(2) switch
+                {
+                    "water" => x => QueryValue.Of(Parts.PropRef.Resolve(x, Attitude.TankPart(t), "water").Get()),
+                    "flood" => x => QueryValue.Of(Attitude.FloodLps(x, t)),
+                    "open" => x => QueryValue.Of(Parts.PropRef.Resolve(x, Attitude.ValvePart(t), "open").Get()),
+                    // 침수 밸브 축 둘레로 새는 바닷물 (L/s, 패킹 너트가 풀렸거나 덜 조였을 때의 바다 경로)
+                    "weep" => x => QueryValue.Of(PartSeaInflow(x, Attitude.ValvePart(t))),
+                    _ => throw Unknown(),
+                };
+            }
+
             case "chamber":
                 End(2);
                 return At(1) == "water" ? x => QueryValue.Of(x.Water.Chamber) : throw Unknown();
@@ -216,6 +247,9 @@ static class SimQuery
                     "candleSeconds" => x => QueryValue.Of(x.Air.CandleRemaining),
                     "canister" => x => QueryValue.Of(x.Part("scrubber.canister").Get("saturation")),
                     "scrubberFlow" => x => QueryValue.Of(Systems.AirSystem.ScrubberFlow(x)),
+                    // 산소 화로 (AIR-03, WP17): 실내로 나오는 연기 세기와 막힌 울림의 세기. 화로가 없으면 0.
+                    "furnaceSmoke" => x => QueryValue.Of(Systems.Furnace.Smoke(x)),
+                    "furnaceChoke" => x => QueryValue.Of(Systems.Furnace.Choke(x)),
                     _ => throw Unknown(),
                 };
 
@@ -490,6 +524,16 @@ static class SimQuery
         double sum = 0;
         for (int i = 0; i < w.Cells.Length; i++)
             sum += w.Cells[i].Charge * cap * w.CellParts[i].Get("health");
+        return sum;
+    }
+
+    /// <summary>한 부품의 바다 경로로 드는 물 L/s (부품이 없거나 바다 경로가 없으면 0).</summary>
+    static double PartSeaInflow(SimWorld w, string partId)
+    {
+        if (!w.Mechanics.HasSeaPaths || !w.TryPart(partId, out var part)) return 0;
+        double sum = 0;
+        foreach (var p in w.Mechanics.SeaPaths)
+            if (ReferenceEquals(p.Part, part)) sum += SeaPaths.Lps(w, p);
         return sum;
     }
 
